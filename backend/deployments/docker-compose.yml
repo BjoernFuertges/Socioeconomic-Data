@@ -1,0 +1,29 @@
+services:
+  postgis:
+    image: postgis/postgis:17-3.5
+    container_name: postgis
+    environment:
+      POSTGRES_DB: soziooekonomische-daten
+      POSTGRES_USER: sozio_data_compose_user
+      POSTGRES_PASSWORD: compose_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend-net
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8081:8080
+    networks:
+      - backend-net
+
+volumes:
+  pgdata:
+
+networks:
+  backend-net:
+    driver: bridge
