@@ -1,0 +1,6 @@
+[destination.postgres]
+# Database schema configuration
+schema = "store"
+
+[sources.geodata]
+base_path = "../socioeconomic-data-parser"
