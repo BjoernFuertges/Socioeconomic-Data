@@ -99,7 +99,7 @@ def create_pipeline():
     pipeline = dlt.pipeline(
         pipeline_name="lau_geodata_pipeline",
         destination="postgres",
-        dataset_name="store" 
+        dataset_name="loaded_data"
     )
     
     return pipeline
