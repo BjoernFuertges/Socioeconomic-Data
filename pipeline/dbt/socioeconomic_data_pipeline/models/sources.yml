@@ -1,0 +1,44 @@
+version: 2
+
+sources:
+  - name: loaded_data
+    description: "Raw data loaded by DLT pipeline"
+    schema: loaded_data
+    tables:
+      - name: lau_geometry
+        description: "LAU geometry data from GeoJSON files"
+        columns:
+          - name: gisco_id
+            description: "Unique LAU identifier from GISCO"
+            tests:
+              - not_null
+          - name: year
+            description: "Year of the data"
+            tests:
+              - not_null
+          - name: geometry
+            description: "PostGIS geometry as WKT"
+          - name: lau_name
+            description: "Name of the LAU"
+          - name: cntr_code
+            description: "Country code"
+          - name: nuts_3
+            description: "NUTS 3 region code"
+            
+      - name: lau_population
+        description: "LAU population data from CSV files"
+        columns:
+          - name: gisco_id
+            description: "Unique LAU identifier from GISCO"
+            tests:
+              - not_null
+          - name: year
+            description: "Year of the data"
+            tests:
+              - not_null
+          - name: population
+            description: "Total population"
+          - name: lau_name
+            description: "Name of the LAU"
+          - name: cntr_code
+            description: "Country code"

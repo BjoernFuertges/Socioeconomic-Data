@@ -1,0 +1,54 @@
+version: 2
+
+models:
+  - name: lau_integrated
+    description: "Integrated LAU dataset combining geometry and population data for all available years"
+    columns:
+      - name: gisco_id
+        description: "Unique LAU identifier from GISCO (Eurostat)"
+        tests:
+          - not_null
+      - name: year
+        description: "Data year"
+        tests:
+          - not_null
+      - name: lau_name_national
+        description: "LAU name in national language"
+      - name: lau_name_latin
+        description: "LAU name in Latin characters"
+      - name: cntr_code
+        description: "Country code (2-letter ISO)"
+        tests:
+          - not_null
+      - name: nuts_id
+        description: "NUTS region identifier"
+      - name: geometry
+        description: "PostGIS geometry (polygon) in EPSG:3035"
+      - name: population
+        description: "Population count for the year"
+      - name: missing_population_data
+        description: "Flag indicating if population data is missing for this LAU/year"
+      - name: year_match
+        description: "Flag indicating if geometry and population year match"
+      - name: total_years_available
+        description: "Total number of years available for this LAU"
+      - name: years_with_population
+        description: "Number of years with population data for this LAU"
+
+  - name: lau_data_quality
+    description: "Data quality metrics and issue tracking for LAU integration"
+    columns:
+      - name: report_type
+        description: "Type of report: summary, missing_data, or year_mismatch"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['summary', 'missing_data', 'year_mismatch']
+      - name: year
+        description: "Data year"
+        tests:
+          - not_null
+      - name: population_coverage_percent
+        description: "Percentage of LAUs with population data for the year"
+      - name: issue_type
+        description: "Description of data quality issue"

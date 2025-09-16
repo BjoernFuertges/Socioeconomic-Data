@@ -1,0 +1,64 @@
+{{
+  config(
+    materialized='table'
+  )
+}}
+
+-- Main integrated model combining LAU geometry and population data
+-- Joins on GISCO_ID (LAU code) and includes all years
+WITH geometry_data AS (
+  SELECT * FROM {{ ref('stg_lau_geometry') }}
+),
+
+population_data AS (
+  SELECT * FROM {{ ref('stg_lau_population') }}
+),
+
+integrated_data AS (
+  SELECT 
+    g.gisco_id,
+    g.year,
+    g.lau_name,
+    g.country_code,
+    g.lau_id,
+    g.geometry_3035,
+    g.geometry_wgs84,
+    g.has_valid_geometry,
+    
+    -- Population data
+    p.lau_name_national,
+    p.lau_name_latin,
+    p.nuts_3_code,
+    p.lau_nat_code,
+    p.population_count,
+    p.country,
+    p.has_valid_population,
+    
+    -- Data quality indicators
+    CASE 
+      WHEN p.gisco_id IS NULL THEN true 
+      ELSE false 
+    END as missing_population_data,
+    
+    CASE 
+      WHEN g.year = p.year THEN true 
+      ELSE false 
+    END as year_match
+
+  FROM geometry_data g
+  LEFT JOIN population_data p 
+    ON g.gisco_id = p.gisco_id 
+    AND g.year = p.year
+),
+
+-- Add summary statistics
+final_data AS (
+  SELECT 
+    *,
+    COUNT(*) OVER (PARTITION BY gisco_id) as total_years_available,
+    COUNT(population_count) OVER (PARTITION BY gisco_id) as years_with_population
+  FROM integrated_data
+)
+
+SELECT * FROM final_data
+ORDER BY gisco_id, year
