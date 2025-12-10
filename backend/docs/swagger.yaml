@@ -1,0 +1,471 @@
+basePath: /api/v1
+definitions:
+  models.APIResponse:
+    properties:
+      data: {}
+      error:
+        example: ""
+        type: string
+      message:
+        example: Operation erfolgreich
+        type: string
+      meta:
+        $ref: '#/definitions/models.MetaInfo'
+      success:
+        example: true
+        type: boolean
+    type: object
+  models.LAURegion:
+    properties:
+      country:
+        type: string
+      country_code:
+        example: DE
+        type: string
+      geometry_wgs84:
+        type: object
+      gisco_id:
+        example: DE111
+        type: string
+      has_valid_geometry:
+        example: true
+        type: boolean
+      has_valid_population:
+        type: boolean
+      lau_id:
+        example: "08111000"
+        type: string
+      lau_name:
+        example: Stuttgart
+        type: string
+      lau_name_latin:
+        type: string
+      lau_name_national:
+        type: string
+      lau_nat_code:
+        type: string
+      missing_population_data:
+        example: false
+        type: boolean
+      nuts_3_code:
+        type: string
+      population_count:
+        type: integer
+      year:
+        example: 2024
+        type: integer
+      year_match:
+        example: true
+        type: boolean
+    type: object
+  models.MetaInfo:
+    properties:
+      limit:
+        example: 100
+        type: integer
+      offset:
+        example: 0
+        type: integer
+      total:
+        example: 140400
+        type: integer
+    type: object
+  models.UnemploymentAggregation:
+    properties:
+      avg_arbeitslose:
+        example: 18622.03
+        type: number
+      earliest_observation:
+        example: "1998-01-01T00:00:00Z"
+        type: string
+      geodata_id:
+        example: DE111
+        type: string
+      geodata_name:
+        example: Stuttgart, Stadtkreis
+        type: string
+      latest_observation:
+        example: "2024-12-31T00:00:00Z"
+        type: string
+      max_arbeitslose:
+        example: 31655
+        type: number
+      min_arbeitslose:
+        example: 13334
+        type: number
+      total_records:
+        example: 351
+        type: integer
+    type: object
+  models.UnemploymentData:
+    properties:
+      arbeitslose:
+        example: 20749
+        type: number
+      arbeitslose_previous_year:
+        example: 18416
+        type: number
+      data_quality_flag:
+        example: VALID
+        type: string
+      dataset_id:
+        example: afa_arbeitslose___kreise_und_gemeinden__monats__und_jahreszahlen_ab_1998__auswertung
+        type: string
+      dataset_series:
+        example: Arbeitslose – Kreise und Gemeinden (Monats- und Jahreszahlen ab 1998)
+        type: string
+      dataset_title:
+        example: Bestand an Arbeitslosen Deutschland - Kreise und kreisfreie Städte
+        type: string
+      geodata_id:
+        example: DE111
+        type: string
+      geodata_level:
+        example: NUTS 3
+        type: string
+      geodata_name:
+        example: Stuttgart, Stadtkreis
+        type: string
+      load_date:
+        example: "2025-11-09"
+        type: string
+      month:
+        example: 12
+        type: integer
+      observation_date:
+        example: "2024-12-31T00:00:00Z"
+        type: string
+      quarter:
+        example: 4
+        type: integer
+      source_url:
+        example: https://statistik.arbeitsagentur.de/Statistikdaten/Detail/Aktuell/...
+        type: string
+      time_type:
+        example: monthly
+        type: string
+      year:
+        example: 2024
+        type: integer
+      yoy_change_percent:
+        example: 12.67
+        type: number
+    type: object
+info:
+  contact:
+    email: Socioeconomic-Data@b.sgtrf.de
+    name: API Support
+  description: REST-API für LAU-Geodaten und Arbeitslosenzahlen aus dbt-transformierten
+    Daten
+  termsOfService: http://swagger.io/terms/
+  title: Sozioökonomische Daten API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Gibt den Status der API zurück
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health Check
+      tags:
+      - Health
+  /lau:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle LAU-Regionen mit optionalen Filtern zurück
+      parameters:
+      - description: Filter nach Ländercode (z.B. DE)
+        example: DE
+        in: query
+        name: country_code
+        type: string
+      - description: Filter nach Jahr
+        example: 2024
+        in: query
+        name: year
+        type: integer
+      - description: Filter nach Vorhandensein von Bevölkerungsdaten
+        example: true
+        in: query
+        name: has_population
+        type: boolean
+      - default: 100
+        description: Anzahl der Ergebnisse (1-1000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.LAURegion'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Liste aller LAU-Regionen
+      tags:
+      - LAU
+  /lau/{gisco_id}:
+    get:
+      consumes:
+      - application/json
+      description: Gibt Details einer LAU-Region mit GeoJSON-Geometrie zurück
+      parameters:
+      - description: GISCO ID der LAU-Region
+        in: path
+        name: gisco_id
+        required: true
+        type: string
+      - description: Jahr (optional, gibt neuestes Jahr zurück wenn nicht angegeben)
+        in: query
+        name: year
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.LAURegion'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: LAU-Region Details
+      tags:
+      - LAU
+  /unemployment:
+    get:
+      consumes:
+      - application/json
+      description: Gibt Arbeitslosenzahlen mit optionalen Filtern zurück
+      parameters:
+      - description: Filter nach Geodaten-ID
+        example: DE111
+        in: query
+        name: geodata_id
+        type: string
+      - description: Start-Datum (YYYY-MM-DD)
+        example: "2024-01-01"
+        in: query
+        name: from_date
+        type: string
+      - description: End-Datum (YYYY-MM-DD)
+        example: "2024-12-31"
+        in: query
+        name: to_date
+        type: string
+      - description: 'Zeittyp: yearly, monthly'
+        example: monthly
+        in: query
+        name: time_type
+        type: string
+      - description: Filter nach Jahr
+        example: 2024
+        in: query
+        name: year
+        type: integer
+      - description: Filter nach Quartal (1-4)
+        example: 4
+        in: query
+        name: quarter
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.UnemploymentData'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Arbeitslosenzahlen abrufen
+      tags:
+      - Unemployment
+  /unemployment/aggregated:
+    get:
+      consumes:
+      - application/json
+      description: Gibt aggregierte Statistiken pro Gebiet zurück
+      parameters:
+      - description: Filter nach Geodaten-ID
+        example: DE111
+        in: query
+        name: geodata_id
+        type: string
+      - description: Filter nach Jahr
+        example: 2024
+        in: query
+        name: year
+        type: integer
+      - description: Start-Datum (YYYY-MM-DD)
+        example: "2024-01-01"
+        in: query
+        name: from_date
+        type: string
+      - description: End-Datum (YYYY-MM-DD)
+        example: "2024-12-31"
+        in: query
+        name: to_date
+        type: string
+      - default: 100
+        description: Anzahl der Ergebnisse
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.UnemploymentAggregation'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Aggregierte Arbeitslosenstatistiken
+      tags:
+      - Unemployment
+  /unemployment/geodata/{geodata_id}:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle Arbeitslosenzahlen für eine spezifische Geodaten-ID zurück
+      parameters:
+      - description: Geodaten-ID
+        example: DE111
+        in: path
+        name: geodata_id
+        required: true
+        type: string
+      - description: Start-Datum (YYYY-MM-DD)
+        example: "2024-01-01"
+        in: query
+        name: from_date
+        type: string
+      - description: End-Datum (YYYY-MM-DD)
+        example: "2024-12-31"
+        in: query
+        name: to_date
+        type: string
+      - description: 'Zeittyp: yearly, monthly'
+        example: monthly
+        in: query
+        name: time_type
+        type: string
+      - default: 100
+        description: Anzahl der Ergebnisse
+        example: 12
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.UnemploymentData'
+                  type: array
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Arbeitslosenzahlen für ein Gebiet
+      tags:
+      - Unemployment
+schemes:
+- http
+swagger: "2.0"
