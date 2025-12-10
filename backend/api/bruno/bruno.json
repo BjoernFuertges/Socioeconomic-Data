@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Soziooekonomische Daten",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
