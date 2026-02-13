@@ -3,3 +3,5 @@
 /***/.env/
 /***/logs/
 /***/*.log
+/row-data-local/
+/***/secrets.toml
