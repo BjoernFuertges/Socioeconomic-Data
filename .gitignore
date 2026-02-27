@@ -5,3 +5,4 @@
 /***/*.log
 /row-data-local/
 /***/secrets.toml
+/***/letsencrypt/
