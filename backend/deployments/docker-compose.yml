@@ -1,4 +1,27 @@
 services:
+  traefik:
+    image: traefik:v3.6.5
+    restart: always
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.le_http.acme.httpchallenge=true"
+      - "--certificatesresolvers.le_http.acme.email=${LE_EMAIL}"
+      - "--certificatesresolvers.le_http.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.le_http.acme.httpchallenge.entrypoint=web"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - backend-net
+
   postgis:
     image: postgis/postgis:17-3.5
     container_name: postgis
@@ -13,13 +36,90 @@ services:
     networks:
       - backend-net
 
+  backend:
+    image: ${DOCKER_HUB_USERNAME}/backend:latest
+    container_name: backend
+    environment:
+      PORT: 8080
+      API_HOST: 0.0.0.0
+      DB_HOST: postgis
+      DB_PORT: 5432
+      DB_USER: sozio_data_compose_user
+      DB_PASSWORD: compose_password
+      DB_NAME: soziooekonomische-daten
+    restart: always
+    depends_on:
+      - postgis
+      - traefik
+    networks:
+      - backend-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.routers.backend.tls.certresolver=le_http"
+      - "traefik.http.services.backend.loadbalancer.server.port=8080"
+
+  pipeline:
+    image: python:3.12-slim
+    container_name: pipeline
+    working_dir: /app
+    volumes:
+      - ../../dlt:/app/dlt
+      - ../../dbt:/app/dbt
+    environment:
+      DB_HOST: postgis
+      DB_PORT: 5432
+      DB_USER: sozio_data_compose_user
+      DB_PASSWORD: compose_password
+      DB_NAME: soziooekonomische-daten
+    command: >
+      bash -c "pip install -q dlt[postgres] dbt-postgres && echo 'Pipeline image ready'"
+    depends_on:
+      - postgis
+    networks:
+      - backend-net
+    labels:
+      ofelia.enabled: "true"
+      # dlt täglich um 02:00 Uhr
+      ofelia.job-exec.dlt.schedule: "0 2 * * *"
+      ofelia.job-exec.dlt.command: >
+        bash -c "cd /app/dlt &&
+          python load_arbeitslosenzahlen_afa.py &&
+          python load_geodata_to_postgis.py"
+      # dbt täglich um 03:00 Uhr (nach dlt)
+      ofelia.job-exec.dbt.schedule: "0 3 * * *"
+      ofelia.job-exec.dbt.command: >
+        bash -c "cd /app/dbt/socioeconomic_data_pipeline &&
+          dbt run"
+
+  scheduler:
+    image: mcuadros/ofelia:latest
+    container_name: scheduler
+    depends_on:
+      - pipeline
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - backend-net
+
   adminer:
     image: adminer
     restart: always
-    ports:
-      - 8081:8080
+    depends_on:
+      - traefik
     networks:
       - backend-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.adminer.rule=PathPrefix(`/adminer`)"
+      - "traefik.http.routers.adminer.entrypoints=websecure"
+      - "traefik.http.routers.adminer.tls=true"
+      - "traefik.http.routers.adminer.tls.certresolver=le_http"
+      - "traefik.http.services.adminer.loadbalancer.server.port=8080"
+      - "traefik.http.middlewares.adminer-stripprefix.stripprefix.prefixes=/adminer"
+      - "traefik.http.routers.adminer.middlewares=adminer-stripprefix"
 
 volumes:
   pgdata:
