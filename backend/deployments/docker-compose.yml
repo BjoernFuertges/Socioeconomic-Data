@@ -28,7 +28,7 @@ services:
     environment:
       POSTGRES_DB: soziooekonomische-daten
       POSTGRES_USER: sozio_data_compose_user
-      POSTGRES_PASSWORD: compose_password
+      POSTGRES_PASSWORD: REMOVED_PASSWORD
     ports:
       - "5432:5432"
     volumes:
@@ -45,7 +45,7 @@ services:
       DB_HOST: postgis
       DB_PORT: 5432
       DB_USER: sozio_data_compose_user
-      DB_PASSWORD: compose_password
+      DB_PASSWORD: REMOVED_PASSWORD
       DB_NAME: soziooekonomische-daten
     restart: always
     depends_on:
@@ -55,7 +55,7 @@ services:
       - backend-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.rule=Host(`fp-icw-soziooekonomische-daten.f4.htw-berlin.de`) && PathPrefix(`/api`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls=true"
       - "traefik.http.routers.backend.tls.certresolver=le_http"
@@ -72,7 +72,7 @@ services:
       DB_HOST: postgis
       DB_PORT: 5432
       DB_USER: sozio_data_compose_user
-      DB_PASSWORD: compose_password
+      DB_PASSWORD: REMOVED_PASSWORD
       DB_NAME: soziooekonomische-daten
     command: >
       bash -c "pip install -q dlt[postgres] dbt-postgres && echo 'Pipeline image ready'"
@@ -113,7 +113,7 @@ services:
       - backend-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.adminer.rule=PathPrefix(`/adminer`)"
+      - "traefik.http.routers.adminer.rule=Host(`fp-icw-soziooekonomische-daten.f4.htw-berlin.de`) && PathPrefix(`/adminer`)"
       - "traefik.http.routers.adminer.entrypoints=websecure"
       - "traefik.http.routers.adminer.tls=true"
       - "traefik.http.routers.adminer.tls.certresolver=le_http"

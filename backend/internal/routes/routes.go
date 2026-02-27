@@ -44,7 +44,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 	}
 
 	// Swagger-Dokumentation
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/api/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return router
 }
