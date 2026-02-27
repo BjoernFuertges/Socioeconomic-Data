@@ -50,8 +50,9 @@ ENV PORT=8080
 
 WORKDIR /app
 
-# Nur die Binary aus dem Builder-Stage kopieren
+# Nur die Binary und .env.example aus dem Builder-Stage kopieren
 COPY --from=builder /app/bin/server .
+COPY --from=builder /app/.env.example .
 
 USER appuser
 
