@@ -68,7 +68,7 @@ func main() {
 
 	// Server starten
 	log.Printf("Server läuft auf %s:%s", apiHost, apiPort)
-	log.Printf("Swagger UI: http://%s:%s/swagger/index.html", apiHost, apiPort)
+	log.Printf("Swagger UI: http://%s:%s/api/docs/index.html", apiHost, apiPort)
 	if err := router.Run(":" + apiPort); err != nil {
 		log.Fatalf("Fehler beim Starten des Servers: %v", err)
 	}
