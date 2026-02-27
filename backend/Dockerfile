@@ -24,7 +24,7 @@ RUN go install github.com/swaggo/swag/cmd/swag@latest
 COPY . .
 
 # Generate swagger documentation
-RUN swag init -g cmd/lama/main.go --output ./docs
+RUN swag init -g cmd/soziodata/main.go --output ./docs
 
 # Baue die ausführbare Datei
 # -w -s entfernt Debug-Symbole und reduziert die Binärgröße deutlich
@@ -32,7 +32,7 @@ RUN GOOS=linux go build -o /app/bin/server -ldflags "\
   -w -s \
     -X 'main.appVersion=${SHA}' \
   -X 'main.buildTime=${BUILD_TIME}'" \
-  ./cmd/lama
+  ./cmd/soziodata
 
 # =============================================================================
 # Stage 2: Minimales Runtime-Image
