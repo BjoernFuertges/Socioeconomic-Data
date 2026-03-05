@@ -39,9 +39,11 @@ services:
   backend:
     image: ${DOCKER_HUB_USERNAME}/backend:latest
     container_name: backend
+    env_file: ".env.backend"
     environment:
       PORT: 8080
       API_HOST: 0.0.0.0
+      SWAGGER_HOST: fp-icw-soziooekonomische-daten.f4.htw-berlin.de
       DB_HOST: postgis
       DB_PORT: 5432
       DB_USER: sozio_data_compose_user
@@ -68,7 +70,9 @@ services:
     volumes:
       - ../../dlt:/app/dlt
       - ../../dbt:/app/dbt
+      - ../../data-exchange:/app/data-exchange:ro
     environment:
+      DATA_EXCHANGE_PATH: /app/data-exchange/1_friedrich-bjoern
       DB_HOST: postgis
       DB_PORT: 5432
       DB_USER: sozio_data_compose_user
@@ -82,14 +86,14 @@ services:
       - backend-net
     labels:
       ofelia.enabled: "true"
-      # dlt täglich um 02:00 Uhr
-      ofelia.job-exec.dlt.schedule: "0 2 * * *"
+      # dlt jede Stunde zur vollen Stunde
+      ofelia.job-exec.dlt.schedule: "0 * * * *"
       ofelia.job-exec.dlt.command: >
         bash -c "cd /app/dlt &&
           python load_arbeitslosenzahlen_afa.py &&
           python load_geodata_to_postgis.py"
-      # dbt täglich um 03:00 Uhr (nach dlt)
-      ofelia.job-exec.dbt.schedule: "0 3 * * *"
+      # dbt 30 Minuten nach dlt
+      ofelia.job-exec.dbt.schedule: "30 * * * *"
       ofelia.job-exec.dbt.command: >
         bash -c "cd /app/dbt/socioeconomic_data_pipeline &&
           dbt run"

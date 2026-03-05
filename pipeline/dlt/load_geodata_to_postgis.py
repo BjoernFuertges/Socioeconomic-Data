@@ -8,6 +8,7 @@ import geopandas as gpd
 import pandas as pd
 import gzip
 import json
+import os
 from pathlib import Path
 from typing import Iterator, Dict, Any
 import logging
@@ -16,8 +17,8 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Base paths
-BASE_PATH = Path("/home/bjoern/Software/HTW/SoSe25/soziooekonomische-daten/socioeconomic-data-parser")
+# Base paths — DATA_EXCHANGE_PATH wird per Env-Variable gesetzt (z.B. /app/data-exchange/1_friedrich-bjoern)
+BASE_PATH = Path(os.environ.get("DATA_EXCHANGE_PATH", "/home/bjoern/Software/HTW/SoSe25/soziooekonomische-daten/socioeconomic-data-parser"))
 GEODATA_PATH = BASE_PATH / "geodata" / "lau" / "output" / "geojson"
 POPULATION_PATH = BASE_PATH / "statistics" / "lokale_verwaltungseinheiten_eu" / "output"
 
@@ -54,7 +55,7 @@ def load_geodata() -> Iterator[Dict[str, Any]]:
             
             # Convert to records for DLT
             for _, row in gdf.iterrows():
-                record = row.to_dict()
+                record: Dict[str, Any] = {str(k): v for k, v in row.to_dict().items()}
                 # Convert geometry to WKT for PostGIS
                 if 'geometry' in record and record['geometry'] is not None:
                     record['geometry'] = str(record['geometry'])
@@ -86,7 +87,7 @@ def load_population_data() -> Iterator[Dict[str, Any]]:
             
             # Convert to records for DLT
             for _, row in df.iterrows():
-                yield row.to_dict()
+                yield {str(k): v for k, v in row.to_dict().items()}
                 
         except Exception as e:
             logger.error(f"Error processing {file_path.name}: {e}")
