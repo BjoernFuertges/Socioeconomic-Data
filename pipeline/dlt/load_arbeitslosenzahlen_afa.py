@@ -8,6 +8,7 @@ Data source: Agentur für Arbeit - Arbeitslosenzahlen nach Regionen
 import dlt
 import pandas as pd
 import json
+import os
 from pathlib import Path
 from typing import Iterator, Dict, Any
 import logging
@@ -17,9 +18,10 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Paths
-CSV_PATH = Path("/home/bjoern/Software/HTW/soziooekonomische-daten/mapped_pairs.csv")
-META_PATH = Path("/home/bjoern/Software/HTW/soziooekonomische-daten/meta.json")
+# Paths — DATA_EXCHANGE_PATH wird per Env-Variable gesetzt (z.B. /app/data-exchange/1_friedrich-bjoern)
+_EXCHANGE = Path(os.environ.get("DATA_EXCHANGE_PATH", "/home/bjoern/Software/HTW/soziooekonomische-daten"))
+CSV_PATH = _EXCHANGE / "arbeitslosenzahlen" / "mapped_pairs.csv"
+META_PATH = _EXCHANGE / "arbeitslosenzahlen" / "meta.json"
 
 def generate_dataset_id(metadata: Dict[str, Any]) -> str:
     """

@@ -60,8 +60,12 @@ func main() {
 	// Handler mit Datenbankverbindung erstellen
 	handler := handlers.NewHandler(db)
 
-	// Swagger Host dynamisch setzen
-	docs.SwaggerInfo.Host = fmt.Sprintf("%s:%s", apiHost, apiPort)
+	// Swagger Host dynamisch setzen (SWAGGER_HOST überschreibt API_HOST:PORT)
+	swaggerHost := getEnv("SWAGGER_HOST", fmt.Sprintf("%s:%s", apiHost, apiPort))
+	docs.SwaggerInfo.Host = swaggerHost
+	if getEnv("SWAGGER_HOST", "") != "" {
+		docs.SwaggerInfo.Schemes = []string{"https"}
+	}
 
 	// Router mit allen Routen konfigurieren
 	router := routes.SetupRoutes(handler)
