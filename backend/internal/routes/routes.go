@@ -41,6 +41,12 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			unemployment.GET("/aggregate", handler.GetUnemploymentAggregated)
 			unemployment.GET("/geodata/:geodata_id", handler.GetUnemploymentByGeodataID)
 		}
+
+		// Bevölkerung
+		v1.GET("/bevoelkerung", handler.GetBevoelkerungData)
+
+		// Schuldnerquote
+		v1.GET("/schuldnerquote", handler.GetSchuldnerquoteData)
 	}
 
 	// Swagger-Dokumentation

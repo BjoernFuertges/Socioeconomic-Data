@@ -15,6 +15,48 @@ definitions:
         example: true
         type: boolean
     type: object
+  models.BevoelkerungData:
+    properties:
+      bevoelkerung:
+        example: 89934
+        type: number
+      geodata_id_ars:
+        example: "01001"
+        type: string
+      geodata_id_nuts:
+        example: DEF01
+        type: string
+      geodata_level:
+        example: NUTS_3
+        type: string
+      geodata_name:
+        example: Flensburg
+        type: string
+      geodata_year:
+        example: 2024
+        type: integer
+      has_valid_value:
+        example: true
+        type: boolean
+      mapper:
+        example: exact_id
+        type: string
+      observation_date:
+        example: "2020-01-01"
+        type: string
+      original_id_1:
+        example: "01001"
+        type: string
+      original_name:
+        example: Flensburg, Stadt
+        type: string
+      parameter:
+        example: id_ars
+        type: string
+      year:
+        example: 2020
+        type: integer
+    type: object
   models.LAURegion:
     properties:
       country:
@@ -68,6 +110,48 @@ definitions:
         type: integer
       total:
         example: 140400
+        type: integer
+    type: object
+  models.SchuldnerquoteData:
+    properties:
+      geodata_id_ars:
+        example: "01001"
+        type: string
+      geodata_id_nuts:
+        example: DEF01
+        type: string
+      geodata_level:
+        example: NUTS_3
+        type: string
+      geodata_name:
+        example: Flensburg
+        type: string
+      geodata_year:
+        example: 2024
+        type: integer
+      has_valid_value:
+        example: true
+        type: boolean
+      mapper:
+        example: exact_id
+        type: string
+      observation_date:
+        example: "2020-01-01"
+        type: string
+      original_id_1:
+        example: "01001"
+        type: string
+      original_name:
+        example: Flensburg, Stadt
+        type: string
+      parameter:
+        example: id_ars
+        type: string
+      schuldnerquote_prozent:
+        example: 14.96
+        type: number
+      year:
+        example: 2020
         type: integer
     type: object
   models.UnemploymentAggregation:
@@ -161,6 +245,59 @@ info:
   title: Sozioökonomische Daten API
   version: "1.0"
 paths:
+  /bevoelkerung:
+    get:
+      consumes:
+      - application/json
+      description: Gibt Bevölkerungsdaten je Kreis mit optionalen Filtern zurück
+      parameters:
+      - description: Filter nach NUTS-3-Code
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: Filter nach Jahr
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.BevoelkerungData'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Bevölkerungsdaten abrufen
+      tags:
+      - Bevölkerung
   /health:
     get:
       description: Gibt den Status der API zurück
@@ -272,6 +409,59 @@ paths:
       summary: LAU-Region Details
       tags:
       - LAU
+  /schuldnerquote:
+    get:
+      consumes:
+      - application/json
+      description: Gibt Schuldnerquoten je Kreis mit optionalen Filtern zurück
+      parameters:
+      - description: Filter nach NUTS-3-Code
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: Filter nach Jahr
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.SchuldnerquoteData'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Schuldnerquoten abrufen
+      tags:
+      - Schuldnerquote
   /unemployment:
     get:
       consumes:

@@ -70,7 +70,7 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 		geometry_wgs84, has_valid_geometry, lau_name_national, lau_name_latin,
 		nuts_3_code, lau_nat_code, population_count, country, has_valid_population,
 		missing_population_data, year_match
-		FROM transformed_data_transformed_data.lau_integrated
+		FROM transformed_data.lau_integrated
 		WHERE 1=1`
 
 	args := []interface{}{}
@@ -154,7 +154,7 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 		geometry_wgs84, has_valid_geometry, lau_name_national, lau_name_latin,
 		nuts_3_code, lau_nat_code, population_count, country, has_valid_population,
 		missing_population_data, year_match
-		FROM transformed_data_transformed_data.lau_integrated
+		FROM transformed_data.lau_integrated
 		WHERE gisco_id = $1`
 
 	args := []interface{}{giscoID}
@@ -227,7 +227,7 @@ func (h *Handler) GetUnemploymentData(c *gin.Context) {
 		observation_date, time_type, arbeitslose, load_date, dataset_title,
 		dataset_series, source_url, geodata_level, arbeitslose_previous_year,
 		yoy_change_percent, data_quality_flag
-		FROM transformed_data_transformed_data.mart_arbeitslosenzahlen
+		FROM transformed_data.mart_arbeitslosenzahlen
 		WHERE 1=1`
 
 	args := []interface{}{}
@@ -323,7 +323,7 @@ func (h *Handler) GetUnemploymentByGeodataID(c *gin.Context) {
 		observation_date, time_type, arbeitslose, load_date, dataset_title,
 		dataset_series, source_url, geodata_level, arbeitslose_previous_year,
 		yoy_change_percent, data_quality_flag
-		FROM transformed_data_transformed_data.mart_arbeitslosenzahlen
+		FROM transformed_data.mart_arbeitslosenzahlen
 		WHERE geodata_id = $1`
 
 	args := []interface{}{geodataID}
@@ -401,7 +401,7 @@ func (h *Handler) GetUnemploymentAggregated(c *gin.Context) {
 		MAX(arbeitslose) as max_arbeitslose,
 		MAX(observation_date) as latest_observation,
 		MIN(observation_date) as earliest_observation
-		FROM transformed_data_transformed_data.mart_arbeitslosenzahlen
+		FROM transformed_data.mart_arbeitslosenzahlen
 		WHERE 1=1`
 
 	args := []interface{}{}
@@ -451,6 +451,170 @@ func (h *Handler) GetUnemploymentAggregated(c *gin.Context) {
 		Meta: &models.MetaInfo{
 			Limit:  limit,
 			Offset: offset,
+		},
+	})
+}
+
+// GetBevoelkerungData gibt Bevölkerungsdaten zurück
+// @Summary Bevölkerungsdaten abrufen
+// @Description Gibt Bevölkerungsdaten je Kreis mit optionalen Filtern zurück
+// @Tags Bevölkerung
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "Filter nach NUTS-3-Code" example(DEF01)
+// @Param year query int false "Filter nach Jahr" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.BevoelkerungData}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /bevoelkerung [get]
+func (h *Handler) GetBevoelkerungData(c *gin.Context) {
+	var filter models.BevoelkerungFilter
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Ungültige Query-Parameter: %v", err),
+		})
+		return
+	}
+
+	if filter.Limit == 0 {
+		filter.Limit = 1000
+	}
+
+	query := `SELECT original_id_1, original_name, geodata_name, geodata_id_nuts,
+		geodata_id_ars, mapper, parameter, geodata_level, geodata_year,
+		year, bevoelkerung, observation_date::text, has_valid_value
+		FROM transformed_data.stg_bevoelkerung_kreise
+		WHERE 1=1`
+
+	args := []interface{}{}
+	argPos := 1
+
+	if filter.GeodataIDNUTS != "" {
+		query += fmt.Sprintf(" AND geodata_id_nuts = $%d", argPos)
+		args = append(args, filter.GeodataIDNUTS)
+		argPos++
+	}
+
+	if filter.Year != nil {
+		query += fmt.Sprintf(" AND year = $%d", argPos)
+		args = append(args, *filter.Year)
+		argPos++
+	}
+
+	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
+	var total int
+	if err := h.DB.QueryRow(countQuery, args...).Scan(&total); err != nil {
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err),
+		})
+		return
+	}
+
+	query += fmt.Sprintf(" ORDER BY geodata_id_nuts, year LIMIT $%d OFFSET $%d", argPos, argPos+1)
+	args = append(args, filter.Limit, filter.Offset)
+
+	data := []models.BevoelkerungData{}
+	if err := h.DB.Select(&data, query, args...); err != nil {
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Datenbankfehler: %v", err),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    data,
+		Meta: &models.MetaInfo{
+			Total:  total,
+			Limit:  filter.Limit,
+			Offset: filter.Offset,
+		},
+	})
+}
+
+// GetSchuldnerquoteData gibt Schuldnerquoten zurück
+// @Summary Schuldnerquoten abrufen
+// @Description Gibt Schuldnerquoten je Kreis mit optionalen Filtern zurück
+// @Tags Schuldnerquote
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "Filter nach NUTS-3-Code" example(DEF01)
+// @Param year query int false "Filter nach Jahr" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.SchuldnerquoteData}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /schuldnerquote [get]
+func (h *Handler) GetSchuldnerquoteData(c *gin.Context) {
+	var filter models.SchuldnerquoteFilter
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Ungültige Query-Parameter: %v", err),
+		})
+		return
+	}
+
+	if filter.Limit == 0 {
+		filter.Limit = 1000
+	}
+
+	query := `SELECT original_id_1, original_name, geodata_name, geodata_id_nuts,
+		geodata_id_ars, mapper, parameter, geodata_level, geodata_year,
+		year, schuldnerquote_prozent, observation_date::text, has_valid_value
+		FROM transformed_data.stg_schuldnerquote_kreise
+		WHERE 1=1`
+
+	args := []interface{}{}
+	argPos := 1
+
+	if filter.GeodataIDNUTS != "" {
+		query += fmt.Sprintf(" AND geodata_id_nuts = $%d", argPos)
+		args = append(args, filter.GeodataIDNUTS)
+		argPos++
+	}
+
+	if filter.Year != nil {
+		query += fmt.Sprintf(" AND year = $%d", argPos)
+		args = append(args, *filter.Year)
+		argPos++
+	}
+
+	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
+	var total int
+	if err := h.DB.QueryRow(countQuery, args...).Scan(&total); err != nil {
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err),
+		})
+		return
+	}
+
+	query += fmt.Sprintf(" ORDER BY geodata_id_nuts, year LIMIT $%d OFFSET $%d", argPos, argPos+1)
+	args = append(args, filter.Limit, filter.Offset)
+
+	data := []models.SchuldnerquoteData{}
+	if err := h.DB.Select(&data, query, args...); err != nil {
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Datenbankfehler: %v", err),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    data,
+		Meta: &models.MetaInfo{
+			Total:  total,
+			Limit:  filter.Limit,
+			Offset: filter.Offset,
 		},
 	})
 }

@@ -91,7 +91,9 @@ services:
       ofelia.job-exec.dlt.command: >
         bash -c "cd /app/dlt &&
           python load_arbeitslosenzahlen_afa.py &&
-          python load_geodata_to_postgis.py"
+          python load_geodata_to_postgis.py &&
+          python load_soziodata_generic.py bevoelkerung/results_bevoelkerung_kreise &&
+          python load_soziodata_generic.py schuldnerquote/results_schuldnerquote_kreise"
       # dbt 30 Minuten nach dlt
       ofelia.job-exec.dbt.schedule: "30 * * * *"
       ofelia.job-exec.dbt.command: >
