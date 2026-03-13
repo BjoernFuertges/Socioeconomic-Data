@@ -18,7 +18,7 @@ definitions:
   models.BevoelkerungData:
     properties:
       bevoelkerung:
-        example: 89934
+        example: 0
         type: number
       geodata_id_ars:
         example: "01001"
@@ -148,7 +148,7 @@ definitions:
         example: id_ars
         type: string
       schuldnerquote_prozent:
-        example: 14.96
+        example: 50
         type: number
       year:
         example: 2020
@@ -249,14 +249,15 @@ paths:
     get:
       consumes:
       - application/json
-      description: Gibt Bevölkerungsdaten je Kreis mit optionalen Filtern zurück
+      description: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne
+        _dlt-Felder, mit Datumsableitung und Qualitätsflag
       parameters:
-      - description: Filter nach NUTS-3-Code
+      - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
         type: string
-      - description: Filter nach Jahr
+      - description: Jahr der Beobachtung (1990-2030)
         example: 2020
         in: query
         name: year
@@ -295,9 +296,10 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Bevölkerungsdaten abrufen
+      summary: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder,
+        mit Datumsableitung und Qualitätsflag
       tags:
-      - Bevölkerung
+      - Bevoelkerung
   /health:
     get:
       description: Gibt den Status der API zurück
@@ -413,14 +415,15 @@ paths:
     get:
       consumes:
       - application/json
-      description: Gibt Schuldnerquoten je Kreis mit optionalen Filtern zurück
+      description: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder,
+        mit Datumsableitung und Qualitätsflag
       parameters:
-      - description: Filter nach NUTS-3-Code
+      - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
         type: string
-      - description: Filter nach Jahr
+      - description: Jahr der Beobachtung (2000-2030)
         example: 2020
         in: query
         name: year
@@ -459,7 +462,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Schuldnerquoten abrufen
+      summary: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder,
+        mit Datumsableitung und Qualitätsflag
       tags:
       - Schuldnerquote
   /unemployment:

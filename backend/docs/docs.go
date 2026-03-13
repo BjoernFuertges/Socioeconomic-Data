@@ -21,7 +21,7 @@ const docTemplate = `{
     "paths": {
         "/bevoelkerung": {
             "get": {
-                "description": "Gibt Bevölkerungsdaten je Kreis mit optionalen Filtern zurück",
+                "description": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -29,21 +29,21 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Bevölkerung"
+                    "Bevoelkerung"
                 ],
-                "summary": "Bevölkerungsdaten abrufen",
+                "summary": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
-                        "description": "Filter nach NUTS-3-Code",
+                        "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "example": 2020,
-                        "description": "Filter nach Jahr",
+                        "description": "Jahr der Beobachtung (1990-2030)",
                         "name": "year",
                         "in": "query"
                     },
@@ -277,7 +277,7 @@ const docTemplate = `{
         },
         "/schuldnerquote": {
             "get": {
-                "description": "Gibt Schuldnerquoten je Kreis mit optionalen Filtern zurück",
+                "description": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -287,19 +287,19 @@ const docTemplate = `{
                 "tags": [
                     "Schuldnerquote"
                 ],
-                "summary": "Schuldnerquoten abrufen",
+                "summary": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
-                        "description": "Filter nach NUTS-3-Code",
+                        "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "example": 2020,
-                        "description": "Filter nach Jahr",
+                        "description": "Jahr der Beobachtung (2000-2030)",
                         "name": "year",
                         "in": "query"
                     },
@@ -680,7 +680,7 @@ const docTemplate = `{
             "properties": {
                 "bevoelkerung": {
                     "type": "number",
-                    "example": 89934
+                    "example": 0
                 },
                 "geodata_id_ars": {
                     "type": "string",
@@ -859,7 +859,7 @@ const docTemplate = `{
                 },
                 "schuldnerquote_prozent": {
                     "type": "number",
-                    "example": 14.96
+                    "example": 50
                 },
                 "year": {
                     "type": "integer",
