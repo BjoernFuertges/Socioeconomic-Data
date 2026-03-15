@@ -19,6 +19,88 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/bevoelkerung": {
+            "get": {
+                "description": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bevoelkerung"
+                ],
+                "summary": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BevoelkerungData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Gibt den Status der API zurück",
@@ -100,7 +182,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -108,7 +190,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.LAURegion"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LAURegion"
                                             }
                                         }
                                     }
@@ -119,13 +201,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -165,13 +247,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.LAURegion"
+                                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LAURegion"
                                         }
                                     }
                                 }
@@ -181,13 +263,95 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/schuldnerquote": {
+            "get": {
+                "description": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Schuldnerquote"
+                ],
+                "summary": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SchuldnerquoteData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -272,7 +436,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -280,7 +444,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.UnemploymentData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentData"
                                             }
                                         }
                                     }
@@ -291,13 +455,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -368,7 +532,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -376,7 +540,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.UnemploymentAggregation"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentAggregation"
                                             }
                                         }
                                     }
@@ -387,13 +551,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -457,7 +621,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -465,7 +629,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.UnemploymentData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentData"
                                             }
                                         }
                                     }
@@ -476,13 +640,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -490,7 +654,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.APIResponse": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -503,7 +667,7 @@ const docTemplate = `{
                     "example": "Operation erfolgreich"
                 },
                 "meta": {
-                    "$ref": "#/definitions/models.MetaInfo"
+                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.MetaInfo"
                 },
                 "success": {
                     "type": "boolean",
@@ -511,7 +675,64 @@ const docTemplate = `{
                 }
             }
         },
-        "models.LAURegion": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BevoelkerungData": {
+            "type": "object",
+            "properties": {
+                "bevoelkerung": {
+                    "type": "number",
+                    "example": 0
+                },
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
+                }
+            }
+        },
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LAURegion": {
             "type": "object",
             "properties": {
                 "country": {
@@ -572,7 +793,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.MetaInfo": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.MetaInfo": {
             "type": "object",
             "properties": {
                 "limit": {
@@ -589,7 +810,64 @@ const docTemplate = `{
                 }
             }
         },
-        "models.UnemploymentAggregation": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SchuldnerquoteData": {
+            "type": "object",
+            "properties": {
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "schuldnerquote_prozent": {
+                    "type": "number",
+                    "example": 50
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
+                }
+            }
+        },
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentAggregation": {
             "type": "object",
             "properties": {
                 "avg_arbeitslose": {
@@ -626,7 +904,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.UnemploymentData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentData": {
             "type": "object",
             "properties": {
                 "arbeitslose": {

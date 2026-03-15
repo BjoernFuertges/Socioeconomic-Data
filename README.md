@@ -18,7 +18,49 @@ git add .gitattributes
 mkdir -p letsencrypt && touch letsencrypt/acme.json && chmod 600 letsencrypt/acme.json
 ```
 
+## Speicherplatz-Verwaltung
+
+### Diagnose
+
+```bash
+# Übersicht Dateisystem
+df -h
+
+# Größte Verzeichnisse finden
+du -sh /* 2>/dev/null | sort -rh | head -20
+
+# Docker-Speicherverbrauch
+docker system df
+docker volume ls
+du -sh /var/lib/docker/volumes/* | sort -rh
+```
+
+### Bekannte Speicherfresser
+
+**Docker Volumes:** GitLab-Runner legt bei jedem CI-Job temporäre Volumes für Cache und Build-Verzeichnisse an. Diese werden nach Abschluss des Jobs **nicht automatisch gelöscht** und können mehrere GB belegen.
+
+Ungenutzte Runner-Volumes identifizieren und löschen:
+```bash
+# Volumes auflisten und prüfen
+docker volume inspect $(docker volume ls -q)
+
+# Ungenutzte Runner-Volumes löschen (pgdata NICHT löschen!)
+docker volume rm <volume-name>
+
+# Alternativ: alle ungenutzten Volumes auf einmal löschen
+docker volume prune
+```
+
+> **Wichtig:** Das Volume `deployments_pgdata` enthält die PostgreSQL-Datenbankdaten und darf **nicht** gelöscht werden.
+
+**Nicht verwendete Docker-Images aufräumen:**
+```bash
+docker system prune -a --volumes
+```
+
 ## Architektur
+
+### Komponentenübersicht
 ```mermaid
 architecture-beta
     group api(cloud)[API]
@@ -31,4 +73,72 @@ architecture-beta
     db:L -- R:server
     disk1:T -- B:server
     disk2:T -- B:db
+```
+
+### Data Flow
+```mermaid
+flowchart LR
+    subgraph sources["Quelldaten (data-exchange/1_friedrich-bjoern/)"]
+        direction TB
+        src_arb[/"arbeitslosenzahlen/\nmapped_pairs.csv\nmeta.json"/]
+        src_geo[/"geodata/lau/\nLAU_RG_*.geojson.gz"/]
+        src_pop[/"statistics/\nlau_population_*.csv"/]
+        src_bev[/"bevoelkerung/results_*/\nmapped_pairs.csv + meta.yaml"/]
+        src_sq[/"schuldnerquote/results_*/\nmapped_pairs.csv + meta.yaml"/]
+    end
+
+    subgraph dlt["dlt Pipelines"]
+        direction TB
+        dlt_arb["load_arbeitslosenzahlen_afa.py"]
+        dlt_geo["load_geodata_to_postgis.py"]
+        dlt_gen["load_soziodata_generic.py"]
+    end
+
+    subgraph pg_loaded["PostgreSQL: Schema: loaded_data"]
+        direction TB
+        t_arb[("arbeitslosenzahlen_\nagentur_arbeit")]
+        t_meta[("arbeitslosenzahlen_\nmetadata")]
+        t_geo[("lau_geometry")]
+        t_pop[("lau_population")]
+        t_bev[("results_bevoelkerung_\nkreise")]
+        t_sq[("results_schuldnerquote_\nkreise")]
+    end
+
+    subgraph pg_transformed["PostgreSQL: Schema: transformed_data"]
+        direction TB
+        subgraph stg["Staging (Views)"]
+            stg_arb["stg_arbeitslosenzahlen"]
+            stg_geo["stg_lau_geometry"]
+            stg_pop["stg_lau_population"]
+            stg_bev["stg_bevoelkerung_kreise"]
+            stg_sq["stg_schuldnerquote_kreise"]
+        end
+        subgraph marts["Marts (Tables)"]
+            mart_arb["mart_arbeitslosenzahlen"]
+            mart_lau["lau_integrated"]
+            mart_dq["lau_data_quality"]
+        end
+    end
+
+    api["Go Backend API"]
+
+    src_arb --> dlt_arb
+    src_geo & src_pop --> dlt_geo
+    src_bev & src_sq --> dlt_gen
+
+    dlt_arb --> t_arb & t_meta
+    dlt_geo --> t_geo & t_pop
+    dlt_gen --> t_bev & t_sq
+
+    t_arb --> stg_arb
+    t_geo --> stg_geo
+    t_pop --> stg_pop
+    t_bev --> stg_bev
+    t_sq --> stg_sq
+
+    stg_arb & t_meta --> mart_arb
+    stg_geo & stg_pop --> mart_lau
+    mart_lau --> mart_dq
+
+    mart_arb & mart_lau & mart_dq --> api
 ```

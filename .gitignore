@@ -6,3 +6,8 @@
 /row-data-local/
 /***/secrets.toml
 /***/letsencrypt/
+
+/data-exchange/**
+!/data-exchange/**/
+!/data-exchange/**/*.md
+!/data-exchange/**/.gitkeep

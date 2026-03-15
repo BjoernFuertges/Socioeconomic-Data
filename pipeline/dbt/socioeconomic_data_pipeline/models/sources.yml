@@ -137,3 +137,79 @@ sources:
             description: "Data license"
           - name: updated_at
             description: "Timestamp of last metadata update"
+
+      - name: results_bevoelkerung_kreise
+        description: "Bevölkerungsdaten je Kreis (Destatis) – long format, ein Record pro Region und Jahr"
+        columns:
+          - name: original_id_1
+            description: "Amtlicher Regionalschlüssel (ARS) aus der Quelldatei"
+            tests:
+              - not_null
+          - name: original_name
+            description: "Regionsname aus der Quelldatei"
+            tests:
+              - not_null
+          - name: geodata_name
+            description: "Gemappter Geodata-Name"
+          - name: geodata_id_nuts
+            description: "NUTS-3-Code der Region"
+            tests:
+              - not_null
+          - name: geodata_id_ars
+            description: "Amtlicher Regionalschlüssel (ARS) nach Mapping"
+          - name: mapper
+            description: "Mapping-Methode"
+          - name: parameter
+            description: "Mapping-Parameter"
+          - name: year
+            description: "Jahr der Beobachtung"
+            tests:
+              - not_null
+          - name: value
+            description: "Bevölkerungszahl (Einwohner gesamt)"
+            tests:
+              - not_null
+          - name: geodata_level
+            description: "Geodata-Ebene (NUTS_3)"
+          - name: geodata_year
+            description: "Referenzjahr der Geodaten"
+          - name: dataset_name
+            description: "Name des Datensatzes (results_bevoelkerung_kreise)"
+
+      - name: results_schuldnerquote_kreise
+        description: "Schuldnerquote je Kreis (Creditreform) – long format, ein Record pro Region und Jahr"
+        columns:
+          - name: original_id_1
+            description: "Amtlicher Regionalschlüssel aus der Quelldatei"
+            tests:
+              - not_null
+          - name: original_name
+            description: "Regionsname aus der Quelldatei"
+            tests:
+              - not_null
+          - name: geodata_name
+            description: "Gemappter Geodata-Name"
+          - name: geodata_id_nuts
+            description: "NUTS-3-Code der Region"
+            tests:
+              - not_null
+          - name: geodata_id_ars
+            description: "Amtlicher Regionalschlüssel nach Mapping"
+          - name: mapper
+            description: "Mapping-Methode"
+          - name: parameter
+            description: "Mapping-Parameter"
+          - name: year
+            description: "Jahr der Beobachtung"
+            tests:
+              - not_null
+          - name: value
+            description: "Schuldnerquote in Prozent"
+            tests:
+              - not_null
+          - name: geodata_level
+            description: "Geodata-Ebene (NUTS_3)"
+          - name: geodata_year
+            description: "Referenzjahr der Geodaten"
+          - name: dataset_name
+            description: "Name des Datensatzes (results_schuldnerquote_kreise)"

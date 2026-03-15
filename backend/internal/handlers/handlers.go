@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -70,7 +71,7 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 		geometry_wgs84, has_valid_geometry, lau_name_national, lau_name_latin,
 		nuts_3_code, lau_nat_code, population_count, country, has_valid_population,
 		missing_population_data, year_match
-		FROM transformed_data_transformed_data.lau_integrated
+		FROM transformed_data.lau_integrated
 		WHERE 1=1`
 
 	args := []interface{}{}
@@ -154,7 +155,7 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 		geometry_wgs84, has_valid_geometry, lau_name_national, lau_name_latin,
 		nuts_3_code, lau_nat_code, population_count, country, has_valid_population,
 		missing_population_data, year_match
-		FROM transformed_data_transformed_data.lau_integrated
+		FROM transformed_data.lau_integrated
 		WHERE gisco_id = $1`
 
 	args := []interface{}{giscoID}
@@ -227,7 +228,7 @@ func (h *Handler) GetUnemploymentData(c *gin.Context) {
 		observation_date, time_type, arbeitslose, load_date, dataset_title,
 		dataset_series, source_url, geodata_level, arbeitslose_previous_year,
 		yoy_change_percent, data_quality_flag
-		FROM transformed_data_transformed_data.mart_arbeitslosenzahlen
+		FROM transformed_data.mart_arbeitslosenzahlen
 		WHERE 1=1`
 
 	args := []interface{}{}
@@ -323,7 +324,7 @@ func (h *Handler) GetUnemploymentByGeodataID(c *gin.Context) {
 		observation_date, time_type, arbeitslose, load_date, dataset_title,
 		dataset_series, source_url, geodata_level, arbeitslose_previous_year,
 		yoy_change_percent, data_quality_flag
-		FROM transformed_data_transformed_data.mart_arbeitslosenzahlen
+		FROM transformed_data.mart_arbeitslosenzahlen
 		WHERE geodata_id = $1`
 
 	args := []interface{}{geodataID}
@@ -401,7 +402,7 @@ func (h *Handler) GetUnemploymentAggregated(c *gin.Context) {
 		MAX(arbeitslose) as max_arbeitslose,
 		MAX(observation_date) as latest_observation,
 		MIN(observation_date) as earliest_observation
-		FROM transformed_data_transformed_data.mart_arbeitslosenzahlen
+		FROM transformed_data.mart_arbeitslosenzahlen
 		WHERE 1=1`
 
 	args := []interface{}{}
@@ -451,6 +452,84 @@ func (h *Handler) GetUnemploymentAggregated(c *gin.Context) {
 		Meta: &models.MetaInfo{
 			Limit:  limit,
 			Offset: offset,
+		},
+	})
+}
+
+// sozioKreisBaseColumns ist die SELECT-Spaltenliste gemeinsam für alle Kreis-Datensätze.
+// observation_date wird explizit als text gecastet, damit sqlx es in ein string-Feld scannen kann.
+const sozioKreisBaseColumns = `original_id_1, original_name, geodata_name, geodata_id_nuts, ` +
+	`geodata_id_ars, mapper, parameter, geodata_level, geodata_year, ` +
+	`year, observation_date::text, has_valid_value`
+
+// getKreisData ist der generische Handler-Kern für alle Kreis-Datensätze.
+// T muss SozioBaseData einbetten und alle cfg.ValueColumns via db-Tags mappen.
+func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConfig) {
+	var filter models.SozioKreisFilter
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Ungültige Query-Parameter: %v", err),
+		})
+		return
+	}
+
+	if filter.Limit == 0 {
+		filter.Limit = cfg.DefaultLimit
+	}
+
+	query := fmt.Sprintf(
+		`SELECT %s, %s FROM %s.%s WHERE 1=1`,
+		sozioKreisBaseColumns,
+		strings.Join(cfg.ValueColumns, ", "),
+		cfg.Schema,
+		cfg.Table,
+	)
+
+	args := []interface{}{}
+	argPos := 1
+
+	if filter.GeodataIDNUTS != "" {
+		query += fmt.Sprintf(" AND geodata_id_nuts = $%d", argPos)
+		args = append(args, filter.GeodataIDNUTS)
+		argPos++
+	}
+
+	if filter.Year != nil {
+		query += fmt.Sprintf(" AND year = $%d", argPos)
+		args = append(args, *filter.Year)
+		argPos++
+	}
+
+	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
+	var total int
+	if err := h.DB.QueryRow(countQuery, args...).Scan(&total); err != nil {
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err),
+		})
+		return
+	}
+
+	query += fmt.Sprintf(" ORDER BY %s LIMIT $%d OFFSET $%d", cfg.OrderBy, argPos, argPos+1)
+	args = append(args, filter.Limit, filter.Offset)
+
+	data := make([]T, 0)
+	if err := h.DB.Select(&data, query, args...); err != nil {
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Datenbankfehler: %v", err),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    data,
+		Meta: &models.MetaInfo{
+			Total:  total,
+			Limit:  filter.Limit,
+			Offset: filter.Offset,
 		},
 	})
 }
