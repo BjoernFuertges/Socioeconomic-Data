@@ -39,7 +39,28 @@ else
     echo -e "${YELLOW}  Install with: go install github.com/swaggo/swag/cmd/swag@latest${NC}"
 fi
 
-# 2. Run Go tests
+# 2. Regenerate Go models if dbt schema YAMLs changed
+echo -e "\n${YELLOW} Checking for dbt schema changes...${NC}"
+if git diff --cached --name-only | grep -qE "dbt/socioeconomic_data_pipeline/models/staging/stg_.*_kreise_schema\.yml"; then
+    echo -e "${YELLOW} dbt schema changes detected – regenerating Go models...${NC}"
+    cd "$(git rev-parse --show-toplevel)/backend/internal/models" || exit 1
+    go generate .
+    if [ $? -ne 0 ]; then
+        echo -e "${RED} go generate failed${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN} Go models regenerated successfully${NC}"
+    # Stage the generated files
+    git add \
+        "$(git rev-parse --show-toplevel)/backend/internal/models/models_soziodata_generated.go" \
+        "$(git rev-parse --show-toplevel)/backend/internal/handlers/handlers_soziodata_generated.go" \
+        "$(git rev-parse --show-toplevel)/backend/internal/routes/routes_soziodata_generated.go"
+    cd "$(git rev-parse --show-toplevel)/backend" || exit 1
+else
+    echo -e "${GREEN} No dbt schema changes – skipping model regeneration${NC}"
+fi
+
+# 3. Run Go tests (after potential regeneration)
 echo -e "\n${YELLOW} Running Go tests...${NC}"
 go test ./... -v
 if [ $? -eq 0 ]; then

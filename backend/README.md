@@ -1,15 +1,24 @@
 # Soziodata Backend
 ## Run Backend
 ### Git Hooks (Optional)
-Um automatisch vor jedem Commit die Swagger-Dokumentation zu generieren und Tests auszuführen, kannst du den pre-commit Hook installieren:
+
+Die Hooks liegen versioniert in `githooks/`. Einmalig im Repository-Root aktivieren:
 
 ```bash
-cp githooks/pre-commit ../.git/hooks/pre-commit
-chmod +x ../.git/hooks/pre-commit
+git config core.hooksPath backend/githooks
 ```
 
-* Um den Hook temporär zu überspringen: `git commit --no-verify`
-* Um den Hook manuell auszuführen: `.git/hooks/pre-commit`
+Der `pre-commit`-Hook führt automatisch aus:
+- Swagger-Dokumentation generieren (`swag init`)
+- Go-Models neu generieren, wenn sich dbt-Schema-YAMLs geändert haben (`go generate ./internal/models/...`)
+- Go-Tests (`go test ./...`)
+
+Details siehe [`githooks/README.md`](githooks/README.md).
+
+| Zweck | Befehl |
+|---|---|
+| Hook temporär überspringen | `git commit --no-verify` |
+| Hook manuell ausführen | `bash githooks/pre-commit` |
 
 
 ### Run

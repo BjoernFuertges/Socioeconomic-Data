@@ -42,11 +42,8 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			unemployment.GET("/geodata/:geodata_id", handler.GetUnemploymentByGeodataID)
 		}
 
-		// Bevölkerung
-		v1.GET("/bevoelkerung", handler.GetBevoelkerungData)
-
-		// Schuldnerquote
-		v1.GET("/schuldnerquote", handler.GetSchuldnerquoteData)
+		// Generierte Soziodata-Routen (aus dbt-Schema-YAML-Dateien)
+		RegisterSoziodataRoutes(v1, handler)
 	}
 
 	// Swagger-Dokumentation
