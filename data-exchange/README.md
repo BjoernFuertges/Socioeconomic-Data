@@ -97,7 +97,7 @@ Für einen regelmäßigen Sync inklusive Löschungen gibt es ein minimales Skrip
 3. Testlauf ausführen
      - `./backend/scripts/sync_nextcloud_data_exchange.sh`
 
-4. Alle 30 Minuten automatisch ausführen (systemd User Timer)
+4. Alle 10 Minuten automatisch ausführen (systemd User Timer)
      - `mkdir -p ~/.config/systemd/user`
      - `cp backend/init/systemd/nextcloud-data-exchange-sync.service ~/.config/systemd/user/`
      - `cp backend/init/systemd/nextcloud-data-exchange-sync.timer ~/.config/systemd/user/`

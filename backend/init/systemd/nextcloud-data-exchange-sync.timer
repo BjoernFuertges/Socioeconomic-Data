@@ -1,8 +1,8 @@
 [Unit]
-Description=Run Nextcloud -> data-exchange sync every 30 minutes
+Description=Run Nextcloud -> data-exchange sync every 10 minutes
 
 [Timer]
-OnCalendar=*:0/30
+OnCalendar=*:0/10
 Persistent=true
 Unit=nextcloud-data-exchange-sync.service
 
