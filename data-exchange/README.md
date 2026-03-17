@@ -101,13 +101,17 @@ Für einen regelmäßigen Sync inklusive Löschungen gibt es ein minimales Skrip
      - `mkdir -p ~/.config/systemd/user`
      - `cp backend/init/systemd/nextcloud-data-exchange-sync.service ~/.config/systemd/user/`
      - `cp backend/init/systemd/nextcloud-data-exchange-sync.timer ~/.config/systemd/user/`
+     - Prüfe den Skriptpfad: Standard ist `~/soziooekonomische-daten/backend/scripts/sync_nextcloud_data_exchange.sh`:
+        - Wenn dein Repo woanders liegt, lege die Env-Datei an (sonst endet der Service oft mit `status=127`).
+        - `cat > ~/.config/systemd/user/nextcloud-data-exchange-sync.env <<'EOF'`
+        - `SYNC_SCRIPT_PATH=/dein/pfad/zum/repo/backend/scripts/sync_nextcloud_data_exchange.sh`
+        - `EOF`
+        - Beispiel für root auf dem Server: `SYNC_SCRIPT_PATH=/root/soziooekonomische-daten/backend/scripts/sync_nextcloud_data_exchange.sh`
      - `systemctl --user daemon-reload`
      - `systemctl --user enable --now nextcloud-data-exchange-sync.timer`
      - `systemctl --user list-timers | grep nextcloud-data-exchange-sync`
-     - Wenn dein Repo an einem anderen Ort liegt, lege optional `~/.config/systemd/user/nextcloud-data-exchange-sync.env` an.
-     - Inhalt der optionalen Env-Datei:
-         - `SYNC_SCRIPT_PATH=/dein/pfad/zum/repo/backend/scripts/sync_nextcloud_data_exchange.sh`
      - Logs ansehen:
+         - `systemctl --user status nextcloud-data-exchange-sync.service --no-pager`
          - `journalctl --user -u nextcloud-data-exchange-sync.service -n 100 --no-pager`
      - Optional, falls der User-Timer auch ohne Login laufen soll (möchtest du i.d.R., weil der Timer mit dem letzten Logout stoppt):
          - `loginctl enable-linger "$USER"`
