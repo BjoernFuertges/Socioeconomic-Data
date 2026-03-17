@@ -113,7 +113,11 @@ services:
       ofelia.job-exec.dbt.command: >
         bash -c "cd /app/dbt/socioeconomic_data_pipeline &&
           dbt deps &&
-          dbt run"
+          if [ -f /app/data-exchange/1_friedrich-bjoern/arbeitslosenzahlen/meta.json ] && [ -d /app/data-exchange/1_friedrich-bjoern/geodata/lau/output/geojson ] && [ -d /app/data-exchange/1_friedrich-bjoern/statistics/lokale_verwaltungseinheiten_eu/output ]; then
+            dbt run;
+          else
+            dbt run --select stg_bevoelkerung_kreise stg_schuldnerquote_kreise;
+          fi"
 
   scheduler:
     image: mcuadros/ofelia:latest
