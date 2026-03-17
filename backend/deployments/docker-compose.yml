@@ -68,6 +68,7 @@ services:
     image: python:3.12-slim
     container_name: pipeline
     working_dir: /app
+    restart: always
     volumes:
       - ../../dlt:/app/dlt
       - ../../dbt:/app/dbt
@@ -79,8 +80,14 @@ services:
       DB_USER: sozio_data_compose_user
       DB_PASSWORD: REMOVED_PASSWORD
       DB_NAME: soziooekonomische-daten
+      DESTINATION__POSTGRES__CREDENTIALS__HOST: postgis
+      DESTINATION__POSTGRES__CREDENTIALS__PORT: 5432
+      DESTINATION__POSTGRES__CREDENTIALS__DATABASE: soziooekonomische-daten
+      DESTINATION__POSTGRES__CREDENTIALS__USERNAME: sozio_data_compose_user
+      DESTINATION__POSTGRES__CREDENTIALS__PASSWORD: REMOVED_PASSWORD
+      DBT_PROFILES_DIR: /app/dbt/socioeconomic_data_pipeline
     command: >
-      bash -c "pip install -q dlt[postgres] dbt-postgres && echo 'Pipeline image ready'"
+      bash -c "pip install -q dlt[postgres] dbt-postgres && echo 'Pipeline image ready' && tail -f /dev/null"
     depends_on:
       - postgis
     networks:
@@ -99,11 +106,14 @@ services:
       ofelia.job-exec.dbt.schedule: "30 * * * *"
       ofelia.job-exec.dbt.command: >
         bash -c "cd /app/dbt/socioeconomic_data_pipeline &&
+          dbt deps &&
           dbt run"
 
   scheduler:
     image: mcuadros/ofelia:latest
     container_name: scheduler
+    restart: always
+    command: daemon --docker
     depends_on:
       - pipeline
     volumes:
