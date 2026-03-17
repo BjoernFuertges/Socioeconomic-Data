@@ -67,17 +67,32 @@ Für einen regelmäßigen Sync inklusive Löschungen gibt es ein minimales Skrip
 ```
 
 1. rclone konfigurieren
+     - `sudo apt-get install rclone`
      - `rclone config`
-     - Lege ein Remote fuer Nextcloud an, z. B. `NC-HTW-FP`.
-     - Nutze danach einen Quellpfad wie `NC-HTW-FP:1_friedrich-bjoern`.
+     - Lege ein Remote für Nextcloud an, z. B. `HTW-FP-Data` (für Public-Share) oder `HTW-FP-Auth` (für Benutzerkonto).
+     - **Für öffentlichen Share-Link:**
+         - Typ: `webdav`
+         - URL: `https://cloud.htw-berlin.de/public.php/dav/files/<SHARE_TOKEN>` (beachte: `public.php`, nicht `remote.php`!)
+         - Vendor: `nextcloud`
+         - User: `<SHARE_TOKEN>`
+         - Passwort: Share-Passwort, falls gesetzt, sonst leer lassen.
+     - **Für authentifizierten Zugriff (Nextcloud-Benutzerkonto):**
+         - Typ: `webdav`
+         - URL: `https://cloud.htw-berlin.de/remote.php/dav/files/<BENUTZERNAME>`
+         - Vendor: `nextcloud`
+         - User: `<BENUTZERNAME>`
+         - Passwort: App-Passwort oder Benutzerpasswort
+     - **Wichtig:** Überprüfe die Ordnerstruktur im Remote mit `rclone lsd <REMOTE_NAME>:` — nutze die exakten Ordnernamen, wie sie dort angezeigt werden (z. B. `1_friedrich_bjoern` mit Unterstrichen).
 
 2. Sync-Konfiguration anlegen
      - `cp backend/deployments/.env.nextcloud-sync.example backend/deployments/.env.nextcloud-sync`
      - Pflichtvariable:
-         - `RCLONE_SOURCE`, z. B. `NC-HTW-FP:1_friedrich-bjoern`
+         - `RCLONE_SOURCE`: Remote-Name und Ordnerpfad, z. B. `HTW-FP-Data:1_friedrich_bjoern` (exakte Schreibweise beachten!)
+         - Falls der Share nur einen Ordner enthält: `HTW-FP-Data:` (ohne Pfad)
      - Wichtige optionale Variablen:
-         - `RCLONE_DEST` (Default ist `<repo>/data-exchange/1_friedrich-bjoern`)
-         - `RCLONE_CONFIG_FILE`
+         - `RCLONE_DEST` (Default ist `<repo>/data-exchange/1_friedrich-bjoern`; bei root liegt das Repo oft unter `/root/...`, nicht unter `/home/root/...`)
+         - `RCLONE_CONFIG_FILE` (Default ist `~/.config/rclone/rclone.conf`)
+     - Das Sync-Skript, der `systemd`-Service und der Timer müssen nicht angepasst werden.
 
 3. Testlauf ausführen
      - `./backend/scripts/sync_nextcloud_data_exchange.sh`
@@ -94,5 +109,5 @@ Für einen regelmäßigen Sync inklusive Löschungen gibt es ein minimales Skrip
          - `SYNC_SCRIPT_PATH=/dein/pfad/zum/repo/backend/scripts/sync_nextcloud_data_exchange.sh`
      - Logs ansehen:
          - `journalctl --user -u nextcloud-data-exchange-sync.service -n 100 --no-pager`
-     - Optional, falls der User-Timer auch ohne Login laufen soll:
+     - Optional, falls der User-Timer auch ohne Login laufen soll (möchtest du i.d.R., weil der Timer mit dem letzten Logout stoppt):
          - `loginctl enable-linger "$USER"`
