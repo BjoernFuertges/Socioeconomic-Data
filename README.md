@@ -18,6 +18,29 @@ git add .gitattributes
 mkdir -p letsencrypt && touch letsencrypt/acme.json && chmod 600 letsencrypt/acme.json
 ```
 
+## Deployment: Neues Backend-Image mit laufender Compose-Umgebung
+
+Die Compose-Konfiguration nutzt für den Backend-Service das Image `${DOCKER_HUB_USERNAME}/backend:latest`.
+
+```bash
+cd backend/deployments
+
+# Neues Backend-Image ziehen
+docker compose pull backend
+
+# Nur den Backend-Container mit neuem Image neu erstellen/starten
+docker compose up -d --no-deps backend
+
+# Status und Logs prüfen
+docker compose ps backend
+docker compose logs --tail=80 backend
+```
+
+Alternative in einem Schritt:
+```bash
+docker compose up -d --pull always --no-deps backend
+```
+
 ## Speicherplatz-Verwaltung
 
 ### Diagnose

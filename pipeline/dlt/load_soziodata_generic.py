@@ -160,6 +160,19 @@ def main() -> None:
     logger.info(f"Dataset directory : {dataset_dir}")
     logger.info(f"Dataset name (table): {dataset_name}")
 
+    meta_path = dataset_dir / "meta.yaml"
+    csv_path = dataset_dir / "mapped_pairs.csv"
+
+    missing_inputs = False
+    if not meta_path.exists():
+        logger.warning(f"Skipping dataset '{dataset_name}': required metadata file is missing: {meta_path}")
+        missing_inputs = True
+    if not csv_path.exists():
+        logger.warning(f"Skipping dataset '{dataset_name}': required data file is missing: {csv_path}")
+        missing_inputs = True
+    if missing_inputs:
+        return
+
     meta = _load_meta(dataset_dir)
     logger.info(f"Metadata: geodata_level={meta.get('geodata_level')}, geodata_year={meta.get('geodata_year')}")
 

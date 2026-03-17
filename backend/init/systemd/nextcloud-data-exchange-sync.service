@@ -1,0 +1,10 @@
+[Unit]
+Description=Nextcloud -> data-exchange sync (exact mirror)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=SYNC_SCRIPT_PATH=%h/soziooekonomische-daten/backend/scripts/sync_nextcloud_data_exchange.sh
+EnvironmentFile=-%h/.config/systemd/user/nextcloud-data-exchange-sync.env
+ExecStart=/usr/bin/bash -lc 'exec "$SYNC_SCRIPT_PATH"'

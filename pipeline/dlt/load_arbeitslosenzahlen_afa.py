@@ -200,6 +200,16 @@ def create_pipeline():
 def main():
     """Main execution function."""
     logger.info("Starting unemployment data pipeline from Agentur für Arbeit (transposed)...")
+
+    missing_inputs = False
+    if not META_PATH.exists():
+        logger.warning(f"Skipping pipeline: required metadata file is missing: {META_PATH}")
+        missing_inputs = True
+    if not CSV_PATH.exists():
+        logger.warning(f"Skipping pipeline: required data file is missing: {CSV_PATH}")
+        missing_inputs = True
+    if missing_inputs:
+        return
     
     # Generate dataset_id from metadata first
     logger.info(f"Reading metadata to generate dataset_id from: {META_PATH}")
