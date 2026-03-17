@@ -61,6 +61,7 @@ services:
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls=true"
       - "traefik.http.routers.backend.tls.certresolver=le_http"
+      - "traefik.http.routers.backend.priority=100"
       - "traefik.http.services.backend.loadbalancer.server.port=8080"
 
   pipeline:
@@ -114,19 +115,20 @@ services:
     image: adminer
     restart: always
     command: php -S 0.0.0.0:8080 -t /var/www/html
+    environment:
+      ADMINER_DEFAULT_SERVER: postgis
     depends_on:
       - traefik
     networks:
       - backend-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.adminer.rule=Host(`fp-icw-soziooekonomische-daten.f4.htw-berlin.de`) && PathPrefix(`/adminer`)"
+      - "traefik.http.routers.adminer.rule=Host(`${ADMINER_HOST:-fp-icw-soziooekonomische-daten.f4.htw-berlin.de}`)"
       - "traefik.http.routers.adminer.entrypoints=websecure"
       - "traefik.http.routers.adminer.tls=true"
       - "traefik.http.routers.adminer.tls.certresolver=le_http"
+      - "traefik.http.routers.adminer.priority=10"
       - "traefik.http.services.adminer.loadbalancer.server.port=8080"
-      - "traefik.http.middlewares.adminer-stripprefix.stripprefix.prefixes=/adminer"
-      - "traefik.http.routers.adminer.middlewares=adminer-stripprefix"
 
 volumes:
   pgdata:
