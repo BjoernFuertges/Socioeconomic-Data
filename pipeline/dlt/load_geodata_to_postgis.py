@@ -108,26 +108,37 @@ def create_pipeline():
 def main():
     """Main execution function."""
     logger.info("Starting LAU geodata and population data pipeline...")
+    logger.info(f"GEODATA_BASE_PATH={BASE_PATH}, GEODATA_PATH={GEODATA_PATH}, POPULATION_PATH={POPULATION_PATH}")
     
     # Create pipeline
     pipeline = create_pipeline()
     
     try:
         # Load geodata
-        logger.info("Loading geodata...")
-        geodata_info = pipeline.run(
-            load_geodata(),
-            table_name="lau_geometry"
-        )
-        logger.info(f"Geodata load completed: {geodata_info}")
+        geojson_files = list(GEODATA_PATH.glob("LAU_RG_01M_*_3035_cleaned.geojson.gz"))
+        if not geojson_files:
+            logger.warning(f"No geodata files found in {GEODATA_PATH}, skipping geodata load")
+            geodata_info = None
+        else:
+            logger.info("Loading geodata...")
+            geodata_info = pipeline.run(
+                load_geodata(),
+                table_name="lau_geometry"
+            )
+            logger.info(f"Geodata load completed: {geodata_info}")
         
         # Load population data
-        logger.info("Loading population data...")
-        population_info = pipeline.run(
-            load_population_data(),
-            table_name="lau_population"
-        )
-        logger.info(f"Population data load completed: {population_info}")
+        csv_files = list(POPULATION_PATH.glob("lau_population_*.csv"))
+        if not csv_files:
+            logger.warning(f"No population files found in {POPULATION_PATH}, skipping population load")
+            population_info = None
+        else:
+            logger.info("Loading population data...")
+            population_info = pipeline.run(
+                load_population_data(),
+                table_name="lau_population"
+            )
+            logger.info(f"Population data load completed: {population_info}")
         
         logger.info("Pipeline completed successfully!")
         
