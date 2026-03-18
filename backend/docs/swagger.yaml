@@ -112,6 +112,45 @@ definitions:
         example: 140400
         type: integer
     type: object
+  models.NutsRegionData:
+    properties:
+      arbeitslose:
+        description: 'Kann null sein: Arbeitsagenturbezirke entsprechen nicht 1:1
+          den NUTS-3-Kreisen'
+        example: 17423
+        type: number
+      bevoelkerung:
+        example: 634830
+        type: number
+      nuts_id:
+        example: DE111
+        type: string
+      region_name:
+        example: Stuttgart, Stadtkreis
+        type: string
+      schuldnerquote_prozent:
+        example: 9.8
+        type: number
+      year:
+        example: 2022
+        type: integer
+      yoy_change_percent:
+        example: -2.3
+        type: number
+    type: object
+  models.NutsRegionTimeSeries:
+    properties:
+      nuts_id:
+        example: DE111
+        type: string
+      region_name:
+        example: Stuttgart, Stadtkreis
+        type: string
+      years:
+        items:
+          $ref: '#/definitions/models.NutsRegionData'
+        type: array
+    type: object
   models.SchuldnerquoteData:
     properties:
       geodata_id_ars:
@@ -411,6 +450,57 @@ paths:
       summary: LAU-Region Details
       tags:
       - LAU
+  /nuts/{nuts_id}:
+    get:
+      consumes:
+      - application/json
+      description: 'Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine
+        NUTS-3-Region zurück. Standard: neuestes verfügbares Jahr. Mit ?all=true:
+        Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr.'
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DE111
+        in: path
+        name: nuts_id
+        required: true
+        type: string
+      - description: Jahr (gibt neuestes Jahr zurück wenn nicht angegeben)
+        example: 2022
+        in: query
+        name: year
+        type: integer
+      - description: Alle verfügbaren Jahre zurückgeben
+        example: false
+        in: query
+        name: all
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.NutsRegionTimeSeries'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Alle Indikatoren für eine NUTS-3-Region
+      tags:
+      - NUTS
   /schuldnerquote:
     get:
       consumes:

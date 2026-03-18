@@ -4,12 +4,13 @@ Loads all years into single tables with year columns in the 'store' schema.
 """
 
 import dlt
-import geopandas as gpd
-import pandas as pd
+import gc
 import gzip
-import json
+import ijson
 import os
+import pandas as pd
 from pathlib import Path
+from shapely.geometry import shape
 from typing import Iterator, Dict, Any
 import logging
 
@@ -17,8 +18,8 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Base paths — DATA_EXCHANGE_PATH wird per Env-Variable gesetzt (z.B. /app/data-exchange/1_friedrich-bjoern)
-BASE_PATH = Path(os.environ.get("DATA_EXCHANGE_PATH", "/home/bjoern/Software/HTW/SoSe25/soziooekonomische-daten/socioeconomic-data-parser"))
+# Base paths — GEODATA_BASE_PATH zeigt auf den Output des socioeconomic-data-parser
+BASE_PATH = Path(os.environ.get("GEODATA_BASE_PATH", "/home/bjoern/Software/HTW/soziooekonomische-daten/socioeconomic-data-parser"))
 GEODATA_PATH = BASE_PATH / "geodata" / "lau" / "output" / "geojson"
 POPULATION_PATH = BASE_PATH / "statistics" / "lokale_verwaltungseinheiten_eu" / "output"
 
@@ -43,23 +44,22 @@ def load_geodata() -> Iterator[Dict[str, Any]]:
             year = extract_year_from_filename(file_path.name)
             logger.info(f"Processing geodata for year {year}: {file_path.name}")
             
-            # Read compressed GeoJSON
-            with gzip.open(file_path, 'rt', encoding='utf-8') as f:
-                geojson_data = json.load(f)
-            
-            # Convert to GeoDataFrame
-            gdf = gpd.GeoDataFrame.from_features(geojson_data['features'])
-            
-            # Add year column
-            gdf['year'] = year
-            
-            # Convert to records for DLT
-            for _, row in gdf.iterrows():
-                record: Dict[str, Any] = {str(k): v for k, v in row.to_dict().items()}
-                # Convert geometry to WKT for PostGIS
-                if 'geometry' in record and record['geometry'] is not None:
-                    record['geometry'] = str(record['geometry'])
-                yield record
+            # Stream features one-by-one to avoid loading entire GeoJSON into RAM
+            with gzip.open(file_path, 'rb') as f:
+                for feature in ijson.items(f, 'features.item'):
+                    props = feature.get('properties') or {}
+                    geom = feature.get('geometry')
+                    record: Dict[str, Any] = {str(k): v for k, v in props.items()}
+                    record['year'] = year
+                    if geom is not None:
+                        try:
+                            record['geometry'] = shape(geom).wkt
+                        except Exception:
+                            record['geometry'] = None
+                    else:
+                        record['geometry'] = None
+                    yield record
+            gc.collect()
                 
         except Exception as e:
             logger.error(f"Error processing {file_path.name}: {e}")

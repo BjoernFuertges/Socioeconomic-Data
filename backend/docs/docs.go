@@ -275,6 +275,83 @@ const docTemplate = `{
                 }
             }
         },
+        "/nuts/{nuts_id}": {
+            "get": {
+                "description": "Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-3-Region zurück. Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NUTS"
+                ],
+                "summary": "Alle Indikatoren für eine NUTS-3-Region",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE111",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "nuts_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Jahr (gibt neuestes Jahr zurück wenn nicht angegeben)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Alle verfügbaren Jahre zurückgeben",
+                        "name": "all",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.NutsRegionTimeSeries"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/schuldnerquote": {
             "get": {
                 "description": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
@@ -807,6 +884,59 @@ const docTemplate = `{
                 "total": {
                     "type": "integer",
                     "example": 140400
+                }
+            }
+        },
+        "models.NutsRegionData": {
+            "type": "object",
+            "properties": {
+                "arbeitslose": {
+                    "description": "Kann null sein: Arbeitsagenturbezirke entsprechen nicht 1:1 den NUTS-3-Kreisen",
+                    "type": "number",
+                    "example": 17423
+                },
+                "bevoelkerung": {
+                    "type": "number",
+                    "example": 634830
+                },
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE111"
+                },
+                "region_name": {
+                    "type": "string",
+                    "example": "Stuttgart, Stadtkreis"
+                },
+                "schuldnerquote_prozent": {
+                    "type": "number",
+                    "example": 9.8
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
+                },
+                "yoy_change_percent": {
+                    "type": "number",
+                    "example": -2.3
+                }
+            }
+        },
+        "models.NutsRegionTimeSeries": {
+            "type": "object",
+            "properties": {
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE111"
+                },
+                "region_name": {
+                    "type": "string",
+                    "example": "Stuttgart, Stadtkreis"
+                },
+                "years": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.NutsRegionData"
+                    }
                 }
             }
         },
