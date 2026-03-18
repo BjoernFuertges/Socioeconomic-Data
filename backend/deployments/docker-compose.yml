@@ -73,8 +73,10 @@ services:
       - ../../dlt:/app/dlt
       - ../../dbt:/app/dbt
       - ../../data-exchange:/app/data-exchange:ro
+      - ../../socioeconomic-data-parser:/app/socioeconomic-data-parser:ro
     environment:
       DATA_EXCHANGE_PATH: /app/data-exchange/1_friedrich-bjoern
+      GEODATA_BASE_PATH: /app/socioeconomic-data-parser
       DB_HOST: postgis
       DB_PORT: 5432
       DB_USER: sozio_data_compose_user
