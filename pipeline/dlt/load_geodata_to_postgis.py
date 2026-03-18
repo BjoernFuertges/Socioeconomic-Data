@@ -17,8 +17,8 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Base paths — DATA_EXCHANGE_PATH wird per Env-Variable gesetzt (z.B. /app/data-exchange/1_friedrich-bjoern)
-BASE_PATH = Path(os.environ.get("DATA_EXCHANGE_PATH", "/home/bjoern/Software/HTW/SoSe25/soziooekonomische-daten/socioeconomic-data-parser"))
+# Base paths — GEODATA_BASE_PATH zeigt auf den Output des socioeconomic-data-parser
+BASE_PATH = Path(os.environ.get("GEODATA_BASE_PATH", "/home/bjoern/Software/HTW/soziooekonomische-daten/socioeconomic-data-parser"))
 GEODATA_PATH = BASE_PATH / "geodata" / "lau" / "output" / "geojson"
 POPULATION_PATH = BASE_PATH / "statistics" / "lokale_verwaltungseinheiten_eu" / "output"
 
