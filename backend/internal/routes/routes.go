@@ -34,6 +34,9 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			lau.GET("/:gisco_id", handler.GetLAURegionByID)
 		}
 
+		// NUTS-Regionen (alle Indikatoren je Verwaltungsbezirk)
+		v1.GET("/nuts/:nuts_id", handler.GetNutsRegionData)
+
 		// Arbeitslosenzahlen
 		unemployment := v1.Group("/unemployment")
 		{
