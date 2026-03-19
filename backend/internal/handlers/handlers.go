@@ -440,13 +440,37 @@ func (h *Handler) GetUnemploymentAggregated(c *gin.Context) {
 	})
 }
 
-// GetNutsRegionData gibt alle Indikatoren für eine NUTS-3-Region zurück
-// @Summary Alle Indikatoren für eine NUTS-3-Region
-// @Description Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-3-Region zurück. Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr.
+// nutsTable gibt den vollqualifizierten Namen der datenbankseitigen View für das
+// NUTS-Level zurück, das sich aus der Länge des NUTS-Codes ergibt:
+//
+//	2 Zeichen → NUTS-0 (Länderebene,          z. B. „DE")
+//	3 Zeichen → NUTS-1 (Bundesland-Ebene,      z. B. „DE1")
+//	4 Zeichen → NUTS-2 (Regierungsbezirk-Ebene, z. B. „DE11")
+//	5 Zeichen → NUTS-3 (Kreis-Ebene,           z. B. „DE111")
+//
+// Da nur hardkodierte Strings zurückgegeben werden, ist die Funktion sicher gegen SQL-Injection.
+func nutsTable(nutsID string) (string, error) {
+	switch len(strings.TrimSpace(nutsID)) {
+	case 2:
+		return "transformed_data.mart_nuts0_summary", nil
+	case 3:
+		return "transformed_data.mart_nuts1_summary", nil
+	case 4:
+		return "transformed_data.mart_nuts2_summary", nil
+	case 5:
+		return "transformed_data.mart_nuts3_summary", nil
+	default:
+		return "", fmt.Errorf("ungültige NUTS-ID: erwartet 2–5 Zeichen (NUTS-0 bis NUTS-3), erhalten %d", len(strings.TrimSpace(nutsID)))
+	}
+}
+
+// GetNutsRegionData gibt alle Indikatoren für eine NUTS-Region zurück (Level 0–3)
+// @Summary Alle Indikatoren für eine NUTS-Region (Level 0–3)
+// @Description Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code selbst.
 // @Tags NUTS
 // @Accept json
 // @Produce json
-// @Param nuts_id path string true "NUTS-3-Code der Region" example(DE111)
+// @Param nuts_id path string true "NUTS-Code der Region (Level 0–3)" example(DE111)
 // @Param year query int false "Jahr (gibt neuestes Jahr zurück wenn nicht angegeben)" example(2022)
 // @Param all query bool false "Alle verfügbaren Jahre zurückgeben" example(false)
 // @Success 200 {object} models.APIResponse{data=models.NutsRegionData}
@@ -468,8 +492,18 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		return
 	}
 
+	table, err := nutsTable(nutsID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
 	const selectCols = `nuts_id, region_name, year, bevoelkerung, schuldnerquote_prozent, arbeitslose, yoy_change_percent`
-	const fromClause = ` FROM transformed_data.mart_nuts3_summary WHERE nuts_id = $1`
+	// table enthält ausschließlich hardkodierte Strings aus nutsTable() – kein SQL-Injection-Risiko.
+	fromClause := ` FROM ` + table + ` WHERE nuts_id = $1`
 
 	if allStr == "true" {
 		// Zeitreihe: alle Jahre für diese Region

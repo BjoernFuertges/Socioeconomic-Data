@@ -277,7 +277,7 @@ const docTemplate = `{
         },
         "/nuts/{nuts_id}": {
             "get": {
-                "description": "Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-3-Region zurück. Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr.",
+                "description": "Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code selbst.",
                 "consumes": [
                     "application/json"
                 ],
@@ -287,12 +287,12 @@ const docTemplate = `{
                 "tags": [
                     "NUTS"
                 ],
-                "summary": "Alle Indikatoren für eine NUTS-3-Region",
+                "summary": "Alle Indikatoren für eine NUTS-Region (Level 0–3)",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DE111",
-                        "description": "NUTS-3-Code der Region",
+                        "description": "NUTS-Code der Region (Level 0–3)",
                         "name": "nuts_id",
                         "in": "path",
                         "required": true
@@ -877,7 +877,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "arbeitslose": {
-                    "description": "Kann null sein: Arbeitsagenturbezirke entsprechen nicht 1:1 den NUTS-3-Kreisen",
+                    "description": "Kann null sein: Arbeitsagenturbezirke entsprechen nicht 1:1 den NUTS-Kreisen",
                     "type": "number",
                     "example": 17423
                 },
