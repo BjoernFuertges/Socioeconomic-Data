@@ -41,7 +41,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 		unemployment := v1.Group("/unemployment")
 		{
 			unemployment.GET("", handler.GetUnemploymentData)
-			unemployment.GET("/aggregate", handler.GetUnemploymentAggregated)
+			unemployment.GET("/aggregated", handler.GetUnemploymentAggregated)
 			unemployment.GET("/geodata/:geodata_id", handler.GetUnemploymentByGeodataID)
 		}
 
