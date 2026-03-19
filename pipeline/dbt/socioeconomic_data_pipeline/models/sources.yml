@@ -138,6 +138,21 @@ sources:
           - name: updated_at
             description: "Timestamp of last metadata update"
 
+      - name: results_arbeitslose_kreise
+        description: "Arbeitslosenzahlen je Kreis – long format, ein Record pro Region und Jahr"
+        columns:
+          - name: original_id_1
+            tests:
+              - not_null
+          - name: geodata_id_nuts
+            tests:
+              - not_null
+          - name: year
+            tests:
+              - not_null
+          - name: value
+            description: "Anzahl Arbeitsloser"
+
       - name: results_bevoelkerung_kreise
         description: "Bevölkerungsdaten je Kreis (Destatis) – long format, ein Record pro Region und Jahr"
         columns:
