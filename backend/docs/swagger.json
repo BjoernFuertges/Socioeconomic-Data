@@ -466,24 +466,10 @@
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "example": "monthly",
-                        "description": "Zeittyp: yearly, monthly",
-                        "name": "time_type",
-                        "in": "query"
-                    },
-                    {
                         "type": "integer",
                         "example": 2024,
                         "description": "Filter nach Jahr",
                         "name": "year",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "example": 4,
-                        "description": "Filter nach Quartal (1-4)",
-                        "name": "quarter",
                         "in": "query"
                     },
                     {
@@ -1041,57 +1027,32 @@
                     "type": "number",
                     "example": 18416
                 },
-                "data_quality_flag": {
-                    "type": "string",
-                    "example": "VALID"
-                },
-                "dataset_id": {
-                    "type": "string",
-                    "example": "afa_arbeitslose___kreise_und_gemeinden__monats__und_jahreszahlen_ab_1998__auswertung"
-                },
-                "dataset_series": {
-                    "type": "string",
-                    "example": "Arbeitslose – Kreise und Gemeinden (Monats- und Jahreszahlen ab 1998)"
-                },
-                "dataset_title": {
-                    "type": "string",
-                    "example": "Bestand an Arbeitslosen Deutschland - Kreise und kreisfreie Städte"
+                "arbeitslosenzahlen_pk": {
+                    "type": "string"
                 },
                 "geodata_id": {
                     "type": "string",
                     "example": "DE111"
                 },
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "08111000"
+                },
                 "geodata_level": {
                     "type": "string",
-                    "example": "NUTS 3"
+                    "example": "NUTS_3"
                 },
                 "geodata_name": {
                     "type": "string",
                     "example": "Stuttgart, Stadtkreis"
                 },
-                "load_date": {
-                    "type": "string",
-                    "example": "2025-11-09"
-                },
-                "month": {
+                "geodata_year": {
                     "type": "integer",
-                    "example": 12
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
-                    "example": "2024-12-31T00:00:00Z"
-                },
-                "quarter": {
-                    "type": "integer",
-                    "example": 4
-                },
-                "source_url": {
-                    "type": "string",
-                    "example": "https://statistik.arbeitsagentur.de/Statistikdaten/Detail/Aktuell/..."
-                },
-                "time_type": {
-                    "type": "string",
-                    "example": "monthly"
+                    "example": "2024-01-01T00:00:00Z"
                 },
                 "year": {
                     "type": "integer",

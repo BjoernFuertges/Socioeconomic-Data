@@ -228,44 +228,25 @@ definitions:
       arbeitslose_previous_year:
         example: 18416
         type: number
-      data_quality_flag:
-        example: VALID
-        type: string
-      dataset_id:
-        example: afa_arbeitslose___kreise_und_gemeinden__monats__und_jahreszahlen_ab_1998__auswertung
-        type: string
-      dataset_series:
-        example: Arbeitslose – Kreise und Gemeinden (Monats- und Jahreszahlen ab 1998)
-        type: string
-      dataset_title:
-        example: Bestand an Arbeitslosen Deutschland - Kreise und kreisfreie Städte
+      arbeitslosenzahlen_pk:
         type: string
       geodata_id:
         example: DE111
         type: string
+      geodata_id_ars:
+        example: "08111000"
+        type: string
       geodata_level:
-        example: NUTS 3
+        example: NUTS_3
         type: string
       geodata_name:
         example: Stuttgart, Stadtkreis
         type: string
-      load_date:
-        example: "2025-11-09"
-        type: string
-      month:
-        example: 12
+      geodata_year:
+        example: 2021
         type: integer
       observation_date:
-        example: "2024-12-31T00:00:00Z"
-        type: string
-      quarter:
-        example: 4
-        type: integer
-      source_url:
-        example: https://statistik.arbeitsagentur.de/Statistikdaten/Detail/Aktuell/...
-        type: string
-      time_type:
-        example: monthly
+        example: "2024-01-01T00:00:00Z"
         type: string
       year:
         example: 2024
@@ -577,20 +558,10 @@ paths:
         in: query
         name: to_date
         type: string
-      - description: 'Zeittyp: yearly, monthly'
-        example: monthly
-        in: query
-        name: time_type
-        type: string
       - description: Filter nach Jahr
         example: 2024
         in: query
         name: year
-        type: integer
-      - description: Filter nach Quartal (1-4)
-        example: 4
-        in: query
-        name: quarter
         type: integer
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)

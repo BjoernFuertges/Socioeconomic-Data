@@ -4,23 +4,17 @@ import "time"
 
 // UnemploymentData repräsentiert Arbeitslosenzahlen
 type UnemploymentData struct {
-	DatasetID               string    `json:"dataset_id" db:"dataset_id" example:"afa_arbeitslose___kreise_und_gemeinden__monats__und_jahreszahlen_ab_1998__auswertung"`
+	ArbeitslosenzahlenPK    string    `json:"arbeitslosenzahlen_pk" db:"arbeitslosenzahlen_pk"`
 	GeodataID               string    `json:"geodata_id" db:"geodata_id" example:"DE111"`
 	GeodataName             string    `json:"geodata_name" db:"geodata_name" example:"Stuttgart, Stadtkreis"`
+	GeodataIDARS            string    `json:"geodata_id_ars" db:"geodata_id_ars" example:"08111000"`
+	GeodataLevel            string    `json:"geodata_level" db:"geodata_level" example:"NUTS_3"`
+	GeodataYear             int       `json:"geodata_year" db:"geodata_year" example:"2021"`
 	Year                    int       `json:"year" db:"year" example:"2024"`
-	Month                   *int      `json:"month,omitempty" db:"month" example:"12"`
-	Quarter                 *int      `json:"quarter,omitempty" db:"quarter" example:"4"`
-	ObservationDate         time.Time `json:"observation_date" db:"observation_date" example:"2024-12-31T00:00:00Z"`
-	TimeType                string    `json:"time_type" db:"time_type" example:"monthly"`
+	ObservationDate         time.Time `json:"observation_date" db:"observation_date" example:"2024-01-01T00:00:00Z"`
 	Arbeitslose             float64   `json:"arbeitslose" db:"arbeitslose" example:"20749"`
-	LoadDate                string    `json:"load_date" db:"load_date" example:"2025-11-09"`
-	DatasetTitle            string    `json:"dataset_title" db:"dataset_title" example:"Bestand an Arbeitslosen Deutschland - Kreise und kreisfreie Städte"`
-	DatasetSeries           string    `json:"dataset_series" db:"dataset_series" example:"Arbeitslose – Kreise und Gemeinden (Monats- und Jahreszahlen ab 1998)"`
-	SourceURL               string    `json:"source_url" db:"source_url" example:"https://statistik.arbeitsagentur.de/Statistikdaten/Detail/Aktuell/..."`
-	GeodataLevel            string    `json:"geodata_level" db:"geodata_level" example:"NUTS 3"`
 	ArbeitslosePreviousYear *float64  `json:"arbeitslose_previous_year,omitempty" db:"arbeitslose_previous_year" example:"18416"`
 	YoYChangePercent        *float64  `json:"yoy_change_percent,omitempty" db:"yoy_change_percent" example:"12.67"`
-	DataQualityFlag         string    `json:"data_quality_flag" db:"data_quality_flag" example:"VALID"`
 }
 
 // UnemploymentFilter für Query-Parameter
@@ -28,9 +22,7 @@ type UnemploymentFilter struct {
 	GeodataID string `form:"geodata_id" example:"DE111"`
 	FromDate  string `form:"from_date" example:"2024-01-01"` // Format: YYYY-MM-DD
 	ToDate    string `form:"to_date" example:"2024-12-31"`   // Format: YYYY-MM-DD
-	TimeType  string `form:"time_type" example:"monthly"` // yearly, monthly
 	Year      *int   `form:"year" example:"2024"`
-	Quarter   *int   `form:"quarter" example:"4"`
 	Limit     int    `form:"limit" binding:"omitempty,min=1,max=10000" example:"100"`
 	Offset    int    `form:"offset" binding:"omitempty,min=0" example:"0"`
 }

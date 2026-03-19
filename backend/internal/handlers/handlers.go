@@ -199,9 +199,7 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 // @Param geodata_id query string false "Filter nach Geodaten-ID" example(DE111)
 // @Param from_date query string false "Start-Datum (YYYY-MM-DD)" example(2024-01-01)
 // @Param to_date query string false "End-Datum (YYYY-MM-DD)" example(2024-12-31)
-// @Param time_type query string false "Zeittyp: yearly, monthly" example(monthly)
 // @Param year query int false "Filter nach Jahr" example(2024)
-// @Param quarter query int false "Filter nach Quartal (1-4)" example(4)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.UnemploymentData}
@@ -224,10 +222,9 @@ func (h *Handler) GetUnemploymentData(c *gin.Context) {
 	}
 
 	// Build query
-	query := `SELECT dataset_id, geodata_id, geodata_name, year, month, quarter,
-		observation_date, time_type, arbeitslose, load_date, dataset_title,
-		dataset_series, source_url, geodata_level, arbeitslose_previous_year,
-		yoy_change_percent, data_quality_flag
+	query := `SELECT arbeitslosenzahlen_pk, geodata_id, geodata_name, geodata_id_ars,
+		geodata_level, geodata_year, year, observation_date, arbeitslose,
+		arbeitslose_previous_year, yoy_change_percent
 		FROM transformed_data.mart_arbeitslosenzahlen
 		WHERE 1=1`
 
@@ -249,12 +246,6 @@ func (h *Handler) GetUnemploymentData(c *gin.Context) {
 	if filter.ToDate != "" {
 		query += fmt.Sprintf(" AND observation_date <= $%d", argPos)
 		args = append(args, filter.ToDate)
-		argPos++
-	}
-
-	if filter.TimeType != "" {
-		query += fmt.Sprintf(" AND time_type = $%d", argPos)
-		args = append(args, filter.TimeType)
 		argPos++
 	}
 
@@ -320,10 +311,9 @@ func (h *Handler) GetUnemploymentData(c *gin.Context) {
 func (h *Handler) GetUnemploymentByGeodataID(c *gin.Context) {
 	geodataID := c.Param("geodata_id")
 
-	query := `SELECT dataset_id, geodata_id, geodata_name, year, month, quarter,
-		observation_date, time_type, arbeitslose, load_date, dataset_title,
-		dataset_series, source_url, geodata_level, arbeitslose_previous_year,
-		yoy_change_percent, data_quality_flag
+	query := `SELECT arbeitslosenzahlen_pk, geodata_id, geodata_name, geodata_id_ars,
+		geodata_level, geodata_year, year, observation_date, arbeitslose,
+		arbeitslose_previous_year, yoy_change_percent
 		FROM transformed_data.mart_arbeitslosenzahlen
 		WHERE geodata_id = $1`
 
@@ -340,12 +330,6 @@ func (h *Handler) GetUnemploymentByGeodataID(c *gin.Context) {
 	if toDate := c.Query("to_date"); toDate != "" {
 		query += fmt.Sprintf(" AND observation_date <= $%d", argPos)
 		args = append(args, toDate)
-		argPos++
-	}
-
-	if timeType := c.Query("time_type"); timeType != "" {
-		query += fmt.Sprintf(" AND time_type = $%d", argPos)
-		args = append(args, timeType)
 		argPos++
 	}
 
@@ -454,6 +438,93 @@ func (h *Handler) GetUnemploymentAggregated(c *gin.Context) {
 			Offset: offset,
 		},
 	})
+}
+
+// GetNutsRegionData gibt alle Indikatoren für eine NUTS-3-Region zurück
+// @Summary Alle Indikatoren für eine NUTS-3-Region
+// @Description Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-3-Region zurück. Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr.
+// @Tags NUTS
+// @Accept json
+// @Produce json
+// @Param nuts_id path string true "NUTS-3-Code der Region" example(DE111)
+// @Param year query int false "Jahr (gibt neuestes Jahr zurück wenn nicht angegeben)" example(2022)
+// @Param all query bool false "Alle verfügbaren Jahre zurückgeben" example(false)
+// @Success 200 {object} models.APIResponse{data=models.NutsRegionData}
+// @Success 200 {object} models.APIResponse{data=models.NutsRegionTimeSeries}
+// @Failure 400 {object} models.APIResponse
+// @Failure 404 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /nuts/{nuts_id} [get]
+func (h *Handler) GetNutsRegionData(c *gin.Context) {
+	nutsID := c.Param("nuts_id")
+	yearStr := c.Query("year")
+	allStr := c.Query("all")
+
+	if strings.TrimSpace(nutsID) == "" {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Error:   "nuts_id darf nicht leer sein",
+		})
+		return
+	}
+
+	const selectCols = `nuts_id, region_name, year, bevoelkerung, schuldnerquote_prozent, arbeitslose, yoy_change_percent`
+	const fromClause = ` FROM transformed_data.mart_nuts3_summary WHERE nuts_id = $1`
+
+	if allStr == "true" {
+		// Zeitreihe: alle Jahre für diese Region
+		query := `SELECT ` + selectCols + fromClause + ` ORDER BY year DESC`
+		rows := []models.NutsRegionData{}
+		if err := h.DB.Select(&rows, query, nutsID); err != nil {
+			c.JSON(http.StatusInternalServerError, models.APIResponse{
+				Success: false,
+				Error:   fmt.Sprintf("Datenbankfehler: %v", err),
+			})
+			return
+		}
+		if len(rows) == 0 {
+			c.JSON(http.StatusNotFound, models.APIResponse{
+				Success: false,
+				Error:   "Keine Daten für diese NUTS-Region gefunden",
+			})
+			return
+		}
+		ts := models.NutsRegionTimeSeries{
+			NutsID:     rows[0].NutsID,
+			RegionName: rows[0].RegionName,
+			Years:      rows,
+		}
+		c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: ts})
+		return
+	}
+
+	// Snapshot: ein Jahr (angegeben oder neuestes)
+	query := `SELECT ` + selectCols + fromClause
+	args := []interface{}{nutsID}
+	if yearStr != "" {
+		query += ` AND year = $2`
+		args = append(args, yearStr)
+	} else {
+		query += ` ORDER BY year DESC LIMIT 1`
+	}
+
+	var row models.NutsRegionData
+	if err := h.DB.Get(&row, query, args...); err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			c.JSON(http.StatusNotFound, models.APIResponse{
+				Success: false,
+				Error:   "Keine Daten für diese NUTS-Region gefunden",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Datenbankfehler: %v", err),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: row})
 }
 
 // sozioKreisBaseColumns ist die SELECT-Spaltenliste gemeinsam für alle Kreis-Datensätze.
