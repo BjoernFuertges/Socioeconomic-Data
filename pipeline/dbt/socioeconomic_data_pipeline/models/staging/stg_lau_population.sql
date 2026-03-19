@@ -9,9 +9,9 @@ SELECT
     lau_nat_code,
     lau_name_national,
     lau_name_latin,
-    -- Convert population to numeric, handling potential string values
+    -- Convert population to bigint, handling potential float-string values like "13351.0"
     CASE 
-        WHEN population ~ '^[0-9]*\.?[0-9]+$' THEN population::numeric
+        WHEN population ~ '^[0-9]*\.?[0-9]+$' THEN population::numeric::bigint
         ELSE NULL 
     END as population_count,
     country,
