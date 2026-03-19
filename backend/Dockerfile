@@ -17,15 +17,10 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Install swag in einem eigenen Layer (wird gecacht, solange sich die Version nicht ändert)
-RUN go install github.com/swaggo/swag/cmd/swag@latest
-
 # Kopiere den Rest des Codes ins Arbeitsverzeichnis
 COPY . .
 
-# Generate swagger documentation
-RUN swag init -g cmd/soziodata/main.go --output ./docs
-
+# Swagger-Docs werden bereits vom Pre-commit-Hook generiert und sind im Repo enthalten
 # Baue die ausführbare Datei
 # -w -s entfernt Debug-Symbole und reduziert die Binärgröße deutlich
 RUN GOOS=linux go build -o /app/bin/server -ldflags "\
