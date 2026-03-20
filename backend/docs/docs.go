@@ -1405,6 +1405,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "01001"
                 },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
                 "geodata_id_nuts": {
                     "type": "string",
                     "example": "DEF01"
@@ -1462,6 +1466,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "01001"
                 },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
                 "geodata_id_nuts": {
                     "type": "string",
                     "example": "DEF01"
@@ -1518,6 +1526,10 @@ const docTemplate = `{
                 "geodata_id_ars": {
                     "type": "string",
                     "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
                 },
                 "geodata_id_nuts": {
                     "type": "string",
@@ -1588,6 +1600,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "01001"
                 },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
                 "geodata_id_nuts": {
                     "type": "string",
                     "example": "DEF01"
@@ -1644,6 +1660,10 @@ const docTemplate = `{
                 "geodata_id_ars": {
                     "type": "string",
                     "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
                 },
                 "geodata_id_nuts": {
                     "type": "string",
@@ -1702,6 +1722,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "01001"
                 },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
                 "geodata_id_nuts": {
                     "type": "string",
                     "example": "DEF01"
@@ -1758,6 +1782,10 @@ const docTemplate = `{
                 "geodata_id_ars": {
                     "type": "string",
                     "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
                 },
                 "geodata_id_nuts": {
                     "type": "string",
@@ -1943,6 +1971,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "01001"
                 },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
                 "geodata_id_nuts": {
                     "type": "string",
                     "example": "DEF01"
@@ -1999,6 +2031,10 @@ const docTemplate = `{
                 "geodata_id_ars": {
                     "type": "string",
                     "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
                 },
                 "geodata_id_nuts": {
                     "type": "string",
@@ -2141,6 +2177,10 @@ const docTemplate = `{
                 "geodata_id_ars": {
                     "type": "string",
                     "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
                 },
                 "geodata_id_nuts": {
                     "type": "string",

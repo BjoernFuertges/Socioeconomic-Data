@@ -9,6 +9,7 @@ type SozioBaseData struct {
 	OriginalName    string `json:"original_name" db:"original_name" example:"Flensburg, Stadt"`
 	GeodataName     string `json:"geodata_name" db:"geodata_name" example:"Flensburg"`
 	GeodataIDNUTS   string `json:"geodata_id_nuts" db:"geodata_id_nuts" example:"DEF01"`
+	GeodataIDLAU    string `json:"geodata_id_lau" db:"geodata_id_lau" example:"01001000"`
 	GeodataIDARS    string `json:"geodata_id_ars" db:"geodata_id_ars" example:"01001"`
 	Mapper          string `json:"mapper" db:"mapper" example:"exact_id"`
 	Parameter       string `json:"parameter" db:"parameter" example:"id_ars"`

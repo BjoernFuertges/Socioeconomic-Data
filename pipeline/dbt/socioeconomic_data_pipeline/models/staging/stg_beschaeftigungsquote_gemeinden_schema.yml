@@ -31,6 +31,10 @@ models:
         description: "NUTS-3-Code der Region (kann leer sein für unmapped Gemeinden)"
         data_type: text
 
+      - name: geodata_id_lau
+        description: "Gemappte LAU-ID der Gemeinde"
+        data_type: text
+
       - name: geodata_id_ars
         description: "Amtlicher Regionalschlüssel nach Mapping"
         data_type: text

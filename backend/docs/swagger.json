@@ -1401,6 +1401,10 @@
                     "type": "string",
                     "example": "01001"
                 },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
                 "geodata_id_nuts": {
                     "type": "string",
                     "example": "DEF01"
@@ -1458,6 +1462,10 @@
                     "type": "string",
                     "example": "01001"
                 },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
                 "geodata_id_nuts": {
                     "type": "string",
                     "example": "DEF01"
@@ -1514,6 +1522,10 @@
                 "geodata_id_ars": {
                     "type": "string",
                     "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
                 },
                 "geodata_id_nuts": {
                     "type": "string",
@@ -1584,6 +1596,10 @@
                     "type": "string",
                     "example": "01001"
                 },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
                 "geodata_id_nuts": {
                     "type": "string",
                     "example": "DEF01"
@@ -1640,6 +1656,10 @@
                 "geodata_id_ars": {
                     "type": "string",
                     "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
                 },
                 "geodata_id_nuts": {
                     "type": "string",
@@ -1698,6 +1718,10 @@
                     "type": "string",
                     "example": "01001"
                 },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
                 "geodata_id_nuts": {
                     "type": "string",
                     "example": "DEF01"
@@ -1754,6 +1778,10 @@
                 "geodata_id_ars": {
                     "type": "string",
                     "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
                 },
                 "geodata_id_nuts": {
                     "type": "string",
@@ -1939,6 +1967,10 @@
                     "type": "string",
                     "example": "01001"
                 },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
                 "geodata_id_nuts": {
                     "type": "string",
                     "example": "DEF01"
@@ -1995,6 +2027,10 @@
                 "geodata_id_ars": {
                     "type": "string",
                     "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
                 },
                 "geodata_id_nuts": {
                     "type": "string",
@@ -2137,6 +2173,10 @@
                 "geodata_id_ars": {
                     "type": "string",
                     "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
                 },
                 "geodata_id_nuts": {
                     "type": "string",

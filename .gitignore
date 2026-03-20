@@ -11,3 +11,5 @@
 !/data-exchange/**/
 !/data-exchange/**/*.md
 !/data-exchange/**/.gitkeep
+
+/***/__pycache__/

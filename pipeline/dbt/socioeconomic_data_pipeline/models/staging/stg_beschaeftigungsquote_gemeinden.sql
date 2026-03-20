@@ -16,6 +16,10 @@ cleaned as (
         original_name,
         geodata_name,
         nullif(cast(geodata_id_nuts as text), '') as geodata_id_nuts,
+        coalesce(
+            nullif(cast(geodata_id_lau as text), ''),
+            nullif(cast(geodata_id_ars as text), '')
+        ) as geodata_id_lau,
         nullif(cast(geodata_id_ars as text), '') as geodata_id_ars,
         mapper,
         parameter,
@@ -46,7 +50,8 @@ mapped as (
         coalesce(c.original_name, '') as original_name,
         coalesce(c.geodata_name, c.original_name, '') as geodata_name,
         coalesce(c.geodata_id_nuts, p.nuts_3_code, g.nuts_3, '') as geodata_id_nuts,
-        coalesce(c.geodata_id_ars, regexp_replace(cast(p.lau_nat_code as text), '\\.0+$', ''), c.original_id_1, '') as geodata_id_ars,
+        coalesce(c.geodata_id_lau, regexp_replace(cast(p.lau_nat_code as text), '\\.0+$', ''), c.original_id_1, '') as geodata_id_lau,
+        coalesce(c.geodata_id_ars, c.geodata_id_lau, regexp_replace(cast(p.lau_nat_code as text), '\\.0+$', ''), c.original_id_1, '') as geodata_id_ars,
         coalesce(c.mapper, '') as mapper,
         coalesce(c.parameter, '') as parameter,
         c.geodata_level,

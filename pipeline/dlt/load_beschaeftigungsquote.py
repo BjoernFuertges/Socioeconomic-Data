@@ -2,7 +2,7 @@
 DLT pipeline for loading employment rate data (Beschäftigungsquote) at LAU/Gemeinden-Ebene.
 
 Similar to load_soziodata_generic.py but with:
-- Defaults for metadata (until final meta.yaml is provided)
+- Uses meta.yaml if provided (fallback to sensible defaults)
 - LAU (Gemeinden) level support
 - Percentage value handling (0-100%)
 
@@ -14,9 +14,9 @@ Where <dataset_subdir> is relative to DATA_EXCHANGE_PATH, e.g.:
 
 Expected structure:
     <dataset_subdir>/
-        mapped_pairs.csv  -- columns: original_id_1, original_name, geodata_name,
-                             mapper, parameter, <year1>, <year2>, ...
-        (meta.yaml optional, will be generated with defaults if missing)
+    mapped_pairs.csv  -- columns: original_id_1, original_name, geodata_name,
+                 geodata_id_lau, mapper, parameter, <year1>, <year2>, ...
+    meta.yaml         -- optional but recommended; provides geodata_level/year and metadata
 """
 
 import sys
@@ -24,6 +24,7 @@ import dlt
 import pandas as pd
 import os
 import logging
+import yaml
 from pathlib import Path
 from typing import Iterator, Dict, Any
 
@@ -34,6 +35,7 @@ _META_COLS = {
     "original_id_1",
     "original_name",
     "geodata_name",
+    "geodata_id_lau",
     "mapper",
     "parameter",
 }
@@ -62,6 +64,25 @@ def _year_columns(df: pd.DataFrame) -> list[str]:
     return sorted(year_cols)
 
 
+def _load_meta(dataset_dir: Path) -> Dict[str, Any]:
+    """Load optional meta.yaml; return defaults if missing."""
+    meta_path = dataset_dir / "meta.yaml"
+    defaults: Dict[str, Any] = {
+        "geodata_level": "LAU",
+        "geodata_year": 2024,
+        "name": "Beschaeftigungsquote",
+        "number_type": "relative",
+        "unit": "prozent",
+    }
+    if not meta_path.exists():
+        return defaults
+
+    with open(meta_path, "r", encoding="utf-8") as f:
+        loaded = yaml.safe_load(f) or {}
+    defaults.update({k: v for k, v in loaded.items() if v is not None})
+    return defaults
+
+
 def make_resource(dataset_dir: Path, dataset_name: str):
     """
     Factory that returns a configured @dlt.resource function.
@@ -82,11 +103,7 @@ def make_resource(dataset_dir: Path, dataset_name: str):
         year_cols = _year_columns(df)
         logger.info(f"Found {len(year_cols)} year columns: {year_cols}")
 
-        # Default metadata (will be updated when final meta.yaml is provided)
-        metadata = {
-            "geodata_level": "LAU",
-            "geodata_year": 2024,
-        }
+        metadata = _load_meta(dataset_dir)
 
         record_count = 0
         for _, row in df.iterrows():
@@ -96,8 +113,9 @@ def make_resource(dataset_dir: Path, dataset_name: str):
             mapper = row.get("mapper")
             parameter = row.get("parameter")
 
-            # Try to extract geodata_id_nuts if available (structure may vary)
+            # IDs may vary by mapping output version
             geodata_id_nuts = row.get("geodata_id_nuts")
+            geodata_id_lau = row.get("geodata_id_lau")
             geodata_id_ars = row.get("geodata_id_ars")
 
             for year_col in year_cols:
@@ -115,6 +133,7 @@ def make_resource(dataset_dir: Path, dataset_name: str):
                     "original_name": original_name,
                     "geodata_name": geodata_name,
                     "geodata_id_nuts": geodata_id_nuts,
+                    "geodata_id_lau": geodata_id_lau,
                     "geodata_id_ars": geodata_id_ars,
                     "mapper": mapper,
                     "parameter": parameter,

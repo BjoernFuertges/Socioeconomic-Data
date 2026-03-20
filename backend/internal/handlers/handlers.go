@@ -563,9 +563,14 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 
 // sozioKreisBaseColumns ist die SELECT-Spaltenliste gemeinsam für alle Kreis-Datensätze.
 // observation_date wird explizit als text gecastet, damit sqlx es in ein string-Feld scannen kann.
-const sozioKreisBaseColumns = `original_id_1, original_name, geodata_name, geodata_id_nuts, ` +
-	`geodata_id_ars, mapper, parameter, geodata_level, geodata_year, ` +
-	`year, observation_date::text, has_valid_value`
+const sozioKreisBaseColumns = `d.original_id_1, d.original_name, d.geodata_name, d.geodata_id_nuts, ` +
+	`coalesce(` +
+	`nullif(to_jsonb(d)->>'geodata_id_lau', ''), ` +
+	`case when d.geodata_level = 'LAU' then nullif(d.geodata_id_ars, '') end, ` +
+	`case when d.geodata_level = 'LAU' then d.original_id_1 end, ''` +
+	`) as geodata_id_lau, ` +
+	`d.geodata_id_ars, d.mapper, d.parameter, d.geodata_level, d.geodata_year, ` +
+	`d.year, d.observation_date::text, d.has_valid_value`
 
 // getKreisData ist der generische Handler-Kern für alle Kreis-Datensätze.
 // T muss SozioBaseData einbetten und alle cfg.ValueColumns via db-Tags mappen.
@@ -584,7 +589,7 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 	}
 
 	query := fmt.Sprintf(
-		`SELECT %s, %s FROM %s.%s WHERE 1=1`,
+		`SELECT %s, %s FROM %s.%s d WHERE 1=1`,
 		sozioKreisBaseColumns,
 		strings.Join(cfg.ValueColumns, ", "),
 		cfg.Schema,
@@ -595,13 +600,13 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 	argPos := 1
 
 	if filter.GeodataIDNUTS != "" {
-		query += fmt.Sprintf(" AND geodata_id_nuts = $%d", argPos)
+		query += fmt.Sprintf(" AND d.geodata_id_nuts = $%d", argPos)
 		args = append(args, filter.GeodataIDNUTS)
 		argPos++
 	}
 
 	if filter.Year != nil {
-		query += fmt.Sprintf(" AND year = $%d", argPos)
+		query += fmt.Sprintf(" AND d.year = $%d", argPos)
 		args = append(args, *filter.Year)
 		argPos++
 	}

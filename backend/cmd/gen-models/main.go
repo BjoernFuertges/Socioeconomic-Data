@@ -84,6 +84,7 @@ var baseColumnSet = map[string]bool{
 	"original_name":    true,
 	"geodata_name":     true,
 	"geodata_id_nuts":  true,
+	"geodata_id_lau":   true,
 	"geodata_id_ars":   true,
 	"mapper":           true,
 	"parameter":        true,

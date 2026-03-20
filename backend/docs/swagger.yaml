@@ -23,6 +23,9 @@ definitions:
       geodata_id_ars:
         example: "01001"
         type: string
+      geodata_id_lau:
+        example: "01001000"
+        type: string
       geodata_id_nuts:
         example: DEF01
         type: string
@@ -65,6 +68,9 @@ definitions:
       geodata_id_ars:
         example: "01001"
         type: string
+      geodata_id_lau:
+        example: "01001000"
+        type: string
       geodata_id_nuts:
         example: DEF01
         type: string
@@ -106,6 +112,9 @@ definitions:
         type: number
       geodata_id_ars:
         example: "01001"
+        type: string
+      geodata_id_lau:
+        example: "01001000"
         type: string
       geodata_id_nuts:
         example: DEF01
@@ -158,6 +167,9 @@ definitions:
       geodata_id_ars:
         example: "01001"
         type: string
+      geodata_id_lau:
+        example: "01001000"
+        type: string
       geodata_id_nuts:
         example: DEF01
         type: string
@@ -199,6 +211,9 @@ definitions:
         type: number
       geodata_id_ars:
         example: "01001"
+        type: string
+      geodata_id_lau:
+        example: "01001000"
         type: string
       geodata_id_nuts:
         example: DEF01
@@ -242,6 +257,9 @@ definitions:
       geodata_id_ars:
         example: "01001"
         type: string
+      geodata_id_lau:
+        example: "01001000"
+        type: string
       geodata_id_nuts:
         example: DEF01
         type: string
@@ -283,6 +301,9 @@ definitions:
         type: number
       geodata_id_ars:
         example: "01001"
+        type: string
+      geodata_id_lau:
+        example: "01001000"
         type: string
       geodata_id_nuts:
         example: DEF01
@@ -417,6 +438,9 @@ definitions:
       geodata_id_ars:
         example: "01001"
         type: string
+      geodata_id_lau:
+        example: "01001000"
+        type: string
       geodata_id_nuts:
         example: DEF01
         type: string
@@ -458,6 +482,9 @@ definitions:
     properties:
       geodata_id_ars:
         example: "01001"
+        type: string
+      geodata_id_lau:
+        example: "01001000"
         type: string
       geodata_id_nuts:
         example: DEF01
@@ -562,6 +589,9 @@ definitions:
     properties:
       geodata_id_ars:
         example: "01001"
+        type: string
+      geodata_id_lau:
+        example: "01001000"
         type: string
       geodata_id_nuts:
         example: DEF01
