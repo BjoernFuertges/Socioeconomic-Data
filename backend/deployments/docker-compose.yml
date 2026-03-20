@@ -72,7 +72,7 @@ services:
     volumes:
       - ../../dlt:/app/dlt
       - ../../dbt:/app/dbt
-      - ../../data-exchange:/app/data-exchange:ro
+      - ../../data-exchange:/app/data-exchange:rw
       - ../../socioeconomic-data-parser:/app/socioeconomic-data-parser:ro
     environment:
       DATA_EXCHANGE_PATH: /app/data-exchange/1_friedrich-bjoern
