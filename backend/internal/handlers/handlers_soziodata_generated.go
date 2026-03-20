@@ -8,6 +8,42 @@ import (
 	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/models"
 )
 
+// GetArbeitsloseData gibt Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Tags Arbeitslose
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.ArbeitsloseData}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /arbeitslose [get]
+func (h *Handler) GetArbeitsloseData(c *gin.Context) {
+	getKreisData[models.ArbeitsloseData](h, c, models.ArbeitsloseConfig)
+}
+
+// GetArbeitsvolumenData gibt Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Tags Arbeitsvolumen
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.ArbeitsvolumenData}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /arbeitsvolumen [get]
+func (h *Handler) GetArbeitsvolumenData(c *gin.Context) {
+	getKreisData[models.ArbeitsvolumenData](h, c, models.ArbeitsvolumenConfig)
+}
+
 // GetBevoelkerungData gibt Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
 // @Summary Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
 // @Description Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
@@ -26,6 +62,42 @@ func (h *Handler) GetBevoelkerungData(c *gin.Context) {
 	getKreisData[models.BevoelkerungData](h, c, models.BevoelkerungConfig)
 }
 
+// GetBruttoverdienstData gibt Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Tags Bruttoverdienst
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.BruttoverdienstData}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /bruttoverdienst [get]
+func (h *Handler) GetBruttoverdienstData(c *gin.Context) {
+	getKreisData[models.BruttoverdienstData](h, c, models.BruttoverdienstConfig)
+}
+
+// GetDurchschnittsalterData gibt Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Tags Durchschnittsalter
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.DurchschnittsalterData}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /durchschnittsalter [get]
+func (h *Handler) GetDurchschnittsalterData(c *gin.Context) {
+	getKreisData[models.DurchschnittsalterData](h, c, models.DurchschnittsalterConfig)
+}
+
 // GetSchuldnerquoteData gibt Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
 // @Summary Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
 // @Description Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
@@ -42,4 +114,40 @@ func (h *Handler) GetBevoelkerungData(c *gin.Context) {
 // @Router /schuldnerquote [get]
 func (h *Handler) GetSchuldnerquoteData(c *gin.Context) {
 	getKreisData[models.SchuldnerquoteData](h, c, models.SchuldnerquoteConfig)
+}
+
+// GetSgbIiQuoteData gibt Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Tags SgbIiQuote
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param year query int false "Jahr der Beobachtung (2005-2030)" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.SgbIiQuoteData}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /sgb_ii_quote [get]
+func (h *Handler) GetSgbIiQuoteData(c *gin.Context) {
+	getKreisData[models.SgbIiQuoteData](h, c, models.SgbIiQuoteConfig)
+}
+
+// GetWohngeldhaushalteData gibt Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Tags Wohngeldhaushalte
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.WohngeldhaushalteData}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /wohngeldhaushalte [get]
+func (h *Handler) GetWohngeldhaushalteData(c *gin.Context) {
+	getKreisData[models.WohngeldhaushalteData](h, c, models.WohngeldhaushalteConfig)
 }
