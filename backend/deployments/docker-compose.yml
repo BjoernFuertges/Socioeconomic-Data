@@ -89,7 +89,7 @@ services:
       DESTINATION__POSTGRES__CREDENTIALS__PASSWORD: REMOVED_PASSWORD
       DBT_PROFILES_DIR: /app/dbt/socioeconomic_data_pipeline
     command: >
-      bash -c "python -m pip install -q -r /app/dlt/requirements.txt 'dlt[postgres]' dbt-postgres geo-mapper-htw && python -c 'import dlt, pandas, shapely' && echo 'Pipeline image ready' && tail -f /dev/null"
+      bash -c "python -m pip install -q -r /app/dlt/requirements.txt 'dlt[postgres]' dbt-postgres geo-mapper-htw==0.1.0b9 && python -c 'import dlt, pandas, shapely' && echo 'Pipeline image ready' && tail -f /dev/null"
     healthcheck:
       test: ["CMD-SHELL", "python -c 'import dlt, pandas, shapely'"]
       interval: 30s
