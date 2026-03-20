@@ -100,6 +100,16 @@ wohngeldhaushalte as (
     where has_valid_value = true
 ),
 
+beschaeftigungsquote as (
+    select
+        geodata_id_nuts,
+        year,
+        beschaeftigungsquote_prozent,
+        beschaeftigungsquote_median
+    from {{ ref('stg_beschaeftigungsquote_nuts3') }}
+    where has_valid_value = true
+),
+
 -- Basis: FULL OUTER JOIN der beiden NUTS-nativen Datensätze
 nuts_base as (
     select
@@ -127,7 +137,9 @@ select
     bv.bruttoverdienst,
     da.durchschnittsalter,
     sq.sgb_ii_quote_prozent,
-    wg.wohngeldhaushalte_je_1000
+    wg.wohngeldhaushalte_je_1000,
+    bq.beschaeftigungsquote_prozent,
+    bq.beschaeftigungsquote_median
 from nuts_base n
 left join arbeitslos a
     on  a.geodata_id = n.nuts_id
@@ -150,3 +162,6 @@ left join sgb_ii_quote sq
 left join wohngeldhaushalte wg
     on  wg.geodata_id_nuts = n.nuts_id
     and wg.year            = n.year
+left join beschaeftigungsquote bq
+    on  bq.geodata_id_nuts = n.nuts_id
+    and bq.year            = n.year

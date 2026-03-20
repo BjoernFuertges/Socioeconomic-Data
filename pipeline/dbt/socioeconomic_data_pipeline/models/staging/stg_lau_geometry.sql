@@ -8,6 +8,7 @@ SELECT
     cntr_code as country_code,
     lau_id,
     lau_name,
+    nuts_3,
     year,
     -- Convert geometry WKT string to PostGIS geometry type
     ST_GeomFromText(geometry, 3035) as geometry_3035,

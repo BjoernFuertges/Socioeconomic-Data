@@ -191,6 +191,41 @@ sources:
           - name: dataset_name
             description: "Name des Datensatzes (results_bevoelkerung_kreise)"
 
+      - name: results_beschaeftigungsquote_gemeinden
+        description: "Beschäftigungsquote je Gemeinde (LAU) – long format, ein Record pro Gemeinde und Jahr (%)"
+        columns:
+          - name: original_id_1
+            description: "Gemeinde-ID (LAU-Identifikation)"
+            tests:
+              - not_null
+          - name: original_name
+            description: "Gemeindename aus der Quelldatei"
+            tests:
+              - not_null
+          - name: geodata_name
+            description: "Gemappter Geodata-Name"
+          - name: geodata_id_nuts
+            description: "NUTS-3-Code der Region (kann null sein für Gemeinden ohne NUTS-3-Mapping)"
+          - name: geodata_id_ars
+            description: "Amtlicher Regionalschlüssel nach Mapping"
+          - name: mapper
+            description: "Mapping-Methode"
+          - name: parameter
+            description: "Mapping-Parameter"
+          - name: year
+            description: "Jahr der Beobachtung"
+            tests:
+              - not_null
+          - name: value
+            description: "Beschäftigungsquote in Prozent (0–100)"
+            tests:
+              - not_null
+          - name: geodata_level
+            description: "Geodata-Ebene (LAU für Gemeinden)"
+          - name: geodata_year
+            description: "Referenzjahr der Geodaten"
+          - name: dataset_name
+            description: "Name des Datensatzes (results_beschaeftigungsquote_gemeinden)"
       - name: results_schuldnerquote_kreise
         description: "Schuldnerquote je Kreis (Creditreform) – long format, ein Record pro Region und Jahr"
         columns:
@@ -227,6 +262,7 @@ sources:
           - name: geodata_year
             description: "Referenzjahr der Geodaten"
           - name: dataset_name
+            description: "Name des Datensatzes (results_schuldnerquote_kreise)"
 
       - name: results_arbeitsvolumen_kreise
         description: "Arbeitsvolumen je Kreis – long format, ein Record pro Region und Jahr (Stunden)"
@@ -302,4 +338,5 @@ sources:
               - not_null
           - name: value
             description: "Wohngeldhaushalte je 1000 Einwohner"
-            description: "Name des Datensatzes (results_schuldnerquote_kreise)"
+          - name: dataset_name
+            description: "Name des Datensatzes (results_wohngeldhaushalte_kreise)"

@@ -37,6 +37,43 @@ var ArbeitsvolumenConfig = KreisDatasetConfig{
 	RouteSlug:    "arbeitsvolumen",
 }
 
+// BeschaeftigungsquoteGemeindenData repräsentiert Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+type BeschaeftigungsquoteGemeindenData struct {
+	SozioBaseData
+	BeschaeftigungsquoteProzent float64 `json:"beschaeftigungsquote_prozent" db:"beschaeftigungsquote_prozent" example:"50.00"`
+}
+
+// BeschaeftigungsquoteGemeindenConfig ist die Dataset-Konfiguration für BeschaeftigungsquoteGemeinden-Daten,
+// generiert aus dbt/.../models/staging/stg_beschaeftigungsquote_gemeinden_schema.yml
+var BeschaeftigungsquoteGemeindenConfig = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_beschaeftigungsquote_gemeinden",
+	ValueColumns: []string{"beschaeftigungsquote_prozent"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "beschaeftigungsquote-gemeinden",
+}
+
+// BeschaeftigungsquoteNuts3Data repräsentiert Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
+type BeschaeftigungsquoteNuts3Data struct {
+	SozioBaseData
+	BeschaeftigungsquoteProzent     float64 `json:"beschaeftigungsquote_prozent" db:"beschaeftigungsquote_prozent" example:"50.00"`
+	BeschaeftigungsquoteMedian      float64 `json:"beschaeftigungsquote_median" db:"beschaeftigungsquote_median" example:"0"`
+	BeschaeftigungsquoteUngewichtet float64 `json:"beschaeftigungsquote_ungewichtet" db:"beschaeftigungsquote_ungewichtet" example:"0"`
+	GemeindenCount                  int     `json:"gemeinden_count" db:"gemeinden_count" example:"0"`
+}
+
+// BeschaeftigungsquoteNuts3Config ist die Dataset-Konfiguration für BeschaeftigungsquoteNuts3-Daten,
+// generiert aus dbt/.../models/staging/stg_beschaeftigungsquote_nuts3_schema.yml
+var BeschaeftigungsquoteNuts3Config = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_beschaeftigungsquote_nuts3",
+	ValueColumns: []string{"beschaeftigungsquote_prozent", "beschaeftigungsquote_median", "beschaeftigungsquote_ungewichtet", "gemeinden_count"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "beschaeftigungsquote-nuts3",
+}
+
 // BevoelkerungData repräsentiert Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
 type BevoelkerungData struct {
 	SozioBaseData

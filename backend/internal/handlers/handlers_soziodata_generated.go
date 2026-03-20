@@ -44,6 +44,42 @@ func (h *Handler) GetArbeitsvolumenData(c *gin.Context) {
 	getKreisData[models.ArbeitsvolumenData](h, c, models.ArbeitsvolumenConfig)
 }
 
+// GetBeschaeftigungsquoteGemeindenData gibt Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Tags BeschaeftigungsquoteGemeinden
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.BeschaeftigungsquoteGemeindenData}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /beschaeftigungsquote-gemeinden [get]
+func (h *Handler) GetBeschaeftigungsquoteGemeindenData(c *gin.Context) {
+	getKreisData[models.BeschaeftigungsquoteGemeindenData](h, c, models.BeschaeftigungsquoteGemeindenConfig)
+}
+
+// GetBeschaeftigungsquoteNuts3Data gibt Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung zurück
+// @Summary Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
+// @Description Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
+// @Tags BeschaeftigungsquoteNuts3
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.BeschaeftigungsquoteNuts3Data}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /beschaeftigungsquote-nuts3 [get]
+func (h *Handler) GetBeschaeftigungsquoteNuts3Data(c *gin.Context) {
+	getKreisData[models.BeschaeftigungsquoteNuts3Data](h, c, models.BeschaeftigungsquoteNuts3Config)
+}
+
 // GetBevoelkerungData gibt Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
 // @Summary Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
 // @Description Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
