@@ -35,6 +35,28 @@ models:
       - name: years_with_population
         description: "Number of years with population data for this LAU"
 
+  - name: mart_nuts3_summary
+    description: "Alle verfügbaren sozioökonomischen Indikatoren je NUTS-3-Region und Jahr. Basis ist ein FULL OUTER JOIN zwischen Bevölkerung und Schuldnerquote; Arbeitslosenzahlen werden per LEFT JOIN ergänzt (nur Jahresdaten)."
+    columns:
+      - name: nuts_id
+        description: "NUTS-3-Code der Region (z.B. DE111)"
+        tests:
+          - not_null
+      - name: region_name
+        description: "Name der Region"
+      - name: year
+        description: "Datenjahr"
+        tests:
+          - not_null
+      - name: bevoelkerung
+        description: "Bevölkerungszahl (null wenn keine Daten für dieses Jahr)"
+      - name: schuldnerquote_prozent
+        description: "Schuldnerquote in Prozent (null wenn keine Daten für dieses Jahr)"
+      - name: arbeitslose
+        description: "Zahl der Arbeitslosen (Jahresdurchschnitt). Kann null sein, da Arbeitsagenturbezirke nicht 1:1 mit NUTS-3-Kreisen übereinstimmen."
+      - name: yoy_change_percent
+        description: "Veränderung der Arbeitslosenzahlen gegenüber dem Vorjahr in Prozent"
+
   - name: lau_data_quality
     description: "Data quality metrics and issue tracking for LAU integration"
     columns:

@@ -275,6 +275,83 @@ const docTemplate = `{
                 }
             }
         },
+        "/nuts/{nuts_id}": {
+            "get": {
+                "description": "Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code selbst.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NUTS"
+                ],
+                "summary": "Alle Indikatoren für eine NUTS-Region (Level 0–3)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE111",
+                        "description": "NUTS-Code der Region (Level 0–3)",
+                        "name": "nuts_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Jahr (gibt neuestes Jahr zurück wenn nicht angegeben)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Alle verfügbaren Jahre zurückgeben",
+                        "name": "all",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.NutsRegionTimeSeries"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/schuldnerquote": {
             "get": {
                 "description": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
@@ -393,24 +470,10 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "example": "monthly",
-                        "description": "Zeittyp: yearly, monthly",
-                        "name": "time_type",
-                        "in": "query"
-                    },
-                    {
                         "type": "integer",
                         "example": 2024,
                         "description": "Filter nach Jahr",
                         "name": "year",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "example": 4,
-                        "description": "Filter nach Quartal (1-4)",
-                        "name": "quarter",
                         "in": "query"
                     },
                     {
@@ -810,6 +873,59 @@ const docTemplate = `{
                 }
             }
         },
+        "models.NutsRegionData": {
+            "type": "object",
+            "properties": {
+                "arbeitslose": {
+                    "description": "Kann null sein: Arbeitsagenturbezirke entsprechen nicht 1:1 den NUTS-Kreisen",
+                    "type": "number",
+                    "example": 17423
+                },
+                "bevoelkerung": {
+                    "type": "number",
+                    "example": 634830
+                },
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE111"
+                },
+                "region_name": {
+                    "type": "string",
+                    "example": "Stuttgart, Stadtkreis"
+                },
+                "schuldnerquote_prozent": {
+                    "type": "number",
+                    "example": 9.8
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
+                },
+                "yoy_change_percent": {
+                    "type": "number",
+                    "example": -2.3
+                }
+            }
+        },
+        "models.NutsRegionTimeSeries": {
+            "type": "object",
+            "properties": {
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE111"
+                },
+                "region_name": {
+                    "type": "string",
+                    "example": "Stuttgart, Stadtkreis"
+                },
+                "years": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.NutsRegionData"
+                    }
+                }
+            }
+        },
         "models.SchuldnerquoteData": {
             "type": "object",
             "properties": {
@@ -915,57 +1031,32 @@ const docTemplate = `{
                     "type": "number",
                     "example": 18416
                 },
-                "data_quality_flag": {
-                    "type": "string",
-                    "example": "VALID"
-                },
-                "dataset_id": {
-                    "type": "string",
-                    "example": "afa_arbeitslose___kreise_und_gemeinden__monats__und_jahreszahlen_ab_1998__auswertung"
-                },
-                "dataset_series": {
-                    "type": "string",
-                    "example": "Arbeitslose – Kreise und Gemeinden (Monats- und Jahreszahlen ab 1998)"
-                },
-                "dataset_title": {
-                    "type": "string",
-                    "example": "Bestand an Arbeitslosen Deutschland - Kreise und kreisfreie Städte"
+                "arbeitslosenzahlen_pk": {
+                    "type": "string"
                 },
                 "geodata_id": {
                     "type": "string",
                     "example": "DE111"
                 },
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "08111000"
+                },
                 "geodata_level": {
                     "type": "string",
-                    "example": "NUTS 3"
+                    "example": "NUTS_3"
                 },
                 "geodata_name": {
                     "type": "string",
                     "example": "Stuttgart, Stadtkreis"
                 },
-                "load_date": {
-                    "type": "string",
-                    "example": "2025-11-09"
-                },
-                "month": {
+                "geodata_year": {
                     "type": "integer",
-                    "example": 12
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
-                    "example": "2024-12-31T00:00:00Z"
-                },
-                "quarter": {
-                    "type": "integer",
-                    "example": 4
-                },
-                "source_url": {
-                    "type": "string",
-                    "example": "https://statistik.arbeitsagentur.de/Statistikdaten/Detail/Aktuell/..."
-                },
-                "time_type": {
-                    "type": "string",
-                    "example": "monthly"
+                    "example": "2024-01-01T00:00:00Z"
                 },
                 "year": {
                     "type": "integer",

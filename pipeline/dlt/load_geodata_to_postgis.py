@@ -4,12 +4,13 @@ Loads all years into single tables with year columns in the 'store' schema.
 """
 
 import dlt
-import geopandas as gpd
-import pandas as pd
+import gc
 import gzip
-import json
+import ijson
 import os
+import pandas as pd
 from pathlib import Path
+from shapely.geometry import shape
 from typing import Iterator, Dict, Any
 import logging
 
@@ -43,23 +44,22 @@ def load_geodata() -> Iterator[Dict[str, Any]]:
             year = extract_year_from_filename(file_path.name)
             logger.info(f"Processing geodata for year {year}: {file_path.name}")
             
-            # Read compressed GeoJSON
-            with gzip.open(file_path, 'rt', encoding='utf-8') as f:
-                geojson_data = json.load(f)
-            
-            # Convert to GeoDataFrame
-            gdf = gpd.GeoDataFrame.from_features(geojson_data['features'])
-            
-            # Add year column
-            gdf['year'] = year
-            
-            # Convert to records for DLT
-            for _, row in gdf.iterrows():
-                record: Dict[str, Any] = {str(k): v for k, v in row.to_dict().items()}
-                # Convert geometry to WKT for PostGIS
-                if 'geometry' in record and record['geometry'] is not None:
-                    record['geometry'] = str(record['geometry'])
-                yield record
+            # Stream features one-by-one to avoid loading entire GeoJSON into RAM
+            with gzip.open(file_path, 'rb') as f:
+                for feature in ijson.items(f, 'features.item'):
+                    props = feature.get('properties') or {}
+                    geom = feature.get('geometry')
+                    record: Dict[str, Any] = {str(k): v for k, v in props.items()}
+                    record['year'] = year
+                    if geom is not None:
+                        try:
+                            record['geometry'] = shape(geom).wkt
+                        except Exception:
+                            record['geometry'] = None
+                    else:
+                        record['geometry'] = None
+                    yield record
+            gc.collect()
                 
         except Exception as e:
             logger.error(f"Error processing {file_path.name}: {e}")
@@ -108,26 +108,37 @@ def create_pipeline():
 def main():
     """Main execution function."""
     logger.info("Starting LAU geodata and population data pipeline...")
+    logger.info(f"GEODATA_BASE_PATH={BASE_PATH}, GEODATA_PATH={GEODATA_PATH}, POPULATION_PATH={POPULATION_PATH}")
     
     # Create pipeline
     pipeline = create_pipeline()
     
     try:
         # Load geodata
-        logger.info("Loading geodata...")
-        geodata_info = pipeline.run(
-            load_geodata(),
-            table_name="lau_geometry"
-        )
-        logger.info(f"Geodata load completed: {geodata_info}")
+        geojson_files = list(GEODATA_PATH.glob("LAU_RG_01M_*_3035_cleaned.geojson.gz"))
+        if not geojson_files:
+            logger.warning(f"No geodata files found in {GEODATA_PATH}, skipping geodata load")
+            geodata_info = None
+        else:
+            logger.info("Loading geodata...")
+            geodata_info = pipeline.run(
+                load_geodata(),
+                table_name="lau_geometry"
+            )
+            logger.info(f"Geodata load completed: {geodata_info}")
         
         # Load population data
-        logger.info("Loading population data...")
-        population_info = pipeline.run(
-            load_population_data(),
-            table_name="lau_population"
-        )
-        logger.info(f"Population data load completed: {population_info}")
+        csv_files = list(POPULATION_PATH.glob("lau_population_*.csv"))
+        if not csv_files:
+            logger.warning(f"No population files found in {POPULATION_PATH}, skipping population load")
+            population_info = None
+        else:
+            logger.info("Loading population data...")
+            population_info = pipeline.run(
+                load_population_data(),
+                table_name="lau_population"
+            )
+            logger.info(f"Population data load completed: {population_info}")
         
         logger.info("Pipeline completed successfully!")
         

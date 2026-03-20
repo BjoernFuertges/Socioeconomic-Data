@@ -112,6 +112,45 @@ definitions:
         example: 140400
         type: integer
     type: object
+  models.NutsRegionData:
+    properties:
+      arbeitslose:
+        description: 'Kann null sein: Arbeitsagenturbezirke entsprechen nicht 1:1
+          den NUTS-Kreisen'
+        example: 17423
+        type: number
+      bevoelkerung:
+        example: 634830
+        type: number
+      nuts_id:
+        example: DE111
+        type: string
+      region_name:
+        example: Stuttgart, Stadtkreis
+        type: string
+      schuldnerquote_prozent:
+        example: 9.8
+        type: number
+      year:
+        example: 2022
+        type: integer
+      yoy_change_percent:
+        example: -2.3
+        type: number
+    type: object
+  models.NutsRegionTimeSeries:
+    properties:
+      nuts_id:
+        example: DE111
+        type: string
+      region_name:
+        example: Stuttgart, Stadtkreis
+        type: string
+      years:
+        items:
+          $ref: '#/definitions/models.NutsRegionData'
+        type: array
+    type: object
   models.SchuldnerquoteData:
     properties:
       geodata_id_ars:
@@ -189,44 +228,25 @@ definitions:
       arbeitslose_previous_year:
         example: 18416
         type: number
-      data_quality_flag:
-        example: VALID
-        type: string
-      dataset_id:
-        example: afa_arbeitslose___kreise_und_gemeinden__monats__und_jahreszahlen_ab_1998__auswertung
-        type: string
-      dataset_series:
-        example: Arbeitslose – Kreise und Gemeinden (Monats- und Jahreszahlen ab 1998)
-        type: string
-      dataset_title:
-        example: Bestand an Arbeitslosen Deutschland - Kreise und kreisfreie Städte
+      arbeitslosenzahlen_pk:
         type: string
       geodata_id:
         example: DE111
         type: string
+      geodata_id_ars:
+        example: "08111000"
+        type: string
       geodata_level:
-        example: NUTS 3
+        example: NUTS_3
         type: string
       geodata_name:
         example: Stuttgart, Stadtkreis
         type: string
-      load_date:
-        example: "2025-11-09"
-        type: string
-      month:
-        example: 12
+      geodata_year:
+        example: 2021
         type: integer
       observation_date:
-        example: "2024-12-31T00:00:00Z"
-        type: string
-      quarter:
-        example: 4
-        type: integer
-      source_url:
-        example: https://statistik.arbeitsagentur.de/Statistikdaten/Detail/Aktuell/...
-        type: string
-      time_type:
-        example: monthly
+        example: "2024-01-01T00:00:00Z"
         type: string
       year:
         example: 2024
@@ -411,6 +431,60 @@ paths:
       summary: LAU-Region Details
       tags:
       - LAU
+  /nuts/{nuts_id}:
+    get:
+      consumes:
+      - application/json
+      description: 'Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine
+        NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge
+        erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk),
+        5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe
+        aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Für NUTS-Level 0–2 enthält region_name
+        mangels Namenstabelle den NUTS-Code selbst.'
+      parameters:
+      - description: NUTS-Code der Region (Level 0–3)
+        example: DE111
+        in: path
+        name: nuts_id
+        required: true
+        type: string
+      - description: Jahr (gibt neuestes Jahr zurück wenn nicht angegeben)
+        example: 2022
+        in: query
+        name: year
+        type: integer
+      - description: Alle verfügbaren Jahre zurückgeben
+        example: false
+        in: query
+        name: all
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.NutsRegionTimeSeries'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Alle Indikatoren für eine NUTS-Region (Level 0–3)
+      tags:
+      - NUTS
   /schuldnerquote:
     get:
       consumes:
@@ -487,20 +561,10 @@ paths:
         in: query
         name: to_date
         type: string
-      - description: 'Zeittyp: yearly, monthly'
-        example: monthly
-        in: query
-        name: time_type
-        type: string
       - description: Filter nach Jahr
         example: 2024
         in: query
         name: year
-        type: integer
-      - description: Filter nach Quartal (1-4)
-        example: 4
-        in: query
-        name: quarter
         type: integer
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)

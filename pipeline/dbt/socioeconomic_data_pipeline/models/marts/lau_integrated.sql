@@ -22,7 +22,7 @@ integrated_data AS (
     g.country_code,
     g.lau_id,
     g.geometry_3035,
-    g.geometry_wgs84,
+    ST_AsGeoJSON(g.geometry_wgs84)::json as geometry_wgs84,
     g.has_valid_geometry,
     
     -- Population data

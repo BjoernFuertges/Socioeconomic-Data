@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 # Paths — DATA_EXCHANGE_PATH wird per Env-Variable gesetzt (z.B. /app/data-exchange/1_friedrich-bjoern)
 _EXCHANGE = Path(os.environ.get("DATA_EXCHANGE_PATH", "/home/bjoern/Software/HTW/soziooekonomische-daten"))
-CSV_PATH = _EXCHANGE / "arbeitslosenzahlen" / "mapped_pairs.csv"
-META_PATH = _EXCHANGE / "arbeitslosenzahlen" / "meta.json"
+CSV_PATH = _EXCHANGE / "arbeitslose" / "mapped_pairs.csv"
+META_PATH = _EXCHANGE / "arbeitslose" / "meta.json"
 
 def generate_dataset_id(metadata: Dict[str, Any]) -> str:
     """
