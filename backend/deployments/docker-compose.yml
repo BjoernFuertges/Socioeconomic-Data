@@ -72,6 +72,7 @@ services:
     volumes:
       - ../../dlt:/app/dlt
       - ../../dbt:/app/dbt
+      - ../../geo-mapper/scripts:/app/geo-mapper-scripts:ro
       - ../../data-exchange:/app/data-exchange:rw
       - ../../socioeconomic-data-parser:/app/socioeconomic-data-parser:ro
     environment:
