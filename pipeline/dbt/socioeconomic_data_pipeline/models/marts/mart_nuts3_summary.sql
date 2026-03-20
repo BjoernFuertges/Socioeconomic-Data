@@ -14,8 +14,7 @@
   Geo-Mapping variiert (exact_id bis fuzzy-matching).
 
   Nur Datensätze mit has_valid_value = true werden einbezogen.
-  Bei den Arbeitslosenzahlen werden ausschließlich Jahresdaten (time_type = 'yearly')
-  verwendet.
+  Das mart_arbeitslosenzahlen enthält bereits ausschließlich jahresbezogene Datensätze.
 */
 
 with bevoelkerung as (
@@ -46,7 +45,6 @@ arbeitslos as (
         arbeitslose,
         yoy_change_percent
     from {{ ref('mart_arbeitslosenzahlen') }}
-    where time_type = 'yearly'
 ),
 
 -- Basis: FULL OUTER JOIN der beiden NUTS-nativen Datensätze
