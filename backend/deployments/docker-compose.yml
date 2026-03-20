@@ -112,6 +112,12 @@ services:
           python load_soziodata_generic.py bevoelkerung/results_bevoelkerung_kreise &&
           python load_soziodata_generic.py schuldnerquote/results_schuldnerquote_kreise &&
           python load_soziodata_generic.py arbeitslose/results_arbeitslose_kreise"
+
+      # geo-mapper runs every hour at minute 15
+      ofelia.job-exec.geo-mapper.schedule: "15 * * * *"
+      ofelia.job-exec.geo-mapper.command: >
+        bash -c "bash /app/geo-mapper-scripts/run_geo_mapper.sh"
+
       # dbt 30 Minuten nach dlt
       ofelia.job-exec.dbt.schedule: "30 * * * *"
       ofelia.job-exec.dbt.command: >
