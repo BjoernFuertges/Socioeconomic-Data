@@ -1,0 +1,82 @@
+version: 2
+
+models:
+  - name: stg_bruttoverdienst_kreise
+    description: "Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag"
+    columns:
+      - name: bruttoverdienst_pk
+        description: "Surrogate Key aus geodata_id_nuts und year"
+        data_type: text
+        tests:
+          - unique
+          - not_null
+
+      - name: original_id_1
+        description: "Amtlicher Regionalschlüssel aus der Quelldatei"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: original_name
+        description: "Regionsname aus der Quelldatei"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: geodata_name
+        description: "Gemappter Geodata-Name"
+        data_type: text
+
+      - name: geodata_id_nuts
+        description: "NUTS-3-Code der Region"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: geodata_id_ars
+        description: "Amtlicher Regionalschlüssel nach Mapping"
+        data_type: text
+
+      - name: mapper
+        description: "Mapping-Methode"
+        data_type: text
+
+      - name: parameter
+        description: "Mapping-Parameter"
+        data_type: text
+
+      - name: geodata_level
+        description: "Geodata-Ebene (NUTS_3)"
+        data_type: text
+
+      - name: geodata_year
+        description: "Referenzjahr der Geodaten"
+        data_type: integer
+
+      - name: year
+        description: "Jahr der Beobachtung"
+        data_type: integer
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2000
+              max_value: 2030
+
+      - name: bruttoverdienst
+        description: "Bruttoverdienst je Arbeitnehmer in Euro"
+        data_type: numeric
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+
+      - name: observation_date
+        description: "Beobachtungsdatum (01.01. des jeweiligen Jahres)"
+        data_type: date
+        tests:
+          - not_null
+
+      - name: has_valid_value
+        description: "True wenn der Bruttoverdienst plausibel ist (> 0)"
+        data_type: boolean

@@ -11,6 +11,14 @@ import (
 // RegisterSoziodataRoutes registriert alle generierten Soziodata-Routen.
 // Wird von SetupRoutes aufgerufen.
 func RegisterSoziodataRoutes(v1 *gin.RouterGroup, h *handlers.Handler) {
+	v1.GET("/arbeitslose", h.GetArbeitsloseData)
+	v1.GET("/arbeitsvolumen", h.GetArbeitsvolumenData)
+	v1.GET("/beschaeftigungsquote-gemeinden", h.GetBeschaeftigungsquoteGemeindenData)
+	v1.GET("/beschaeftigungsquote-nuts3", h.GetBeschaeftigungsquoteNuts3Data)
 	v1.GET("/bevoelkerung", h.GetBevoelkerungData)
+	v1.GET("/bruttoverdienst", h.GetBruttoverdienstData)
+	v1.GET("/durchschnittsalter", h.GetDurchschnittsalterData)
 	v1.GET("/schuldnerquote", h.GetSchuldnerquoteData)
+	v1.GET("/sgb_ii_quote", h.GetSgbIiQuoteData)
+	v1.GET("/wohngeldhaushalte", h.GetWohngeldhaushalteData)
 }

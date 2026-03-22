@@ -1,0 +1,85 @@
+version: 2
+
+models:
+  - name: stg_beschaeftigungsquote_gemeinden
+    description: "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag"
+    columns:
+      - name: beschaeftigungsquote_lau_pk
+        description: "Surrogate Key aus original_id_1 und year"
+        data_type: text
+        tests:
+          - unique
+          - not_null
+
+      - name: original_id_1
+        description: "Gemeinde-ID (LAU-Identifikation) aus der Quelldatei"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: original_name
+        description: "Gemeindename aus der Quelldatei"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: geodata_name
+        description: "Gemappter Geodata-Name"
+        data_type: text
+
+      - name: geodata_id_nuts
+        description: "NUTS-3-Code der Region (kann leer sein für unmapped Gemeinden)"
+        data_type: text
+
+      - name: geodata_id_lau
+        description: "Gemappte LAU-ID der Gemeinde"
+        data_type: text
+
+      - name: geodata_id_ars
+        description: "Amtlicher Regionalschlüssel nach Mapping"
+        data_type: text
+
+      - name: mapper
+        description: "Mapping-Methode"
+        data_type: text
+
+      - name: parameter
+        description: "Mapping-Parameter"
+        data_type: text
+
+      - name: geodata_level
+        description: "Geodata-Ebene (LAU für Gemeinden)"
+        data_type: text
+
+      - name: geodata_year
+        description: "Referenzjahr der Geodaten"
+        data_type: integer
+
+      - name: year
+        description: "Jahr der Beobachtung"
+        data_type: integer
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2000
+              max_value: 2030
+
+      - name: beschaeftigungsquote_prozent
+        description: "Beschäftigungsquote in Prozent (0–100)"
+        data_type: numeric
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+              inclusive: true
+
+      - name: observation_date
+        description: "Beobachtungsdatum (01.01. des jeweiligen Jahres)"
+        data_type: date
+        tests:
+          - not_null
+
+      - name: has_valid_value
+        description: "True wenn die Beschäftigungsquote plausibel ist (0–100 %)"
+        data_type: boolean

@@ -1,4 +1,4 @@
-// gen-models reads dbt schema YAML files (stg_*_kreise_schema.yml) and generates
+// gen-models reads dbt schema YAML files (stg_*_schema.yml) and generates
 // Go structs and handler wrappers with full Swagger annotations.
 //
 // Invoked via: go generate ./internal/models/...
@@ -84,6 +84,7 @@ var baseColumnSet = map[string]bool{
 	"original_name":    true,
 	"geodata_name":     true,
 	"geodata_id_nuts":  true,
+	"geodata_id_lau":   true,
 	"geodata_id_ars":   true,
 	"mapper":           true,
 	"parameter":        true,
@@ -175,7 +176,25 @@ func snakeToCamel(s string) string {
 }
 
 func modelSlug(modelName string) string {
-	return strings.TrimSuffix(strings.TrimPrefix(modelName, "stg_"), "_kreise")
+	// Remove stg_ prefix
+	slug := strings.TrimPrefix(modelName, "stg_")
+	// Remove geographic level suffixes: _kreise, _gemeinden, _nuts3, etc.
+	for _, suffix := range []string{"_kreise", "_gemeinden", "_nuts3", "_lau"} {
+		slug = strings.TrimSuffix(slug, suffix)
+	}
+	return slug
+}
+
+func getLevelSuffix(modelName string) string {
+	// Extract geographic level suffix from model name
+	// Returns "_kreise", "_gemeinden", "_nuts3", etc. or empty string
+	name := strings.TrimPrefix(modelName, "stg_")
+	for _, suffix := range []string{"_kreise", "_gemeinden", "_nuts3", "_lau"} {
+		if strings.HasSuffix(name, suffix) {
+			return suffix
+		}
+	}
+	return ""
 }
 
 func dbtTypeToGo(dt string) string {
@@ -253,14 +272,27 @@ func parseAcceptedRange(node yaml.Node) *acceptedRange {
 
 func buildDataset(m dbtModel) dataset {
 	slug := modelSlug(m.Name)
+	level := getLevelSuffix(m.Name)
+
 	title := snakeToCamel(slug)
+	routeSlug := slug
+
+	// Keep historical route/title style for *_kreise models (e.g. /bevoelkerung).
+	// Add suffix only for alternative levels to avoid naming collisions
+	// (e.g. beschaeftigungsquote-gemeinden, beschaeftigungsquote-nuts3).
+	if level != "" && level != "_kreise" {
+		levelCamel := snakeToCamel(strings.TrimPrefix(level, "_"))
+		title = title + levelCamel
+		routeSlug = slug + strings.ReplaceAll(level, "_", "-")
+	}
+
 	ds := dataset{
 		ModelName:   m.Name,
 		Description: m.Description,
 		StructName:  title + "Data",
 		ConfigVar:   title + "Config",
 		HandlerFunc: "Get" + title + "Data",
-		RouteSlug:   slug,
+		RouteSlug:   routeSlug,
 		Tag:         title,
 		DBSchema:    "transformed_data",
 		DBTable:     m.Name,
@@ -310,14 +342,36 @@ func main() {
 	}
 	projectRoot := filepath.Join(cwd, "..", "..", "..")
 	stagingDir := filepath.Join(projectRoot, "dbt", "socioeconomic_data_pipeline", "models", "staging")
-	matches, err := filepath.Glob(filepath.Join(stagingDir, "stg_*_kreise_schema.yml"))
-	if err != nil {
-		log.Fatalf("glob error: %v", err)
+
+	// Match only geographic soziodata staging schemas.
+	// This keeps historical behaviour for *_kreise and adds *_gemeinden / *_nuts3.
+	patterns := []string{
+		"stg_*_kreise_schema.yml",
+		"stg_*_gemeinden_schema.yml",
+		"stg_*_nuts3_schema.yml",
+		"stg_*_lau_schema.yml",
 	}
+
+	var matches []string
+	for _, pattern := range patterns {
+		found, globErr := filepath.Glob(filepath.Join(stagingDir, pattern))
+		if globErr != nil {
+			log.Fatalf("glob error for pattern %s: %v", pattern, globErr)
+		}
+		matches = append(matches, found...)
+	}
+
 	if len(matches) == 0 {
 		log.Fatalf("no schema files found in %s", stagingDir)
 	}
 	sort.Strings(matches)
+	uniq := make([]string, 0, len(matches))
+	for i, m := range matches {
+		if i == 0 || m != matches[i-1] {
+			uniq = append(uniq, m)
+		}
+	}
+	matches = uniq
 	var datasets []dataset
 	for _, path := range matches {
 		raw, err := os.ReadFile(path)
@@ -329,6 +383,12 @@ func main() {
 			log.Fatalf("parse %s: %v", path, err)
 		}
 		for _, model := range schema.Models {
+			if !(strings.HasSuffix(model.Name, "_kreise") ||
+				strings.HasSuffix(model.Name, "_gemeinden") ||
+				strings.HasSuffix(model.Name, "_nuts3") ||
+				strings.HasSuffix(model.Name, "_lau")) {
+				continue
+			}
 			datasets = append(datasets, buildDataset(model))
 		}
 	}

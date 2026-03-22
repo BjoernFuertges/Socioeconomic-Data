@@ -19,6 +19,334 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/arbeitslose": {
+            "get": {
+                "description": "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Arbeitslose"
+                ],
+                "summary": "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.ArbeitsloseData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/arbeitsvolumen": {
+            "get": {
+                "description": "Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Arbeitsvolumen"
+                ],
+                "summary": "Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.ArbeitsvolumenData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/beschaeftigungsquote-gemeinden": {
+            "get": {
+                "description": "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "BeschaeftigungsquoteGemeinden"
+                ],
+                "summary": "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.BeschaeftigungsquoteGemeindenData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/beschaeftigungsquote-nuts3": {
+            "get": {
+                "description": "Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "BeschaeftigungsquoteNuts3"
+                ],
+                "summary": "Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.BeschaeftigungsquoteNuts3Data"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/bevoelkerung": {
             "get": {
                 "description": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
@@ -79,6 +407,170 @@ const docTemplate = `{
                                             "type": "array",
                                             "items": {
                                                 "$ref": "#/definitions/models.BevoelkerungData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/bruttoverdienst": {
+            "get": {
+                "description": "Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bruttoverdienst"
+                ],
+                "summary": "Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.BruttoverdienstData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/durchschnittsalter": {
+            "get": {
+                "description": "Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Durchschnittsalter"
+                ],
+                "summary": "Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.DurchschnittsalterData"
                                             }
                                         }
                                     }
@@ -434,6 +926,88 @@ const docTemplate = `{
                 }
             }
         },
+        "/sgb_ii_quote": {
+            "get": {
+                "description": "Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SgbIiQuote"
+                ],
+                "summary": "Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2005-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.SgbIiQuoteData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/unemployment": {
             "get": {
                 "description": "Gibt Arbeitslosenzahlen mit optionalen Filtern zurück",
@@ -714,6 +1288,88 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/wohngeldhaushalte": {
+            "get": {
+                "description": "Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Wohngeldhaushalte"
+                ],
+                "summary": "Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2010-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.WohngeldhaushalteData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -738,6 +1394,262 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ArbeitsloseData": {
+            "type": "object",
+            "properties": {
+                "arbeitslose": {
+                    "type": "number",
+                    "example": 0
+                },
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
+                }
+            }
+        },
+        "models.ArbeitsvolumenData": {
+            "type": "object",
+            "properties": {
+                "arbeitsvolumen": {
+                    "type": "number",
+                    "example": 0
+                },
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
+                }
+            }
+        },
+        "models.BeschaeftigungsquoteGemeindenData": {
+            "type": "object",
+            "properties": {
+                "beschaeftigungsquote_prozent": {
+                    "type": "number",
+                    "example": 50
+                },
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
+                }
+            }
+        },
+        "models.BeschaeftigungsquoteNuts3Data": {
+            "type": "object",
+            "properties": {
+                "beschaeftigungsquote_median": {
+                    "type": "number",
+                    "example": 0
+                },
+                "beschaeftigungsquote_prozent": {
+                    "type": "number",
+                    "example": 50
+                },
+                "beschaeftigungsquote_ungewichtet": {
+                    "type": "number",
+                    "example": 0
+                },
+                "gemeinden_count": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
+                }
+            }
+        },
         "models.BevoelkerungData": {
             "type": "object",
             "properties": {
@@ -748,6 +1660,132 @@ const docTemplate = `{
                 "geodata_id_ars": {
                     "type": "string",
                     "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
+                }
+            }
+        },
+        "models.BruttoverdienstData": {
+            "type": "object",
+            "properties": {
+                "bruttoverdienst": {
+                    "type": "number",
+                    "example": 0
+                },
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
+                }
+            }
+        },
+        "models.DurchschnittsalterData": {
+            "type": "object",
+            "properties": {
+                "durchschnittsalter": {
+                    "type": "number",
+                    "example": 50
+                },
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
                 },
                 "geodata_id_nuts": {
                     "type": "string",
@@ -933,6 +1971,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "01001"
                 },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
                 "geodata_id_nuts": {
                     "type": "string",
                     "example": "DEF01"
@@ -974,6 +2016,67 @@ const docTemplate = `{
                     "example": "id_ars"
                 },
                 "schuldnerquote_prozent": {
+                    "type": "number",
+                    "example": 50
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
+                }
+            }
+        },
+        "models.SgbIiQuoteData": {
+            "type": "object",
+            "properties": {
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "sgb_ii_quote_prozent": {
                     "type": "number",
                     "example": 50
                 },
@@ -1065,6 +2168,67 @@ const docTemplate = `{
                 "yoy_change_percent": {
                     "type": "number",
                     "example": 12.67
+                }
+            }
+        },
+        "models.WohngeldhaushalteData": {
+            "type": "object",
+            "properties": {
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "wohngeldhaushalte_je_1000": {
+                    "type": "number",
+                    "example": 0
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
                 }
             }
         }

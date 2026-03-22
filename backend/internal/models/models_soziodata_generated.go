@@ -3,6 +3,77 @@
 
 package models
 
+// ArbeitsloseData repräsentiert Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+type ArbeitsloseData struct {
+	SozioBaseData
+	Arbeitslose float64 `json:"arbeitslose" db:"arbeitslose" example:"0"`
+}
+
+// ArbeitsloseConfig ist die Dataset-Konfiguration für Arbeitslose-Daten,
+// generiert aus dbt/.../models/staging/stg_arbeitslose_kreise_schema.yml
+var ArbeitsloseConfig = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_arbeitslose_kreise",
+	ValueColumns: []string{"arbeitslose"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "arbeitslose",
+}
+
+// ArbeitsvolumenData repräsentiert Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+type ArbeitsvolumenData struct {
+	SozioBaseData
+	Arbeitsvolumen float64 `json:"arbeitsvolumen" db:"arbeitsvolumen" example:"0"`
+}
+
+// ArbeitsvolumenConfig ist die Dataset-Konfiguration für Arbeitsvolumen-Daten,
+// generiert aus dbt/.../models/staging/stg_arbeitsvolumen_kreise_schema.yml
+var ArbeitsvolumenConfig = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_arbeitsvolumen_kreise",
+	ValueColumns: []string{"arbeitsvolumen"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "arbeitsvolumen",
+}
+
+// BeschaeftigungsquoteGemeindenData repräsentiert Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+type BeschaeftigungsquoteGemeindenData struct {
+	SozioBaseData
+	BeschaeftigungsquoteProzent float64 `json:"beschaeftigungsquote_prozent" db:"beschaeftigungsquote_prozent" example:"50.00"`
+}
+
+// BeschaeftigungsquoteGemeindenConfig ist die Dataset-Konfiguration für BeschaeftigungsquoteGemeinden-Daten,
+// generiert aus dbt/.../models/staging/stg_beschaeftigungsquote_gemeinden_schema.yml
+var BeschaeftigungsquoteGemeindenConfig = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_beschaeftigungsquote_gemeinden",
+	ValueColumns: []string{"beschaeftigungsquote_prozent"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "beschaeftigungsquote-gemeinden",
+}
+
+// BeschaeftigungsquoteNuts3Data repräsentiert Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
+type BeschaeftigungsquoteNuts3Data struct {
+	SozioBaseData
+	BeschaeftigungsquoteProzent     float64 `json:"beschaeftigungsquote_prozent" db:"beschaeftigungsquote_prozent" example:"50.00"`
+	BeschaeftigungsquoteMedian      float64 `json:"beschaeftigungsquote_median" db:"beschaeftigungsquote_median" example:"0"`
+	BeschaeftigungsquoteUngewichtet float64 `json:"beschaeftigungsquote_ungewichtet" db:"beschaeftigungsquote_ungewichtet" example:"0"`
+	GemeindenCount                  int     `json:"gemeinden_count" db:"gemeinden_count" example:"0"`
+}
+
+// BeschaeftigungsquoteNuts3Config ist die Dataset-Konfiguration für BeschaeftigungsquoteNuts3-Daten,
+// generiert aus dbt/.../models/staging/stg_beschaeftigungsquote_nuts3_schema.yml
+var BeschaeftigungsquoteNuts3Config = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_beschaeftigungsquote_nuts3",
+	ValueColumns: []string{"beschaeftigungsquote_prozent", "beschaeftigungsquote_median", "beschaeftigungsquote_ungewichtet", "gemeinden_count"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "beschaeftigungsquote-nuts3",
+}
+
 // BevoelkerungData repräsentiert Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
 type BevoelkerungData struct {
 	SozioBaseData
@@ -20,6 +91,40 @@ var BevoelkerungConfig = KreisDatasetConfig{
 	RouteSlug:    "bevoelkerung",
 }
 
+// BruttoverdienstData repräsentiert Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+type BruttoverdienstData struct {
+	SozioBaseData
+	Bruttoverdienst float64 `json:"bruttoverdienst" db:"bruttoverdienst" example:"0"`
+}
+
+// BruttoverdienstConfig ist die Dataset-Konfiguration für Bruttoverdienst-Daten,
+// generiert aus dbt/.../models/staging/stg_bruttoverdienst_kreise_schema.yml
+var BruttoverdienstConfig = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_bruttoverdienst_kreise",
+	ValueColumns: []string{"bruttoverdienst"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "bruttoverdienst",
+}
+
+// DurchschnittsalterData repräsentiert Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+type DurchschnittsalterData struct {
+	SozioBaseData
+	Durchschnittsalter float64 `json:"durchschnittsalter" db:"durchschnittsalter" example:"50.00"`
+}
+
+// DurchschnittsalterConfig ist die Dataset-Konfiguration für Durchschnittsalter-Daten,
+// generiert aus dbt/.../models/staging/stg_durchschnittsalter_kreise_schema.yml
+var DurchschnittsalterConfig = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_durchschnittsalter_kreise",
+	ValueColumns: []string{"durchschnittsalter"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "durchschnittsalter",
+}
+
 // SchuldnerquoteData repräsentiert Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
 type SchuldnerquoteData struct {
 	SozioBaseData
@@ -35,4 +140,38 @@ var SchuldnerquoteConfig = KreisDatasetConfig{
 	DefaultLimit: 1000,
 	OrderBy:      "geodata_id_nuts, year",
 	RouteSlug:    "schuldnerquote",
+}
+
+// SgbIiQuoteData repräsentiert Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+type SgbIiQuoteData struct {
+	SozioBaseData
+	SgbIiQuoteProzent float64 `json:"sgb_ii_quote_prozent" db:"sgb_ii_quote_prozent" example:"50.00"`
+}
+
+// SgbIiQuoteConfig ist die Dataset-Konfiguration für SgbIiQuote-Daten,
+// generiert aus dbt/.../models/staging/stg_sgb_ii_quote_kreise_schema.yml
+var SgbIiQuoteConfig = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_sgb_ii_quote_kreise",
+	ValueColumns: []string{"sgb_ii_quote_prozent"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "sgb_ii_quote",
+}
+
+// WohngeldhaushalteData repräsentiert Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+type WohngeldhaushalteData struct {
+	SozioBaseData
+	WohngeldhaushalteJe1000 float64 `json:"wohngeldhaushalte_je_1000" db:"wohngeldhaushalte_je_1000" example:"0"`
+}
+
+// WohngeldhaushalteConfig ist die Dataset-Konfiguration für Wohngeldhaushalte-Daten,
+// generiert aus dbt/.../models/staging/stg_wohngeldhaushalte_kreise_schema.yml
+var WohngeldhaushalteConfig = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_wohngeldhaushalte_kreise",
+	ValueColumns: []string{"wohngeldhaushalte_je_1000"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "wohngeldhaushalte",
 }
