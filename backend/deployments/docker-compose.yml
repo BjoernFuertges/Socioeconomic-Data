@@ -104,7 +104,7 @@ services:
     labels:
       ofelia.enabled: "true"
       # dlt jede Stunde zur vollen Stunde
-      ofelia.job-exec.dlt.schedule: "0 * * * *"
+      ofelia.job-exec.dlt.schedule: "0 0 * * * *"
       ofelia.job-exec.dlt.command: >
         bash -c "cd /app/dlt &&
           python load_arbeitslosenzahlen_afa.py &&
@@ -114,12 +114,12 @@ services:
           python load_soziodata_generic.py arbeitslose/results_arbeitslose_kreise"
 
       # geo-mapper runs every hour at minute 15
-      ofelia.job-exec.geo-mapper.schedule: "15 * * * *"
+      ofelia.job-exec.geo-mapper.schedule: "0 15 * * * *"
       ofelia.job-exec.geo-mapper.command: >
         bash -c "bash /app/geo-mapper-scripts/run_geo_mapper.sh"
 
       # dbt 30 Minuten nach dlt
-      ofelia.job-exec.dbt.schedule: "30 * * * *"
+      ofelia.job-exec.dbt.schedule: "0 30 * * * *"
       ofelia.job-exec.dbt.command: >
         bash -c "cd /app/dbt/socioeconomic_data_pipeline &&
           dbt deps &&
@@ -130,7 +130,7 @@ services:
           fi"
 
   scheduler:
-    image: mcuadros/ofelia:latest
+    image: mcuadros/ofelia:v0.3.21
     container_name: scheduler
     restart: always
     command: daemon --docker

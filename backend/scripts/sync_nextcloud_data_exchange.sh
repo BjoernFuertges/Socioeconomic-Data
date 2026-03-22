@@ -18,13 +18,23 @@ fi
 : "${RCLONE_SOURCE:?RCLONE_SOURCE ist nicht gesetzt (backend/deployments/.env.nextcloud-sync).}"
 
 rclone_dest="${RCLONE_DEST:-${repo_root}/data-exchange/1_friedrich-bjoern}"
+rclone_geodata_dest="${RCLONE_GEODATA_DEST:-${repo_root}/data-exchange/geodata}"
 mkdir -p "${rclone_dest}"
+mkdir -p "${rclone_geodata_dest}"
 
-cmd=(rclone sync "${RCLONE_SOURCE}" "${rclone_dest}" --delete-during --checksum)
+common_args=(--delete-during --checksum)
 
 if [[ -n "${RCLONE_CONFIG_FILE:-}" ]]; then
-  cmd+=("--config" "${RCLONE_CONFIG_FILE}")
+  common_args+=("--config" "${RCLONE_CONFIG_FILE}")
 fi
 
-echo "Starte Spiegelung von ${RCLONE_SOURCE} nach ${rclone_dest}"
-exec "${cmd[@]}"
+echo "Starte Spiegelung von ${RCLONE_SOURCE} nach ${rclone_dest} (ohne Geodaten)"
+rclone sync "${RCLONE_SOURCE}" "${rclone_dest}" "${common_args[@]}" --exclude "/Geodaten/**"
+
+if [[ -d "${rclone_dest}/Geodaten" ]]; then
+  echo "Entferne veraltetes Zielverzeichnis ${rclone_dest}/Geodaten"
+  rm -rf "${rclone_dest}/Geodaten"
+fi
+
+echo "Starte Spiegelung von ${RCLONE_SOURCE}/Geodaten nach ${rclone_geodata_dest}"
+exec rclone sync "${RCLONE_SOURCE}/Geodaten" "${rclone_geodata_dest}" "${common_args[@]}"
