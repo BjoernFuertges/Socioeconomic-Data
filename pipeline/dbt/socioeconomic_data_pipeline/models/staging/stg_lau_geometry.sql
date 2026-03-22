@@ -1,5 +1,8 @@
 {{ config(materialized='view') }}
 
+{% set source_relation = source('loaded_data', 'lau_geometry') %}
+{% set source_columns = adapter.get_columns_in_relation(source_relation) | map(attribute='name') | map('lower') | list %}
+
 -- Staging model for LAU geometry data
 -- Standardizes column names and data types for geometric data from DLT
 
@@ -8,7 +11,11 @@ SELECT
     cntr_code as country_code,
     lau_id,
     lau_name,
+    {% if 'nuts_3' in source_columns %}
     nuts_3,
+    {% else %}
+    null::text as nuts_3,
+    {% endif %}
     year,
     -- Convert geometry WKT string to PostGIS geometry type
     ST_GeomFromText(geometry, 3035) as geometry_3035,
@@ -23,7 +30,7 @@ SELECT
     -- Extract additional metadata
     current_timestamp as loaded_at
 
-FROM {{ source('loaded_data', 'lau_geometry') }}
+FROM {{ source_relation }}
 WHERE geometry IS NOT NULL 
     AND trim(geometry) != ''
     AND gisco_id IS NOT NULL

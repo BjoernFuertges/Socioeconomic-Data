@@ -5,8 +5,11 @@
     )
 }}
 
+{% set source_relation = source('loaded_data', 'results_beschaeftigungsquote_gemeinden') %}
+{% set source_columns = adapter.get_columns_in_relation(source_relation) | map(attribute='name') | map('lower') | list %}
+
 with source_data as (
-    select * from {{ source('loaded_data', 'results_beschaeftigungsquote_gemeinden') }}
+    select * from {{ source_relation }}
 ),
 
 cleaned as (
@@ -15,12 +18,26 @@ cleaned as (
         regexp_replace(cast(original_id_1 as text), '\\.0+$', '') as original_id_1,
         original_name,
         geodata_name,
+        {% if 'geodata_id_nuts' in source_columns %}
         nullif(cast(geodata_id_nuts as text), '') as geodata_id_nuts,
+        {% else %}
+        null::text as geodata_id_nuts,
+        {% endif %}
         coalesce(
+            {% if 'geodata_id_lau' in source_columns %}
             nullif(cast(geodata_id_lau as text), ''),
+            {% endif %}
+            {% if 'geodata_id_ars' in source_columns %}
             nullif(cast(geodata_id_ars as text), '')
+            {% else %}
+            null::text
+            {% endif %}
         ) as geodata_id_lau,
+        {% if 'geodata_id_ars' in source_columns %}
         nullif(cast(geodata_id_ars as text), '') as geodata_id_ars,
+        {% else %}
+        null::text as geodata_id_ars,
+        {% endif %}
         mapper,
         parameter,
         coalesce(nullif(cast(geodata_level as text), ''), 'LAU') as geodata_level,
