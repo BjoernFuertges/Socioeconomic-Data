@@ -15,7 +15,7 @@ const sozioKreisBaseColumns = `d.original_id_1, d.original_name, d.geodata_name,
 	`coalesce(` +
 	`nullif(to_jsonb(d)->>'geodata_id_lau', ''), ` +
 	`case when d.geodata_level = 'LAU' then nullif(cast(d.geodata_id_ars as text), '') end, ` +
-	`case when d.geodata_level = 'LAU' then d.original_id_1 end, ''` +
+	`case when d.geodata_level = 'LAU' then cast(d.original_id_1 as text) end, ''` +
 	`) as geodata_id_lau, ` +
 	`cast(d.geodata_id_ars as text) as geodata_id_ars, d.mapper, d.parameter, d.geodata_level, d.geodata_year, ` +
 	`d.year, d.observation_date::text, d.has_valid_value`

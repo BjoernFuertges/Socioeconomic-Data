@@ -104,7 +104,7 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 			return `SELECT COUNT(DISTINCT nuts_id) FROM ` + table
 		}
 		if strings.Contains(table, "nuts3") {
-			return `SELECT DISTINCT ON (nuts_id) nuts_id, region_name, geodata_id_ars FROM ` + table + ` ORDER BY nuts_id`
+			return `SELECT DISTINCT ON (nuts_id) nuts_id, region_name, CAST(geodata_id_ars AS text) AS geodata_id_ars FROM ` + table + ` ORDER BY nuts_id`
 		}
 		return `SELECT DISTINCT ON (nuts_id) nuts_id, region_name, null::text AS geodata_id_ars FROM ` + table + ` ORDER BY nuts_id`
 	}
@@ -221,7 +221,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		return
 	}
 
-	const selectCols = `nuts_id, region_name, year, geodata_id_ars, bevoelkerung, schuldnerquote_prozent, arbeitslose, yoy_change_percent`
+	const selectCols = `nuts_id, region_name, year, CAST(geodata_id_ars AS text) AS geodata_id_ars, bevoelkerung, schuldnerquote_prozent, arbeitslose, yoy_change_percent`
 	fromClause := ` FROM ` + levelDetails.Table + ` WHERE nuts_id = $1`
 
 	if allStr == "true" {
