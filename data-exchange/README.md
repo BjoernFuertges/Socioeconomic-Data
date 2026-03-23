@@ -118,10 +118,13 @@ Für einen regelmäßigen Sync inklusive Löschungen gibt es ein minimales Skrip
         - `loginctl enable-linger "$USER"`
 
 5. Bei Änderungen aktualisieren (z. B. neues Intervall im Timer)
-    - `cp backend/init/systemd/nextcloud-data-exchange-sync.service ~/.config/systemd/user/`
-    - `cp backend/init/systemd/nextcloud-data-exchange-sync.timer ~/.config/systemd/user/`
-    - `systemctl --user daemon-reload`
-    - `systemctl --user reset-failed nextcloud-data-exchange-sync.service`
-    - `systemctl --user restart nextcloud-data-exchange-sync.timer`
-    - `systemctl --user start nextcloud-data-exchange-sync.service`
-    - `systemctl --user cat nextcloud-data-exchange-sync.timer | grep OnCalendar`
+
+    ```bash
+        cp backend/init/systemd/nextcloud-data-exchange-sync.service ~/.config/systemd/user/
+        cp backend/init/systemd/nextcloud-data-exchange-sync.timer ~/.config/systemd/user/
+        systemctl --user daemon-reload
+        systemctl --user reset-failed nextcloud-data-exchange-sync.service
+        systemctl --user restart nextcloud-data-exchange-sync.timer
+        systemctl --user start nextcloud-data-exchange-sync.service
+        systemctl --user cat nextcloud-data-exchange-sync.timer | grep OnCalendar
+    ```
