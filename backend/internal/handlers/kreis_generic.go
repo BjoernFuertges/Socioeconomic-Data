@@ -23,6 +23,8 @@ const sozioKreisBaseColumns = `d.original_id_1, d.original_name, d.geodata_name,
 // getKreisData ist der generische Handler-Kern für alle Kreis-Datensätze.
 // T muss SozioBaseData einbetten und alle cfg.ValueColumns via db-Tags mappen.
 func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConfig) {
+	limitNull := normalizeNullableLimitQuery(c)
+
 	var filter models.SozioKreisFilter
 	if err := c.ShouldBindQuery(&filter); err != nil {
 		respondBadRequest(c, fmt.Sprintf("Ungültige Query-Parameter: %v", err))
@@ -63,8 +65,23 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 		return
 	}
 
-	query += fmt.Sprintf(" ORDER BY %s LIMIT $%d OFFSET $%d", cfg.OrderBy, argPos, argPos+1)
-	args = append(args, filter.Limit, filter.Offset)
+	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
+		c,
+		query,
+		args,
+		argPos,
+		cfg.OrderBy,
+		cfg.DefaultLimit,
+		filter.Limit,
+		filter.Offset,
+		limitNull,
+	)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	query = pagedQuery
+	args = pagedArgs
 
 	data := make([]T, 0)
 	if err := h.DB.Select(&data, query, args...); err != nil {
@@ -77,8 +94,7 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 		Data:    data,
 		Meta: &models.MetaInfo{
 			Total:  total,
-			Limit:  filter.Limit,
-			Offset: filter.Offset,
+			Offset: offset,
 		},
 	})
 }

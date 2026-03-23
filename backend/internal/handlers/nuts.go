@@ -86,13 +86,11 @@ func normalizeNutsResponsePart(part string) (string, error) {
 // @Router /nuts [get]
 func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 	levelStr := c.Query("level")
-	limit := 100
-	offset := 0
-	if l := c.Query("limit"); l != "" {
-		fmt.Sscanf(l, "%d", &limit)
-	}
-	if o := c.Query("offset"); o != "" {
-		fmt.Sscanf(o, "%d", &offset)
+	limitNull := normalizeNullableLimitQuery(c)
+	limit, offset, err := resolvePagination(c, 100, 0, 0, limitNull)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
 	}
 
 	type dbRow struct {
@@ -106,9 +104,9 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 			return `SELECT COUNT(DISTINCT nuts_id) FROM ` + table
 		}
 		if strings.Contains(table, "nuts3") {
-			return `SELECT DISTINCT ON (nuts_id) nuts_id, region_name, geodata_id_ars FROM ` + table + ` ORDER BY nuts_id LIMIT $1 OFFSET $2`
+			return `SELECT DISTINCT ON (nuts_id) nuts_id, region_name, geodata_id_ars FROM ` + table + ` ORDER BY nuts_id`
 		}
-		return `SELECT DISTINCT ON (nuts_id) nuts_id, region_name, null::text AS geodata_id_ars FROM ` + table + ` ORDER BY nuts_id LIMIT $1 OFFSET $2`
+		return `SELECT DISTINCT ON (nuts_id) nuts_id, region_name, null::text AS geodata_id_ars FROM ` + table + ` ORDER BY nuts_id`
 	}
 
 	var levels []int
@@ -141,20 +139,16 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 
 		var cnt int
 		if err := h.DB.QueryRow(buildQuery(levelDetails.Table, true)).Scan(&cnt); err != nil {
-			c.JSON(http.StatusInternalServerError, models.APIResponse{
-				Success: false,
-				Error:   fmt.Sprintf("Datenbankfehler (Level %d): %v", lvl, err),
-			})
+			respondInternalError(c, fmt.Sprintf("Datenbankfehler (Level %d): %v", lvl, err))
 			return
 		}
 		total += cnt
 
 		rows := []dbRow{}
-		if err := h.DB.Select(&rows, buildQuery(levelDetails.Table, false), limit, offset); err != nil {
-			c.JSON(http.StatusInternalServerError, models.APIResponse{
-				Success: false,
-				Error:   fmt.Sprintf("Datenbankfehler (Level %d): %v", lvl, err),
-			})
+		query := buildQuery(levelDetails.Table, false)
+		paginationQuery, paginationArgs := applyPaginationClause(query, 1, limit, offset)
+		if err := h.DB.Select(&rows, paginationQuery, paginationArgs...); err != nil {
+			respondInternalError(c, fmt.Sprintf("Datenbankfehler (Level %d): %v", lvl, err))
 			return
 		}
 
@@ -174,7 +168,6 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 		Data:    result,
 		Meta: &models.MetaInfo{
 			Total:  total,
-			Limit:  limit,
 			Offset: offset,
 		},
 	})

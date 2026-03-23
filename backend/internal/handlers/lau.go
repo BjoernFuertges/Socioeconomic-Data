@@ -24,6 +24,8 @@ import (
 // @Failure 500 {object} models.APIResponse
 // @Router /lau [get]
 func (h *Handler) GetLAURegions(c *gin.Context) {
+	limitNull := normalizeNullableLimitQuery(c)
+
 	var filter models.LAURegionFilter
 	if err := c.ShouldBindQuery(&filter); err != nil {
 		respondBadRequest(c, fmt.Sprintf("Ungültige Query-Parameter: %v", err))
@@ -72,8 +74,23 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 		return
 	}
 
-	query += fmt.Sprintf(" ORDER BY gisco_id, year LIMIT $%d OFFSET $%d", argPos, argPos+1)
-	args = append(args, filter.Limit, filter.Offset)
+	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
+		c,
+		query,
+		args,
+		argPos,
+		"gisco_id, year",
+		100,
+		filter.Limit,
+		filter.Offset,
+		limitNull,
+	)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	query = pagedQuery
+	args = pagedArgs
 
 	regions := []models.LAURegion{}
 	err = h.DB.Select(&regions, query, args...)
@@ -87,8 +104,7 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 		Data:    regions,
 		Meta: &models.MetaInfo{
 			Total:  total,
-			Limit:  filter.Limit,
-			Offset: filter.Offset,
+			Offset: offset,
 		},
 	})
 }

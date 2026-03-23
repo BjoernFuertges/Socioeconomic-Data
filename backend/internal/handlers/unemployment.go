@@ -25,6 +25,8 @@ import (
 // @Failure 500 {object} models.APIResponse
 // @Router /unemployment [get]
 func (h *Handler) GetUnemploymentData(c *gin.Context) {
+	limitNull := normalizeNullableLimitQuery(c)
+
 	var filter models.UnemploymentFilter
 	if err := c.ShouldBindQuery(&filter); err != nil {
 		respondBadRequest(c, fmt.Sprintf("Ungültige Query-Parameter: %v", err))
@@ -76,8 +78,23 @@ func (h *Handler) GetUnemploymentData(c *gin.Context) {
 		return
 	}
 
-	query += fmt.Sprintf(" ORDER BY observation_date DESC, geodata_id LIMIT $%d OFFSET $%d", argPos, argPos+1)
-	args = append(args, filter.Limit, filter.Offset)
+	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
+		c,
+		query,
+		args,
+		argPos,
+		"observation_date DESC, geodata_id",
+		1000,
+		filter.Limit,
+		filter.Offset,
+		limitNull,
+	)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	query = pagedQuery
+	args = pagedArgs
 
 	data := []models.UnemploymentData{}
 	err = h.DB.Select(&data, query, args...)
@@ -91,8 +108,7 @@ func (h *Handler) GetUnemploymentData(c *gin.Context) {
 		Data:    data,
 		Meta: &models.MetaInfo{
 			Total:  total,
-			Limit:  filter.Limit,
-			Offset: filter.Offset,
+			Offset: offset,
 		},
 	})
 }
@@ -202,13 +218,19 @@ func (h *Handler) GetUnemploymentAggregated(c *gin.Context) {
 
 	query += " GROUP BY geodata_id, geodata_name ORDER BY geodata_id"
 
-	limit, offset := parseLimitOffset(c, 100)
+	limitNull := normalizeNullableLimitQuery(c)
+	limit, offset, err := resolvePagination(c, 100, 0, 0, limitNull)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
 
-	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argPos, argPos+1)
-	args = append(args, limit, offset)
+	paginationQuery, paginationArgs := applyPaginationClause(query, argPos, limit, offset)
+	query = paginationQuery
+	args = append(args, paginationArgs...)
 
 	aggregations := []models.UnemploymentAggregation{}
-	err := h.DB.Select(&aggregations, query, args...)
+	err = h.DB.Select(&aggregations, query, args...)
 	if err != nil {
 		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
 		return
@@ -218,7 +240,6 @@ func (h *Handler) GetUnemploymentAggregated(c *gin.Context) {
 		Success: true,
 		Data:    aggregations,
 		Meta: &models.MetaInfo{
-			Limit:  limit,
 			Offset: offset,
 		},
 	})
