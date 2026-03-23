@@ -402,6 +402,9 @@ definitions:
       nuts_level:
         example: 3
         type: integer
+      nuts_level_code:
+        example: NUTS-3
+        type: string
       region_name:
         example: Stuttgart, Stadtkreis
         type: string

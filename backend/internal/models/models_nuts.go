@@ -15,9 +15,10 @@ type NutsRegionData struct {
 
 // NutsRegionMetadata enthält geographische Metadaten einer NUTS-Region.
 type NutsRegionMetadata struct {
-	NutsID     string `json:"nuts_id"     example:"DE111"`
-	RegionName string `json:"region_name" example:"Stuttgart, Stadtkreis"`
-	NutsLevel  int    `json:"nuts_level"  example:"3"`
+	NutsID        string `json:"nuts_id"         example:"DE111"`
+	RegionName    string `json:"region_name"     example:"Stuttgart, Stadtkreis"`
+	NutsLevel     int    `json:"nuts_level"      example:"3"`
+	NutsLevelCode string `json:"nuts_level_code" example:"NUTS-3"`
 }
 
 // NutsSocioeconomicData enthält die sozioökonomischen Indikatoren für ein Jahr.

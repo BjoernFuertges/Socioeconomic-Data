@@ -1934,6 +1934,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 3
                 },
+                "nuts_level_code": {
+                    "type": "string",
+                    "example": "NUTS-3"
+                },
                 "region_name": {
                     "type": "string",
                     "example": "Stuttgart, Stadtkreis"

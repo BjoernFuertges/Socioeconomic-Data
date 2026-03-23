@@ -440,27 +440,37 @@ func (h *Handler) GetUnemploymentAggregated(c *gin.Context) {
 	})
 }
 
-// nutsTable gibt den vollqualifizierten Namen der datenbankseitigen View für das
-// NUTS-Level zurück, das sich aus der Länge des NUTS-Codes ergibt:
-//
-//	2 Zeichen → NUTS-0 (Länderebene,          z. B. „DE")
-//	3 Zeichen → NUTS-1 (Bundesland-Ebene,      z. B. „DE1")
-//	4 Zeichen → NUTS-2 (Regierungsbezirk-Ebene, z. B. „DE11")
-//	5 Zeichen → NUTS-3 (Kreis-Ebene,           z. B. „DE111")
-//
-// Da nur hardkodierte Strings zurückgegeben werden, ist die Funktion sicher gegen SQL-Injection.
-func nutsTable(nutsID string) (string, error) {
-	switch len(strings.TrimSpace(nutsID)) {
+type nutsLevelDetails struct {
+	NormalizedID string
+	Number       int
+	Code         string
+	Table        string
+}
+
+// nutsLevelDetailsFromID normalisiert eine NUTS-ID und liefert explizite Level-Informationen.
+func nutsLevelDetailsFromID(nutsID string) (nutsLevelDetails, error) {
+	normalizedID := strings.ToUpper(strings.TrimSpace(nutsID))
+
+	switch len(normalizedID) {
 	case 2:
-		return "transformed_data.mart_nuts0_summary", nil
+		return nutsLevelDetails{NormalizedID: normalizedID, Number: 0, Code: "NUTS-0", Table: "transformed_data.mart_nuts0_summary"}, nil
 	case 3:
-		return "transformed_data.mart_nuts1_summary", nil
+		return nutsLevelDetails{NormalizedID: normalizedID, Number: 1, Code: "NUTS-1", Table: "transformed_data.mart_nuts1_summary"}, nil
 	case 4:
-		return "transformed_data.mart_nuts2_summary", nil
+		return nutsLevelDetails{NormalizedID: normalizedID, Number: 2, Code: "NUTS-2", Table: "transformed_data.mart_nuts2_summary"}, nil
 	case 5:
-		return "transformed_data.mart_nuts3_summary", nil
+		return nutsLevelDetails{NormalizedID: normalizedID, Number: 3, Code: "NUTS-3", Table: "transformed_data.mart_nuts3_summary"}, nil
 	default:
-		return "", fmt.Errorf("ungültige NUTS-ID: erwartet 2–5 Zeichen (NUTS-0 bis NUTS-3), erhalten %d", len(strings.TrimSpace(nutsID)))
+		return nutsLevelDetails{}, fmt.Errorf("ungültige NUTS-ID: erwartet 2–5 Zeichen (NUTS-0 bis NUTS-3), erhalten %d", len(normalizedID))
+	}
+}
+
+func nutsMetadata(details nutsLevelDetails, regionName string) *models.NutsRegionMetadata {
+	return &models.NutsRegionMetadata{
+		NutsID:        details.NormalizedID,
+		RegionName:    regionName,
+		NutsLevel:     details.Number,
+		NutsLevelCode: details.Code,
 	}
 }
 
@@ -516,7 +526,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		return
 	}
 
-	table, err := nutsTable(nutsID)
+	levelDetails, err := nutsLevelDetailsFromID(nutsID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
 			Success: false,
@@ -526,14 +536,14 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	}
 
 	const selectCols = `nuts_id, region_name, year, bevoelkerung, schuldnerquote_prozent, arbeitslose, yoy_change_percent`
-	// table enthält ausschließlich hardkodierte Strings aus nutsTable() – kein SQL-Injection-Risiko.
-	fromClause := ` FROM ` + table + ` WHERE nuts_id = $1`
+	// table enthält ausschließlich hardkodierte Strings aus nutsLevelDetailsFromID() – kein SQL-Injection-Risiko.
+	fromClause := ` FROM ` + levelDetails.Table + ` WHERE nuts_id = $1`
 
 	if allStr == "true" {
 		// Zeitreihe: alle Jahre für diese Region
 		query := `SELECT ` + selectCols + fromClause + ` ORDER BY year DESC`
 		rows := []models.NutsRegionData{}
-		if err := h.DB.Select(&rows, query, nutsID); err != nil {
+		if err := h.DB.Select(&rows, query, levelDetails.NormalizedID); err != nil {
 			c.JSON(http.StatusInternalServerError, models.APIResponse{
 				Success: false,
 				Error:   fmt.Sprintf("Datenbankfehler: %v", err),
@@ -548,7 +558,6 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 			return
 		}
 
-		nutsLevel := len(strings.TrimSpace(rows[0].NutsID)) - 2
 		socioeconomic := make([]models.NutsSocioeconomicData, 0, len(rows))
 		for _, record := range rows {
 			socioeconomic = append(socioeconomic, models.NutsSocioeconomicData{
@@ -560,11 +569,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 			})
 		}
 
-		metadata := &models.NutsRegionMetadata{
-			NutsID:     rows[0].NutsID,
-			RegionName: rows[0].RegionName,
-			NutsLevel:  nutsLevel,
-		}
+		metadata := nutsMetadata(levelDetails, rows[0].RegionName)
 		ts := models.NutsRegionTimeSeries{
 			Metadata:      metadata,
 			Socioeconomic: socioeconomic,
@@ -583,7 +588,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 
 	// Snapshot: ein Jahr (angegeben oder neuestes)
 	query := `SELECT ` + selectCols + fromClause
-	args := []interface{}{nutsID}
+	args := []interface{}{levelDetails.NormalizedID}
 	if yearStr != "" {
 		query += ` AND year = $2`
 		args = append(args, yearStr)
@@ -607,12 +612,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		return
 	}
 
-	nutsLevel := len(strings.TrimSpace(row.NutsID)) - 2
-	metadata := &models.NutsRegionMetadata{
-		NutsID:     row.NutsID,
-		RegionName: row.RegionName,
-		NutsLevel:  nutsLevel,
-	}
+	metadata := nutsMetadata(levelDetails, row.RegionName)
 	socioeconomic := &models.NutsSocioeconomicData{
 		Year:                  row.Year,
 		Bevoelkerung:          row.Bevoelkerung,
