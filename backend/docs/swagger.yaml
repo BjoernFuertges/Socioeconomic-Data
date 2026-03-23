@@ -448,6 +448,26 @@ definitions:
           $ref: '#/definitions/models.NutsSocioeconomicData'
         type: array
     type: object
+  models.NutsRegionVersions:
+    properties:
+      nuts_id:
+        example: DE111
+        type: string
+      nuts_level:
+        example: 3
+        type: integer
+      nuts_level_code:
+        example: NUTS-3
+        type: string
+      versions:
+        example:
+        - 2024
+        - 2023
+        - 2022
+        items:
+          type: integer
+        type: array
+    type: object
   models.NutsSocioeconomicData:
     properties:
       arbeitslose:
@@ -1286,6 +1306,45 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Alle Indikatoren für eine NUTS-Region (Level 0–3)
+      tags:
+      - NUTS
+  /nuts/{nuts_id}/versions:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle verfügbaren Jahre einer NUTS-Region zurück (neueste zuerst)
+      parameters:
+      - description: NUTS-Code der Region (Level 0–3)
+        example: DE111
+        in: path
+        name: nuts_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.NutsRegionVersions'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Versionsliste für eine NUTS-Region
       tags:
       - NUTS
   /schuldnerquote:

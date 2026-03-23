@@ -937,6 +937,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/nuts/{nuts_id}/versions": {
+            "get": {
+                "description": "Gibt alle verfügbaren Jahre einer NUTS-Region zurück (neueste zuerst)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NUTS"
+                ],
+                "summary": "Versionsliste für eine NUTS-Region",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE111",
+                        "description": "NUTS-Code der Region (Level 0–3)",
+                        "name": "nuts_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.NutsRegionVersions"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/schuldnerquote": {
             "get": {
                 "description": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
@@ -2077,6 +2140,34 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/models.NutsSocioeconomicData"
                     }
+                }
+            }
+        },
+        "models.NutsRegionVersions": {
+            "type": "object",
+            "properties": {
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE111"
+                },
+                "nuts_level": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "nuts_level_code": {
+                    "type": "string",
+                    "example": "NUTS-3"
+                },
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        2024,
+                        2023,
+                        2022
+                    ]
                 }
             }
         },

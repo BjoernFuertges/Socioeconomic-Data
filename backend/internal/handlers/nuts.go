@@ -324,3 +324,63 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 
 	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: response})
 }
+
+// GetNutsRegionVersions gibt alle verfügbaren Versionsnummern (Jahre) für eine NUTS-Region zurück
+// @Summary Versionsliste für eine NUTS-Region
+// @Description Gibt alle verfügbaren Jahre einer NUTS-Region zurück (neueste zuerst)
+// @Tags NUTS
+// @Accept json
+// @Produce json
+// @Param nuts_id path string true "NUTS-Code der Region (Level 0–3)" example(DE111)
+// @Success 200 {object} models.APIResponse{data=models.NutsRegionVersions}
+// @Failure 400 {object} models.APIResponse
+// @Failure 404 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /nuts/{nuts_id}/versions [get]
+func (h *Handler) GetNutsRegionVersions(c *gin.Context) {
+	nutsID := c.Param("nuts_id")
+	if strings.TrimSpace(nutsID) == "" {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Error:   "nuts_id darf nicht leer sein",
+		})
+		return
+	}
+
+	levelDetails, err := nutsLevelDetailsFromID(nutsID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	query := `SELECT DISTINCT year FROM ` + levelDetails.Table + ` WHERE nuts_id = $1 ORDER BY year DESC`
+	versions := make([]int, 0)
+	if err := h.DB.Select(&versions, query, levelDetails.NormalizedID); err != nil {
+		c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Datenbankfehler: %v", err),
+		})
+		return
+	}
+
+	if len(versions) == 0 {
+		c.JSON(http.StatusNotFound, models.APIResponse{
+			Success: false,
+			Error:   "Keine Versionsdaten für diese NUTS-Region gefunden",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data: models.NutsRegionVersions{
+			NutsID:        levelDetails.NormalizedID,
+			NutsLevel:     levelDetails.Number,
+			NutsLevelCode: levelDetails.Code,
+			Versions:      versions,
+		},
+	})
+}
