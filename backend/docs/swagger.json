@@ -1160,6 +1160,79 @@
                 }
             }
         },
+        "/socioeconomic/inventory": {
+            "get": {
+                "description": "Liefert pro Datensatz, Jahr und Geodatenebene die vorhandenen Datensätze inkl. Geodaten-Verweis-Abdeckung (NUTS/LAU/ARS).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Soziooekonomie"
+                ],
+                "summary": "Inventar verfügbarer Soziodaten",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "arbeitslose",
+                        "description": "Datensatz-Slug (z.B. arbeitslose)",
+                        "name": "dataset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Jahr",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "NUTS_3",
+                        "description": "Geodatenebene (z.B. NUTS_3, LAU)",
+                        "name": "geodata_level",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.SoziooekonomischesInventarEintrag"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/unemployment": {
             "get": {
                 "description": "Gibt Arbeitslosenzahlen mit optionalen Filtern zurück",
@@ -2311,6 +2384,39 @@
                 "year": {
                     "type": "integer",
                     "example": 2020
+                }
+            }
+        },
+        "models.SoziooekonomischesInventarEintrag": {
+            "type": "object",
+            "properties": {
+                "dataset": {
+                    "type": "string",
+                    "example": "arbeitslose"
+                },
+                "distinct_geodata_ars": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "distinct_geodata_lau": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "distinct_geodata_nuts": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "records": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
                 }
             }
         },

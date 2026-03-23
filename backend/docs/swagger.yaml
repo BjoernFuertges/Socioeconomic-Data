@@ -576,6 +576,30 @@ definitions:
         example: 2020
         type: integer
     type: object
+  models.SoziooekonomischesInventarEintrag:
+    properties:
+      dataset:
+        example: arbeitslose
+        type: string
+      distinct_geodata_ars:
+        example: 400
+        type: integer
+      distinct_geodata_lau:
+        example: 0
+        type: integer
+      distinct_geodata_nuts:
+        example: 400
+        type: integer
+      geodata_level:
+        example: NUTS_3
+        type: string
+      records:
+        example: 400
+        type: integer
+      year:
+        example: 2022
+        type: integer
+    type: object
   models.UnemploymentAggregation:
     properties:
       avg_arbeitslose:
@@ -1457,6 +1481,53 @@ paths:
         mit Datumsableitung und Qualitätsflag
       tags:
       - SgbIiQuote
+  /socioeconomic/inventory:
+    get:
+      consumes:
+      - application/json
+      description: Liefert pro Datensatz, Jahr und Geodatenebene die vorhandenen Datensätze
+        inkl. Geodaten-Verweis-Abdeckung (NUTS/LAU/ARS).
+      parameters:
+      - description: Datensatz-Slug (z.B. arbeitslose)
+        example: arbeitslose
+        in: query
+        name: dataset
+        type: string
+      - description: Jahr
+        example: 2022
+        in: query
+        name: year
+        type: integer
+      - description: Geodatenebene (z.B. NUTS_3, LAU)
+        example: NUTS_3
+        in: query
+        name: geodata_level
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.SoziooekonomischesInventarEintrag'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Inventar verfügbarer Soziodaten
+      tags:
+      - Soziooekonomie
   /unemployment:
     get:
       consumes:

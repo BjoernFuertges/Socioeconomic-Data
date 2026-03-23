@@ -51,6 +51,11 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			unemployment.GET("/geodata/:geodata_id", handler.GetUnemploymentByGeodataID)
 		}
 
+		socioeconomic := v1.Group("/socioeconomic")
+		{
+			socioeconomic.GET("/inventory", handler.GetSoziooekonomischesInventar)
+		}
+
 		// Generierte Soziodata-Routen (aus dbt-Schema-YAML-Dateien)
 		RegisterSoziodataRoutes(v1, handler)
 	}
