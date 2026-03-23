@@ -335,6 +335,14 @@ func renderTemplate(name, tpl string, data interface{}) []byte {
 	return src
 }
 
+func renderTemplateFile(path string, data interface{}) []byte {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		log.Fatalf("read template %s: %v", path, err)
+	}
+	return renderTemplate(filepath.Base(path), string(raw), data)
+}
+
 func main() {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -396,16 +404,28 @@ func main() {
 		log.Fatal("no models parsed from schema files")
 	}
 	outModels := filepath.Join(cwd, "models_soziodata_generated.go")
+	outUnemploymentModels := filepath.Join(cwd, "models_unemployment_generated.go")
 	outHandlers := filepath.Join(cwd, "..", "handlers", "handlers_soziodata_generated.go")
+	outUnemploymentHandlers := filepath.Join(cwd, "..", "handlers", "unemployment_generated.go")
 	outRoutes := filepath.Join(cwd, "..", "routes", "routes_soziodata_generated.go")
+	unemploymentModelsTplFile := filepath.Join(cwd, "..", "..", "cmd", "gen-models", "templates", "models_unemployment_generated.go.tmpl")
+	unemploymentHandlersTplFile := filepath.Join(cwd, "..", "..", "cmd", "gen-models", "templates", "handlers_unemployment_generated.go.tmpl")
 	if err := os.WriteFile(outModels, renderTemplate("models", modelsTpl, datasets), 0644); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("wrote %s\n", outModels)
+	if err := os.WriteFile(outUnemploymentModels, renderTemplateFile(unemploymentModelsTplFile, nil), 0644); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("wrote %s\n", outUnemploymentModels)
 	if err := os.WriteFile(outHandlers, renderTemplate("handlers", handlersTpl, datasets), 0644); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("wrote %s\n", outHandlers)
+	if err := os.WriteFile(outUnemploymentHandlers, renderTemplateFile(unemploymentHandlersTplFile, nil), 0644); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("wrote %s\n", outUnemploymentHandlers)
 	if err := os.WriteFile(outRoutes, renderTemplate("routes", routesTpl, datasets), 0644); err != nil {
 		log.Fatal(err)
 	}
