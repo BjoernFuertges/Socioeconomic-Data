@@ -10,6 +10,12 @@ routes_files=(
 
 extract_registered_routes() {
   awk '
+    function trim(s) {
+      sub(/^[ \t]+/, "", s)
+      sub(/[ \t]+$/, "", s)
+      return s
+    }
+
     function joinPath(base, part) {
       result = base part
       while (index(result, "//") > 0) {
@@ -26,23 +32,37 @@ extract_registered_routes() {
       return result
     }
 
+    function normalizePath(path) {
+      if (index(path, "/api/v1") == 1) {
+        path = substr(path, 8)
+        if (path == "") path = "/"
+      }
+
+      while (match(path, /:[A-Za-z_][A-Za-z0-9_]*/)) {
+        name = substr(path, RSTART + 1, RLENGTH - 1)
+        path = substr(path, 1, RSTART - 1) "{" name "}" substr(path, RSTART + RLENGTH)
+      }
+
+      return path
+    }
+
     {
       if ($0 ~ / := .*\.Group\(/) {
         line = $0
         var_part = line
-        sub(/ .*/, "", var_part)
-        var = var_part
-        
+        sub(/:=.*/, "", var_part)
+        var = trim(var_part)
+
         group_part = line
         sub(/.*\.Group\("/, "", group_part)
         sub(/".*/, "", group_part)
         group_path = group_part
-        
+
         parent_part = line
         sub(/.*:= /, "", parent_part)
         sub(/\.Group.*/, "", parent_part)
-        parent = parent_part
-        
+        parent = trim(parent_part)
+
         if (parent in groupPrefix) {
           base = groupPrefix[parent]
         } else {
@@ -50,25 +70,25 @@ extract_registered_routes() {
         }
         groupPrefix[var] = joinPath(base, group_path)
       }
-      
+
       if ($0 ~ /\.(GET|POST|PUT|DELETE|PATCH)\(/) {
         line = $0
-        
+
         method_part = line
         sub(/\./, " ", method_part)
         sub(/^[^ ]*[ ]/, "", method_part)
         sub(/\(.*/, "", method_part)
         method = tolower(method_part)
-        
+
         groupVar_part = line
         sub(/\..*/, "", groupVar_part)
-        groupVar = groupVar_part
-        
+        groupVar = trim(groupVar_part)
+
         route_part = line
         sub(/.*\("/, "", route_part)
         sub(/".*/, "", route_part)
         routePart = route_part
-        
+
         fn_part = line
         if (index(fn_part, "handler.") > 0 || index(fn_part, "h.") > 0) {
           sub(/.*handler\./, "", fn_part)
@@ -76,44 +96,36 @@ extract_registered_routes() {
             fn_part = line
             sub(/.*h\./, "", fn_part)
           }
-          sub(/\).*/, "", fn_part)
-          fn = fn_part
+          sub(/[,) ].*/, "", fn_part)
+          fn = trim(fn_part)
         } else {
           fn = ""
         }
-        
+
         if (fn != "" && method != "" && routePart != "") {
           if (groupVar in groupPrefix) {
             base = groupPrefix[groupVar]
           } else {
             base = ""
           }
-          path = joinPath(base, routePart)
-          
-          if (substr(path, 1, 8) == "/api/v1") {
-            path = substr(path, 8)
-            if (path == "") path = "/"
-          }
-          
-          while (index(path, ":") > 0) {
-            colon_pos = index(path, ":")
-            rest = substr(path, colon_pos + 1)
-            slash_pos = index(rest, "/")
-            if (slash_pos > 0) {
-              name = substr(rest, 1, slash_pos - 1)
-              path = substr(path, 1, colon_pos - 1) "{" name "}" substr(path, colon_pos + 1 + slash_pos - 1)
-            } else {
-              name = rest
-              path = substr(path, 1, colon_pos - 1) "{" name "}"
-              break
-            }
-          }
-          
+          path = normalizePath(joinPath(base, routePart))
+
           print fn "|" path "|" method
         }
       }
     }
   ' "${routes_files[@]}"
+}
+
+normalize_comparable_path() {
+  local path="$1"
+
+  if [[ "$path" == /api/v1* ]]; then
+    path="${path#/api/v1}"
+    [[ -n "$path" ]] || path="/"
+  fi
+
+  printf '%s\n' "$path"
 }
 
 get_router_annotation() {
@@ -194,6 +206,9 @@ for handler in "${handlers[@]}"; do
   annotated_method="${router_info##*|}"
   expected_path="${route_path_by_handler[$handler]}"
   expected_method="${route_method_by_handler[$handler]}"
+
+  annotated_path="$(normalize_comparable_path "$annotated_path")"
+  expected_path="$(normalize_comparable_path "$expected_path")"
 
   if [[ "$annotated_path" != "$expected_path" || "$annotated_method" != "$expected_method" ]]; then
     mismatch+=("$handler ($file: erwartet ${expected_method^^} $expected_path, annotiert ${annotated_method^^} $annotated_path)")
