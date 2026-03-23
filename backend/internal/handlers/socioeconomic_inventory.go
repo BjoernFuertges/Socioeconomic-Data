@@ -82,10 +82,10 @@ func (h *Handler) GetSoziooekonomischesInventar(c *gin.Context) {
 					year,
 					geodata_level,
 					COUNT(*)::int AS records,
-					COUNT(DISTINCT NULLIF(CAST(geodata_id_nuts AS text), ''))::int AS distinct_geodata_nuts,
-					COUNT(DISTINCT NULLIF(CAST(geodata_id_lau AS text), ''))::int AS distinct_geodata_lau,
-					COUNT(DISTINCT NULLIF(CAST(geodata_id_ars AS text), ''))::int AS distinct_geodata_ars
-				 FROM %s
+					COUNT(DISTINCT NULLIF(to_jsonb(d)->>'geodata_id_nuts', ''))::int AS distinct_geodata_nuts,
+					COUNT(DISTINCT NULLIF(to_jsonb(d)->>'geodata_id_lau', ''))::int AS distinct_geodata_lau,
+					COUNT(DISTINCT NULLIF(to_jsonb(d)->>'geodata_id_ars', ''))::int AS distinct_geodata_ars
+				 FROM %s d
 				 GROUP BY year, geodata_level`,
 			slugArgPos,
 			fullTableName,
