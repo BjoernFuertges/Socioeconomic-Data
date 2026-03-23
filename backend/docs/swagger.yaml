@@ -421,6 +421,24 @@ definitions:
       socioeconomic:
         $ref: '#/definitions/models.NutsSocioeconomicData'
     type: object
+  models.NutsRegionSummary:
+    properties:
+      ars:
+        example: "08111000"
+        type: string
+      nuts_id:
+        example: DE111
+        type: string
+      nuts_level:
+        example: 3
+        type: integer
+      nuts_level_code:
+        example: NUTS-3
+        type: string
+      region_name:
+        example: Stuttgart, Stadtkreis
+        type: string
+    type: object
   models.NutsRegionTimeSeries:
     properties:
       metadata:
@@ -1151,6 +1169,60 @@ paths:
       summary: LAU-Region Details
       tags:
       - LAU
+  /nuts:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle NUTS-Regionen zurück. Mit ?level=0..3 auf ein bestimmtes
+        Level einschränken. Ohne ?level werden alle Levels zusammengefasst.
+      parameters:
+      - description: NUTS-Level (0–3)
+        enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        example: 3
+        in: query
+        name: level
+        type: integer
+      - default: 100
+        description: Anzahl der Ergebnisse
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsRegionSummary'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Liste aller NUTS-Regionen
+      tags:
+      - NUTS
   /nuts/{nuts_id}:
     get:
       consumes:

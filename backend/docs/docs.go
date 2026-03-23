@@ -767,6 +767,87 @@ const docTemplate = `{
                 }
             }
         },
+        "/nuts": {
+            "get": {
+                "description": "Gibt alle NUTS-Regionen zurück. Mit ?level=0..3 auf ein bestimmtes Level einschränken. Ohne ?level werden alle Levels zusammengefasst.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NUTS"
+                ],
+                "summary": "Liste aller NUTS-Regionen",
+                "parameters": [
+                    {
+                        "enum": [
+                            0,
+                            1,
+                            2,
+                            3
+                        ],
+                        "type": "integer",
+                        "example": 3,
+                        "description": "NUTS-Level (0–3)",
+                        "name": "level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsRegionSummary"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/nuts/{nuts_id}": {
             "get": {
                 "description": "Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen Daten. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code selbst.",
@@ -1957,6 +2038,31 @@ const docTemplate = `{
                 },
                 "socioeconomic": {
                     "$ref": "#/definitions/models.NutsSocioeconomicData"
+                }
+            }
+        },
+        "models.NutsRegionSummary": {
+            "type": "object",
+            "properties": {
+                "ars": {
+                    "type": "string",
+                    "example": "08111000"
+                },
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE111"
+                },
+                "nuts_level": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "nuts_level_code": {
+                    "type": "string",
+                    "example": "NUTS-3"
+                },
+                "region_name": {
+                    "type": "string",
+                    "example": "Stuttgart, Stadtkreis"
                 }
             }
         },

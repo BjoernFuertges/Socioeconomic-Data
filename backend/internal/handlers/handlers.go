@@ -447,22 +447,36 @@ type nutsLevelDetails struct {
 	Table        string
 }
 
+func nutsLevelDetailsFromLevel(level int) (nutsLevelDetails, error) {
+	switch level {
+	case 0:
+		return nutsLevelDetails{Number: 0, Code: "NUTS-0", Table: "transformed_data.mart_nuts0_summary"}, nil
+	case 1:
+		return nutsLevelDetails{Number: 1, Code: "NUTS-1", Table: "transformed_data.mart_nuts1_summary"}, nil
+	case 2:
+		return nutsLevelDetails{Number: 2, Code: "NUTS-2", Table: "transformed_data.mart_nuts2_summary"}, nil
+	case 3:
+		return nutsLevelDetails{Number: 3, Code: "NUTS-3", Table: "transformed_data.mart_nuts3_summary"}, nil
+	default:
+		return nutsLevelDetails{}, fmt.Errorf("ungültiges NUTS-Level: erlaubt sind 0–3, erhalten %d", level)
+	}
+}
+
 // nutsLevelDetailsFromID normalisiert eine NUTS-ID und liefert explizite Level-Informationen.
 func nutsLevelDetailsFromID(nutsID string) (nutsLevelDetails, error) {
 	normalizedID := strings.ToUpper(strings.TrimSpace(nutsID))
 
-	switch len(normalizedID) {
-	case 2:
-		return nutsLevelDetails{NormalizedID: normalizedID, Number: 0, Code: "NUTS-0", Table: "transformed_data.mart_nuts0_summary"}, nil
-	case 3:
-		return nutsLevelDetails{NormalizedID: normalizedID, Number: 1, Code: "NUTS-1", Table: "transformed_data.mart_nuts1_summary"}, nil
-	case 4:
-		return nutsLevelDetails{NormalizedID: normalizedID, Number: 2, Code: "NUTS-2", Table: "transformed_data.mart_nuts2_summary"}, nil
-	case 5:
-		return nutsLevelDetails{NormalizedID: normalizedID, Number: 3, Code: "NUTS-3", Table: "transformed_data.mart_nuts3_summary"}, nil
-	default:
+	level := len(normalizedID) - 2
+	if level < 0 || level > 3 {
 		return nutsLevelDetails{}, fmt.Errorf("ungültige NUTS-ID: erwartet 2–5 Zeichen (NUTS-0 bis NUTS-3), erhalten %d", len(normalizedID))
 	}
+
+	details, err := nutsLevelDetailsFromLevel(level)
+	if err != nil {
+		return nutsLevelDetails{}, err
+	}
+	details.NormalizedID = normalizedID
+	return details, nil
 }
 
 func nutsMetadata(details nutsLevelDetails, regionName string, ars *string) *models.NutsRegionMetadata {
@@ -486,6 +500,117 @@ func normalizeNutsResponsePart(part string) (string, error) {
 	default:
 		return "", fmt.Errorf("ungültiger Query-Parameter part: erlaubt sind full, metadata oder socioeconomic")
 	}
+}
+
+// GetAllNutsRegions gibt alle NUTS-Regionen zurück (optional gefiltert nach Level)
+// @Summary Liste aller NUTS-Regionen
+// @Description Gibt alle NUTS-Regionen zurück. Mit ?level=0..3 auf ein bestimmtes Level einschränken. Ohne ?level werden alle Levels zusammengefasst.
+// @Tags NUTS
+// @Accept json
+// @Produce json
+// @Param level query int false "NUTS-Level (0–3)" Enums(0,1,2,3) example(3)
+// @Param limit query int false "Anzahl der Ergebnisse" default(100) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.NutsRegionSummary}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /nuts [get]
+func (h *Handler) GetAllNutsRegions(c *gin.Context) {
+	levelStr := c.Query("level")
+	limit := 100
+	offset := 0
+	if l := c.Query("limit"); l != "" {
+		fmt.Sscanf(l, "%d", &limit)
+	}
+	if o := c.Query("offset"); o != "" {
+		fmt.Sscanf(o, "%d", &offset)
+	}
+
+	type dbRow struct {
+		NutsID     string  `db:"nuts_id"`
+		RegionName string  `db:"region_name"`
+		ARS        *string `db:"geodata_id_ars"`
+	}
+
+	// ARS-Spalte nur in der NUTS-3-View vorhanden; für andere Levels null mitliefern.
+	// Tabellen stammen ausschließlich aus nutsTableForLevel() – kein SQL-Injection-Risiko.
+	buildQuery := func(table string, forCount bool) string {
+		if forCount {
+			return `SELECT COUNT(DISTINCT nuts_id) FROM ` + table
+		}
+		if strings.Contains(table, "nuts3") {
+			return `SELECT DISTINCT ON (nuts_id) nuts_id, region_name, geodata_id_ars FROM ` + table + ` ORDER BY nuts_id LIMIT $1 OFFSET $2`
+		}
+		return `SELECT DISTINCT ON (nuts_id) nuts_id, region_name, null::text AS geodata_id_ars FROM ` + table + ` ORDER BY nuts_id LIMIT $1 OFFSET $2`
+	}
+
+	var levels []int
+	if levelStr != "" {
+		var lvl int
+		if _, err := fmt.Sscanf(levelStr, "%d", &lvl); err != nil || lvl < 0 || lvl > 3 {
+			c.JSON(http.StatusBadRequest, models.APIResponse{
+				Success: false,
+				Error:   "level muss eine Zahl zwischen 0 und 3 sein",
+			})
+			return
+		}
+		levels = []int{lvl}
+	} else {
+		levels = []int{0, 1, 2, 3}
+	}
+
+	result := make([]models.NutsRegionSummary, 0)
+	total := 0
+
+	for _, lvl := range levels {
+		levelDetails, err := nutsLevelDetailsFromLevel(lvl)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, models.APIResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+			return
+		}
+
+		var cnt int
+		if err := h.DB.QueryRow(buildQuery(levelDetails.Table, true)).Scan(&cnt); err != nil {
+			c.JSON(http.StatusInternalServerError, models.APIResponse{
+				Success: false,
+				Error:   fmt.Sprintf("Datenbankfehler (Level %d): %v", lvl, err),
+			})
+			return
+		}
+		total += cnt
+
+		rows := []dbRow{}
+		if err := h.DB.Select(&rows, buildQuery(levelDetails.Table, false), limit, offset); err != nil {
+			c.JSON(http.StatusInternalServerError, models.APIResponse{
+				Success: false,
+				Error:   fmt.Sprintf("Datenbankfehler (Level %d): %v", lvl, err),
+			})
+			return
+		}
+
+		for _, r := range rows {
+			result = append(result, models.NutsRegionSummary{
+				NutsID:        r.NutsID,
+				RegionName:    r.RegionName,
+				NutsLevel:     lvl,
+				NutsLevelCode: levelDetails.Code,
+				ARS:           r.ARS,
+			})
+		}
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    result,
+		Meta: &models.MetaInfo{
+			Total:  total,
+			Limit:  limit,
+			Offset: offset,
+		},
+	})
 }
 
 // GetNutsRegionData gibt alle Indikatoren für eine NUTS-Region zurück (Level 0–3)

@@ -45,3 +45,12 @@ type NutsRegionTimeSeries struct {
 	Metadata      *NutsRegionMetadata     `json:"metadata,omitempty"`
 	Socioeconomic []NutsSocioeconomicData `json:"socioeconomic,omitempty"`
 }
+
+// NutsRegionSummary ist ein einzelner Eintrag in der NUTS-Regionenliste.
+type NutsRegionSummary struct {
+	NutsID        string  `db:"nuts_id"        json:"nuts_id"         example:"DE111"`
+	RegionName    string  `db:"region_name"    json:"region_name"     example:"Stuttgart, Stadtkreis"`
+	NutsLevel     int     `db:"-"              json:"nuts_level"      example:"3"`
+	NutsLevelCode string  `db:"-"              json:"nuts_level_code" example:"NUTS-3"`
+	ARS           *string `db:"geodata_id_ars" json:"ars"             example:"08111000"`
+}
