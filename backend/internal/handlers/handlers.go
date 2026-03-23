@@ -465,12 +465,13 @@ func nutsLevelDetailsFromID(nutsID string) (nutsLevelDetails, error) {
 	}
 }
 
-func nutsMetadata(details nutsLevelDetails, regionName string) *models.NutsRegionMetadata {
+func nutsMetadata(details nutsLevelDetails, regionName string, ars *string) *models.NutsRegionMetadata {
 	return &models.NutsRegionMetadata{
 		NutsID:        details.NormalizedID,
 		RegionName:    regionName,
 		NutsLevel:     details.Number,
 		NutsLevelCode: details.Code,
+		ARS:           ars,
 	}
 }
 
@@ -535,7 +536,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		return
 	}
 
-	const selectCols = `nuts_id, region_name, year, bevoelkerung, schuldnerquote_prozent, arbeitslose, yoy_change_percent`
+	const selectCols = `nuts_id, region_name, year, geodata_id_ars, bevoelkerung, schuldnerquote_prozent, arbeitslose, yoy_change_percent`
 	// table enthält ausschließlich hardkodierte Strings aus nutsLevelDetailsFromID() – kein SQL-Injection-Risiko.
 	fromClause := ` FROM ` + levelDetails.Table + ` WHERE nuts_id = $1`
 
@@ -569,7 +570,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 			})
 		}
 
-		metadata := nutsMetadata(levelDetails, rows[0].RegionName)
+		metadata := nutsMetadata(levelDetails, rows[0].RegionName, rows[0].GeodataIDArs)
 		ts := models.NutsRegionTimeSeries{
 			Metadata:      metadata,
 			Socioeconomic: socioeconomic,
@@ -612,7 +613,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		return
 	}
 
-	metadata := nutsMetadata(levelDetails, row.RegionName)
+	metadata := nutsMetadata(levelDetails, row.RegionName, row.GeodataIDArs)
 	socioeconomic := &models.NutsSocioeconomicData{
 		Year:                  row.Year,
 		Bevoelkerung:          row.Bevoelkerung,

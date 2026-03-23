@@ -1926,6 +1926,11 @@ const docTemplate = `{
         "models.NutsRegionMetadata": {
             "type": "object",
             "properties": {
+                "ars": {
+                    "description": "ARS (Amtlicher Regionalschlüssel) – nur für NUTS-3 verfügbar, sonst null.",
+                    "type": "string",
+                    "example": "08111000"
+                },
                 "nuts_id": {
                     "type": "string",
                     "example": "DE111"

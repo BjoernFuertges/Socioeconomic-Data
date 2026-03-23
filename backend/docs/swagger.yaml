@@ -396,6 +396,11 @@ definitions:
     type: object
   models.NutsRegionMetadata:
     properties:
+      ars:
+        description: ARS (Amtlicher Regionalschlüssel) – nur für NUTS-3 verfügbar,
+          sonst null.
+        example: "08111000"
+        type: string
       nuts_id:
         example: DE111
         type: string

@@ -3,9 +3,11 @@ package models
 // NutsRegionData enthält alle sozioökonomischen Indikatoren einer NUTS-Region (Level 0–3) für ein Jahr.
 // Bei Level 0–2 entspricht region_name mangels Namenstabelle dem NUTS-Code selbst.
 type NutsRegionData struct {
-	NutsID                string   `db:"nuts_id"                json:"nuts_id"                example:"DE111"`
-	RegionName            string   `db:"region_name"            json:"region_name"            example:"Stuttgart, Stadtkreis"`
-	Year                  int      `db:"year"                   json:"year"                   example:"2022"`
+	NutsID     string `db:"nuts_id"                json:"nuts_id"                example:"DE111"`
+	RegionName string `db:"region_name"            json:"region_name"            example:"Stuttgart, Stadtkreis"`
+	Year       int    `db:"year"                   json:"year"                   example:"2022"`
+	// Kann null sein: nur für NUTS-3, ca. 80% Abdeckung
+	GeodataIDArs          *string  `db:"geodata_id_ars"         json:"-"`
 	Bevoelkerung          *float64 `db:"bevoelkerung"           json:"bevoelkerung"           example:"634830"`
 	SchuldnerquoteProzent *float64 `db:"schuldnerquote_prozent" json:"schuldnerquote_prozent" example:"9.8"`
 	// Kann null sein: Arbeitsagenturbezirke entsprechen nicht 1:1 den NUTS-Kreisen
@@ -19,6 +21,8 @@ type NutsRegionMetadata struct {
 	RegionName    string `json:"region_name"     example:"Stuttgart, Stadtkreis"`
 	NutsLevel     int    `json:"nuts_level"      example:"3"`
 	NutsLevelCode string `json:"nuts_level_code" example:"NUTS-3"`
+	// ARS (Amtlicher Regionalschlüssel) – nur für NUTS-3 verfügbar, sonst null.
+	ARS *string `json:"ars"             example:"08111000"`
 }
 
 // NutsSocioeconomicData enthält die sozioökonomischen Indikatoren für ein Jahr.
