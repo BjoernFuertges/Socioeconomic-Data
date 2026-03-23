@@ -394,22 +394,42 @@ definitions:
         example: 140400
         type: integer
     type: object
-  models.NutsRegionData:
+  models.NutsRegionMetadata:
+    properties:
+      nuts_id:
+        example: DE111
+        type: string
+      nuts_level:
+        example: 3
+        type: integer
+      region_name:
+        example: Stuttgart, Stadtkreis
+        type: string
+    type: object
+  models.NutsRegionResponse:
+    properties:
+      metadata:
+        $ref: '#/definitions/models.NutsRegionMetadata'
+      socioeconomic:
+        $ref: '#/definitions/models.NutsSocioeconomicData'
+    type: object
+  models.NutsRegionTimeSeries:
+    properties:
+      metadata:
+        $ref: '#/definitions/models.NutsRegionMetadata'
+      socioeconomic:
+        items:
+          $ref: '#/definitions/models.NutsSocioeconomicData'
+        type: array
+    type: object
+  models.NutsSocioeconomicData:
     properties:
       arbeitslose:
-        description: 'Kann null sein: Arbeitsagenturbezirke entsprechen nicht 1:1
-          den NUTS-Kreisen'
         example: 17423
         type: number
       bevoelkerung:
         example: 634830
         type: number
-      nuts_id:
-        example: DE111
-        type: string
-      region_name:
-        example: Stuttgart, Stadtkreis
-        type: string
       schuldnerquote_prozent:
         example: 9.8
         type: number
@@ -419,19 +439,6 @@ definitions:
       yoy_change_percent:
         example: -2.3
         type: number
-    type: object
-  models.NutsRegionTimeSeries:
-    properties:
-      nuts_id:
-        example: DE111
-        type: string
-      region_name:
-        example: Stuttgart, Stadtkreis
-        type: string
-      years:
-        items:
-          $ref: '#/definitions/models.NutsRegionData'
-        type: array
     type: object
   models.SchuldnerquoteData:
     properties:
@@ -1144,8 +1151,10 @@ paths:
         NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge
         erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk),
         5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe
-        aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Für NUTS-Level 0–2 enthält region_name
-        mangels Namenstabelle den NUTS-Code selbst.'
+        aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur
+        Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen
+        Daten. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code
+        selbst.'
       parameters:
       - description: NUTS-Code der Region (Level 0–3)
         example: DE111
@@ -1163,6 +1172,15 @@ paths:
         in: query
         name: all
         type: boolean
+      - default: full
+        description: 'Antwortausschnitt: full, metadata oder socioeconomic'
+        enum:
+        - full
+        - metadata
+        - socioeconomic
+        in: query
+        name: part
+        type: string
       produces:
       - application/json
       responses:

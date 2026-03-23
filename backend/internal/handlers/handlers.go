@@ -464,16 +464,30 @@ func nutsTable(nutsID string) (string, error) {
 	}
 }
 
+func normalizeNutsResponsePart(part string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(part)) {
+	case "", "full":
+		return "full", nil
+	case "metadata", "geo", "geodata":
+		return "metadata", nil
+	case "socioeconomic", "socio", "stats":
+		return "socioeconomic", nil
+	default:
+		return "", fmt.Errorf("ungültiger Query-Parameter part: erlaubt sind full, metadata oder socioeconomic")
+	}
+}
+
 // GetNutsRegionData gibt alle Indikatoren für eine NUTS-Region zurück (Level 0–3)
 // @Summary Alle Indikatoren für eine NUTS-Region (Level 0–3)
-// @Description Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code selbst.
+// @Description Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen Daten. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code selbst.
 // @Tags NUTS
 // @Accept json
 // @Produce json
 // @Param nuts_id path string true "NUTS-Code der Region (Level 0–3)" example(DE111)
 // @Param year query int false "Jahr (gibt neuestes Jahr zurück wenn nicht angegeben)" example(2022)
 // @Param all query bool false "Alle verfügbaren Jahre zurückgeben" example(false)
-// @Success 200 {object} models.APIResponse{data=models.NutsRegionData}
+// @Param part query string false "Antwortausschnitt: full, metadata oder socioeconomic" Enums(full,metadata,socioeconomic) default(full)
+// @Success 200 {object} models.APIResponse{data=models.NutsRegionResponse}
 // @Success 200 {object} models.APIResponse{data=models.NutsRegionTimeSeries}
 // @Failure 400 {object} models.APIResponse
 // @Failure 404 {object} models.APIResponse
@@ -483,11 +497,21 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	nutsID := c.Param("nuts_id")
 	yearStr := c.Query("year")
 	allStr := c.Query("all")
+	partStr := c.Query("part")
 
 	if strings.TrimSpace(nutsID) == "" {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
 			Success: false,
 			Error:   "nuts_id darf nicht leer sein",
+		})
+		return
+	}
+
+	part, err := normalizeNutsResponsePart(partStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Error:   err.Error(),
 		})
 		return
 	}
@@ -523,11 +547,36 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 			})
 			return
 		}
-		ts := models.NutsRegionTimeSeries{
+
+		nutsLevel := len(strings.TrimSpace(rows[0].NutsID)) - 2
+		socioeconomic := make([]models.NutsSocioeconomicData, 0, len(rows))
+		for _, record := range rows {
+			socioeconomic = append(socioeconomic, models.NutsSocioeconomicData{
+				Year:                  record.Year,
+				Bevoelkerung:          record.Bevoelkerung,
+				SchuldnerquoteProzent: record.SchuldnerquoteProzent,
+				Arbeitslose:           record.Arbeitslose,
+				YoYChangePercent:      record.YoYChangePercent,
+			})
+		}
+
+		metadata := &models.NutsRegionMetadata{
 			NutsID:     rows[0].NutsID,
 			RegionName: rows[0].RegionName,
-			Years:      rows,
+			NutsLevel:  nutsLevel,
 		}
+		ts := models.NutsRegionTimeSeries{
+			Metadata:      metadata,
+			Socioeconomic: socioeconomic,
+		}
+
+		if part == "metadata" {
+			ts.Socioeconomic = nil
+		}
+		if part == "socioeconomic" {
+			ts.Metadata = nil
+		}
+
 		c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: ts})
 		return
 	}
@@ -558,7 +607,32 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: row})
+	nutsLevel := len(strings.TrimSpace(row.NutsID)) - 2
+	metadata := &models.NutsRegionMetadata{
+		NutsID:     row.NutsID,
+		RegionName: row.RegionName,
+		NutsLevel:  nutsLevel,
+	}
+	socioeconomic := &models.NutsSocioeconomicData{
+		Year:                  row.Year,
+		Bevoelkerung:          row.Bevoelkerung,
+		SchuldnerquoteProzent: row.SchuldnerquoteProzent,
+		Arbeitslose:           row.Arbeitslose,
+		YoYChangePercent:      row.YoYChangePercent,
+	}
+	response := models.NutsRegionResponse{
+		Metadata:      metadata,
+		Socioeconomic: socioeconomic,
+	}
+
+	if part == "metadata" {
+		response.Socioeconomic = nil
+	}
+	if part == "socioeconomic" {
+		response.Metadata = nil
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: response})
 }
 
 // sozioKreisBaseColumns ist die SELECT-Spaltenliste gemeinsam für alle Kreis-Datensätze.

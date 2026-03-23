@@ -769,7 +769,7 @@ const docTemplate = `{
         },
         "/nuts/{nuts_id}": {
             "get": {
-                "description": "Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code selbst.",
+                "description": "Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen Daten. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code selbst.",
                 "consumes": [
                     "application/json"
                 ],
@@ -801,6 +801,18 @@ const docTemplate = `{
                         "example": false,
                         "description": "Alle verfügbaren Jahre zurückgeben",
                         "name": "all",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "full",
+                            "metadata",
+                            "socioeconomic"
+                        ],
+                        "type": "string",
+                        "default": "full",
+                        "description": "Antwortausschnitt: full, metadata oder socioeconomic",
+                        "name": "part",
                         "in": "query"
                     }
                 ],
@@ -1911,25 +1923,58 @@ const docTemplate = `{
                 }
             }
         },
-        "models.NutsRegionData": {
+        "models.NutsRegionMetadata": {
+            "type": "object",
+            "properties": {
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE111"
+                },
+                "nuts_level": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "region_name": {
+                    "type": "string",
+                    "example": "Stuttgart, Stadtkreis"
+                }
+            }
+        },
+        "models.NutsRegionResponse": {
+            "type": "object",
+            "properties": {
+                "metadata": {
+                    "$ref": "#/definitions/models.NutsRegionMetadata"
+                },
+                "socioeconomic": {
+                    "$ref": "#/definitions/models.NutsSocioeconomicData"
+                }
+            }
+        },
+        "models.NutsRegionTimeSeries": {
+            "type": "object",
+            "properties": {
+                "metadata": {
+                    "$ref": "#/definitions/models.NutsRegionMetadata"
+                },
+                "socioeconomic": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.NutsSocioeconomicData"
+                    }
+                }
+            }
+        },
+        "models.NutsSocioeconomicData": {
             "type": "object",
             "properties": {
                 "arbeitslose": {
-                    "description": "Kann null sein: Arbeitsagenturbezirke entsprechen nicht 1:1 den NUTS-Kreisen",
                     "type": "number",
                     "example": 17423
                 },
                 "bevoelkerung": {
                     "type": "number",
                     "example": 634830
-                },
-                "nuts_id": {
-                    "type": "string",
-                    "example": "DE111"
-                },
-                "region_name": {
-                    "type": "string",
-                    "example": "Stuttgart, Stadtkreis"
                 },
                 "schuldnerquote_prozent": {
                     "type": "number",
@@ -1942,25 +1987,6 @@ const docTemplate = `{
                 "yoy_change_percent": {
                     "type": "number",
                     "example": -2.3
-                }
-            }
-        },
-        "models.NutsRegionTimeSeries": {
-            "type": "object",
-            "properties": {
-                "nuts_id": {
-                    "type": "string",
-                    "example": "DE111"
-                },
-                "region_name": {
-                    "type": "string",
-                    "example": "Stuttgart, Stadtkreis"
-                },
-                "years": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.NutsRegionData"
-                    }
                 }
             }
         },

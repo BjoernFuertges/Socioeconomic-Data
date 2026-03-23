@@ -13,9 +13,30 @@ type NutsRegionData struct {
 	YoYChangePercent *float64 `db:"yoy_change_percent" json:"yoy_change_percent" example:"-2.3"`
 }
 
-// NutsRegionTimeSeries enthält die Zeitreihe aller verfügbaren Jahre für eine NUTS-Region (Level 0–3)
+// NutsRegionMetadata enthält geographische Metadaten einer NUTS-Region.
+type NutsRegionMetadata struct {
+	NutsID     string `json:"nuts_id"     example:"DE111"`
+	RegionName string `json:"region_name" example:"Stuttgart, Stadtkreis"`
+	NutsLevel  int    `json:"nuts_level"  example:"3"`
+}
+
+// NutsSocioeconomicData enthält die sozioökonomischen Indikatoren für ein Jahr.
+type NutsSocioeconomicData struct {
+	Year                  int      `json:"year"                   example:"2022"`
+	Bevoelkerung          *float64 `json:"bevoelkerung"           example:"634830"`
+	SchuldnerquoteProzent *float64 `json:"schuldnerquote_prozent" example:"9.8"`
+	Arbeitslose           *float64 `json:"arbeitslose"            example:"17423"`
+	YoYChangePercent      *float64 `json:"yoy_change_percent"     example:"-2.3"`
+}
+
+// NutsRegionResponse trennt Metadaten von sozioökonomischen Daten für ein einzelnes Jahr.
+type NutsRegionResponse struct {
+	Metadata      *NutsRegionMetadata    `json:"metadata,omitempty"`
+	Socioeconomic *NutsSocioeconomicData `json:"socioeconomic,omitempty"`
+}
+
+// NutsRegionTimeSeries enthält Metadaten und die Zeitreihe sozioökonomischer Daten.
 type NutsRegionTimeSeries struct {
-	NutsID     string           `json:"nuts_id"     example:"DE111"`
-	RegionName string           `json:"region_name" example:"Stuttgart, Stadtkreis"`
-	Years      []NutsRegionData `json:"years"`
+	Metadata      *NutsRegionMetadata     `json:"metadata,omitempty"`
+	Socioeconomic []NutsSocioeconomicData `json:"socioeconomic,omitempty"`
 }
