@@ -14,10 +14,10 @@ import (
 const sozioKreisBaseColumns = `d.original_id_1, d.original_name, d.geodata_name, d.geodata_id_nuts, ` +
 	`coalesce(` +
 	`nullif(to_jsonb(d)->>'geodata_id_lau', ''), ` +
-	`case when d.geodata_level = 'LAU' then nullif(d.geodata_id_ars, '') end, ` +
+	`case when d.geodata_level = 'LAU' then nullif(cast(d.geodata_id_ars as text), '') end, ` +
 	`case when d.geodata_level = 'LAU' then d.original_id_1 end, ''` +
 	`) as geodata_id_lau, ` +
-	`d.geodata_id_ars, d.mapper, d.parameter, d.geodata_level, d.geodata_year, ` +
+	`cast(d.geodata_id_ars as text) as geodata_id_ars, d.mapper, d.parameter, d.geodata_level, d.geodata_year, ` +
 	`d.year, d.observation_date::text, d.has_valid_value`
 
 // getKreisData ist der generische Handler-Kern für alle Kreis-Datensätze.
