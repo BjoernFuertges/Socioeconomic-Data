@@ -394,22 +394,88 @@ definitions:
         example: 140400
         type: integer
     type: object
-  models.NutsRegionData:
+  models.NutsRegionMetadata:
+    properties:
+      ars:
+        description: ARS (Amtlicher Regionalschlüssel) – nur für NUTS-3 verfügbar,
+          sonst null.
+        example: "08111000"
+        type: string
+      nuts_id:
+        example: DE111
+        type: string
+      nuts_level:
+        example: 3
+        type: integer
+      nuts_level_code:
+        example: NUTS-3
+        type: string
+      region_name:
+        example: Stuttgart, Stadtkreis
+        type: string
+    type: object
+  models.NutsRegionResponse:
+    properties:
+      metadata:
+        $ref: '#/definitions/models.NutsRegionMetadata'
+      socioeconomic:
+        $ref: '#/definitions/models.NutsSocioeconomicData'
+    type: object
+  models.NutsRegionSummary:
+    properties:
+      ars:
+        example: "08111000"
+        type: string
+      nuts_id:
+        example: DE111
+        type: string
+      nuts_level:
+        example: 3
+        type: integer
+      nuts_level_code:
+        example: NUTS-3
+        type: string
+      region_name:
+        example: Stuttgart, Stadtkreis
+        type: string
+    type: object
+  models.NutsRegionTimeSeries:
+    properties:
+      metadata:
+        $ref: '#/definitions/models.NutsRegionMetadata'
+      socioeconomic:
+        items:
+          $ref: '#/definitions/models.NutsSocioeconomicData'
+        type: array
+    type: object
+  models.NutsRegionVersions:
+    properties:
+      nuts_id:
+        example: DE111
+        type: string
+      nuts_level:
+        example: 3
+        type: integer
+      nuts_level_code:
+        example: NUTS-3
+        type: string
+      versions:
+        example:
+        - 2024
+        - 2023
+        - 2022
+        items:
+          type: integer
+        type: array
+    type: object
+  models.NutsSocioeconomicData:
     properties:
       arbeitslose:
-        description: 'Kann null sein: Arbeitsagenturbezirke entsprechen nicht 1:1
-          den NUTS-Kreisen'
         example: 17423
         type: number
       bevoelkerung:
         example: 634830
         type: number
-      nuts_id:
-        example: DE111
-        type: string
-      region_name:
-        example: Stuttgart, Stadtkreis
-        type: string
       schuldnerquote_prozent:
         example: 9.8
         type: number
@@ -419,19 +485,6 @@ definitions:
       yoy_change_percent:
         example: -2.3
         type: number
-    type: object
-  models.NutsRegionTimeSeries:
-    properties:
-      nuts_id:
-        example: DE111
-        type: string
-      region_name:
-        example: Stuttgart, Stadtkreis
-        type: string
-      years:
-        items:
-          $ref: '#/definitions/models.NutsRegionData'
-        type: array
     type: object
   models.SchuldnerquoteData:
     properties:
@@ -521,6 +574,30 @@ definitions:
         type: number
       year:
         example: 2020
+        type: integer
+    type: object
+  models.SoziooekonomischesInventarEintrag:
+    properties:
+      dataset:
+        example: arbeitslose
+        type: string
+      distinct_geodata_ars:
+        example: 400
+        type: integer
+      distinct_geodata_lau:
+        example: 0
+        type: integer
+      distinct_geodata_nuts:
+        example: 400
+        type: integer
+      geodata_level:
+        example: NUTS_3
+        type: string
+      records:
+        example: 400
+        type: integer
+      year:
+        example: 2022
         type: integer
     type: object
   models.UnemploymentAggregation:
@@ -1136,6 +1213,60 @@ paths:
       summary: LAU-Region Details
       tags:
       - LAU
+  /nuts:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle NUTS-Regionen zurück. Mit ?level=0..3 auf ein bestimmtes
+        Level einschränken. Ohne ?level werden alle Levels zusammengefasst.
+      parameters:
+      - description: NUTS-Level (0–3)
+        enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        example: 3
+        in: query
+        name: level
+        type: integer
+      - default: 100
+        description: Anzahl der Ergebnisse
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsRegionSummary'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Liste aller NUTS-Regionen
+      tags:
+      - NUTS
   /nuts/{nuts_id}:
     get:
       consumes:
@@ -1144,8 +1275,10 @@ paths:
         NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge
         erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk),
         5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe
-        aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Für NUTS-Level 0–2 enthält region_name
-        mangels Namenstabelle den NUTS-Code selbst.'
+        aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur
+        Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen
+        Daten. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code
+        selbst.'
       parameters:
       - description: NUTS-Code der Region (Level 0–3)
         example: DE111
@@ -1163,6 +1296,15 @@ paths:
         in: query
         name: all
         type: boolean
+      - default: full
+        description: 'Antwortausschnitt: full, metadata oder socioeconomic'
+        enum:
+        - full
+        - metadata
+        - socioeconomic
+        in: query
+        name: part
+        type: string
       produces:
       - application/json
       responses:
@@ -1188,6 +1330,45 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Alle Indikatoren für eine NUTS-Region (Level 0–3)
+      tags:
+      - NUTS
+  /nuts/{nuts_id}/versions:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle verfügbaren Jahre einer NUTS-Region zurück (neueste zuerst)
+      parameters:
+      - description: NUTS-Code der Region (Level 0–3)
+        example: DE111
+        in: path
+        name: nuts_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.NutsRegionVersions'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Versionsliste für eine NUTS-Region
       tags:
       - NUTS
   /schuldnerquote:
@@ -1300,6 +1481,53 @@ paths:
         mit Datumsableitung und Qualitätsflag
       tags:
       - SgbIiQuote
+  /socioeconomic/inventory:
+    get:
+      consumes:
+      - application/json
+      description: Liefert pro Datensatz, Jahr und Geodatenebene die vorhandenen Datensätze
+        inkl. Geodaten-Verweis-Abdeckung (NUTS/LAU/ARS).
+      parameters:
+      - description: Datensatz-Slug (z.B. arbeitslose)
+        example: arbeitslose
+        in: query
+        name: dataset
+        type: string
+      - description: Jahr
+        example: 2022
+        in: query
+        name: year
+        type: integer
+      - description: Geodatenebene (z.B. NUTS_3, LAU)
+        example: NUTS_3
+        in: query
+        name: geodata_level
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.SoziooekonomischesInventarEintrag'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Inventar verfügbarer Soziodaten
+      tags:
+      - Soziooekonomie
   /unemployment:
     get:
       consumes:

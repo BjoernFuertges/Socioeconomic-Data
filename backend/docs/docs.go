@@ -767,9 +767,90 @@ const docTemplate = `{
                 }
             }
         },
+        "/nuts": {
+            "get": {
+                "description": "Gibt alle NUTS-Regionen zurück. Mit ?level=0..3 auf ein bestimmtes Level einschränken. Ohne ?level werden alle Levels zusammengefasst.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NUTS"
+                ],
+                "summary": "Liste aller NUTS-Regionen",
+                "parameters": [
+                    {
+                        "enum": [
+                            0,
+                            1,
+                            2,
+                            3
+                        ],
+                        "type": "integer",
+                        "example": 3,
+                        "description": "NUTS-Level (0–3)",
+                        "name": "level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsRegionSummary"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/nuts/{nuts_id}": {
             "get": {
-                "description": "Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code selbst.",
+                "description": "Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen Daten. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code selbst.",
                 "consumes": [
                     "application/json"
                 ],
@@ -802,6 +883,18 @@ const docTemplate = `{
                         "description": "Alle verfügbaren Jahre zurückgeben",
                         "name": "all",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "full",
+                            "metadata",
+                            "socioeconomic"
+                        ],
+                        "type": "string",
+                        "default": "full",
+                        "description": "Antwortausschnitt: full, metadata oder socioeconomic",
+                        "name": "part",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -817,6 +910,69 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/models.NutsRegionTimeSeries"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/nuts/{nuts_id}/versions": {
+            "get": {
+                "description": "Gibt alle verfügbaren Jahre einer NUTS-Region zurück (neueste zuerst)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NUTS"
+                ],
+                "summary": "Versionsliste für eine NUTS-Region",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE111",
+                        "description": "NUTS-Code der Region (Level 0–3)",
+                        "name": "nuts_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.NutsRegionVersions"
                                         }
                                     }
                                 }
@@ -986,6 +1142,79 @@ const docTemplate = `{
                                             "type": "array",
                                             "items": {
                                                 "$ref": "#/definitions/models.SgbIiQuoteData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/socioeconomic/inventory": {
+            "get": {
+                "description": "Liefert pro Datensatz, Jahr und Geodatenebene die vorhandenen Datensätze inkl. Geodaten-Verweis-Abdeckung (NUTS/LAU/ARS).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Soziooekonomie"
+                ],
+                "summary": "Inventar verfügbarer Soziodaten",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "arbeitslose",
+                        "description": "Datensatz-Slug (z.B. arbeitslose)",
+                        "name": "dataset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Jahr",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "NUTS_3",
+                        "description": "Geodatenebene (z.B. NUTS_3, LAU)",
+                        "name": "geodata_level",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.SoziooekonomischesInventarEintrag"
                                             }
                                         }
                                     }
@@ -1911,25 +2140,120 @@ const docTemplate = `{
                 }
             }
         },
-        "models.NutsRegionData": {
+        "models.NutsRegionMetadata": {
+            "type": "object",
+            "properties": {
+                "ars": {
+                    "description": "ARS (Amtlicher Regionalschlüssel) – nur für NUTS-3 verfügbar, sonst null.",
+                    "type": "string",
+                    "example": "08111000"
+                },
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE111"
+                },
+                "nuts_level": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "nuts_level_code": {
+                    "type": "string",
+                    "example": "NUTS-3"
+                },
+                "region_name": {
+                    "type": "string",
+                    "example": "Stuttgart, Stadtkreis"
+                }
+            }
+        },
+        "models.NutsRegionResponse": {
+            "type": "object",
+            "properties": {
+                "metadata": {
+                    "$ref": "#/definitions/models.NutsRegionMetadata"
+                },
+                "socioeconomic": {
+                    "$ref": "#/definitions/models.NutsSocioeconomicData"
+                }
+            }
+        },
+        "models.NutsRegionSummary": {
+            "type": "object",
+            "properties": {
+                "ars": {
+                    "type": "string",
+                    "example": "08111000"
+                },
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE111"
+                },
+                "nuts_level": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "nuts_level_code": {
+                    "type": "string",
+                    "example": "NUTS-3"
+                },
+                "region_name": {
+                    "type": "string",
+                    "example": "Stuttgart, Stadtkreis"
+                }
+            }
+        },
+        "models.NutsRegionTimeSeries": {
+            "type": "object",
+            "properties": {
+                "metadata": {
+                    "$ref": "#/definitions/models.NutsRegionMetadata"
+                },
+                "socioeconomic": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.NutsSocioeconomicData"
+                    }
+                }
+            }
+        },
+        "models.NutsRegionVersions": {
+            "type": "object",
+            "properties": {
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE111"
+                },
+                "nuts_level": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "nuts_level_code": {
+                    "type": "string",
+                    "example": "NUTS-3"
+                },
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        2024,
+                        2023,
+                        2022
+                    ]
+                }
+            }
+        },
+        "models.NutsSocioeconomicData": {
             "type": "object",
             "properties": {
                 "arbeitslose": {
-                    "description": "Kann null sein: Arbeitsagenturbezirke entsprechen nicht 1:1 den NUTS-Kreisen",
                     "type": "number",
                     "example": 17423
                 },
                 "bevoelkerung": {
                     "type": "number",
                     "example": 634830
-                },
-                "nuts_id": {
-                    "type": "string",
-                    "example": "DE111"
-                },
-                "region_name": {
-                    "type": "string",
-                    "example": "Stuttgart, Stadtkreis"
                 },
                 "schuldnerquote_prozent": {
                     "type": "number",
@@ -1942,25 +2266,6 @@ const docTemplate = `{
                 "yoy_change_percent": {
                     "type": "number",
                     "example": -2.3
-                }
-            }
-        },
-        "models.NutsRegionTimeSeries": {
-            "type": "object",
-            "properties": {
-                "nuts_id": {
-                    "type": "string",
-                    "example": "DE111"
-                },
-                "region_name": {
-                    "type": "string",
-                    "example": "Stuttgart, Stadtkreis"
-                },
-                "years": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.NutsRegionData"
-                    }
                 }
             }
         },
@@ -2083,6 +2388,39 @@ const docTemplate = `{
                 "year": {
                     "type": "integer",
                     "example": 2020
+                }
+            }
+        },
+        "models.SoziooekonomischesInventarEintrag": {
+            "type": "object",
+            "properties": {
+                "dataset": {
+                    "type": "string",
+                    "example": "arbeitslose"
+                },
+                "distinct_geodata_ars": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "distinct_geodata_lau": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "distinct_geodata_nuts": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "records": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
                 }
             }
         },

@@ -38,3 +38,30 @@ type KreisDatasetConfig struct {
 	OrderBy      string
 	RouteSlug    string
 }
+
+// SoziooekonomischesInventarEintrag beschreibt die Datenverfügbarkeit je Datensatz, Jahr und Geodatenebene.
+type SoziooekonomischesInventarEintrag struct {
+	Dataset             string `json:"dataset" db:"dataset" example:"arbeitslose"`
+	Year                int    `json:"year" db:"year" example:"2022"`
+	GeodataLevel        string `json:"geodata_level" db:"geodata_level" example:"NUTS_3"`
+	Records             int    `json:"records" db:"records" example:"400"`
+	DistinctGeodataNUTS int    `json:"distinct_geodata_nuts" db:"distinct_geodata_nuts" example:"400"`
+	DistinctGeodataLAU  int    `json:"distinct_geodata_lau" db:"distinct_geodata_lau" example:"0"`
+	DistinctGeodataARS  int    `json:"distinct_geodata_ars" db:"distinct_geodata_ars" example:"400"`
+}
+
+// AllSoziodataConfigs liefert alle bekannten Soziodata-Datensatzkonfigurationen.
+func AllSoziodataConfigs() []KreisDatasetConfig {
+	return []KreisDatasetConfig{
+		ArbeitsloseConfig,
+		ArbeitsvolumenConfig,
+		BeschaeftigungsquoteGemeindenConfig,
+		BeschaeftigungsquoteNuts3Config,
+		BevoelkerungConfig,
+		BruttoverdienstConfig,
+		DurchschnittsalterConfig,
+		SchuldnerquoteConfig,
+		SgbIiQuoteConfig,
+		WohngeldhaushalteConfig,
+	}
+}

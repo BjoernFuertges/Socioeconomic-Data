@@ -35,7 +35,13 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 		}
 
 		// NUTS-Regionen (alle Indikatoren je Verwaltungsbezirk)
-		v1.GET("/nuts/:nuts_id", handler.GetNutsRegionData)
+		// NUTS-Regionen (alle Indikatoren je Verwaltungsbezirk)
+		nutsGroup := v1.Group("/nuts")
+		{
+			nutsGroup.GET("", handler.GetAllNutsRegions)
+			nutsGroup.GET("/:nuts_id/versions", handler.GetNutsRegionVersions)
+			nutsGroup.GET("/:nuts_id", handler.GetNutsRegionData)
+		}
 
 		// Arbeitslosenzahlen
 		unemployment := v1.Group("/unemployment")
@@ -43,6 +49,11 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			unemployment.GET("", handler.GetUnemploymentData)
 			unemployment.GET("/aggregated", handler.GetUnemploymentAggregated)
 			unemployment.GET("/geodata/:geodata_id", handler.GetUnemploymentByGeodataID)
+		}
+
+		socioeconomic := v1.Group("/socioeconomic")
+		{
+			socioeconomic.GET("/inventory", handler.GetSoziooekonomischesInventar)
 		}
 
 		// Generierte Soziodata-Routen (aus dbt-Schema-YAML-Dateien)

@@ -1,0 +1,117 @@
+package handlers
+
+import (
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/models"
+)
+
+func normalizeNullableLimitQuery(c *gin.Context) bool {
+	rawLimit, exists := c.GetQuery("limit")
+	if !exists || !strings.EqualFold(strings.TrimSpace(rawLimit), "null") {
+		return false
+	}
+
+	q := c.Request.URL.Query()
+	q.Del("limit")
+	c.Request.URL.RawQuery = q.Encode()
+	return true
+}
+
+func resolvePagination(c *gin.Context, defaultLimit int, requestedLimit int, requestedOffset int, limitNull bool) (*int, int, error) {
+	if chunkSizeRaw := strings.TrimSpace(c.Query("chunk_size")); chunkSizeRaw != "" {
+		chunkSize, err := strconv.Atoi(chunkSizeRaw)
+		if err != nil || chunkSize <= 0 {
+			return nil, 0, fmt.Errorf("chunk_size muss eine positive Zahl sein")
+		}
+
+		chunk := 0
+		if chunkRaw := strings.TrimSpace(c.Query("chunk")); chunkRaw != "" {
+			chunk, err = strconv.Atoi(chunkRaw)
+			if err != nil || chunk < 0 {
+				return nil, 0, fmt.Errorf("chunk muss eine Zahl >= 0 sein")
+			}
+		}
+
+		offset := chunk * chunkSize
+		return &chunkSize, offset, nil
+	}
+
+	offset := requestedOffset
+	if offset < 0 {
+		return nil, 0, fmt.Errorf("offset muss eine Zahl >= 0 sein")
+	}
+
+	if limitNull {
+		return nil, offset, nil
+	}
+
+	limit := requestedLimit
+	if limit == 0 {
+		limit = defaultLimit
+	}
+	if limit < 0 {
+		return nil, 0, fmt.Errorf("limit muss >= 0 sein")
+	}
+
+	return &limit, offset, nil
+}
+
+func applyPaginationClause(query string, argPos int, limit *int, offset int) (string, []interface{}) {
+	if limit == nil {
+		if offset > 0 {
+			query += fmt.Sprintf(" OFFSET $%d", argPos)
+			return query, []interface{}{offset}
+		}
+		return query, nil
+	}
+
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argPos, argPos+1)
+	return query, []interface{}{*limit, offset}
+}
+
+func resolveAndApplyOrderedPagination(
+	c *gin.Context,
+	query string,
+	args []interface{},
+	argPos int,
+	orderByExpr string,
+	defaultLimit int,
+	requestedLimit int,
+	requestedOffset int,
+	limitNull bool,
+) (string, []interface{}, int, error) {
+	limit, offset, err := resolvePagination(c, defaultLimit, requestedLimit, requestedOffset, limitNull)
+	if err != nil {
+		return "", nil, 0, err
+	}
+
+	query += fmt.Sprintf(" ORDER BY %s", orderByExpr)
+	paginationQuery, paginationArgs := applyPaginationClause(query, argPos, limit, offset)
+	return paginationQuery, append(args, paginationArgs...), offset, nil
+}
+
+func respondBadRequest(c *gin.Context, message string) {
+	c.JSON(http.StatusBadRequest, models.APIResponse{
+		Success: false,
+		Error:   message,
+	})
+}
+
+func respondNotFound(c *gin.Context, message string) {
+	c.JSON(http.StatusNotFound, models.APIResponse{
+		Success: false,
+		Error:   message,
+	})
+}
+
+func respondInternalError(c *gin.Context, message string) {
+	c.JSON(http.StatusInternalServerError, models.APIResponse{
+		Success: false,
+		Error:   message,
+	})
+}

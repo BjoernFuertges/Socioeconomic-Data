@@ -19,6 +19,7 @@
 with bevoelkerung as (
     select
         geodata_id_nuts,
+        geodata_id_ars,
         geodata_name,
         year,
         bevoelkerung
@@ -29,6 +30,7 @@ with bevoelkerung as (
 schuldnerquote as (
     select
         geodata_id_nuts,
+        geodata_id_ars,
         geodata_name,
         year,
         schuldnerquote_prozent
@@ -116,6 +118,8 @@ nuts_base as (
         coalesce(b.geodata_id_nuts, s.geodata_id_nuts) as nuts_id,
         coalesce(b.geodata_name,    s.geodata_name)    as region_name,
         coalesce(b.year,            s.year)             as year,
+        -- ARS kann null sein (~20% der Kreise), daher coalesce aus beiden Quellen
+        nullif(coalesce(nullif(b.geodata_id_ars, ''), nullif(s.geodata_id_ars, '')), '') as geodata_id_ars,
         b.bevoelkerung,
         s.schuldnerquote_prozent
     from bevoelkerung b
@@ -128,6 +132,7 @@ select
     n.nuts_id,
     n.region_name,
     n.year,
+    n.geodata_id_ars,
     n.bevoelkerung,
     n.schuldnerquote_prozent,
     a.arbeitslose,
