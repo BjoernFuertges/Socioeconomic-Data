@@ -119,7 +119,13 @@ nuts_base as (
         coalesce(b.geodata_name,    s.geodata_name)    as region_name,
         coalesce(b.year,            s.year)             as year,
         -- ARS kann null sein (~20% der Kreise), daher coalesce aus beiden Quellen
-        nullif(coalesce(nullif(b.geodata_id_ars, ''), nullif(s.geodata_id_ars, '')), '') as geodata_id_ars,
+        nullif(
+            coalesce(
+                nullif(cast(b.geodata_id_ars as text), ''),
+                nullif(cast(s.geodata_id_ars as text), '')
+            ),
+            ''
+        ) as geodata_id_ars,
         b.bevoelkerung,
         s.schuldnerquote_prozent
     from bevoelkerung b
