@@ -10,43 +10,107 @@ routes_files=(
 
 extract_registered_routes() {
   awk '
-    function joinPath(base, part, out) {
-      out = base part
-      gsub(/\/+/, "/", out)
-      if (out == "") out = "/"
-      if (length(out) > 1 && substr(out, length(out), 1) == "/") out = substr(out, 1, length(out)-1)
-      return out
+    function joinPath(base, part) {
+      result = base part
+      while (index(result, "//") > 0) {
+        slash_pos = index(result, "//")
+        result = substr(result, 1, slash_pos) substr(result, slash_pos + 2)
+      }
+      if (result == "") result = "/"
+      if (length(result) > 1) {
+        lastchar = substr(result, length(result), 1)
+        if (lastchar == "/") {
+          result = substr(result, 1, length(result) - 1)
+        }
+      }
+      return result
     }
 
     {
-      if (match($0, /([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*:=[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)\.Group\("([^"]*)"\)/, m)) {
-        child = m[1]
-        parent = m[2]
-        segment = m[3]
-        base = (parent in groupPrefix) ? groupPrefix[parent] : ""
-        groupPrefix[child] = joinPath(base, segment)
+      if ($0 ~ / := .*\.Group\(/) {
+        line = $0
+        var_part = line
+        sub(/ .*/, "", var_part)
+        var = var_part
+        
+        group_part = line
+        sub(/.*\.Group\("/, "", group_part)
+        sub(/".*/, "", group_part)
+        group_path = group_part
+        
+        parent_part = line
+        sub(/.*:= /, "", parent_part)
+        sub(/\.Group.*/, "", parent_part)
+        parent = parent_part
+        
+        if (parent in groupPrefix) {
+          base = groupPrefix[parent]
+        } else {
+          base = ""
+        }
+        groupPrefix[var] = joinPath(base, group_path)
       }
-
-      if (match($0, /([A-Za-z_][A-Za-z0-9_]*)\.(GET|POST|PUT|DELETE|PATCH)\("([^"]*)",[[:space:]]*(handler|h)\.([A-Za-z0-9_]+)\)/, m)) {
-        groupVar = m[1]
-        method = tolower(m[2])
-        routePart = m[3]
-        fn = m[5]
-
-        base = (groupVar in groupPrefix) ? groupPrefix[groupVar] : ""
-        path = joinPath(base, routePart)
-
-        if (index(path, "/api/v1") == 1) {
-          path = substr(path, 8)
-          if (path == "") path = "/"
+      
+      if ($0 ~ /\.(GET|POST|PUT|DELETE|PATCH)\(/) {
+        line = $0
+        
+        method_part = line
+        sub(/\./, " ", method_part)
+        sub(/^[^ ]*[ ]/, "", method_part)
+        sub(/\(.*/, "", method_part)
+        method = tolower(method_part)
+        
+        groupVar_part = line
+        sub(/\..*/, "", groupVar_part)
+        groupVar = groupVar_part
+        
+        route_part = line
+        sub(/.*\("/, "", route_part)
+        sub(/".*/, "", route_part)
+        routePart = route_part
+        
+        fn_part = line
+        if (index(fn_part, "handler.") > 0 || index(fn_part, "h.") > 0) {
+          sub(/.*handler\./, "", fn_part)
+          if (length(fn_part) == length(line)) {
+            fn_part = line
+            sub(/.*h\./, "", fn_part)
+          }
+          sub(/\).*/, "", fn_part)
+          fn = fn_part
+        } else {
+          fn = ""
         }
-
-        while (match(path, /:[A-Za-z_][A-Za-z0-9_]*/)) {
-          name = substr(path, RSTART+1, RLENGTH-1)
-          path = substr(path, 1, RSTART-1) "{" name "}" substr(path, RSTART+RLENGTH)
+        
+        if (fn != "" && method != "" && routePart != "") {
+          if (groupVar in groupPrefix) {
+            base = groupPrefix[groupVar]
+          } else {
+            base = ""
+          }
+          path = joinPath(base, routePart)
+          
+          if (substr(path, 1, 8) == "/api/v1") {
+            path = substr(path, 8)
+            if (path == "") path = "/"
+          }
+          
+          while (index(path, ":") > 0) {
+            colon_pos = index(path, ":")
+            rest = substr(path, colon_pos + 1)
+            slash_pos = index(rest, "/")
+            if (slash_pos > 0) {
+              name = substr(rest, 1, slash_pos - 1)
+              path = substr(path, 1, colon_pos - 1) "{" name "}" substr(path, colon_pos + 1 + slash_pos - 1)
+            } else {
+              name = rest
+              path = substr(path, 1, colon_pos - 1) "{" name "}"
+              break
+            }
+          }
+          
+          print fn "|" path "|" method
         }
-
-        print fn "|" path "|" method
       }
     }
   ' "${routes_files[@]}"
@@ -58,16 +122,37 @@ get_router_annotation() {
 
   awk -v fn="$handler" '
     { lines[NR] = $0 }
-    $0 ~ "func \\(h \\*Handler\\) " fn "\\(.*\\*gin\\.Context\\)" {
-      start = NR - 50
-      if (start < 1) start = 1
-      for (i = NR - 1; i >= start; i--) {
-        if (match(lines[i], /@Router[[:space:]]+([^[:space:]]+)[[:space:]]+\[([^]]+)\]/, m)) {
-          print m[1] "|" tolower(m[2])
-          exit 0
+    END {
+      found = 0
+      for (i = 1; i <= NR; i++) {
+        if (lines[i] ~ "func.*Handler.*" fn) {
+          start = i - 50
+          if (start < 1) start = 1
+          for (j = i - 1; j >= start; j--) {
+            if (index(lines[j], "@Router") > 0) {
+              line = lines[j]
+              rest = line
+              sub(/.*@Router[ ]*/, "", rest)
+              
+              path = rest
+              sub(/[ ].*/, "", path)
+              
+              method_part = rest
+              sub(/^[^ ]*[ ]*/, "", method_part)
+              sub(/\[/, "", method_part)
+              sub(/\].*/, "", method_part)
+              
+              if (length(path) > 0 && length(method_part) > 0) {
+                print path "|" tolower(method_part)
+                found = 1
+                break
+              }
+            }
+          }
+          if (found) break
         }
       }
-      exit 1
+      if (!found) exit 1
     }
   ' "$file"
 }
