@@ -44,6 +44,24 @@ func (h *Handler) GetArbeitsvolumenData(c *gin.Context) {
 	getKreisData[models.ArbeitsvolumenData](h, c, models.ArbeitsvolumenConfig)
 }
 
+// GetAuzubildendeData gibt Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Tags Auzubildende
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.AuzubildendeData}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /auzubildende [get]
+func (h *Handler) GetAuzubildendeData(c *gin.Context) {
+	getKreisData[models.AuzubildendeData](h, c, models.AuzubildendeConfig)
+}
+
 // GetBeschaeftigungsquoteGemeindenData gibt Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
 // @Summary Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
 // @Description Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
@@ -134,6 +152,60 @@ func (h *Handler) GetDurchschnittsalterData(c *gin.Context) {
 	getKreisData[models.DurchschnittsalterData](h, c, models.DurchschnittsalterConfig)
 }
 
+// GetErwerbstaetigePro1000EinwohnerData gibt Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Tags ErwerbstaetigePro1000Einwohner
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.ErwerbstaetigePro1000EinwohnerData}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /erwerbstaetige_pro_1000_einwohner [get]
+func (h *Handler) GetErwerbstaetigePro1000EinwohnerData(c *gin.Context) {
+	getKreisData[models.ErwerbstaetigePro1000EinwohnerData](h, c, models.ErwerbstaetigePro1000EinwohnerConfig)
+}
+
+// GetKinderarmutData gibt Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Tags Kinderarmut
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.KinderarmutData}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /kinderarmut [get]
+func (h *Handler) GetKinderarmutData(c *gin.Context) {
+	getKreisData[models.KinderarmutData](h, c, models.KinderarmutConfig)
+}
+
+// GetMedianeinkommenData gibt Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Tags Medianeinkommen
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.MedianeinkommenData}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /medianeinkommen [get]
+func (h *Handler) GetMedianeinkommenData(c *gin.Context) {
+	getKreisData[models.MedianeinkommenData](h, c, models.MedianeinkommenConfig)
+}
+
 // GetSchuldnerquoteData gibt Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
 // @Summary Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
 // @Description Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
@@ -168,6 +240,24 @@ func (h *Handler) GetSchuldnerquoteData(c *gin.Context) {
 // @Router /sgb_ii_quote [get]
 func (h *Handler) GetSgbIiQuoteData(c *gin.Context) {
 	getKreisData[models.SgbIiQuoteData](h, c, models.SgbIiQuoteConfig)
+}
+
+// GetStudierendeData gibt Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// @Tags Studierende
+// @Accept json
+// @Produce json
+// @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.StudierendeData}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /studierende [get]
+func (h *Handler) GetStudierendeData(c *gin.Context) {
+	getKreisData[models.StudierendeData](h, c, models.StudierendeConfig)
 }
 
 // GetWohngeldhaushalteData gibt Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück

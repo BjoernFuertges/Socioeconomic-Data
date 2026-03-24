@@ -183,6 +183,88 @@ const docTemplate = `{
                 }
             }
         },
+        "/auzubildende": {
+            "get": {
+                "description": "Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auzubildende"
+                ],
+                "summary": "Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AuzubildendeData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/beschaeftigungsquote-gemeinden": {
             "get": {
                 "description": "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
@@ -593,6 +675,88 @@ const docTemplate = `{
                 }
             }
         },
+        "/erwerbstaetige_pro_1000_einwohner": {
+            "get": {
+                "description": "Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ErwerbstaetigePro1000Einwohner"
+                ],
+                "summary": "Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.ErwerbstaetigePro1000EinwohnerData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Gibt den Status der API zurück",
@@ -611,6 +775,88 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/kinderarmut": {
+            "get": {
+                "description": "Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Kinderarmut"
+                ],
+                "summary": "Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2010-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.KinderarmutData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
                         }
                     }
                 }
@@ -754,6 +1000,88 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medianeinkommen": {
+            "get": {
+                "description": "Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Medianeinkommen"
+                ],
+                "summary": "Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2010-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.MedianeinkommenData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -1215,6 +1543,88 @@ const docTemplate = `{
                                             "type": "array",
                                             "items": {
                                                 "$ref": "#/definitions/models.SoziooekonomischesInventarEintrag"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/studierende": {
+            "get": {
+                "description": "Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Studierende"
+                ],
+                "summary": "Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.StudierendeData"
                                             }
                                         }
                                     }
@@ -1745,6 +2155,67 @@ const docTemplate = `{
                 }
             }
         },
+        "models.AuzubildendeData": {
+            "type": "object",
+            "properties": {
+                "auzubildende": {
+                    "type": "number",
+                    "example": 0
+                },
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
+                }
+            }
+        },
         "models.BeschaeftigungsquoteGemeindenData": {
             "type": "object",
             "properties": {
@@ -2062,6 +2533,128 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ErwerbstaetigePro1000EinwohnerData": {
+            "type": "object",
+            "properties": {
+                "erwerbstaetige_pro_1000_einwohner": {
+                    "type": "number",
+                    "example": 0
+                },
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
+                }
+            }
+        },
+        "models.KinderarmutData": {
+            "type": "object",
+            "properties": {
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "kinderarmut": {
+                    "type": "number",
+                    "example": 50
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
+                }
+            }
+        },
         "models.LAURegion": {
             "type": "object",
             "properties": {
@@ -2120,6 +2713,67 @@ const docTemplate = `{
                 "year_match": {
                     "type": "boolean",
                     "example": true
+                }
+            }
+        },
+        "models.MedianeinkommenData": {
+            "type": "object",
+            "properties": {
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "medianeinkommen": {
+                    "type": "number",
+                    "example": 0
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
                 }
             }
         },
@@ -2421,6 +3075,67 @@ const docTemplate = `{
                 "year": {
                     "type": "integer",
                     "example": 2022
+                }
+            }
+        },
+        "models.StudierendeData": {
+            "type": "object",
+            "properties": {
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "studierende": {
+                    "type": "number",
+                    "example": 0
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
                 }
             }
         },

@@ -105,6 +105,51 @@ definitions:
         example: 2020
         type: integer
     type: object
+  models.AuzubildendeData:
+    properties:
+      auzubildende:
+        example: 0
+        type: number
+      geodata_id_ars:
+        example: "01001"
+        type: string
+      geodata_id_lau:
+        example: "01001000"
+        type: string
+      geodata_id_nuts:
+        example: DEF01
+        type: string
+      geodata_level:
+        example: NUTS_3
+        type: string
+      geodata_name:
+        example: Flensburg
+        type: string
+      geodata_year:
+        example: 2024
+        type: integer
+      has_valid_value:
+        example: true
+        type: boolean
+      mapper:
+        example: exact_id
+        type: string
+      observation_date:
+        example: "2020-01-01"
+        type: string
+      original_id_1:
+        example: "01001"
+        type: string
+      original_name:
+        example: Flensburg, Stadt
+        type: string
+      parameter:
+        example: id_ars
+        type: string
+      year:
+        example: 2020
+        type: integer
+    type: object
   models.BeschaeftigungsquoteGemeindenData:
     properties:
       beschaeftigungsquote_prozent:
@@ -339,6 +384,96 @@ definitions:
         example: 2020
         type: integer
     type: object
+  models.ErwerbstaetigePro1000EinwohnerData:
+    properties:
+      erwerbstaetige_pro_1000_einwohner:
+        example: 0
+        type: number
+      geodata_id_ars:
+        example: "01001"
+        type: string
+      geodata_id_lau:
+        example: "01001000"
+        type: string
+      geodata_id_nuts:
+        example: DEF01
+        type: string
+      geodata_level:
+        example: NUTS_3
+        type: string
+      geodata_name:
+        example: Flensburg
+        type: string
+      geodata_year:
+        example: 2024
+        type: integer
+      has_valid_value:
+        example: true
+        type: boolean
+      mapper:
+        example: exact_id
+        type: string
+      observation_date:
+        example: "2020-01-01"
+        type: string
+      original_id_1:
+        example: "01001"
+        type: string
+      original_name:
+        example: Flensburg, Stadt
+        type: string
+      parameter:
+        example: id_ars
+        type: string
+      year:
+        example: 2020
+        type: integer
+    type: object
+  models.KinderarmutData:
+    properties:
+      geodata_id_ars:
+        example: "01001"
+        type: string
+      geodata_id_lau:
+        example: "01001000"
+        type: string
+      geodata_id_nuts:
+        example: DEF01
+        type: string
+      geodata_level:
+        example: NUTS_3
+        type: string
+      geodata_name:
+        example: Flensburg
+        type: string
+      geodata_year:
+        example: 2024
+        type: integer
+      has_valid_value:
+        example: true
+        type: boolean
+      kinderarmut:
+        example: 50
+        type: number
+      mapper:
+        example: exact_id
+        type: string
+      observation_date:
+        example: "2020-01-01"
+        type: string
+      original_id_1:
+        example: "01001"
+        type: string
+      original_name:
+        example: Flensburg, Stadt
+        type: string
+      parameter:
+        example: id_ars
+        type: string
+      year:
+        example: 2020
+        type: integer
+    type: object
   models.LAURegion:
     properties:
       country:
@@ -381,6 +516,51 @@ definitions:
       year_match:
         example: true
         type: boolean
+    type: object
+  models.MedianeinkommenData:
+    properties:
+      geodata_id_ars:
+        example: "01001"
+        type: string
+      geodata_id_lau:
+        example: "01001000"
+        type: string
+      geodata_id_nuts:
+        example: DEF01
+        type: string
+      geodata_level:
+        example: NUTS_3
+        type: string
+      geodata_name:
+        example: Flensburg
+        type: string
+      geodata_year:
+        example: 2024
+        type: integer
+      has_valid_value:
+        example: true
+        type: boolean
+      mapper:
+        example: exact_id
+        type: string
+      medianeinkommen:
+        example: 0
+        type: number
+      observation_date:
+        example: "2020-01-01"
+        type: string
+      original_id_1:
+        example: "01001"
+        type: string
+      original_name:
+        example: Flensburg, Stadt
+        type: string
+      parameter:
+        example: id_ars
+        type: string
+      year:
+        example: 2020
+        type: integer
     type: object
   models.MetaInfo:
     properties:
@@ -598,6 +778,51 @@ definitions:
         type: integer
       year:
         example: 2022
+        type: integer
+    type: object
+  models.StudierendeData:
+    properties:
+      geodata_id_ars:
+        example: "01001"
+        type: string
+      geodata_id_lau:
+        example: "01001000"
+        type: string
+      geodata_id_nuts:
+        example: DEF01
+        type: string
+      geodata_level:
+        example: NUTS_3
+        type: string
+      geodata_name:
+        example: Flensburg
+        type: string
+      geodata_year:
+        example: 2024
+        type: integer
+      has_valid_value:
+        example: true
+        type: boolean
+      mapper:
+        example: exact_id
+        type: string
+      observation_date:
+        example: "2020-01-01"
+        type: string
+      original_id_1:
+        example: "01001"
+        type: string
+      original_name:
+        example: Flensburg, Stadt
+        type: string
+      parameter:
+        example: id_ars
+        type: string
+      studierende:
+        example: 0
+        type: number
+      year:
+        example: 2020
         type: integer
     type: object
   models.UnemploymentAggregation:
@@ -827,6 +1052,61 @@ paths:
         mit Datumsableitung und Qualitätsflag
       tags:
       - Arbeitsvolumen
+  /auzubildende:
+    get:
+      consumes:
+      - application/json
+      description: Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder,
+        mit Datumsableitung und Qualitätsflag
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AuzubildendeData'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder,
+        mit Datumsableitung und Qualitätsflag
+      tags:
+      - Auzubildende
   /beschaeftigungsquote-gemeinden:
     get:
       consumes:
@@ -1102,6 +1382,61 @@ paths:
         mit Datumsableitung und Qualitätsflag
       tags:
       - Durchschnittsalter
+  /erwerbstaetige_pro_1000_einwohner:
+    get:
+      consumes:
+      - application/json
+      description: Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis –
+        bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.ErwerbstaetigePro1000EinwohnerData'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt,
+        ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+      tags:
+      - ErwerbstaetigePro1000Einwohner
   /health:
     get:
       description: Gibt den Status der API zurück
@@ -1117,6 +1452,63 @@ paths:
       summary: Health Check
       tags:
       - Health
+  /kinderarmut:
+    get:
+      consumes:
+      - application/json
+      description: Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte
+        unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung
+        und Qualitätsflag
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: Jahr der Beobachtung (2010-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.KinderarmutData'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte
+        unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung
+        und Qualitätsflag
+      tags:
+      - Kinderarmut
   /lau:
     get:
       consumes:
@@ -1213,6 +1605,61 @@ paths:
       summary: LAU-Region Details
       tags:
       - LAU
+  /medianeinkommen:
+    get:
+      consumes:
+      - application/json
+      description: Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder,
+        mit Datumsableitung und Qualitätsflag
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: Jahr der Beobachtung (2010-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.MedianeinkommenData'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder,
+        mit Datumsableitung und Qualitätsflag
+      tags:
+      - Medianeinkommen
   /nuts:
     get:
       consumes:
@@ -1528,6 +1975,61 @@ paths:
       summary: Inventar verfügbarer Soziodaten
       tags:
       - Soziooekonomie
+  /studierende:
+    get:
+      consumes:
+      - application/json
+      description: Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt,
+        ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.StudierendeData'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt,
+        ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+      tags:
+      - Studierende
   /unemployment:
     get:
       consumes:
