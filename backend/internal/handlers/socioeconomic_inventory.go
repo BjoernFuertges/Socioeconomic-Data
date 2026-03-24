@@ -3,25 +3,11 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/models"
 )
-
-var sqlIdentifierPattern = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
-
-func qualifiedTableName(schema string, table string) (string, error) {
-	if !sqlIdentifierPattern.MatchString(schema) {
-		return "", fmt.Errorf("ungültiger Schema-Name in Dataset-Konfiguration: %q", schema)
-	}
-	if !sqlIdentifierPattern.MatchString(table) {
-		return "", fmt.Errorf("ungültiger Tabellenname in Dataset-Konfiguration: %q", table)
-	}
-
-	return fmt.Sprintf(`"%s"."%s"`, schema, table), nil
-}
 
 type socioeconomicInventoryFilter struct {
 	Dataset      string `form:"dataset"`
@@ -49,54 +35,17 @@ func (h *Handler) GetSoziooekonomischesInventar(c *gin.Context) {
 		return
 	}
 
-	configs := models.AllSoziodataConfigs()
-	if dataset := strings.TrimSpace(filter.Dataset); dataset != "" {
-		filteredConfigs := make([]models.KreisDatasetConfig, 0, 1)
-		for _, cfg := range configs {
-			if strings.EqualFold(cfg.RouteSlug, dataset) {
-				filteredConfigs = append(filteredConfigs, cfg)
-				break
-			}
-		}
-		configs = filteredConfigs
-	}
-
-	if len(configs) == 0 {
-		c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: []models.SoziooekonomischesInventarEintrag{}})
-		return
-	}
-
-	selectParts := make([]string, 0, len(configs))
-	args := make([]interface{}, 0, len(configs))
-
-	for idx, cfg := range configs {
-		fullTableName, err := qualifiedTableName(cfg.Schema, cfg.Table)
-		if err != nil {
-			respondInternalError(c, err.Error())
-			return
-		}
-
-		slugArgPos := idx + 1
-		selectParts = append(selectParts, fmt.Sprintf(
-			`SELECT $%d::text AS dataset,
-					year,
-					geodata_level,
-					COUNT(*)::int AS records,
-					COUNT(DISTINCT NULLIF(to_jsonb(d)->>'geodata_id_nuts', ''))::int AS distinct_geodata_nuts,
-					COUNT(DISTINCT NULLIF(to_jsonb(d)->>'geodata_id_lau', ''))::int AS distinct_geodata_lau,
-					COUNT(DISTINCT NULLIF(to_jsonb(d)->>'geodata_id_ars', ''))::int AS distinct_geodata_ars
-				 FROM %s d
-				 GROUP BY year, geodata_level`,
-			slugArgPos,
-			fullTableName,
-		))
-		args = append(args, cfg.RouteSlug)
-	}
-
-	query := `SELECT * FROM (` + strings.Join(selectParts, ` UNION ALL `) + `) AS inventory`
+	query := `SELECT dataset, year, geodata_level, records, distinct_geodata_nuts, distinct_geodata_lau, distinct_geodata_ars
+		FROM transformed_data.mart_socioeconomic_inventory`
+	args := make([]interface{}, 0, 3)
 
 	whereParts := make([]string, 0, 2)
-	argPos := len(args) + 1
+	argPos := 1
+	if dataset := strings.TrimSpace(filter.Dataset); dataset != "" {
+		whereParts = append(whereParts, fmt.Sprintf("dataset = $%d", argPos))
+		args = append(args, strings.ToLower(dataset))
+		argPos++
+	}
 	if filter.Year != nil {
 		whereParts = append(whereParts, fmt.Sprintf("year = $%d", argPos))
 		args = append(args, *filter.Year)

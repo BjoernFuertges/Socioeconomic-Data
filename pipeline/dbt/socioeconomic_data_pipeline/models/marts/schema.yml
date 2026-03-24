@@ -74,3 +74,27 @@ models:
         description: "Percentage of LAUs with population data for the year"
       - name: issue_type
         description: "Description of data quality issue"
+
+  - name: mart_socioeconomic_inventory
+    description: "Voraggregiertes Inventar der verfügbaren Soziodaten je Datensatz, Jahr und Geodatenebene"
+    columns:
+      - name: dataset
+        description: "Dataset-Slug (API-Route, z.B. arbeitslose oder beschaeftigungsquote-gemeinden)"
+        tests:
+          - not_null
+      - name: year
+        description: "Jahr der Beobachtung"
+        tests:
+          - not_null
+      - name: geodata_level
+        description: "Geodatenebene (z.B. NUTS_3, LAU)"
+        tests:
+          - not_null
+      - name: records
+        description: "Anzahl Datensätze in der Kombination aus dataset, year und geodata_level"
+      - name: distinct_geodata_nuts
+        description: "Anzahl unterschiedlicher geodata_id_nuts"
+      - name: distinct_geodata_lau
+        description: "Anzahl unterschiedlicher geodata_id_lau"
+      - name: distinct_geodata_ars
+        description: "Anzahl unterschiedlicher geodata_id_ars"
