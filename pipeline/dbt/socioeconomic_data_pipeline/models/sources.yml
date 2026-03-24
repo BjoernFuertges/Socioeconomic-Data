@@ -342,3 +342,78 @@ sources:
             description: "Wohngeldhaushalte je 1000 Einwohner"
           - name: dataset_name
             description: "Name des Datensatzes (results_wohngeldhaushalte_kreise)"
+
+      - name: results_auzubildende_kreise
+        description: "Auszubildende je Kreis – long format, ein Record pro Region und Jahr (je 1.000 SV-Beschäftigte)"
+        columns:
+          - name: original_id_1
+            tests:
+              - not_null
+          - name: geodata_id_nuts
+            tests:
+              - not_null
+          - name: year
+            tests:
+              - not_null
+          - name: value
+            description: "Auszubildende je 1.000 sozialversicherungspflichtig Beschäftigte"
+
+      - name: results_erwerbstaetige_pro_1000_einwohner_kreise
+        description: "Erwerbstätige je 1.000 Einwohner je Kreis – long format, ein Record pro Region und Jahr"
+        columns:
+          - name: original_id_1
+            tests:
+              - not_null
+          - name: geodata_id_nuts
+            tests:
+              - not_null
+          - name: year
+            tests:
+              - not_null
+          - name: value
+            description: "Erwerbstätige je 1.000 Einwohner"
+
+      - name: results_kinderarmut_kreise
+        description: "Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – long format"
+        columns:
+          - name: original_id_1
+            tests:
+              - not_null
+          - name: geodata_id_nuts
+            tests:
+              - not_null
+          - name: year
+            tests:
+              - not_null
+          - name: value
+            description: "Nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner"
+
+      - name: results_medianeinkommen_kreise
+        description: "Medianeinkommen je Kreis – long format, ein Record pro Region und Jahr (Euro)"
+        columns:
+          - name: original_id_1
+            tests:
+              - not_null
+          - name: geodata_id_nuts
+            tests:
+              - not_null
+          - name: year
+            tests:
+              - not_null
+          - name: value
+            description: "Medianeinkommen in Euro"
+
+      - name: results_studierende_kreise
+        description: "Studierende je 1.000 Einwohner je Kreis – long format, ein Record pro Region und Jahr"
+        columns:
+          - name: original_id_1
+            tests:
+              - not_null
+          - name: geodata_id_nuts
+            tests:
+              - not_null
+          - name: year
+            tests:
+              - not_null
+          - name: value
+            description: "Studierende je 1.000 Einwohner"

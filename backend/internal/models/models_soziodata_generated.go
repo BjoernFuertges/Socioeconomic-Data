@@ -37,6 +37,23 @@ var ArbeitsvolumenConfig = KreisDatasetConfig{
 	RouteSlug:    "arbeitsvolumen",
 }
 
+// AuzubildendeData repräsentiert Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+type AuzubildendeData struct {
+	SozioBaseData
+	Auzubildende float64 `json:"auzubildende" db:"auzubildende" example:"0"`
+}
+
+// AuzubildendeConfig ist die Dataset-Konfiguration für Auzubildende-Daten,
+// generiert aus dbt/.../models/staging/stg_auzubildende_kreise_schema.yml
+var AuzubildendeConfig = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_auzubildende_kreise",
+	ValueColumns: []string{"auzubildende"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "auzubildende",
+}
+
 // BeschaeftigungsquoteGemeindenData repräsentiert Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
 type BeschaeftigungsquoteGemeindenData struct {
 	SozioBaseData
@@ -125,6 +142,57 @@ var DurchschnittsalterConfig = KreisDatasetConfig{
 	RouteSlug:    "durchschnittsalter",
 }
 
+// ErwerbstaetigePro1000EinwohnerData repräsentiert Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+type ErwerbstaetigePro1000EinwohnerData struct {
+	SozioBaseData
+	ErwerbstaetigePro1000Einwohner float64 `json:"erwerbstaetige_pro_1000_einwohner" db:"erwerbstaetige_pro_1000_einwohner" example:"0"`
+}
+
+// ErwerbstaetigePro1000EinwohnerConfig ist die Dataset-Konfiguration für ErwerbstaetigePro1000Einwohner-Daten,
+// generiert aus dbt/.../models/staging/stg_erwerbstaetige_pro_1000_einwohner_kreise_schema.yml
+var ErwerbstaetigePro1000EinwohnerConfig = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_erwerbstaetige_pro_1000_einwohner_kreise",
+	ValueColumns: []string{"erwerbstaetige_pro_1000_einwohner"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "erwerbstaetige_pro_1000_einwohner",
+}
+
+// KinderarmutData repräsentiert Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+type KinderarmutData struct {
+	SozioBaseData
+	Kinderarmut float64 `json:"kinderarmut" db:"kinderarmut" example:"50.00"`
+}
+
+// KinderarmutConfig ist die Dataset-Konfiguration für Kinderarmut-Daten,
+// generiert aus dbt/.../models/staging/stg_kinderarmut_kreise_schema.yml
+var KinderarmutConfig = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_kinderarmut_kreise",
+	ValueColumns: []string{"kinderarmut"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "kinderarmut",
+}
+
+// MedianeinkommenData repräsentiert Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+type MedianeinkommenData struct {
+	SozioBaseData
+	Medianeinkommen float64 `json:"medianeinkommen" db:"medianeinkommen" example:"0"`
+}
+
+// MedianeinkommenConfig ist die Dataset-Konfiguration für Medianeinkommen-Daten,
+// generiert aus dbt/.../models/staging/stg_medianeinkommen_kreise_schema.yml
+var MedianeinkommenConfig = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_medianeinkommen_kreise",
+	ValueColumns: []string{"medianeinkommen"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "medianeinkommen",
+}
+
 // SchuldnerquoteData repräsentiert Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
 type SchuldnerquoteData struct {
 	SozioBaseData
@@ -157,6 +225,23 @@ var SgbIiQuoteConfig = KreisDatasetConfig{
 	DefaultLimit: 1000,
 	OrderBy:      "geodata_id_nuts, year",
 	RouteSlug:    "sgb_ii_quote",
+}
+
+// StudierendeData repräsentiert Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+type StudierendeData struct {
+	SozioBaseData
+	Studierende float64 `json:"studierende" db:"studierende" example:"0"`
+}
+
+// StudierendeConfig ist die Dataset-Konfiguration für Studierende-Daten,
+// generiert aus dbt/.../models/staging/stg_studierende_kreise_schema.yml
+var StudierendeConfig = KreisDatasetConfig{
+	Schema:       "transformed_data",
+	Table:        "stg_studierende_kreise",
+	ValueColumns: []string{"studierende"},
+	DefaultLimit: 1000,
+	OrderBy:      "geodata_id_nuts, year",
+	RouteSlug:    "studierende",
 }
 
 // WohngeldhaushalteData repräsentiert Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag

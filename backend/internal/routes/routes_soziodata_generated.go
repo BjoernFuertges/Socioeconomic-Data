@@ -13,12 +13,17 @@ import (
 func RegisterSoziodataRoutes(v1 *gin.RouterGroup, h *handlers.Handler) {
 	v1.GET("/arbeitslose", h.GetArbeitsloseData)
 	v1.GET("/arbeitsvolumen", h.GetArbeitsvolumenData)
+	v1.GET("/auzubildende", h.GetAuzubildendeData)
 	v1.GET("/beschaeftigungsquote-gemeinden", h.GetBeschaeftigungsquoteGemeindenData)
 	v1.GET("/beschaeftigungsquote-nuts3", h.GetBeschaeftigungsquoteNuts3Data)
 	v1.GET("/bevoelkerung", h.GetBevoelkerungData)
 	v1.GET("/bruttoverdienst", h.GetBruttoverdienstData)
 	v1.GET("/durchschnittsalter", h.GetDurchschnittsalterData)
+	v1.GET("/erwerbstaetige_pro_1000_einwohner", h.GetErwerbstaetigePro1000EinwohnerData)
+	v1.GET("/kinderarmut", h.GetKinderarmutData)
+	v1.GET("/medianeinkommen", h.GetMedianeinkommenData)
 	v1.GET("/schuldnerquote", h.GetSchuldnerquoteData)
 	v1.GET("/sgb_ii_quote", h.GetSgbIiQuoteData)
+	v1.GET("/studierende", h.GetStudierendeData)
 	v1.GET("/wohngeldhaushalte", h.GetWohngeldhaushalteData)
 }
