@@ -1,3 +1,18 @@
+-- depends_on: {{ ref('stg_arbeitslose_kreise') }}
+-- depends_on: {{ ref('stg_arbeitsvolumen_kreise') }}
+-- depends_on: {{ ref('stg_auzubildende_kreise') }}
+-- depends_on: {{ ref('stg_beschaeftigungsquote_gemeinden') }}
+-- depends_on: {{ ref('stg_beschaeftigungsquote_nuts3') }}
+-- depends_on: {{ ref('stg_bevoelkerung_kreise') }}
+-- depends_on: {{ ref('stg_bruttoverdienst_kreise') }}
+-- depends_on: {{ ref('stg_durchschnittsalter_kreise') }}
+-- depends_on: {{ ref('stg_erwerbstaetige_pro_1000_einwohner_kreise') }}
+-- depends_on: {{ ref('stg_kinderarmut_kreise') }}
+-- depends_on: {{ ref('stg_medianeinkommen_kreise') }}
+-- depends_on: {{ ref('stg_schuldnerquote_kreise') }}
+-- depends_on: {{ ref('stg_sgb_ii_quote_kreise') }}
+-- depends_on: {{ ref('stg_studierende_kreise') }}
+-- depends_on: {{ ref('stg_wohngeldhaushalte_kreise') }}
 {{
     config(
         materialized='table',
