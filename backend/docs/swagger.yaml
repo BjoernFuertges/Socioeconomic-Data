@@ -429,6 +429,87 @@ definitions:
         example: 2020
         type: integer
     type: object
+  models.GeoRegionSummary:
+    properties:
+      country_code:
+        example: DE
+        type: string
+      geo_id:
+        example: DE111
+        type: string
+      geo_type:
+        example: NUTS
+        type: string
+      geometry_wgs84:
+        type: object
+      has_valid_geometry:
+        example: true
+        type: boolean
+      nuts_level:
+        example: 3
+        type: integer
+      nuts_level_code:
+        example: NUTS-3
+        type: string
+      region_name:
+        example: Stuttgart, Stadtkreis
+        type: string
+      year:
+        example: 2024
+        type: integer
+    type: object
+  models.GeoRegionVersions:
+    properties:
+      geo_id:
+        example: DE111
+        type: string
+      geo_type:
+        example: NUTS
+        type: string
+      nuts_level:
+        example: 3
+        type: integer
+      nuts_level_code:
+        example: NUTS-3
+        type: string
+      versions:
+        example:
+        - 2024
+        - 2023
+        - 2022
+        items:
+          type: integer
+        type: array
+    type: object
+  models.GeoSpatialQueryRequest:
+    properties:
+      geo_type:
+        example: nuts
+        type: string
+      geometry:
+        type: object
+      geometry_strategy:
+        example: latest
+        type: string
+      geometry_year:
+        example: 2024
+        type: integer
+      include_geometry:
+        example: false
+        type: boolean
+      limit:
+        example: 100
+        type: integer
+      offset:
+        example: 0
+        type: integer
+      operation:
+        example: intersects
+        type: string
+      year:
+        example: 2024
+        type: integer
+    type: object
   models.KinderarmutData:
     properties:
       geodata_id_ars:
@@ -581,6 +662,11 @@ definitions:
           sonst null.
         example: "08111000"
         type: string
+      geometry_wgs84:
+        type: object
+      has_valid_geometry:
+        example: false
+        type: boolean
       nuts_id:
         example: DE111
         type: string
@@ -954,6 +1040,16 @@ paths:
         in: query
         name: geodata_id_nuts
         type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
+        type: string
       - description: Jahr der Beobachtung (1990-2030)
         example: 2020
         in: query
@@ -1008,6 +1104,16 @@ paths:
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2000-2030)
         example: 2020
@@ -1064,6 +1170,16 @@ paths:
         in: query
         name: geodata_id_nuts
         type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
+        type: string
       - description: Jahr der Beobachtung (1990-2030)
         example: 2020
         in: query
@@ -1118,6 +1234,16 @@ paths:
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2000-2030)
         example: 2020
@@ -1174,6 +1300,16 @@ paths:
         in: query
         name: geodata_id_nuts
         type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
+        type: string
       - description: Jahr der Beobachtung (2000-2030)
         example: 2020
         in: query
@@ -1228,6 +1364,16 @@ paths:
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (1990-2030)
         example: 2020
@@ -1284,6 +1430,16 @@ paths:
         in: query
         name: geodata_id_nuts
         type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
+        type: string
       - description: Jahr der Beobachtung (2000-2030)
         example: 2020
         in: query
@@ -1338,6 +1494,16 @@ paths:
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (1990-2030)
         example: 2020
@@ -1394,6 +1560,16 @@ paths:
         in: query
         name: geodata_id_nuts
         type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
+        type: string
       - description: Jahr der Beobachtung (1990-2030)
         example: 2020
         in: query
@@ -1437,6 +1613,274 @@ paths:
         ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
       tags:
       - ErwerbstaetigePro1000Einwohner
+  /geo:
+    get:
+      consumes:
+      - application/json
+      description: Gibt eine einheitliche Liste für NUTS- oder LAU-Regionen zurück.
+        Standard ist NUTS. Mit geo_type=lau werden LAU-Regionen geliefert.
+      parameters:
+      - default: nuts
+        description: 'Regionstyp: nuts oder lau'
+        enum:
+        - nuts
+        - lau
+        in: query
+        name: geo_type
+        type: string
+      - description: NUTS-Level (nur für geo_type=nuts, 0-3)
+        enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        example: 3
+        in: query
+        name: level
+        type: integer
+      - description: Ländercode (nur für geo_type=lau)
+        example: DE
+        in: query
+        name: country_code
+        type: string
+      - description: NUTS-Präfix-Filter (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Regionenamen
+        example: berlin
+        in: query
+        name: geodata_name_contains
+        type: string
+      - description: Punktabfrage im Format lon,lat (nur für geo_type=lau)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
+      - description: Geometrie einschließen, wenn verfügbar
+        example: false
+        in: query
+        name: include_geometry
+        type: boolean
+      - default: latest
+        description: 'Geometrieauswahl: latest oder exact'
+        enum:
+        - latest
+        - exact
+        in: query
+        name: geometry_strategy
+        type: string
+      - description: Zieljahr für Geometrie (bei exact erforderlich)
+        example: 2024
+        in: query
+        name: geometry_year
+        type: integer
+      - description: Jahr (optional)
+        example: 2024
+        in: query
+        name: year
+        type: integer
+      - default: 100
+        description: Anzahl der Ergebnisse (1-1000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.GeoRegionSummary'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Liste allgemeiner Geo-Regionen
+      tags:
+      - Geo
+  /geo/{geo_id}:
+    get:
+      consumes:
+      - application/json
+      description: 'Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird
+        der Typ aus der ID erkannt (NUTS: 2-5 Zeichen, sonst LAU).'
+      parameters:
+      - description: Geo-ID (NUTS oder GISCO-ID)
+        example: DE111
+        in: path
+        name: geo_id
+        required: true
+        type: string
+      - default: auto
+        description: 'Regionstyp: auto, nuts oder lau'
+        enum:
+        - auto
+        - nuts
+        - lau
+        in: query
+        name: geo_type
+        type: string
+      - description: Jahr (optional)
+        example: 2024
+        in: query
+        name: year
+        type: integer
+      - description: 'Nur für NUTS: alle verfügbaren Jahre zurückgeben'
+        example: false
+        in: query
+        name: all
+        type: boolean
+      - default: full
+        description: 'Nur für NUTS: full, metadata oder socioeconomic'
+        enum:
+        - full
+        - metadata
+        - socioeconomic
+        in: query
+        name: part
+        type: string
+      - default: latest
+        description: 'Nur für NUTS: Geometrieauswahl latest|exact'
+        enum:
+        - latest
+        - exact
+        in: query
+        name: geometry_strategy
+        type: string
+      - description: 'Nur für NUTS: Zieljahr der Geometrie (bei exact erforderlich)'
+        example: 2024
+        in: query
+        name: geometry_year
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Allgemeine Geo-Region nach ID
+      tags:
+      - Geo
+  /geo/{geo_id}/versions:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle verfügbaren Jahre für eine Geo-Region zurück. Mit geo_type=auto
+        wird der Typ aus der ID erkannt.
+      parameters:
+      - description: Geo-ID (NUTS oder GISCO-ID)
+        example: DE111
+        in: path
+        name: geo_id
+        required: true
+        type: string
+      - default: auto
+        description: 'Regionstyp: auto, nuts oder lau'
+        enum:
+        - auto
+        - nuts
+        - lau
+        in: query
+        name: geo_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.GeoRegionVersions'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Versionsliste für eine Geo-Region
+      tags:
+      - Geo
+  /geo/query:
+    post:
+      consumes:
+      - application/json
+      description: Führt eine räumliche Abfrage (intersects/contains) gegen NUTS oder
+        LAU Geometrien aus.
+      parameters:
+      - description: GeoJSON-Abfrage
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.GeoSpatialQueryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.GeoRegionSummary'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Räumliche Geo-Abfrage via GeoJSON
+      tags:
+      - Geo
   /health:
     get:
       description: Gibt den Status der API zurück
@@ -1464,6 +1908,16 @@ paths:
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2010-2030)
         example: 2020
@@ -1519,6 +1973,21 @@ paths:
         example: DE
         in: query
         name: country_code
+        type: string
+      - description: Filter nach NUTS-Präfix (z.B. DE1 für alle Regionen unter NUTS-1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche im LAU-Namen
+        example: berlin
+        in: query
+        name: geodata_name_contains
+        type: string
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
         type: string
       - description: Filter nach Jahr
         example: 2024
@@ -1616,6 +2085,16 @@ paths:
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2010-2030)
         example: 2020
@@ -1752,6 +2231,19 @@ paths:
         in: query
         name: part
         type: string
+      - default: latest
+        description: 'Geometrieauswahl: latest oder exact'
+        enum:
+        - latest
+        - exact
+        in: query
+        name: geometry_strategy
+        type: string
+      - description: Zieljahr für Geometrie (bei exact erforderlich)
+        example: 2024
+        in: query
+        name: geometry_year
+        type: integer
       produces:
       - application/json
       responses:
@@ -1830,6 +2322,16 @@ paths:
         in: query
         name: geodata_id_nuts
         type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
+        type: string
       - description: Jahr der Beobachtung (2000-2030)
         example: 2020
         in: query
@@ -1884,6 +2386,16 @@ paths:
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2005-2030)
         example: 2020
@@ -1986,6 +2498,16 @@ paths:
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (1990-2030)
         example: 2020
@@ -2225,6 +2747,16 @@ paths:
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2010-2030)
         example: 2020

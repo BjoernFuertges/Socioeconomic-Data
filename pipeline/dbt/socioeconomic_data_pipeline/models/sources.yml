@@ -42,6 +42,28 @@ sources:
             description: "Name of the LAU"
           - name: cntr_code
             description: "Country code"
+
+      - name: nuts_geometry
+        description: "NUTS geometry data from GeoJSON files"
+        columns:
+          - name: nuts_id
+            description: "Unique NUTS identifier from GISCO"
+            tests:
+              - not_null
+          - name: levl_code
+            description: "NUTS level code (0-3)"
+          - name: cntr_code
+            description: "Country code"
+          - name: nuts_name
+            description: "Region name from source"
+          - name: name_latn
+            description: "Latinized region name"
+          - name: year
+            description: "Year of the geometry dataset"
+            tests:
+              - not_null
+          - name: geometry
+            description: "PostGIS geometry as WKT"
             
       - name: arbeitslosenzahlen_agentur_arbeit
         description: "Unemployment data from Agentur für Arbeit (transposed, normalized)"

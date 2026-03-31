@@ -22,10 +22,12 @@ type SozioBaseData struct {
 
 // SozioKreisFilter sind die einheitlichen Query-Parameter für alle Kreis-Datensätze.
 type SozioKreisFilter struct {
-	GeodataIDNUTS string `form:"geodata_id_nuts" example:"DEF01"`
-	Year          *int   `form:"year" example:"2020"`
-	Limit         int    `form:"limit" binding:"omitempty,min=1,max=10000" example:"100"`
-	Offset        int    `form:"offset" binding:"omitempty,min=0" example:"0"`
+	GeodataIDNUTS       string `form:"geodata_id_nuts" example:"DEF01"`
+	NutsParentID        string `form:"nuts_parent_id" example:"DE1"`
+	GeodataNameContains string `form:"geodata_name_contains" example:"stuttgart"`
+	Year                *int   `form:"year" example:"2020"`
+	Limit               int    `form:"limit" binding:"omitempty,min=1,max=10000" example:"100"`
+	Offset              int    `form:"offset" binding:"omitempty,min=0" example:"0"`
 }
 
 // KreisDatasetConfig beschreibt einen Kreis-Datensatz für das generische Query-System.

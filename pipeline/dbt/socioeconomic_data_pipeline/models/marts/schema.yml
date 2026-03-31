@@ -57,6 +57,30 @@ models:
       - name: yoy_change_percent
         description: "Veränderung der Arbeitslosenzahlen gegenüber dem Vorjahr in Prozent"
 
+  - name: mart_nuts_geometry
+    description: "NUTS-Geometrien mit GeoJSON-Ausgabe und Geometrie-Metadaten für verfügbare Referenzjahre"
+    columns:
+      - name: nuts_id
+        description: "NUTS-Code der Region"
+        tests:
+          - not_null
+      - name: levl_code
+        description: "NUTS-Level (0-3)"
+      - name: country_code
+        description: "ISO-Ländercode"
+      - name: region_name
+        description: "Regionsname"
+      - name: year
+        description: "Referenzjahr der Geometrie"
+        tests:
+          - not_null
+      - name: geometry_3035
+        description: "PostGIS-Geometrie in EPSG:3035"
+      - name: geometry_wgs84
+        description: "GeoJSON-Geometrie in WGS84"
+      - name: has_valid_geometry
+        description: "Flag für valide Geometrie"
+
   - name: lau_data_quality
     description: "Data quality metrics and issue tracking for LAU integration"
     columns:

@@ -15,6 +15,8 @@ import (
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -33,6 +35,8 @@ func (h *Handler) GetArbeitsloseData(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -51,6 +55,8 @@ func (h *Handler) GetArbeitsvolumenData(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -69,6 +75,8 @@ func (h *Handler) GetAuzubildendeData(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -87,6 +95,8 @@ func (h *Handler) GetBeschaeftigungsquoteGemeindenData(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -105,6 +115,8 @@ func (h *Handler) GetBeschaeftigungsquoteNuts3Data(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -123,6 +135,8 @@ func (h *Handler) GetBevoelkerungData(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -141,6 +155,8 @@ func (h *Handler) GetBruttoverdienstData(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -159,6 +175,8 @@ func (h *Handler) GetDurchschnittsalterData(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -177,6 +195,8 @@ func (h *Handler) GetErwerbstaetigePro1000EinwohnerData(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -195,6 +215,8 @@ func (h *Handler) GetKinderarmutData(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -213,6 +235,8 @@ func (h *Handler) GetMedianeinkommenData(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -231,6 +255,8 @@ func (h *Handler) GetSchuldnerquoteData(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2005-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -249,6 +275,8 @@ func (h *Handler) GetSgbIiQuoteData(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -267,6 +295,8 @@ func (h *Handler) GetStudierendeData(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)

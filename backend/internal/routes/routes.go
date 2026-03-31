@@ -43,6 +43,14 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			nutsGroup.GET("/:nuts_id", handler.GetNutsRegionData)
 		}
 
+		geoGroup := v1.Group("/geo")
+		{
+			geoGroup.GET("", handler.GetGeoRegions)
+			geoGroup.GET("/:geo_id/versions", handler.GetGeoRegionVersions)
+			geoGroup.GET("/:geo_id", handler.GetGeoRegionByID)
+			geoGroup.POST("/query", handler.QueryGeoRegionsByGeometry)
+		}
+
 		// Arbeitslosenzahlen
 		unemployment := v1.Group("/unemployment")
 		{

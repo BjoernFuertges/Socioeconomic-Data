@@ -95,6 +95,32 @@ func resolveAndApplyOrderedPagination(
 	return paginationQuery, append(args, paginationArgs...), offset, nil
 }
 
+func parseLonLatPoint(rawPoint string) (float64, float64, error) {
+	parts := strings.Split(strings.TrimSpace(rawPoint), ",")
+	if len(parts) != 2 {
+		return 0, 0, fmt.Errorf("point muss im Format lon,lat angegeben werden")
+	}
+
+	lon, err := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("point enthält ungültigen Längengrad")
+	}
+
+	lat, err := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
+	if err != nil {
+		return 0, 0, fmt.Errorf("point enthält ungültigen Breitengrad")
+	}
+
+	if lon < -180 || lon > 180 {
+		return 0, 0, fmt.Errorf("point Längengrad außerhalb von -180 bis 180")
+	}
+	if lat < -90 || lat > 90 {
+		return 0, 0, fmt.Errorf("point Breitengrad außerhalb von -90 bis 90")
+	}
+
+	return lon, lat, nil
+}
+
 func respondBadRequest(c *gin.Context, message string) {
 	c.JSON(http.StatusBadRequest, models.APIResponse{
 		Success: false,

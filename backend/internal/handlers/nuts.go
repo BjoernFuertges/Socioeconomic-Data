@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -56,6 +58,39 @@ func nutsMetadata(details nutsLevelDetails, regionName string, ars *string) *mod
 		NutsLevelCode: details.Code,
 		ARS:           ars,
 	}
+}
+
+func (h *Handler) lookupNutsGeometry(nutsID string, geometryYear *int, geometryStrategy string) (json.RawMessage, bool, error) {
+	var row struct {
+		GeometryWGS84    json.RawMessage `db:"geometry_wgs84"`
+		HasValidGeometry bool            `db:"has_valid_geometry"`
+	}
+
+	query := `SELECT geometry_wgs84, has_valid_geometry
+		FROM transformed_data.mart_nuts_geometry
+		WHERE nuts_id = $1`
+	args := []interface{}{nutsID}
+
+	if geometryStrategy == "exact" && geometryYear != nil {
+		query += ` AND year = $2`
+		args = append(args, *geometryYear)
+	} else if geometryYear != nil {
+		query += ` AND year <= $2`
+		args = append(args, *geometryYear)
+	}
+
+	query += `
+		ORDER BY year DESC
+		LIMIT 1`
+
+	if err := h.DB.Get(&row, query, args...); err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+
+	return row.GeometryWGS84, row.HasValidGeometry, nil
 }
 
 func normalizeNutsResponsePart(part string) (string, error) {
@@ -183,6 +218,8 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 // @Param year query int false "Jahr (gibt neuestes Jahr zurück wenn nicht angegeben)" example(2022)
 // @Param all query bool false "Alle verfügbaren Jahre zurückgeben" example(false)
 // @Param part query string false "Antwortausschnitt: full, metadata oder socioeconomic" Enums(full,metadata,socioeconomic) default(full)
+// @Param geometry_strategy query string false "Geometrieauswahl: latest oder exact" Enums(latest,exact) default(latest)
+// @Param geometry_year query int false "Zieljahr für Geometrie (bei exact erforderlich)" example(2024)
 // @Success 200 {object} models.APIResponse{data=models.NutsRegionResponse}
 // @Success 200 {object} models.APIResponse{data=models.NutsRegionTimeSeries}
 // @Failure 400 {object} models.APIResponse
@@ -221,6 +258,26 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		return
 	}
 
+	geometryStrategy, err := normalizeGeometryStrategy(c.Query("geometry_strategy"))
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+
+	var geometryYear *int
+	if geometryYearStr := strings.TrimSpace(c.Query("geometry_year")); geometryYearStr != "" {
+		parsed, parseErr := strconv.Atoi(geometryYearStr)
+		if parseErr != nil {
+			respondBadRequest(c, "geometry_year muss eine gültige Jahreszahl sein")
+			return
+		}
+		geometryYear = &parsed
+	}
+	if geometryStrategy == "exact" && geometryYear == nil {
+		respondBadRequest(c, "geometry_year ist erforderlich, wenn geometry_strategy=exact gesetzt ist")
+		return
+	}
+
 	const selectCols = `nuts_id, region_name, year, CAST(geodata_id_ars AS text) AS geodata_id_ars, bevoelkerung, schuldnerquote_prozent, arbeitslose, yoy_change_percent`
 	fromClause := ` FROM ` + levelDetails.Table + ` WHERE nuts_id = $1`
 
@@ -254,6 +311,13 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		}
 
 		metadata := nutsMetadata(levelDetails, rows[0].RegionName, rows[0].GeodataIDArs)
+		geometryWGS84, hasValidGeometry, err := h.lookupNutsGeometry(levelDetails.NormalizedID, geometryYear, geometryStrategy)
+		if err != nil {
+			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+			return
+		}
+		metadata.GeometryWGS84 = geometryWGS84
+		metadata.HasValidGeometry = hasValidGeometry
 		response := models.NutsRegionTimeSeries{
 			Metadata:      metadata,
 			Socioeconomic: socioeconomic,
@@ -296,6 +360,13 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	}
 
 	metadata := nutsMetadata(levelDetails, row.RegionName, row.GeodataIDArs)
+	geometryWGS84, hasValidGeometry, err := h.lookupNutsGeometry(levelDetails.NormalizedID, geometryYear, geometryStrategy)
+	if err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+	metadata.GeometryWGS84 = geometryWGS84
+	metadata.HasValidGeometry = hasValidGeometry
 	socioeconomic := &models.NutsSocioeconomicData{
 		Year:                  row.Year,
 		Bevoelkerung:          row.Bevoelkerung,

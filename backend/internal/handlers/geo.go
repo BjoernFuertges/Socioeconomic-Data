@@ -1,0 +1,843 @@
+package handlers
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/models"
+)
+
+func normalizeGeometryStrategy(raw string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "latest":
+		return "latest", nil
+	case "exact":
+		return "exact", nil
+	default:
+		return "", fmt.Errorf("ungültiger geometry_strategy: erlaubt sind latest oder exact")
+	}
+}
+
+func normalizeGeoType(raw string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "auto":
+		return "auto", nil
+	case "nuts":
+		return "nuts", nil
+	case "lau":
+		return "lau", nil
+	default:
+		return "", fmt.Errorf("ungültiger geo_type: erlaubt sind auto, nuts oder lau")
+	}
+}
+
+func detectGeoType(geoID string) string {
+	trimmed := strings.TrimSpace(geoID)
+	if _, err := nutsLevelDetailsFromID(trimmed); err == nil {
+		return "nuts"
+	}
+	return "lau"
+}
+
+func normalizeSpatialOperation(raw string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "intersects":
+		return "intersects", nil
+	case "contains":
+		return "contains", nil
+	default:
+		return "", fmt.Errorf("ungültige operation: erlaubt sind intersects oder contains")
+	}
+}
+
+func extractGeoJSONGeometry(raw json.RawMessage) (string, error) {
+	if len(raw) == 0 {
+		return "", fmt.Errorf("geometry ist erforderlich")
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return "", fmt.Errorf("ungültiges GeoJSON: %v", err)
+	}
+
+	typeRaw, ok := payload["type"].(string)
+	if !ok {
+		return "", fmt.Errorf("GeoJSON muss ein Feld 'type' enthalten")
+	}
+
+	typeName := strings.ToLower(strings.TrimSpace(typeRaw))
+	switch typeName {
+	case "feature":
+		geom, ok := payload["geometry"]
+		if !ok || geom == nil {
+			return "", fmt.Errorf("GeoJSON Feature enthält keine geometry")
+		}
+		b, err := json.Marshal(geom)
+		if err != nil {
+			return "", fmt.Errorf("GeoJSON geometry konnte nicht serialisiert werden: %v", err)
+		}
+		return string(b), nil
+	case "featurecollection":
+		features, ok := payload["features"].([]interface{})
+		if !ok || len(features) == 0 {
+			return "", fmt.Errorf("GeoJSON FeatureCollection enthält keine Features")
+		}
+		if len(features) != 1 {
+			return "", fmt.Errorf("FeatureCollection mit mehreren Features wird nicht unterstützt")
+		}
+		feature, ok := features[0].(map[string]interface{})
+		if !ok {
+			return "", fmt.Errorf("ungültiges Feature in FeatureCollection")
+		}
+		geom, ok := feature["geometry"]
+		if !ok || geom == nil {
+			return "", fmt.Errorf("Feature enthält keine geometry")
+		}
+		b, err := json.Marshal(geom)
+		if err != nil {
+			return "", fmt.Errorf("GeoJSON geometry konnte nicht serialisiert werden: %v", err)
+		}
+		return string(b), nil
+	default:
+		b, err := json.Marshal(payload)
+		if err != nil {
+			return "", fmt.Errorf("GeoJSON konnte nicht serialisiert werden: %v", err)
+		}
+		return string(b), nil
+	}
+}
+
+func spatialPredicateSQL(operation string, geomColumn string, geoJSONParam int) string {
+	if operation == "contains" {
+		return fmt.Sprintf("ST_Contains(%s, ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($%d), 4326), 3035))", geomColumn, geoJSONParam)
+	}
+	return fmt.Sprintf("ST_Intersects(%s, ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($%d), 4326), 3035))", geomColumn, geoJSONParam)
+}
+
+// GetGeoRegions gibt eine einheitliche Liste von NUTS- oder LAU-Regionen zurück
+// @Summary Liste allgemeiner Geo-Regionen
+// @Description Gibt eine einheitliche Liste für NUTS- oder LAU-Regionen zurück. Standard ist NUTS. Mit geo_type=lau werden LAU-Regionen geliefert.
+// @Tags Geo
+// @Accept json
+// @Produce json
+// @Param geo_type query string false "Regionstyp: nuts oder lau" Enums(nuts,lau) default(nuts)
+// @Param level query int false "NUTS-Level (nur für geo_type=nuts, 0-3)" Enums(0,1,2,3) example(3)
+// @Param country_code query string false "Ländercode (nur für geo_type=lau)" example(DE)
+// @Param nuts_parent_id query string false "NUTS-Präfix-Filter (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Regionenamen" example(berlin)
+// @Param point query string false "Punktabfrage im Format lon,lat (nur für geo_type=lau)" example(13.404954,52.520008)
+// @Param include_geometry query bool false "Geometrie einschließen, wenn verfügbar" example(false)
+// @Param geometry_strategy query string false "Geometrieauswahl: latest oder exact" Enums(latest,exact) default(latest)
+// @Param geometry_year query int false "Zieljahr für Geometrie (bei exact erforderlich)" example(2024)
+// @Param year query int false "Jahr (optional)" example(2024)
+// @Param limit query int false "Anzahl der Ergebnisse (1-1000)" default(100) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.GeoRegionSummary}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /geo [get]
+func (h *Handler) GetGeoRegions(c *gin.Context) {
+	limitNull := normalizeNullableLimitQuery(c)
+
+	var filter models.GeoRegionFilter
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		respondBadRequest(c, fmt.Sprintf("Ungültige Query-Parameter: %v", err))
+		return
+	}
+
+	geoType, err := normalizeGeoType(filter.GeoType)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	if geoType == "auto" {
+		geoType = "nuts"
+	}
+
+	if filter.Limit == 0 {
+		filter.Limit = 100
+	}
+
+	geometryStrategy, err := normalizeGeometryStrategy(filter.GeometryStrategy)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	filter.GeometryStrategy = geometryStrategy
+	if filter.IncludeGeometry && filter.GeometryStrategy == "exact" && filter.GeometryYear == nil {
+		respondBadRequest(c, "geometry_year ist erforderlich, wenn geometry_strategy=exact gesetzt ist")
+		return
+	}
+
+	if geoType == "lau" {
+		h.getGeoRegionsLAU(c, filter, limitNull)
+		return
+	}
+
+	h.getGeoRegionsNUTS(c, filter, limitNull)
+}
+
+func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter, limitNull bool) {
+	geometrySelect := `null::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	if filter.IncludeGeometry {
+		geometrySelect = `geometry_wgs84, has_valid_geometry`
+	}
+
+	query := `SELECT DISTINCT ON (gisco_id)
+		gisco_id AS geo_id,
+		'LAU' AS geo_type,
+		lau_name AS region_name,
+		country_code,
+		` + geometrySelect + `,
+		year
+	FROM transformed_data.lau_integrated
+	WHERE 1=1`
+
+	args := []interface{}{}
+	argPos := 1
+
+	if filter.CountryCode != "" {
+		query += fmt.Sprintf(" AND country_code = $%d", argPos)
+		args = append(args, strings.ToUpper(strings.TrimSpace(filter.CountryCode)))
+		argPos++
+	}
+	if filter.NutsParentID != "" {
+		query += fmt.Sprintf(" AND nuts_3_code IS NOT NULL AND nuts_3_code LIKE $%d", argPos)
+		args = append(args, strings.ToUpper(strings.TrimSpace(filter.NutsParentID))+"%")
+		argPos++
+	}
+	if filter.GeodataNameContains != "" {
+		query += fmt.Sprintf(" AND lau_name ILIKE $%d", argPos)
+		args = append(args, "%"+strings.TrimSpace(filter.GeodataNameContains)+"%")
+		argPos++
+	}
+	if strings.TrimSpace(filter.Point) != "" {
+		lon, lat, err := parseLonLatPoint(filter.Point)
+		if err != nil {
+			respondBadRequest(c, err.Error())
+			return
+		}
+		query += fmt.Sprintf(" AND has_valid_geometry AND ST_Contains(geometry_3035, ST_Transform(ST_SetSRID(ST_Point($%d, $%d), 4326), 3035))", argPos, argPos+1)
+		args = append(args, lon, lat)
+		argPos += 2
+	}
+	if filter.Year != nil {
+		query += fmt.Sprintf(" AND year = $%d", argPos)
+		args = append(args, *filter.Year)
+		argPos++
+	}
+
+	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
+	var total int
+	if err := h.DB.Get(&total, countQuery, args...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+		return
+	}
+
+	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
+		c,
+		query,
+		args,
+		argPos,
+		"gisco_id, year DESC",
+		100,
+		filter.Limit,
+		filter.Offset,
+		limitNull,
+	)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+
+	type row struct {
+		GeoID            string          `db:"geo_id"`
+		GeoType          string          `db:"geo_type"`
+		RegionName       string          `db:"region_name"`
+		Country          string          `db:"country_code"`
+		GeometryWGS84    json.RawMessage `db:"geometry_wgs84"`
+		HasValidGeometry *bool           `db:"has_valid_geometry"`
+		Year             int             `db:"year"`
+	}
+
+	rows := make([]row, 0)
+	if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	data := make([]models.GeoRegionSummary, 0, len(rows))
+	for _, r := range rows {
+		country := r.Country
+		data = append(data, models.GeoRegionSummary{
+			GeoID:            r.GeoID,
+			GeoType:          r.GeoType,
+			RegionName:       r.RegionName,
+			CountryCode:      &country,
+			GeometryWGS84:    r.GeometryWGS84,
+			HasValidGeometry: r.HasValidGeometry,
+			Year:             r.Year,
+		})
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    data,
+		Meta: &models.MetaInfo{
+			Total:  total,
+			Offset: offset,
+		},
+	})
+}
+
+func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilter, limitNull bool) {
+	levels := []int{0, 1, 2, 3}
+	if filter.Level != nil {
+		levels = []int{*filter.Level}
+	}
+
+	result := make([]models.GeoRegionSummary, 0)
+	total := 0
+	responseOffset := filter.Offset
+
+	for _, lvl := range levels {
+		details, err := nutsLevelDetailsFromLevel(lvl)
+		if err != nil {
+			respondBadRequest(c, err.Error())
+			return
+		}
+
+		argPos := 1
+		geometrySelect := `null::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+		geometryJoin := ""
+		geomJoinArgs := make([]interface{}, 0)
+		if filter.IncludeGeometry {
+			geometrySelect = `geom.geometry_wgs84, geom.has_valid_geometry`
+			geomYearClause := ""
+			if filter.GeometryStrategy == "exact" {
+				geomYearClause = fmt.Sprintf(" AND mg.year = $%d", argPos)
+				geomJoinArgs = append(geomJoinArgs, *filter.GeometryYear)
+				argPos++
+			} else if filter.GeometryYear != nil {
+				geomYearClause = fmt.Sprintf(" AND mg.year <= $%d", argPos)
+				geomJoinArgs = append(geomJoinArgs, *filter.GeometryYear)
+				argPos++
+			}
+
+			geometryJoin = `
+			LEFT JOIN LATERAL (
+				SELECT geometry_wgs84, has_valid_geometry
+				FROM transformed_data.mart_nuts_geometry mg
+				WHERE mg.nuts_id = base.nuts_id` + geomYearClause + `
+				ORDER BY mg.year DESC
+				LIMIT 1
+			) geom ON true`
+		}
+
+		query := `SELECT DISTINCT ON (base.nuts_id)
+			base.nuts_id AS geo_id,
+			'NUTS' AS geo_type,
+			base.region_name,
+			` + geometrySelect + `,
+			base.year
+		FROM ` + details.Table + ` base` + geometryJoin + `
+		WHERE 1=1`
+
+		args := append([]interface{}{}, geomJoinArgs...)
+
+		if filter.NutsParentID != "" {
+			query += fmt.Sprintf(" AND base.nuts_id LIKE $%d", argPos)
+			args = append(args, strings.ToUpper(strings.TrimSpace(filter.NutsParentID))+"%")
+			argPos++
+		}
+		if filter.GeodataNameContains != "" {
+			query += fmt.Sprintf(" AND base.region_name ILIKE $%d", argPos)
+			args = append(args, "%"+strings.TrimSpace(filter.GeodataNameContains)+"%")
+			argPos++
+		}
+		if filter.Year != nil {
+			query += fmt.Sprintf(" AND base.year = $%d", argPos)
+			args = append(args, *filter.Year)
+			argPos++
+		}
+
+		countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
+		var count int
+		if err := h.DB.Get(&count, countQuery, args...); err != nil {
+			respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+			return
+		}
+		total += count
+
+		pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
+			c,
+			query,
+			args,
+			argPos,
+			"nuts_id, year DESC",
+			100,
+			filter.Limit,
+			filter.Offset,
+			limitNull,
+		)
+		if err != nil {
+			respondBadRequest(c, err.Error())
+			return
+		}
+		responseOffset = offset
+
+		type row struct {
+			GeoID            string          `db:"geo_id"`
+			GeoType          string          `db:"geo_type"`
+			RegionName       string          `db:"region_name"`
+			GeometryWGS84    json.RawMessage `db:"geometry_wgs84"`
+			HasValidGeometry *bool           `db:"has_valid_geometry"`
+			Year             int             `db:"year"`
+		}
+
+		rows := make([]row, 0)
+		if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
+			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+			return
+		}
+
+		for _, r := range rows {
+			level := lvl
+			code := details.Code
+			result = append(result, models.GeoRegionSummary{
+				GeoID:            r.GeoID,
+				GeoType:          r.GeoType,
+				RegionName:       r.RegionName,
+				NutsLevel:        &level,
+				NutsLevelCode:    &code,
+				GeometryWGS84:    r.GeometryWGS84,
+				HasValidGeometry: r.HasValidGeometry,
+				Year:             r.Year,
+			})
+		}
+
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    result,
+		Meta: &models.MetaInfo{
+			Total:  total,
+			Offset: responseOffset,
+		},
+	})
+}
+
+// GetGeoRegionByID gibt eine einzelne Geo-Region (NUTS oder LAU) zurück
+// @Summary Allgemeine Geo-Region nach ID
+// @Description Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt (NUTS: 2-5 Zeichen, sonst LAU).
+// @Tags Geo
+// @Accept json
+// @Produce json
+// @Param geo_id path string true "Geo-ID (NUTS oder GISCO-ID)" example(DE111)
+// @Param geo_type query string false "Regionstyp: auto, nuts oder lau" Enums(auto,nuts,lau) default(auto)
+// @Param year query int false "Jahr (optional)" example(2024)
+// @Param all query bool false "Nur für NUTS: alle verfügbaren Jahre zurückgeben" example(false)
+// @Param part query string false "Nur für NUTS: full, metadata oder socioeconomic" Enums(full,metadata,socioeconomic) default(full)
+// @Param geometry_strategy query string false "Nur für NUTS: Geometrieauswahl latest|exact" Enums(latest,exact) default(latest)
+// @Param geometry_year query int false "Nur für NUTS: Zieljahr der Geometrie (bei exact erforderlich)" example(2024)
+// @Success 200 {object} models.APIResponse
+// @Failure 400 {object} models.APIResponse
+// @Failure 404 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /geo/{geo_id} [get]
+func (h *Handler) GetGeoRegionByID(c *gin.Context) {
+	geoID := strings.TrimSpace(c.Param("geo_id"))
+	if geoID == "" {
+		respondBadRequest(c, "geo_id darf nicht leer sein")
+		return
+	}
+
+	geoType, err := normalizeGeoType(c.Query("geo_type"))
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	if geoType == "auto" {
+		geoType = detectGeoType(geoID)
+	}
+
+	if geoType == "nuts" {
+		c.Params = append(c.Params, gin.Param{Key: "nuts_id", Value: geoID})
+		h.GetNutsRegionData(c)
+		return
+	}
+
+	c.Params = append(c.Params, gin.Param{Key: "gisco_id", Value: geoID})
+	h.GetLAURegionByID(c)
+}
+
+// GetGeoRegionVersions gibt alle verfügbaren Jahre für eine Geo-Region zurück
+// @Summary Versionsliste für eine Geo-Region
+// @Description Gibt alle verfügbaren Jahre für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt.
+// @Tags Geo
+// @Accept json
+// @Produce json
+// @Param geo_id path string true "Geo-ID (NUTS oder GISCO-ID)" example(DE111)
+// @Param geo_type query string false "Regionstyp: auto, nuts oder lau" Enums(auto,nuts,lau) default(auto)
+// @Success 200 {object} models.APIResponse{data=models.GeoRegionVersions}
+// @Failure 400 {object} models.APIResponse
+// @Failure 404 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /geo/{geo_id}/versions [get]
+func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
+	geoID := strings.TrimSpace(c.Param("geo_id"))
+	if geoID == "" {
+		respondBadRequest(c, "geo_id darf nicht leer sein")
+		return
+	}
+
+	geoType, err := normalizeGeoType(c.Query("geo_type"))
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	if geoType == "auto" {
+		geoType = detectGeoType(geoID)
+	}
+
+	if geoType == "nuts" {
+		details, err := nutsLevelDetailsFromID(geoID)
+		if err != nil {
+			respondBadRequest(c, err.Error())
+			return
+		}
+
+		versions := make([]int, 0)
+		query := `SELECT DISTINCT year FROM ` + details.Table + ` WHERE nuts_id = $1 ORDER BY year DESC`
+		if err := h.DB.Select(&versions, query, details.NormalizedID); err != nil {
+			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+			return
+		}
+		if len(versions) == 0 {
+			respondNotFound(c, "Keine Versionsdaten für diese Geo-Region gefunden")
+			return
+		}
+
+		level := details.Number
+		levelCode := details.Code
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success: true,
+			Data: models.GeoRegionVersions{
+				GeoID:         details.NormalizedID,
+				GeoType:       "NUTS",
+				NutsLevel:     &level,
+				NutsLevelCode: &levelCode,
+				Versions:      versions,
+			},
+		})
+		return
+	}
+
+	normalizedGeoID := strings.ToUpper(geoID)
+	versions := make([]int, 0)
+	query := `SELECT DISTINCT year FROM transformed_data.lau_integrated WHERE gisco_id = $1 ORDER BY year DESC`
+	if err := h.DB.Select(&versions, query, normalizedGeoID); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+	if len(versions) == 0 {
+		respondNotFound(c, "Keine Versionsdaten für diese Geo-Region gefunden")
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data: models.GeoRegionVersions{
+			GeoID:    normalizedGeoID,
+			GeoType:  "LAU",
+			Versions: versions,
+		},
+	})
+}
+
+// QueryGeoRegionsByGeometry ermöglicht räumliche Gebietsanfragen per GeoJSON.
+// @Summary Räumliche Geo-Abfrage via GeoJSON
+// @Description Führt eine räumliche Abfrage (intersects/contains) gegen NUTS oder LAU Geometrien aus.
+// @Tags Geo
+// @Accept json
+// @Produce json
+// @Param request body models.GeoSpatialQueryRequest true "GeoJSON-Abfrage"
+// @Success 200 {object} models.APIResponse{data=[]models.GeoRegionSummary}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /geo/query [post]
+func (h *Handler) QueryGeoRegionsByGeometry(c *gin.Context) {
+	var filter models.GeoSpatialQueryRequest
+	if err := c.ShouldBindJSON(&filter); err != nil {
+		respondBadRequest(c, fmt.Sprintf("Ungültiger Request-Body: %v", err))
+		return
+	}
+
+	geoType, err := normalizeGeoType(filter.GeoType)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	if geoType == "auto" {
+		geoType = "nuts"
+	}
+
+	operation, err := normalizeSpatialOperation(filter.Operation)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+
+	geometryStrategy, err := normalizeGeometryStrategy(filter.GeometryStrategy)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	filter.GeometryStrategy = geometryStrategy
+	if filter.IncludeGeometry && filter.GeometryStrategy == "exact" && filter.GeometryYear == nil {
+		respondBadRequest(c, "geometry_year ist erforderlich, wenn geometry_strategy=exact gesetzt ist")
+		return
+	}
+
+	geometryJSON, err := extractGeoJSONGeometry(filter.Geometry)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+
+	if filter.Limit == 0 {
+		filter.Limit = 100
+	}
+	if filter.Limit < 1 || filter.Limit > 1000 {
+		respondBadRequest(c, "limit muss zwischen 1 und 1000 liegen")
+		return
+	}
+	if filter.Offset < 0 {
+		respondBadRequest(c, "offset muss >= 0 sein")
+		return
+	}
+
+	if geoType == "lau" {
+		h.queryGeoRegionsLAU(c, filter, geometryJSON, operation)
+		return
+	}
+
+	h.queryGeoRegionsNUTS(c, filter, geometryJSON, operation)
+}
+
+func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, operation string) {
+	geometrySelect := `null::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	if filter.IncludeGeometry {
+		geometrySelect = `geometry_wgs84, has_valid_geometry`
+	}
+
+	query := `SELECT DISTINCT ON (gisco_id)
+		gisco_id AS geo_id,
+		'LAU' AS geo_type,
+		lau_name AS region_name,
+		country_code,
+		` + geometrySelect + `,
+		year
+	FROM transformed_data.lau_integrated
+	WHERE has_valid_geometry
+	  AND ` + spatialPredicateSQL(operation, "geometry_3035", 1)
+
+	args := []interface{}{geometryJSON}
+	argPos := 2
+
+	if filter.Year != nil {
+		query += fmt.Sprintf(" AND year = $%d", argPos)
+		args = append(args, *filter.Year)
+		argPos++
+	}
+
+	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
+	var total int
+	if err := h.DB.Get(&total, countQuery, args...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+		return
+	}
+
+	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
+		c,
+		query,
+		args,
+		argPos,
+		"gisco_id, year DESC",
+		100,
+		filter.Limit,
+		filter.Offset,
+		false,
+	)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+
+	type row struct {
+		GeoID            string          `db:"geo_id"`
+		GeoType          string          `db:"geo_type"`
+		RegionName       string          `db:"region_name"`
+		Country          string          `db:"country_code"`
+		GeometryWGS84    json.RawMessage `db:"geometry_wgs84"`
+		HasValidGeometry *bool           `db:"has_valid_geometry"`
+		Year             int             `db:"year"`
+	}
+
+	rows := make([]row, 0)
+	if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	data := make([]models.GeoRegionSummary, 0, len(rows))
+	for _, r := range rows {
+		country := r.Country
+		data = append(data, models.GeoRegionSummary{
+			GeoID:            r.GeoID,
+			GeoType:          r.GeoType,
+			RegionName:       r.RegionName,
+			CountryCode:      &country,
+			GeometryWGS84:    r.GeometryWGS84,
+			HasValidGeometry: r.HasValidGeometry,
+			Year:             r.Year,
+		})
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    data,
+		Meta: &models.MetaInfo{
+			Total:  total,
+			Offset: offset,
+		},
+	})
+}
+
+func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, operation string) {
+	geometrySelect := `null::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	if filter.IncludeGeometry {
+		geometrySelect = `base.geometry_wgs84, base.has_valid_geometry`
+	}
+
+	argPos := 1
+	query := `WITH base AS (
+		SELECT DISTINCT ON (nuts_id)
+			nuts_id,
+			levl_code,
+			region_name,
+			year,
+			geometry_3035,
+			geometry_wgs84,
+			has_valid_geometry
+		FROM transformed_data.mart_nuts_geometry
+		WHERE has_valid_geometry`
+
+	args := make([]interface{}, 0)
+	if filter.GeometryStrategy == "exact" {
+		query += fmt.Sprintf(" AND year = $%d", argPos)
+		args = append(args, *filter.GeometryYear)
+		argPos++
+	} else if filter.GeometryYear != nil {
+		query += fmt.Sprintf(" AND year <= $%d", argPos)
+		args = append(args, *filter.GeometryYear)
+		argPos++
+	}
+
+	if filter.Year != nil {
+		query += fmt.Sprintf(" AND year = $%d", argPos)
+		args = append(args, *filter.Year)
+		argPos++
+	}
+
+	query += `
+		ORDER BY nuts_id, year DESC
+	)
+	SELECT
+		base.nuts_id AS geo_id,
+		'NUTS' AS geo_type,
+		base.region_name,
+		base.levl_code AS nuts_level,
+		CASE base.levl_code
+			WHEN 0 THEN 'NUTS-0'
+			WHEN 1 THEN 'NUTS-1'
+			WHEN 2 THEN 'NUTS-2'
+			ELSE 'NUTS-3'
+		END AS nuts_level_code,
+		null::text AS country_code,
+		` + geometrySelect + `,
+		base.year
+	FROM base
+	WHERE ` + spatialPredicateSQL(operation, "base.geometry_3035", argPos)
+	args = append(args, geometryJSON)
+	argPos++
+
+	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
+	var total int
+	if err := h.DB.Get(&total, countQuery, args...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+		return
+	}
+
+	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
+		c,
+		query,
+		args,
+		argPos,
+		"geo_id, year DESC",
+		100,
+		filter.Limit,
+		filter.Offset,
+		false,
+	)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+
+	type row struct {
+		GeoID            string          `db:"geo_id"`
+		GeoType          string          `db:"geo_type"`
+		RegionName       string          `db:"region_name"`
+		NutsLevel        int             `db:"nuts_level"`
+		NutsLevelCode    string          `db:"nuts_level_code"`
+		GeometryWGS84    json.RawMessage `db:"geometry_wgs84"`
+		HasValidGeometry *bool           `db:"has_valid_geometry"`
+		Year             int             `db:"year"`
+	}
+
+	rows := make([]row, 0)
+	if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	data := make([]models.GeoRegionSummary, 0, len(rows))
+	for _, r := range rows {
+		level := r.NutsLevel
+		code := r.NutsLevelCode
+		data = append(data, models.GeoRegionSummary{
+			GeoID:            r.GeoID,
+			GeoType:          r.GeoType,
+			RegionName:       r.RegionName,
+			NutsLevel:        &level,
+			NutsLevelCode:    &code,
+			GeometryWGS84:    r.GeometryWGS84,
+			HasValidGeometry: r.HasValidGeometry,
+			Year:             r.Year,
+		})
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    data,
+		Meta: &models.MetaInfo{
+			Total:  total,
+			Offset: offset,
+		},
+	})
+}

@@ -52,6 +52,20 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 		argPos++
 	}
 
+	if filter.NutsParentID != "" {
+		normalizedParent := strings.ToUpper(strings.TrimSpace(filter.NutsParentID))
+		query += fmt.Sprintf(" AND d.geodata_id_nuts LIKE $%d", argPos)
+		args = append(args, normalizedParent+"%")
+		argPos++
+	}
+
+	if filter.GeodataNameContains != "" {
+		pattern := "%" + strings.TrimSpace(filter.GeodataNameContains) + "%"
+		query += fmt.Sprintf(" AND (d.geodata_name ILIKE $%d OR d.original_name ILIKE $%d)", argPos, argPos)
+		args = append(args, pattern)
+		argPos++
+	}
+
 	if filter.Year != nil {
 		query += fmt.Sprintf(" AND d.year = $%d", argPos)
 		args = append(args, *filter.Year)
