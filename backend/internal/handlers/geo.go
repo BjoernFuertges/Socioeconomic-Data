@@ -229,6 +229,16 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 		args = append(args, *filter.Year)
 		argPos++
 	}
+	if filter.FromYear != nil {
+		query += fmt.Sprintf(" AND year >= $%d", argPos)
+		args = append(args, *filter.FromYear)
+		argPos++
+	}
+	if filter.ToYear != nil {
+		query += fmt.Sprintf(" AND year <= $%d", argPos)
+		args = append(args, *filter.ToYear)
+		argPos++
+	}
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
 	var total int
@@ -361,6 +371,16 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 		if filter.Year != nil {
 			query += fmt.Sprintf(" AND base.year = $%d", argPos)
 			args = append(args, *filter.Year)
+			argPos++
+		}
+		if filter.FromYear != nil {
+			query += fmt.Sprintf(" AND base.year >= $%d", argPos)
+			args = append(args, *filter.FromYear)
+			argPos++
+		}
+		if filter.ToYear != nil {
+			query += fmt.Sprintf(" AND base.year <= $%d", argPos)
+			args = append(args, *filter.ToYear)
 			argPos++
 		}
 
@@ -654,6 +674,16 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 		args = append(args, *filter.Year)
 		argPos++
 	}
+	if filter.FromYear != nil {
+		query += fmt.Sprintf(" AND year >= $%d", argPos)
+		args = append(args, *filter.FromYear)
+		argPos++
+	}
+	if filter.ToYear != nil {
+		query += fmt.Sprintf(" AND year <= $%d", argPos)
+		args = append(args, *filter.ToYear)
+		argPos++
+	}
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
 	var total int
@@ -708,6 +738,20 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 		})
 	}
 
+	if filter.IncludeDatasets {
+		for i := range data {
+			var nuts3Code string
+			if err := h.DB.Get(&nuts3Code,
+				`SELECT nuts_3_code FROM transformed_data.lau_integrated WHERE gisco_id = $1 AND nuts_3_code IS NOT NULL LIMIT 1`,
+				data[i].GeoID,
+			); err == nil && nuts3Code != "" {
+				if datasets, dsErr := h.regionNutsDatasets(nuts3Code); dsErr == nil {
+					data[i].Datasets = datasets
+				}
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data:    data,
@@ -753,7 +797,16 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 		args = append(args, *filter.Year)
 		argPos++
 	}
-
+	if filter.FromYear != nil {
+		query += fmt.Sprintf(" AND year >= $%d", argPos)
+		args = append(args, *filter.FromYear)
+		argPos++
+	}
+	if filter.ToYear != nil {
+		query += fmt.Sprintf(" AND year <= $%d", argPos)
+		args = append(args, *filter.ToYear)
+		argPos++
+	}
 	query += `
 		ORDER BY nuts_id, year DESC
 	)
@@ -830,6 +883,16 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 			HasValidGeometry: r.HasValidGeometry,
 			Year:             r.Year,
 		})
+	}
+
+	if filter.IncludeDatasets {
+		for i := range data {
+			if data[i].NutsLevel != nil && *data[i].NutsLevel == 3 {
+				if datasets, dsErr := h.regionNutsDatasets(data[i].GeoID); dsErr == nil {
+					data[i].Datasets = datasets
+				}
+			}
+		}
 	}
 
 	c.JSON(http.StatusOK, models.APIResponse{

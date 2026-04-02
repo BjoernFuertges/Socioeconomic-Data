@@ -220,6 +220,7 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 // @Param part query string false "Antwortausschnitt: full, metadata oder socioeconomic" Enums(full,metadata,socioeconomic) default(full)
 // @Param geometry_strategy query string false "Geometrieauswahl: latest oder exact" Enums(latest,exact) default(latest)
 // @Param geometry_year query int false "Zieljahr für Geometrie (bei exact erforderlich)" example(2024)
+// @Param include_datasets query bool false "Verfügbare Soziodata-Datensätze einbetten" example(false)
 // @Success 200 {object} models.APIResponse{data=models.NutsRegionResponse}
 // @Success 200 {object} models.APIResponse{data=models.NutsRegionTimeSeries}
 // @Failure 400 {object} models.APIResponse
@@ -231,6 +232,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	yearStr := c.Query("year")
 	allStr := c.Query("all")
 	partStr := c.Query("part")
+	includeDatasets := c.Query("include_datasets") == "true"
 
 	if strings.TrimSpace(nutsID) == "" {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
@@ -323,6 +325,12 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 			Socioeconomic: socioeconomic,
 		}
 
+		if includeDatasets {
+			if datasets, dsErr := h.regionNutsDatasets(levelDetails.NormalizedID); dsErr == nil {
+				response.Datasets = datasets
+			}
+		}
+
 		if part == "metadata" {
 			response.Socioeconomic = nil
 		}
@@ -377,6 +385,12 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	response := models.NutsRegionResponse{
 		Metadata:      metadata,
 		Socioeconomic: socioeconomic,
+	}
+
+	if includeDatasets {
+		if datasets, dsErr := h.regionNutsDatasets(levelDetails.NormalizedID); dsErr == nil {
+			response.Datasets = datasets
+		}
 	}
 
 	if part == "metadata" {

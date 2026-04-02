@@ -23,6 +23,7 @@ type LAURegion struct {
 	HasValidPopulation    sql.NullBool    `json:"has_valid_population,omitempty" db:"has_valid_population" swaggertype:"boolean"`
 	MissingPopulationData bool            `json:"missing_population_data" db:"missing_population_data" example:"false"`
 	YearMatch             bool            `json:"year_match" db:"year_match" example:"true"`
+	Datasets              []RegionDataset `json:"datasets,omitempty" db:"-"`
 }
 
 // LAURegionFilter für Query-Parameter
@@ -50,6 +51,7 @@ type GeoRegionSummary struct {
 	Year             int             `json:"year" example:"2024"`
 	GeometryWGS84    json.RawMessage `json:"geometry_wgs84,omitempty" swaggertype:"object"`
 	HasValidGeometry *bool           `json:"has_valid_geometry,omitempty" example:"true"`
+	Datasets         []RegionDataset `json:"datasets,omitempty"`
 }
 
 // GeoRegionFilter für Query-Parameter am allgemeinen Geo-Listenendpunkt.
@@ -85,6 +87,7 @@ type GeoSpatialQueryRequest struct {
 	Operation        string          `json:"operation" example:"intersects"`
 	Geometry         json.RawMessage `json:"geometry" swaggertype:"object"`
 	IncludeGeometry  bool            `json:"include_geometry" example:"false"`
+	IncludeDatasets  bool            `json:"include_datasets,omitempty" example:"false"`
 	GeometryStrategy string          `json:"geometry_strategy" example:"latest"`
 	GeometryYear     *int            `json:"geometry_year,omitempty" example:"2024"`
 	Year             *int            `json:"year,omitempty" example:"2024"`

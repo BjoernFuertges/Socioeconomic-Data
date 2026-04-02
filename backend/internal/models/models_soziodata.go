@@ -55,6 +55,20 @@ type SoziooekonomischesInventarEintrag struct {
 	DistinctGeodataARS  int    `json:"distinct_geodata_ars" db:"distinct_geodata_ars" example:"400"`
 }
 
+// RegionDataset beschreibt einen verfügbaren Soziodata-Datensatz für eine Region.
+type RegionDataset struct {
+	Dataset        string `json:"dataset" example:"bevoelkerung"`
+	RouteSlug      string `json:"route_slug" example:"bevoelkerung"`
+	AvailableYears []int  `json:"available_years" example:"2020,2021,2022"`
+}
+
+// RegionDatasets enthält alle verfügbaren Datensätze für eine Geo-Region.
+type RegionDatasets struct {
+	GeoID    string          `json:"geo_id" example:"DEF01"`
+	GeoType  string          `json:"geo_type" example:"NUTS"`
+	Datasets []RegionDataset `json:"datasets"`
+}
+
 // AllSoziodataConfigs liefert alle bekannten Soziodata-Datensatzkonfigurationen.
 func AllSoziodataConfigs() []KreisDatasetConfig {
 	return []KreisDatasetConfig{

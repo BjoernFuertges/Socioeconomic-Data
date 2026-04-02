@@ -1,7 +1,11 @@
 {{
     config(
         materialized='table',
-        schema='transformed_data'
+        schema='transformed_data',
+        post_hook=[
+            "create index if not exists idx_mart_nuts_geometry_gist on {{ this }} using gist (geometry_3035)",
+            "create index if not exists idx_mart_nuts_geometry_levl_valid on {{ this }} (levl_code, has_valid_geometry)"
+        ]
     )
 }}
 

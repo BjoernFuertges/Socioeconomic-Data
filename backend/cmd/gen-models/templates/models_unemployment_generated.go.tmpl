@@ -26,6 +26,8 @@ type UnemploymentFilter struct {
 	FromDate  string `form:"from_date" example:"2024-01-01"`
 	ToDate    string `form:"to_date" example:"2024-12-31"`
 	Year      *int   `form:"year" example:"2024"`
+	FromYear  *int   `form:"from_year" example:"2020"`
+	ToYear    *int   `form:"to_year" example:"2024"`
 	Limit     int    `form:"limit" binding:"omitempty,min=1,max=10000" example:"100"`
 	Offset    int    `form:"offset" binding:"omitempty,min=0" example:"0"`
 }

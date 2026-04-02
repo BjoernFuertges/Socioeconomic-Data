@@ -20,6 +20,8 @@ import (
 // @Param geodata_name_contains query string false "Teilstring-Suche im LAU-Namen" example(berlin)
 // @Param point query string false "Punktabfrage im Format lon,lat (WGS84)" example(13.404954,52.520008)
 // @Param year query int false "Filter nach Jahr" example(2024)
+// @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2020)
+// @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2024)
 // @Param has_population query bool false "Filter nach Vorhandensein von Bevölkerungsdaten" example(true)
 // @Param limit query int false "Anzahl der Ergebnisse (1-1000)" default(100) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -87,6 +89,18 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 		argPos++
 	}
 
+	if filter.FromYear != nil {
+		query += fmt.Sprintf(" AND year >= $%d", argPos)
+		args = append(args, *filter.FromYear)
+		argPos++
+	}
+
+	if filter.ToYear != nil {
+		query += fmt.Sprintf(" AND year <= $%d", argPos)
+		args = append(args, *filter.ToYear)
+		argPos++
+	}
+
 	if filter.HasPopulation != nil {
 		if *filter.HasPopulation {
 			query += " AND NOT missing_population_data"
@@ -146,6 +160,7 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 // @Produce json
 // @Param gisco_id path string true "GISCO ID der LAU-Region"
 // @Param year query int false "Jahr (optional, gibt neuestes Jahr zurück wenn nicht angegeben)"
+// @Param include_datasets query bool false "Verfügbare Soziodata-Datensätze einbetten" example(false)
 // @Success 200 {object} models.APIResponse{data=models.LAURegion}
 // @Failure 404 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -153,6 +168,7 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 func (h *Handler) GetLAURegionByID(c *gin.Context) {
 	giscoID := c.Param("gisco_id")
 	yearStr := c.Query("year")
+	includeDatasets := c.Query("include_datasets") == "true"
 
 	query := `SELECT gisco_id, year, lau_name, country_code, lau_id, 
 		geometry_wgs84, has_valid_geometry, lau_name_national, lau_name_latin,
@@ -179,6 +195,13 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 		}
 		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
 		return
+	}
+
+	if includeDatasets && region.NUTS3Code.Valid {
+		datasets, dsErr := h.regionNutsDatasets(region.NUTS3Code.String)
+		if dsErr == nil {
+			region.Datasets = datasets
+		}
 	}
 
 	c.JSON(http.StatusOK, models.APIResponse{

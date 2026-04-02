@@ -42,12 +42,14 @@ type NutsSocioeconomicData struct {
 type NutsRegionResponse struct {
 	Metadata      *NutsRegionMetadata    `json:"metadata,omitempty"`
 	Socioeconomic *NutsSocioeconomicData `json:"socioeconomic,omitempty"`
+	Datasets      []RegionDataset        `json:"datasets,omitempty"`
 }
 
 // NutsRegionTimeSeries enthält Metadaten und die Zeitreihe sozioökonomischer Daten.
 type NutsRegionTimeSeries struct {
 	Metadata      *NutsRegionMetadata     `json:"metadata,omitempty"`
 	Socioeconomic []NutsSocioeconomicData `json:"socioeconomic,omitempty"`
+	Datasets      []RegionDataset         `json:"datasets,omitempty"`
 }
 
 // NutsRegionSummary ist ein einzelner Eintrag in der NUTS-Regionenliste.

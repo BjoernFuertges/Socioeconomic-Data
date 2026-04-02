@@ -31,6 +31,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 		lau := v1.Group("/lau")
 		{
 			lau.GET("", handler.GetLAURegions)
+			lau.GET("/:gisco_id/datasets", handler.GetLAUDatasets)
 			lau.GET("/:gisco_id", handler.GetLAURegionByID)
 		}
 
@@ -40,6 +41,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 		{
 			nutsGroup.GET("", handler.GetAllNutsRegions)
 			nutsGroup.GET("/:nuts_id/versions", handler.GetNutsRegionVersions)
+			nutsGroup.GET("/:nuts_id/datasets", handler.GetNutsDatasets)
 			nutsGroup.GET("/:nuts_id", handler.GetNutsRegionData)
 		}
 

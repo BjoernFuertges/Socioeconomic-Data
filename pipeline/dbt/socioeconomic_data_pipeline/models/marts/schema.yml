@@ -1,6 +1,22 @@
 version: 2
 
 models:
+  - name: mart_region_datasets
+    description: "Vorberechnete Tabelle: verfügbare (geodata_id_nuts, dataset_slug, year)-Kombinationen aus allen Staging-Modellen. Dient als Index für den /datasets-Endpunkt."
+    columns:
+      - name: geodata_id_nuts
+        description: "NUTS-Code der Region (z.B. DEF01)"
+        tests:
+          - not_null
+      - name: dataset_slug
+        description: "Datensatz-Slug (entspricht RouteSlug in der Go-API, z.B. bevoelkerung)"
+        tests:
+          - not_null
+      - name: year
+        description: "Datenjahr"
+        tests:
+          - not_null
+
   - name: lau_integrated
     description: "Integrated LAU dataset combining geometry and population data for all available years"
     columns:
