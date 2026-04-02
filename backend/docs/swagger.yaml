@@ -483,6 +483,9 @@ definitions:
     type: object
   models.GeoSpatialQueryRequest:
     properties:
+      from_year:
+        example: 2020
+        type: integer
       geo_type:
         example: nuts
         type: string
@@ -506,6 +509,9 @@ definitions:
       operation:
         example: intersects
         type: string
+      to_year:
+        example: 2024
+        type: integer
       year:
         example: 2024
         type: integer

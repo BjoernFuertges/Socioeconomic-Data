@@ -32,6 +32,8 @@ type LAURegionFilter struct {
 	GeodataNameContains string `form:"geodata_name_contains" example:"stuttgart"`
 	Point               string `form:"point" example:"13.404954,52.520008"`
 	Year                *int   `form:"year" example:"2024"`
+	FromYear            *int   `form:"from_year" example:"2022"`
+	ToYear              *int   `form:"to_year" example:"2024"`
 	HasPopulation       *bool  `form:"has_population" example:"true"`
 	Limit               int    `form:"limit" binding:"omitempty,min=1,max=1000" example:"100"`
 	Offset              int    `form:"offset" binding:"omitempty,min=0" example:"0"`
@@ -62,6 +64,8 @@ type GeoRegionFilter struct {
 	GeometryYear        *int   `form:"geometry_year"`
 	GeometryStrategy    string `form:"geometry_strategy"`
 	Year                *int   `form:"year"`
+	FromYear            *int   `form:"from_year"`
+	ToYear              *int   `form:"to_year"`
 	Limit               int    `form:"limit" binding:"omitempty,min=1,max=1000"`
 	Offset              int    `form:"offset" binding:"omitempty,min=0"`
 }
@@ -84,6 +88,8 @@ type GeoSpatialQueryRequest struct {
 	GeometryStrategy string          `json:"geometry_strategy" example:"latest"`
 	GeometryYear     *int            `json:"geometry_year,omitempty" example:"2024"`
 	Year             *int            `json:"year,omitempty" example:"2024"`
+	FromYear         *int            `json:"from_year,omitempty" example:"2020"`
+	ToYear           *int            `json:"to_year,omitempty" example:"2024"`
 	Limit            int             `json:"limit,omitempty" example:"100"`
 	Offset           int             `json:"offset,omitempty" example:"0"`
 }

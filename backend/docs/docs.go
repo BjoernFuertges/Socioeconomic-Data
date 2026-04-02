@@ -3313,6 +3313,10 @@ const docTemplate = `{
         "models.GeoSpatialQueryRequest": {
             "type": "object",
             "properties": {
+                "from_year": {
+                    "type": "integer",
+                    "example": 2020
+                },
                 "geo_type": {
                     "type": "string",
                     "example": "nuts"
@@ -3343,6 +3347,10 @@ const docTemplate = `{
                 "operation": {
                     "type": "string",
                     "example": "intersects"
+                },
+                "to_year": {
+                    "type": "integer",
+                    "example": 2024
                 },
                 "year": {
                     "type": "integer",

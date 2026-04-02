@@ -26,6 +26,9 @@ type SozioKreisFilter struct {
 	NutsParentID        string `form:"nuts_parent_id" example:"DE1"`
 	GeodataNameContains string `form:"geodata_name_contains" example:"stuttgart"`
 	Year                *int   `form:"year" example:"2020"`
+	FromYear            *int   `form:"from_year" example:"2018"`
+	ToYear              *int   `form:"to_year" example:"2022"`
+	Point               string `form:"point" example:"13.404954,52.520008"`
 	Limit               int    `form:"limit" binding:"omitempty,min=1,max=10000" example:"100"`
 	Offset              int    `form:"offset" binding:"omitempty,min=0" example:"0"`
 }
