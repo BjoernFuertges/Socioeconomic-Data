@@ -74,13 +74,28 @@ func AllSoziodataConfigs() []KreisDatasetConfig {
 	return []KreisDatasetConfig{
 		ArbeitsloseConfig,
 		ArbeitsvolumenConfig,
+		AuzubildendeConfig,
 		BeschaeftigungsquoteGemeindenConfig,
 		BeschaeftigungsquoteNuts3Config,
 		BevoelkerungConfig,
 		BruttoverdienstConfig,
 		DurchschnittsalterConfig,
+		ErwerbstaetigePro1000EinwohnerConfig,
+		KinderarmutConfig,
+		MedianeinkommenConfig,
 		SchuldnerquoteConfig,
 		SgbIiQuoteConfig,
+		StudierendeConfig,
 		WohngeldhaushalteConfig,
 	}
+}
+
+// DatasetConfigBySlug gibt die KreisDatasetConfig für einen gegebenen RouteSlug zurück.
+func DatasetConfigBySlug(slug string) (KreisDatasetConfig, bool) {
+	for _, cfg := range AllSoziodataConfigs() {
+		if cfg.RouteSlug == slug {
+			return cfg, true
+		}
+	}
+	return KreisDatasetConfig{}, false
 }

@@ -339,6 +339,75 @@ definitions:
         example: 2020
         type: integer
     type: object
+  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetMetricsResult:
+    properties:
+      by_year:
+        items:
+          $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetYearMetrics'
+        type: array
+      column:
+        example: schuldnerquote_prozent
+        type: string
+      dataset:
+        example: schuldnerquote
+        type: string
+    type: object
+  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetYearMetrics:
+    properties:
+      max:
+        example: 42.7
+        type: number
+      mean:
+        example: 12.3
+        type: number
+      median:
+        example: 11.8
+        type: number
+      min:
+        example: 1.2
+        type: number
+      region_count:
+        example: 400
+        type: integer
+      regional_rank:
+        example: 142
+        type: integer
+      regional_rank_total:
+        example: 400
+        type: integer
+      regional_value:
+        example: 9.4
+        type: number
+      stddev:
+        example: 4.5
+        type: number
+      year:
+        example: 2022
+        type: integer
+      yoy_mean_pct:
+        example: 2.1
+        type: number
+      yoy_median_pct:
+        example: 1.8
+        type: number
+    type: object
+  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DerivedMetricEntry:
+    properties:
+      description:
+        example: Einwohner je km²
+        type: string
+      formula:
+        $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaDefinition'
+      label:
+        example: Bevölkerungsdichte
+        type: string
+      slug:
+        example: bevoelkerungsdichte
+        type: string
+      unit:
+        example: EW/km²
+        type: string
+    type: object
   gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DurchschnittsalterData:
     properties:
       durchschnittsalter:
@@ -428,6 +497,31 @@ definitions:
       year:
         example: 2020
         type: integer
+    type: object
+  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaDefinition:
+    properties:
+      denominator:
+        $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaSource'
+      numerator:
+        $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaSource'
+      scale:
+        example: 100
+        type: number
+      type:
+        example: ratio
+        type: string
+    type: object
+  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaSource:
+    properties:
+      builtin:
+        example: nuts_geometry_area_sqkm
+        type: string
+      column:
+        example: bevoelkerung
+        type: string
+      dataset:
+        example: bevoelkerung
+        type: string
     type: object
   gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoRegionSummary:
     properties:
@@ -2249,6 +2343,163 @@ paths:
         mit Datumsableitung und Qualitätsflag
       tags:
       - Medianeinkommen
+  /metrics:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Berechnet Min, Max, Mittelwert, Median und Standardabweichung je Jahr für einen oder mehrere Datensätze.
+        Mehrere 'dataset'-Parameter kombinieren unterschiedliche Datensätze in einer Antwort.
+        Mit 'geodata_id_nuts' werden zusätzlich der Regionalwert und das Ranking der Region zurückgegeben.
+        Für aufeinanderfolgende Jahre wird die prozentuale Veränderung (YoY) berechnet.
+      parameters:
+      - collectionFormat: multi
+        description: Datensatz-Slug(s), z.B. schuldnerquote (mehrfach angeben für
+          mehrere Datensätze)
+        example: schuldnerquote
+        in: query
+        items:
+          type: string
+        name: dataset
+        required: true
+        type: array
+      - description: Einzelnes Jahr filtern
+        example: 2022
+        in: query
+        name: year
+        type: integer
+      - description: Jahresbereich ab
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Jahresbereich bis
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Auf NUTS-Präfix einschränken (z.B. DE1 für alle Kreise in Bayern)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: NUTS-ID einer Region für Regionalwert und Ranking
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetMetricsResult'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Statistische Metriken für Soziodata-Datensätze
+      tags:
+      - Metriken
+  /metrics/derived:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,
+        Ausbildungsquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.
+        Mit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DerivedMetricEntry'
+                  type: array
+              type: object
+      summary: Abgeleitete Metriken-Definitionen
+      tags:
+      - Metriken
+  /metrics/derived/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine
+        abgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²).
+      parameters:
+      - description: Slug der abgeleiteten Metrik
+        example: bevoelkerungsdichte
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Einzelnes Jahr filtern
+        example: 2022
+        in: query
+        name: year
+        type: integer
+      - description: Jahresbereich ab
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Jahresbereich bis
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Auf NUTS-Präfix einschränken (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: NUTS-ID einer Region für Regionalwert und Ranking
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetMetricsResult'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Statistiken für eine abgeleitete Metrik
+      tags:
+      - Metriken
   /nuts:
     get:
       consumes:

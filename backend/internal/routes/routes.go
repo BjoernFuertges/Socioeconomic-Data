@@ -66,6 +66,14 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			socioeconomic.GET("/inventory", handler.GetSoziooekonomischesInventar)
 		}
 
+		// Metriken-Endpunkte: statistische Aggregationen über Soziodata-Datensätze
+		metricsGroup := v1.Group("/metrics")
+		{
+			metricsGroup.GET("", handler.GetMetrics)
+			metricsGroup.GET("/derived", handler.GetDerivedMetricsCatalog)
+			metricsGroup.GET("/derived/:slug", handler.GetDerivedMetricsCatalogEntry)
+		}
+
 		// Generierte Soziodata-Routen (aus dbt-Schema-YAML-Dateien)
 		RegisterSoziodataRoutes(v1, handler)
 	}

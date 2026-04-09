@@ -1745,6 +1745,235 @@
                 }
             }
         },
+        "/metrics": {
+            "get": {
+                "description": "Berechnet Min, Max, Mittelwert, Median und Standardabweichung je Jahr für einen oder mehrere Datensätze.\nMehrere 'dataset'-Parameter kombinieren unterschiedliche Datensätze in einer Antwort.\nMit 'geodata_id_nuts' werden zusätzlich der Regionalwert und das Ranking der Region zurückgegeben.\nFür aufeinanderfolgende Jahre wird die prozentuale Veränderung (YoY) berechnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metriken"
+                ],
+                "summary": "Statistische Metriken für Soziodata-Datensätze",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "example": "schuldnerquote",
+                        "description": "Datensatz-Slug(s), z.B. schuldnerquote (mehrfach angeben für mehrere Datensätze)",
+                        "name": "dataset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Einzelnes Jahr filtern",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Jahresbereich ab",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Jahresbereich bis",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "Auf NUTS-Präfix einschränken (z.B. DE1 für alle Kreise in Bayern)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-ID einer Region für Regionalwert und Ranking",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetMetricsResult"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/metrics/derived": {
+            "get": {
+                "description": "Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,\nAusbildungsquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.\nMit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metriken"
+                ],
+                "summary": "Abgeleitete Metriken-Definitionen",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DerivedMetricEntry"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/metrics/derived/{slug}": {
+            "get": {
+                "description": "Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine\nabgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metriken"
+                ],
+                "summary": "Statistiken für eine abgeleitete Metrik",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "bevoelkerungsdichte",
+                        "description": "Slug der abgeleiteten Metrik",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Einzelnes Jahr filtern",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Jahresbereich ab",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Jahresbereich bis",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "Auf NUTS-Präfix einschränken (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-ID einer Region für Regionalwert und Ranking",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetMetricsResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/nuts": {
             "get": {
                 "description": "Gibt alle NUTS-Regionen zurück. Mit ?level=0..3 auf ein bestimmtes Level einschränken. Ohne ?level werden alle Levels zusammengefasst.",
@@ -3288,6 +3517,102 @@
                 }
             }
         },
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetMetricsResult": {
+            "type": "object",
+            "properties": {
+                "by_year": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetYearMetrics"
+                    }
+                },
+                "column": {
+                    "type": "string",
+                    "example": "schuldnerquote_prozent"
+                },
+                "dataset": {
+                    "type": "string",
+                    "example": "schuldnerquote"
+                }
+            }
+        },
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetYearMetrics": {
+            "type": "object",
+            "properties": {
+                "max": {
+                    "type": "number",
+                    "example": 42.7
+                },
+                "mean": {
+                    "type": "number",
+                    "example": 12.3
+                },
+                "median": {
+                    "type": "number",
+                    "example": 11.8
+                },
+                "min": {
+                    "type": "number",
+                    "example": 1.2
+                },
+                "region_count": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "regional_rank": {
+                    "type": "integer",
+                    "example": 142
+                },
+                "regional_rank_total": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "regional_value": {
+                    "type": "number",
+                    "example": 9.4
+                },
+                "stddev": {
+                    "type": "number",
+                    "example": 4.5
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
+                },
+                "yoy_mean_pct": {
+                    "type": "number",
+                    "example": 2.1
+                },
+                "yoy_median_pct": {
+                    "type": "number",
+                    "example": 1.8
+                }
+            }
+        },
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DerivedMetricEntry": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Einwohner je km²"
+                },
+                "formula": {
+                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaDefinition"
+                },
+                "label": {
+                    "type": "string",
+                    "example": "Bevölkerungsdichte"
+                },
+                "slug": {
+                    "type": "string",
+                    "example": "bevoelkerungsdichte"
+                },
+                "unit": {
+                    "type": "string",
+                    "example": "EW/km²"
+                }
+            }
+        },
         "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DurchschnittsalterData": {
             "type": "object",
             "properties": {
@@ -3407,6 +3732,42 @@
                 "year": {
                     "type": "integer",
                     "example": 2020
+                }
+            }
+        },
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaDefinition": {
+            "type": "object",
+            "properties": {
+                "denominator": {
+                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaSource"
+                },
+                "numerator": {
+                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaSource"
+                },
+                "scale": {
+                    "type": "number",
+                    "example": 100
+                },
+                "type": {
+                    "type": "string",
+                    "example": "ratio"
+                }
+            }
+        },
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaSource": {
+            "type": "object",
+            "properties": {
+                "builtin": {
+                    "type": "string",
+                    "example": "nuts_geometry_area_sqkm"
+                },
+                "column": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                },
+                "dataset": {
+                    "type": "string",
+                    "example": "bevoelkerung"
                 }
             }
         },
