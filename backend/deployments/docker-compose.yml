@@ -130,7 +130,7 @@ services:
           fi"
 
   scheduler:
-    image: mcuadros/ofelia:v0.3.21
+    image: mcuadros/ofelia:0.3.21
     container_name: scheduler
     restart: always
     command: daemon --docker
