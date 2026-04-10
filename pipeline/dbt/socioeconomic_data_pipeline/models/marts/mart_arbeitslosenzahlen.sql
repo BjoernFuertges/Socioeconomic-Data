@@ -1,7 +1,13 @@
 {{
     config(
         materialized='table',
-        schema='transformed_data'
+        schema='transformed_data',
+        post_hook=[
+            "create index if not exists idx_mart_arbeitslosenzahlen_geodata_id on {{ this }} (geodata_id)",
+            "create index if not exists idx_mart_arbeitslosenzahlen_geodata_obs on {{ this }} (geodata_id, observation_date)",
+            "create index if not exists idx_mart_arbeitslosenzahlen_year on {{ this }} (year)",
+            "create index if not exists idx_mart_arbeitslosenzahlen_obs_date on {{ this }} (observation_date)"
+        ]
     )
 }}
 

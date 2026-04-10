@@ -1,7 +1,11 @@
 {{
     config(
-        materialized='view',
-        schema='transformed_data'
+        materialized='table',
+        schema='transformed_data',
+        post_hook=[
+            "create index if not exists idx_{{ this.name }}_geodata_year on {{ this }} (geodata_id_nuts, year)",
+            "create index if not exists idx_{{ this.name }}_nuts_tpo on {{ this }} (geodata_id_nuts text_pattern_ops)"
+        ]
     )
 }}
 
