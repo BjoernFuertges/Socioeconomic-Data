@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: stg_erwerbstaetige_pro_1000_einwohner_kreise
-    description: "Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag"
+    description: "Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag"
     columns:
       - name: erwerbstaetige_pro_1000_einwohner_pk
         description: "Surrogate Key aus geodata_id_nuts und year"

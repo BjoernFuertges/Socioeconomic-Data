@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: stg_beschaeftigungsquote_gemeinden
-    description: "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag"
+    description: "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag"
     columns:
       - name: beschaeftigungsquote_lau_pk
         description: "Surrogate Key aus original_id_1 und year"

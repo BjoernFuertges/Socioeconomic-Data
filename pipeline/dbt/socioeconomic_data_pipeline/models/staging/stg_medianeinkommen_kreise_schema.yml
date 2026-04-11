@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: stg_medianeinkommen_kreise
-    description: "Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag"
+    description: "Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag"
     columns:
       - name: medianeinkommen_pk
         description: "Surrogate Key aus geodata_id_nuts und year"
