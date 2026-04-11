@@ -1,5 +1,7 @@
 package models
 
+import "encoding/json"
+
 // NutsRegionData enthält alle sozioökonomischen Indikatoren einer NUTS-Region (Level 0–3) für ein Jahr.
 // Bei Level 0–2 entspricht region_name mangels Namenstabelle dem NUTS-Code selbst.
 type NutsRegionData struct {
@@ -22,7 +24,9 @@ type NutsRegionMetadata struct {
 	NutsLevel     int    `json:"nuts_level"      example:"3"`
 	NutsLevelCode string `json:"nuts_level_code" example:"NUTS-3"`
 	// ARS (Amtlicher Regionalschlüssel) – nur für NUTS-3 verfügbar, sonst null.
-	ARS *string `json:"ars"             example:"08111000"`
+	ARS              *string         `json:"ars" example:"08111000"`
+	GeometryWGS84    json.RawMessage `json:"geometry_wgs84,omitempty" swaggertype:"object"`
+	HasValidGeometry bool            `json:"has_valid_geometry" example:"false"`
 }
 
 // NutsSocioeconomicData enthält die sozioökonomischen Indikatoren für ein Jahr.
@@ -38,12 +42,14 @@ type NutsSocioeconomicData struct {
 type NutsRegionResponse struct {
 	Metadata      *NutsRegionMetadata    `json:"metadata,omitempty"`
 	Socioeconomic *NutsSocioeconomicData `json:"socioeconomic,omitempty"`
+	Datasets      []RegionDataset        `json:"datasets,omitempty"`
 }
 
 // NutsRegionTimeSeries enthält Metadaten und die Zeitreihe sozioökonomischer Daten.
 type NutsRegionTimeSeries struct {
 	Metadata      *NutsRegionMetadata     `json:"metadata,omitempty"`
 	Socioeconomic []NutsSocioeconomicData `json:"socioeconomic,omitempty"`
+	Datasets      []RegionDataset         `json:"datasets,omitempty"`
 }
 
 // NutsRegionSummary ist ein einzelner Eintrag in der NUTS-Regionenliste.

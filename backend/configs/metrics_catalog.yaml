@@ -1,0 +1,50 @@
+# Abgeleitete Metriken: per Formel aus mehreren Datensätzen berechnet.
+# Unterstützter Formeltyp: ratio (Zähler / Nenner × Scale).
+# Nenner-Quellen: dataset (RouteSlug + Spalte) oder builtin (nuts_geometry_area_sqkm).
+derived_metrics:
+  - slug: bevoelkerungsdichte
+    label: Bevölkerungsdichte
+    description: >
+      Einwohner je km² der NUTS-3-Region, berechnet aus Bevölkerungszahl und
+      Regionsfläche (PostGIS ST_Area auf ETRS89-LAEA-Projektion, EPSG:3035).
+    unit: "EW/km²"
+    formula:
+      type: ratio
+      numerator:
+        dataset: bevoelkerung
+        column: bevoelkerung
+      denominator:
+        builtin: nuts_geometry_area_sqkm
+      scale: 1.0
+
+  - slug: eigenberechnete-arbeitslosenquote
+    label: Eigenberechnete Arbeitslosenquote
+    description: >
+      Eigene Berechnung: Arbeitslose je 100 Einwohner aus den Kreisdaten
+      (stg_arbeitslose_kreise / stg_bevoelkerung_kreise × 100).
+      Abweichungen von offiziellen Quoten sind methodisch bedingt.
+    unit: "%"
+    formula:
+      type: ratio
+      numerator:
+        dataset: arbeitslose
+        column: arbeitslose
+      denominator:
+        dataset: bevoelkerung
+        column: bevoelkerung
+      scale: 100.0
+
+  - slug: ausbildungsquote
+    label: Ausbildungsquote
+    description: >
+      Auszubildende je 1.000 Einwohner.
+    unit: "je 1.000 EW"
+    formula:
+      type: ratio
+      numerator:
+        dataset: auzubildende
+        column: auzubildende
+      denominator:
+        dataset: bevoelkerung
+        column: bevoelkerung
+      scale: 1000.0

@@ -21,7 +21,7 @@ const docTemplate = `{
     "paths": {
         "/arbeitslose": {
             "get": {
-                "description": "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -31,13 +31,27 @@ const docTemplate = `{
                 "tags": [
                     "Arbeitslose"
                 ],
-                "summary": "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
                         "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
                         "in": "query"
                     },
                     {
@@ -103,7 +117,7 @@ const docTemplate = `{
         },
         "/arbeitsvolumen": {
             "get": {
-                "description": "Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -113,13 +127,27 @@ const docTemplate = `{
                 "tags": [
                     "Arbeitsvolumen"
                 ],
-                "summary": "Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
                         "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
                         "in": "query"
                     },
                     {
@@ -185,7 +213,7 @@ const docTemplate = `{
         },
         "/auzubildende": {
             "get": {
-                "description": "Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -195,13 +223,27 @@ const docTemplate = `{
                 "tags": [
                     "Auzubildende"
                 ],
-                "summary": "Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
                         "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
                         "in": "query"
                     },
                     {
@@ -267,7 +309,7 @@ const docTemplate = `{
         },
         "/beschaeftigungsquote-gemeinden": {
             "get": {
-                "description": "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -277,13 +319,27 @@ const docTemplate = `{
                 "tags": [
                     "BeschaeftigungsquoteGemeinden"
                 ],
-                "summary": "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
                         "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
                         "in": "query"
                     },
                     {
@@ -369,6 +425,20 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "example": 2020,
                         "description": "Jahr der Beobachtung (2000-2030)",
@@ -431,7 +501,7 @@ const docTemplate = `{
         },
         "/bevoelkerung": {
             "get": {
-                "description": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -441,13 +511,27 @@ const docTemplate = `{
                 "tags": [
                     "Bevoelkerung"
                 ],
-                "summary": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
                         "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
                         "in": "query"
                     },
                     {
@@ -513,7 +597,7 @@ const docTemplate = `{
         },
         "/bruttoverdienst": {
             "get": {
-                "description": "Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -523,13 +607,27 @@ const docTemplate = `{
                 "tags": [
                     "Bruttoverdienst"
                 ],
-                "summary": "Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
                         "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
                         "in": "query"
                     },
                     {
@@ -595,7 +693,7 @@ const docTemplate = `{
         },
         "/durchschnittsalter": {
             "get": {
-                "description": "Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -605,13 +703,27 @@ const docTemplate = `{
                 "tags": [
                     "Durchschnittsalter"
                 ],
-                "summary": "Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
                         "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
                         "in": "query"
                     },
                     {
@@ -677,7 +789,7 @@ const docTemplate = `{
         },
         "/erwerbstaetige_pro_1000_einwohner": {
             "get": {
-                "description": "Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -687,13 +799,27 @@ const docTemplate = `{
                 "tags": [
                     "ErwerbstaetigePro1000Einwohner"
                 ],
-                "summary": "Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
                         "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
                         "in": "query"
                     },
                     {
@@ -757,6 +883,401 @@ const docTemplate = `{
                 }
             }
         },
+        "/geo": {
+            "get": {
+                "description": "Gibt eine einheitliche Liste für NUTS- oder LAU-Regionen zurück. Standard ist NUTS. Mit geo_type=lau werden LAU-Regionen geliefert.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Geo"
+                ],
+                "summary": "Liste allgemeiner Geo-Regionen",
+                "parameters": [
+                    {
+                        "enum": [
+                            "nuts",
+                            "lau"
+                        ],
+                        "type": "string",
+                        "default": "nuts",
+                        "description": "Regionstyp: nuts oder lau",
+                        "name": "geo_type",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            0,
+                            1,
+                            2,
+                            3
+                        ],
+                        "type": "integer",
+                        "example": 3,
+                        "description": "NUTS-Level (nur für geo_type=nuts, 0-3)",
+                        "name": "level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE",
+                        "description": "Ländercode (nur für geo_type=lau)",
+                        "name": "country_code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix-Filter (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "berlin",
+                        "description": "Teilstring-Suche nach Regionenamen",
+                        "name": "geodata_name_contains",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (nur für geo_type=lau)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Geometrie einschließen, wenn verfügbar",
+                        "name": "include_geometry",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "latest",
+                            "exact"
+                        ],
+                        "type": "string",
+                        "default": "latest",
+                        "description": "Geometrieauswahl: latest oder exact",
+                        "name": "geometry_strategy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2024,
+                        "description": "Zieljahr für Geometrie (bei exact erforderlich)",
+                        "name": "geometry_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2024,
+                        "description": "Jahr (optional)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-1000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.GeoRegionSummary"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/geo/query": {
+            "post": {
+                "description": "Führt eine räumliche Abfrage (intersects/contains) gegen NUTS oder LAU Geometrien aus.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Geo"
+                ],
+                "summary": "Räumliche Geo-Abfrage via GeoJSON",
+                "parameters": [
+                    {
+                        "description": "GeoJSON-Abfrage",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.GeoSpatialQueryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.GeoRegionSummary"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/geo/{geo_id}": {
+            "get": {
+                "description": "Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt (NUTS: 2-5 Zeichen, sonst LAU).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Geo"
+                ],
+                "summary": "Allgemeine Geo-Region nach ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE111",
+                        "description": "Geo-ID (NUTS oder GISCO-ID)",
+                        "name": "geo_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "auto",
+                            "nuts",
+                            "lau"
+                        ],
+                        "type": "string",
+                        "default": "auto",
+                        "description": "Regionstyp: auto, nuts oder lau",
+                        "name": "geo_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2024,
+                        "description": "Jahr (optional)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Nur für NUTS: alle verfügbaren Jahre zurückgeben",
+                        "name": "all",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "full",
+                            "metadata",
+                            "socioeconomic"
+                        ],
+                        "type": "string",
+                        "default": "full",
+                        "description": "Nur für NUTS: full, metadata oder socioeconomic",
+                        "name": "part",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "latest",
+                            "exact"
+                        ],
+                        "type": "string",
+                        "default": "latest",
+                        "description": "Nur für NUTS: Geometrieauswahl latest|exact",
+                        "name": "geometry_strategy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2024,
+                        "description": "Nur für NUTS: Zieljahr der Geometrie (bei exact erforderlich)",
+                        "name": "geometry_year",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/geo/{geo_id}/versions": {
+            "get": {
+                "description": "Gibt alle verfügbaren Jahre für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Geo"
+                ],
+                "summary": "Versionsliste für eine Geo-Region",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE111",
+                        "description": "Geo-ID (NUTS oder GISCO-ID)",
+                        "name": "geo_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "auto",
+                            "nuts",
+                            "lau"
+                        ],
+                        "type": "string",
+                        "default": "auto",
+                        "description": "Regionstyp: auto, nuts oder lau",
+                        "name": "geo_type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.GeoRegionVersions"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Gibt den Status der API zurück",
@@ -782,7 +1303,7 @@ const docTemplate = `{
         },
         "/kinderarmut": {
             "get": {
-                "description": "Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -792,13 +1313,27 @@ const docTemplate = `{
                 "tags": [
                     "Kinderarmut"
                 ],
-                "summary": "Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
                         "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
                         "in": "query"
                     },
                     {
@@ -884,10 +1419,45 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "Filter nach NUTS-Präfix (z.B. DE1 für alle Regionen unter NUTS-1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "berlin",
+                        "description": "Teilstring-Suche im LAU-Namen",
+                        "name": "geodata_name_contains",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "example": 2024,
                         "description": "Filter nach Jahr",
                         "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2024,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
                         "in": "query"
                     },
                     {
@@ -977,6 +1547,13 @@ const docTemplate = `{
                         "description": "Jahr (optional, gibt neuestes Jahr zurück wenn nicht angegeben)",
                         "name": "year",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Verfügbare Soziodata-Datensätze einbetten",
+                        "name": "include_datasets",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1013,9 +1590,72 @@ const docTemplate = `{
                 }
             }
         },
+        "/lau/{gisco_id}/datasets": {
+            "get": {
+                "description": "Gibt alle Soziodata-Datensätze zurück, für die Daten zu dieser LAU-Region vorhanden sind (via NUTS-3-Code)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "LAU"
+                ],
+                "summary": "Verfügbare Datensätze für eine LAU-Region",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE111000",
+                        "description": "GISCO-ID der LAU-Region",
+                        "name": "gisco_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.RegionDatasets"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/medianeinkommen": {
             "get": {
-                "description": "Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -1025,13 +1665,27 @@ const docTemplate = `{
                 "tags": [
                     "Medianeinkommen"
                 ],
-                "summary": "Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
                         "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
                         "in": "query"
                     },
                     {
@@ -1082,6 +1736,235 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/metrics": {
+            "get": {
+                "description": "Berechnet Min, Max, Mittelwert, Median und Standardabweichung je Jahr für einen oder mehrere Datensätze.\nMehrere 'dataset'-Parameter kombinieren unterschiedliche Datensätze in einer Antwort.\nMit 'geodata_id_nuts' werden zusätzlich der Regionalwert und das Ranking der Region zurückgegeben.\nFür aufeinanderfolgende Jahre wird die prozentuale Veränderung (YoY) berechnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metriken"
+                ],
+                "summary": "Statistische Metriken für Soziodata-Datensätze",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "example": "schuldnerquote",
+                        "description": "Datensatz-Slug(s), z.B. schuldnerquote (mehrfach angeben für mehrere Datensätze)",
+                        "name": "dataset",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Einzelnes Jahr filtern",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Jahresbereich ab",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Jahresbereich bis",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "Auf NUTS-Präfix einschränken (z.B. DE1 für alle Kreise in Bayern)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-ID einer Region für Regionalwert und Ranking",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.DatasetMetricsResult"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/metrics/derived": {
+            "get": {
+                "description": "Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,\nAusbildungsquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.\nMit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metriken"
+                ],
+                "summary": "Abgeleitete Metriken-Definitionen",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.DerivedMetricEntry"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/metrics/derived/{slug}": {
+            "get": {
+                "description": "Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine\nabgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metriken"
+                ],
+                "summary": "Statistiken für eine abgeleitete Metrik",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "bevoelkerungsdichte",
+                        "description": "Slug der abgeleiteten Metrik",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Einzelnes Jahr filtern",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Jahresbereich ab",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Jahresbereich bis",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "Auf NUTS-Präfix einschränken (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-ID einer Region für Regionalwert und Ranking",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.DatasetMetricsResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -1223,6 +2106,31 @@ const docTemplate = `{
                         "description": "Antwortausschnitt: full, metadata oder socioeconomic",
                         "name": "part",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "latest",
+                            "exact"
+                        ],
+                        "type": "string",
+                        "default": "latest",
+                        "description": "Geometrieauswahl: latest oder exact",
+                        "name": "geometry_strategy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2024,
+                        "description": "Zieljahr für Geometrie (bei exact erforderlich)",
+                        "name": "geometry_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Verfügbare Soziodata-Datensätze einbetten",
+                        "name": "include_datasets",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1252,6 +2160,63 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/nuts/{nuts_id}/datasets": {
+            "get": {
+                "description": "Gibt alle Soziodata-Datensätze zurück, für die Daten zu dieser NUTS-Region vorhanden sind",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NUTS"
+                ],
+                "summary": "Verfügbare Datensätze für eine NUTS-Region",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-Code der Region",
+                        "name": "nuts_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.RegionDatasets"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -1330,7 +2295,7 @@ const docTemplate = `{
         },
         "/schuldnerquote": {
             "get": {
-                "description": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -1340,13 +2305,27 @@ const docTemplate = `{
                 "tags": [
                     "Schuldnerquote"
                 ],
-                "summary": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
                         "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
                         "in": "query"
                     },
                     {
@@ -1412,7 +2391,7 @@ const docTemplate = `{
         },
         "/sgb_ii_quote": {
             "get": {
-                "description": "Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -1422,13 +2401,27 @@ const docTemplate = `{
                 "tags": [
                     "SgbIiQuote"
                 ],
-                "summary": "Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
                         "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
                         "in": "query"
                     },
                     {
@@ -1567,7 +2560,7 @@ const docTemplate = `{
         },
         "/studierende": {
             "get": {
-                "description": "Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -1577,13 +2570,27 @@ const docTemplate = `{
                 "tags": [
                     "Studierende"
                 ],
-                "summary": "Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
                         "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
                         "in": "query"
                     },
                     {
@@ -1691,6 +2698,20 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2020,
+                        "description": "Erstes Jahr (inklusiv)",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2024,
+                        "description": "Letztes Jahr (inklusiv)",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -1769,6 +2790,20 @@ const docTemplate = `{
                         "example": 2024,
                         "description": "Filter nach Jahr",
                         "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Erstes Jahr (inklusiv)",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2024,
+                        "description": "Letztes Jahr (inklusiv)",
+                        "name": "to_year",
                         "in": "query"
                     },
                     {
@@ -1930,7 +2965,7 @@ const docTemplate = `{
         },
         "/wohngeldhaushalte": {
             "get": {
-                "description": "Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -1940,13 +2975,27 @@ const docTemplate = `{
                 "tags": [
                     "Wohngeldhaushalte"
                 ],
-                "summary": "Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
                         "example": "DEF01",
                         "description": "NUTS-3-Code der Region",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
                         "in": "query"
                     },
                     {
@@ -2472,6 +3521,102 @@ const docTemplate = `{
                 }
             }
         },
+        "models.DatasetMetricsResult": {
+            "type": "object",
+            "properties": {
+                "by_year": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.DatasetYearMetrics"
+                    }
+                },
+                "column": {
+                    "type": "string",
+                    "example": "schuldnerquote_prozent"
+                },
+                "dataset": {
+                    "type": "string",
+                    "example": "schuldnerquote"
+                }
+            }
+        },
+        "models.DatasetYearMetrics": {
+            "type": "object",
+            "properties": {
+                "max": {
+                    "type": "number",
+                    "example": 42.7
+                },
+                "mean": {
+                    "type": "number",
+                    "example": 12.3
+                },
+                "median": {
+                    "type": "number",
+                    "example": 11.8
+                },
+                "min": {
+                    "type": "number",
+                    "example": 1.2
+                },
+                "region_count": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "regional_rank": {
+                    "type": "integer",
+                    "example": 142
+                },
+                "regional_rank_total": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "regional_value": {
+                    "type": "number",
+                    "example": 9.4
+                },
+                "stddev": {
+                    "type": "number",
+                    "example": 4.5
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
+                },
+                "yoy_mean_pct": {
+                    "type": "number",
+                    "example": 2.1
+                },
+                "yoy_median_pct": {
+                    "type": "number",
+                    "example": 1.8
+                }
+            }
+        },
+        "models.DerivedMetricEntry": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Einwohner je km²"
+                },
+                "formula": {
+                    "$ref": "#/definitions/models.FormulaDefinition"
+                },
+                "label": {
+                    "type": "string",
+                    "example": "Bevölkerungsdichte"
+                },
+                "slug": {
+                    "type": "string",
+                    "example": "bevoelkerungsdichte"
+                },
+                "unit": {
+                    "type": "string",
+                    "example": "EW/km²"
+                }
+            }
+        },
         "models.DurchschnittsalterData": {
             "type": "object",
             "properties": {
@@ -2594,6 +3739,172 @@ const docTemplate = `{
                 }
             }
         },
+        "models.FormulaDefinition": {
+            "type": "object",
+            "properties": {
+                "denominator": {
+                    "$ref": "#/definitions/models.FormulaSource"
+                },
+                "numerator": {
+                    "$ref": "#/definitions/models.FormulaSource"
+                },
+                "scale": {
+                    "type": "number",
+                    "example": 100
+                },
+                "type": {
+                    "type": "string",
+                    "example": "ratio"
+                }
+            }
+        },
+        "models.FormulaSource": {
+            "type": "object",
+            "properties": {
+                "builtin": {
+                    "type": "string",
+                    "example": "nuts_geometry_area_sqkm"
+                },
+                "column": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                },
+                "dataset": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                }
+            }
+        },
+        "models.GeoRegionSummary": {
+            "type": "object",
+            "properties": {
+                "country_code": {
+                    "type": "string",
+                    "example": "DE"
+                },
+                "datasets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.RegionDataset"
+                    }
+                },
+                "geo_id": {
+                    "type": "string",
+                    "example": "DE111"
+                },
+                "geo_type": {
+                    "type": "string",
+                    "example": "NUTS"
+                },
+                "geometry_wgs84": {
+                    "type": "object"
+                },
+                "has_valid_geometry": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "nuts_level": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "nuts_level_code": {
+                    "type": "string",
+                    "example": "NUTS-3"
+                },
+                "region_name": {
+                    "type": "string",
+                    "example": "Stuttgart, Stadtkreis"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2024
+                }
+            }
+        },
+        "models.GeoRegionVersions": {
+            "type": "object",
+            "properties": {
+                "geo_id": {
+                    "type": "string",
+                    "example": "DE111"
+                },
+                "geo_type": {
+                    "type": "string",
+                    "example": "NUTS"
+                },
+                "nuts_level": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "nuts_level_code": {
+                    "type": "string",
+                    "example": "NUTS-3"
+                },
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        2024,
+                        2023,
+                        2022
+                    ]
+                }
+            }
+        },
+        "models.GeoSpatialQueryRequest": {
+            "type": "object",
+            "properties": {
+                "from_year": {
+                    "type": "integer",
+                    "example": 2020
+                },
+                "geo_type": {
+                    "type": "string",
+                    "example": "nuts"
+                },
+                "geometry": {
+                    "type": "object"
+                },
+                "geometry_strategy": {
+                    "type": "string",
+                    "example": "latest"
+                },
+                "geometry_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "include_datasets": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "include_geometry": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "limit": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "offset": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "operation": {
+                    "type": "string",
+                    "example": "intersects"
+                },
+                "to_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2024
+                }
+            }
+        },
         "models.KinderarmutData": {
             "type": "object",
             "properties": {
@@ -2664,6 +3975,12 @@ const docTemplate = `{
                 "country_code": {
                     "type": "string",
                     "example": "DE"
+                },
+                "datasets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.RegionDataset"
+                    }
                 },
                 "geometry_wgs84": {
                     "type": "object"
@@ -2802,6 +4119,13 @@ const docTemplate = `{
                     "type": "string",
                     "example": "08111000"
                 },
+                "geometry_wgs84": {
+                    "type": "object"
+                },
+                "has_valid_geometry": {
+                    "type": "boolean",
+                    "example": false
+                },
                 "nuts_id": {
                     "type": "string",
                     "example": "DE111"
@@ -2823,6 +4147,12 @@ const docTemplate = `{
         "models.NutsRegionResponse": {
             "type": "object",
             "properties": {
+                "datasets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.RegionDataset"
+                    }
+                },
                 "metadata": {
                     "$ref": "#/definitions/models.NutsRegionMetadata"
                 },
@@ -2859,6 +4189,12 @@ const docTemplate = `{
         "models.NutsRegionTimeSeries": {
             "type": "object",
             "properties": {
+                "datasets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.RegionDataset"
+                    }
+                },
                 "metadata": {
                     "$ref": "#/definitions/models.NutsRegionMetadata"
                 },
@@ -2920,6 +4256,49 @@ const docTemplate = `{
                 "yoy_change_percent": {
                     "type": "number",
                     "example": -2.3
+                }
+            }
+        },
+        "models.RegionDataset": {
+            "type": "object",
+            "properties": {
+                "available_years": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        2020,
+                        2021,
+                        2022
+                    ]
+                },
+                "dataset": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                },
+                "route_slug": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                }
+            }
+        },
+        "models.RegionDatasets": {
+            "type": "object",
+            "properties": {
+                "datasets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.RegionDataset"
+                    }
+                },
+                "geo_id": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geo_type": {
+                    "type": "string",
+                    "example": "NUTS"
                 }
             }
         },

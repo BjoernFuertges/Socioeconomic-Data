@@ -339,6 +339,75 @@ definitions:
         example: 2020
         type: integer
     type: object
+  models.DatasetMetricsResult:
+    properties:
+      by_year:
+        items:
+          $ref: '#/definitions/models.DatasetYearMetrics'
+        type: array
+      column:
+        example: schuldnerquote_prozent
+        type: string
+      dataset:
+        example: schuldnerquote
+        type: string
+    type: object
+  models.DatasetYearMetrics:
+    properties:
+      max:
+        example: 42.7
+        type: number
+      mean:
+        example: 12.3
+        type: number
+      median:
+        example: 11.8
+        type: number
+      min:
+        example: 1.2
+        type: number
+      region_count:
+        example: 400
+        type: integer
+      regional_rank:
+        example: 142
+        type: integer
+      regional_rank_total:
+        example: 400
+        type: integer
+      regional_value:
+        example: 9.4
+        type: number
+      stddev:
+        example: 4.5
+        type: number
+      year:
+        example: 2022
+        type: integer
+      yoy_mean_pct:
+        example: 2.1
+        type: number
+      yoy_median_pct:
+        example: 1.8
+        type: number
+    type: object
+  models.DerivedMetricEntry:
+    properties:
+      description:
+        example: Einwohner je km²
+        type: string
+      formula:
+        $ref: '#/definitions/models.FormulaDefinition'
+      label:
+        example: Bevölkerungsdichte
+        type: string
+      slug:
+        example: bevoelkerungsdichte
+        type: string
+      unit:
+        example: EW/km²
+        type: string
+    type: object
   models.DurchschnittsalterData:
     properties:
       durchschnittsalter:
@@ -429,6 +498,125 @@ definitions:
         example: 2020
         type: integer
     type: object
+  models.FormulaDefinition:
+    properties:
+      denominator:
+        $ref: '#/definitions/models.FormulaSource'
+      numerator:
+        $ref: '#/definitions/models.FormulaSource'
+      scale:
+        example: 100
+        type: number
+      type:
+        example: ratio
+        type: string
+    type: object
+  models.FormulaSource:
+    properties:
+      builtin:
+        example: nuts_geometry_area_sqkm
+        type: string
+      column:
+        example: bevoelkerung
+        type: string
+      dataset:
+        example: bevoelkerung
+        type: string
+    type: object
+  models.GeoRegionSummary:
+    properties:
+      country_code:
+        example: DE
+        type: string
+      datasets:
+        items:
+          $ref: '#/definitions/models.RegionDataset'
+        type: array
+      geo_id:
+        example: DE111
+        type: string
+      geo_type:
+        example: NUTS
+        type: string
+      geometry_wgs84:
+        type: object
+      has_valid_geometry:
+        example: true
+        type: boolean
+      nuts_level:
+        example: 3
+        type: integer
+      nuts_level_code:
+        example: NUTS-3
+        type: string
+      region_name:
+        example: Stuttgart, Stadtkreis
+        type: string
+      year:
+        example: 2024
+        type: integer
+    type: object
+  models.GeoRegionVersions:
+    properties:
+      geo_id:
+        example: DE111
+        type: string
+      geo_type:
+        example: NUTS
+        type: string
+      nuts_level:
+        example: 3
+        type: integer
+      nuts_level_code:
+        example: NUTS-3
+        type: string
+      versions:
+        example:
+        - 2024
+        - 2023
+        - 2022
+        items:
+          type: integer
+        type: array
+    type: object
+  models.GeoSpatialQueryRequest:
+    properties:
+      from_year:
+        example: 2020
+        type: integer
+      geo_type:
+        example: nuts
+        type: string
+      geometry:
+        type: object
+      geometry_strategy:
+        example: latest
+        type: string
+      geometry_year:
+        example: 2024
+        type: integer
+      include_datasets:
+        example: false
+        type: boolean
+      include_geometry:
+        example: false
+        type: boolean
+      limit:
+        example: 100
+        type: integer
+      offset:
+        example: 0
+        type: integer
+      operation:
+        example: intersects
+        type: string
+      to_year:
+        example: 2024
+        type: integer
+      year:
+        example: 2024
+        type: integer
+    type: object
   models.KinderarmutData:
     properties:
       geodata_id_ars:
@@ -481,6 +669,10 @@ definitions:
       country_code:
         example: DE
         type: string
+      datasets:
+        items:
+          $ref: '#/definitions/models.RegionDataset'
+        type: array
       geometry_wgs84:
         type: object
       gisco_id:
@@ -581,6 +773,11 @@ definitions:
           sonst null.
         example: "08111000"
         type: string
+      geometry_wgs84:
+        type: object
+      has_valid_geometry:
+        example: false
+        type: boolean
       nuts_id:
         example: DE111
         type: string
@@ -596,6 +793,10 @@ definitions:
     type: object
   models.NutsRegionResponse:
     properties:
+      datasets:
+        items:
+          $ref: '#/definitions/models.RegionDataset'
+        type: array
       metadata:
         $ref: '#/definitions/models.NutsRegionMetadata'
       socioeconomic:
@@ -621,6 +822,10 @@ definitions:
     type: object
   models.NutsRegionTimeSeries:
     properties:
+      datasets:
+        items:
+          $ref: '#/definitions/models.RegionDataset'
+        type: array
       metadata:
         $ref: '#/definitions/models.NutsRegionMetadata'
       socioeconomic:
@@ -665,6 +870,36 @@ definitions:
       yoy_change_percent:
         example: -2.3
         type: number
+    type: object
+  models.RegionDataset:
+    properties:
+      available_years:
+        example:
+        - 2020
+        - 2021
+        - 2022
+        items:
+          type: integer
+        type: array
+      dataset:
+        example: bevoelkerung
+        type: string
+      route_slug:
+        example: bevoelkerung
+        type: string
+    type: object
+  models.RegionDatasets:
+    properties:
+      datasets:
+        items:
+          $ref: '#/definitions/models.RegionDataset'
+        type: array
+      geo_id:
+        example: DEF01
+        type: string
+      geo_type:
+        example: NUTS
+        type: string
     type: object
   models.SchuldnerquoteData:
     properties:
@@ -946,13 +1181,23 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne
-        _dlt-Felder, mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit
+        Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (1990-2030)
         example: 2020
@@ -993,21 +1238,31 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Arbeitslose
   /arbeitsvolumen:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2000-2030)
         example: 2020
@@ -1048,21 +1303,31 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Arbeitsvolumen
   /auzubildende:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (1990-2030)
         example: 2020
@@ -1103,8 +1368,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Auzubildende
   /beschaeftigungsquote-gemeinden:
@@ -1112,12 +1377,22 @@ paths:
       consumes:
       - application/json
       description: Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt,
-        ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+        mit Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2000-2030)
         example: 2020
@@ -1159,7 +1434,7 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt,
-        ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+        mit Datumsableitung und Qualitätsflag
       tags:
       - BeschaeftigungsquoteGemeinden
   /beschaeftigungsquote-nuts3:
@@ -1173,6 +1448,16 @@ paths:
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2000-2030)
         example: 2020
@@ -1221,13 +1506,23 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne
-        _dlt-Felder, mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit
+        Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (1990-2030)
         example: 2020
@@ -1268,21 +1563,31 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Bevoelkerung
   /bruttoverdienst:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2000-2030)
         example: 2020
@@ -1323,21 +1628,31 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Bruttoverdienst
   /durchschnittsalter:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne
-        _dlt-Felder, mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit
+        Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (1990-2030)
         example: 2020
@@ -1378,8 +1693,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Durchschnittsalter
   /erwerbstaetige_pro_1000_einwohner:
@@ -1387,12 +1702,22 @@ paths:
       consumes:
       - application/json
       description: Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis –
-        bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+        bereinigt, mit Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (1990-2030)
         example: 2020
@@ -1434,9 +1759,277 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt,
-        ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+        mit Datumsableitung und Qualitätsflag
       tags:
       - ErwerbstaetigePro1000Einwohner
+  /geo:
+    get:
+      consumes:
+      - application/json
+      description: Gibt eine einheitliche Liste für NUTS- oder LAU-Regionen zurück.
+        Standard ist NUTS. Mit geo_type=lau werden LAU-Regionen geliefert.
+      parameters:
+      - default: nuts
+        description: 'Regionstyp: nuts oder lau'
+        enum:
+        - nuts
+        - lau
+        in: query
+        name: geo_type
+        type: string
+      - description: NUTS-Level (nur für geo_type=nuts, 0-3)
+        enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        example: 3
+        in: query
+        name: level
+        type: integer
+      - description: Ländercode (nur für geo_type=lau)
+        example: DE
+        in: query
+        name: country_code
+        type: string
+      - description: NUTS-Präfix-Filter (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Regionenamen
+        example: berlin
+        in: query
+        name: geodata_name_contains
+        type: string
+      - description: Punktabfrage im Format lon,lat (nur für geo_type=lau)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
+      - description: Geometrie einschließen, wenn verfügbar
+        example: false
+        in: query
+        name: include_geometry
+        type: boolean
+      - default: latest
+        description: 'Geometrieauswahl: latest oder exact'
+        enum:
+        - latest
+        - exact
+        in: query
+        name: geometry_strategy
+        type: string
+      - description: Zieljahr für Geometrie (bei exact erforderlich)
+        example: 2024
+        in: query
+        name: geometry_year
+        type: integer
+      - description: Jahr (optional)
+        example: 2024
+        in: query
+        name: year
+        type: integer
+      - default: 100
+        description: Anzahl der Ergebnisse (1-1000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.GeoRegionSummary'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Liste allgemeiner Geo-Regionen
+      tags:
+      - Geo
+  /geo/{geo_id}:
+    get:
+      consumes:
+      - application/json
+      description: 'Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird
+        der Typ aus der ID erkannt (NUTS: 2-5 Zeichen, sonst LAU).'
+      parameters:
+      - description: Geo-ID (NUTS oder GISCO-ID)
+        example: DE111
+        in: path
+        name: geo_id
+        required: true
+        type: string
+      - default: auto
+        description: 'Regionstyp: auto, nuts oder lau'
+        enum:
+        - auto
+        - nuts
+        - lau
+        in: query
+        name: geo_type
+        type: string
+      - description: Jahr (optional)
+        example: 2024
+        in: query
+        name: year
+        type: integer
+      - description: 'Nur für NUTS: alle verfügbaren Jahre zurückgeben'
+        example: false
+        in: query
+        name: all
+        type: boolean
+      - default: full
+        description: 'Nur für NUTS: full, metadata oder socioeconomic'
+        enum:
+        - full
+        - metadata
+        - socioeconomic
+        in: query
+        name: part
+        type: string
+      - default: latest
+        description: 'Nur für NUTS: Geometrieauswahl latest|exact'
+        enum:
+        - latest
+        - exact
+        in: query
+        name: geometry_strategy
+        type: string
+      - description: 'Nur für NUTS: Zieljahr der Geometrie (bei exact erforderlich)'
+        example: 2024
+        in: query
+        name: geometry_year
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Allgemeine Geo-Region nach ID
+      tags:
+      - Geo
+  /geo/{geo_id}/versions:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle verfügbaren Jahre für eine Geo-Region zurück. Mit geo_type=auto
+        wird der Typ aus der ID erkannt.
+      parameters:
+      - description: Geo-ID (NUTS oder GISCO-ID)
+        example: DE111
+        in: path
+        name: geo_id
+        required: true
+        type: string
+      - default: auto
+        description: 'Regionstyp: auto, nuts oder lau'
+        enum:
+        - auto
+        - nuts
+        - lau
+        in: query
+        name: geo_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.GeoRegionVersions'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Versionsliste für eine Geo-Region
+      tags:
+      - Geo
+  /geo/query:
+    post:
+      consumes:
+      - application/json
+      description: Führt eine räumliche Abfrage (intersects/contains) gegen NUTS oder
+        LAU Geometrien aus.
+      parameters:
+      - description: GeoJSON-Abfrage
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.GeoSpatialQueryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.GeoRegionSummary'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Räumliche Geo-Abfrage via GeoJSON
+      tags:
+      - Geo
   /health:
     get:
       description: Gibt den Status der API zurück
@@ -1457,13 +2050,22 @@ paths:
       consumes:
       - application/json
       description: Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte
-        unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung
-        und Qualitätsflag
+        unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2010-2030)
         example: 2020
@@ -1505,8 +2107,7 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte
-        unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung
-        und Qualitätsflag
+        unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Kinderarmut
   /lau:
@@ -1520,10 +2121,35 @@ paths:
         in: query
         name: country_code
         type: string
+      - description: Filter nach NUTS-Präfix (z.B. DE1 für alle Regionen unter NUTS-1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche im LAU-Namen
+        example: berlin
+        in: query
+        name: geodata_name_contains
+        type: string
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: Filter nach Jahr
         example: 2024
         in: query
         name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2020
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2024
+        in: query
+        name: to_year
         type: integer
       - description: Filter nach Vorhandensein von Bevölkerungsdaten
         example: true
@@ -1582,6 +2208,11 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Verfügbare Soziodata-Datensätze einbetten
+        example: false
+        in: query
+        name: include_datasets
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1605,17 +2236,67 @@ paths:
       summary: LAU-Region Details
       tags:
       - LAU
+  /lau/{gisco_id}/datasets:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle Soziodata-Datensätze zurück, für die Daten zu dieser
+        LAU-Region vorhanden sind (via NUTS-3-Code)
+      parameters:
+      - description: GISCO-ID der LAU-Region
+        example: DE111000
+        in: path
+        name: gisco_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.RegionDatasets'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Verfügbare Datensätze für eine LAU-Region
+      tags:
+      - LAU
   /medianeinkommen:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2010-2030)
         example: 2020
@@ -1656,10 +2337,167 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Medianeinkommen
+  /metrics:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Berechnet Min, Max, Mittelwert, Median und Standardabweichung je Jahr für einen oder mehrere Datensätze.
+        Mehrere 'dataset'-Parameter kombinieren unterschiedliche Datensätze in einer Antwort.
+        Mit 'geodata_id_nuts' werden zusätzlich der Regionalwert und das Ranking der Region zurückgegeben.
+        Für aufeinanderfolgende Jahre wird die prozentuale Veränderung (YoY) berechnet.
+      parameters:
+      - collectionFormat: multi
+        description: Datensatz-Slug(s), z.B. schuldnerquote (mehrfach angeben für
+          mehrere Datensätze)
+        example: schuldnerquote
+        in: query
+        items:
+          type: string
+        name: dataset
+        required: true
+        type: array
+      - description: Einzelnes Jahr filtern
+        example: 2022
+        in: query
+        name: year
+        type: integer
+      - description: Jahresbereich ab
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Jahresbereich bis
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Auf NUTS-Präfix einschränken (z.B. DE1 für alle Kreise in Bayern)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: NUTS-ID einer Region für Regionalwert und Ranking
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.DatasetMetricsResult'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Statistische Metriken für Soziodata-Datensätze
+      tags:
+      - Metriken
+  /metrics/derived:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,
+        Ausbildungsquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.
+        Mit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.DerivedMetricEntry'
+                  type: array
+              type: object
+      summary: Abgeleitete Metriken-Definitionen
+      tags:
+      - Metriken
+  /metrics/derived/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine
+        abgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²).
+      parameters:
+      - description: Slug der abgeleiteten Metrik
+        example: bevoelkerungsdichte
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Einzelnes Jahr filtern
+        example: 2022
+        in: query
+        name: year
+        type: integer
+      - description: Jahresbereich ab
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Jahresbereich bis
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Auf NUTS-Präfix einschränken (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: NUTS-ID einer Region für Regionalwert und Ranking
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.DatasetMetricsResult'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Statistiken für eine abgeleitete Metrik
+      tags:
+      - Metriken
   /nuts:
     get:
       consumes:
@@ -1752,6 +2590,24 @@ paths:
         in: query
         name: part
         type: string
+      - default: latest
+        description: 'Geometrieauswahl: latest oder exact'
+        enum:
+        - latest
+        - exact
+        in: query
+        name: geometry_strategy
+        type: string
+      - description: Zieljahr für Geometrie (bei exact erforderlich)
+        example: 2024
+        in: query
+        name: geometry_year
+        type: integer
+      - description: Verfügbare Soziodata-Datensätze einbetten
+        example: false
+        in: query
+        name: include_datasets
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1777,6 +2633,42 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Alle Indikatoren für eine NUTS-Region (Level 0–3)
+      tags:
+      - NUTS
+  /nuts/{nuts_id}/datasets:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle Soziodata-Datensätze zurück, für die Daten zu dieser
+        NUTS-Region vorhanden sind
+      parameters:
+      - description: NUTS-Code der Region
+        example: DEF01
+        in: path
+        name: nuts_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.RegionDatasets'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Verfügbare Datensätze für eine NUTS-Region
       tags:
       - NUTS
   /nuts/{nuts_id}/versions:
@@ -1822,13 +2714,23 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2000-2030)
         example: 2020
@@ -1869,21 +2771,31 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Schuldnerquote
   /sgb_ii_quote:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2005-2030)
         example: 2020
@@ -1924,8 +2836,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - SgbIiQuote
   /socioeconomic/inventory:
@@ -1980,12 +2892,22 @@ paths:
       consumes:
       - application/json
       description: Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt,
-        ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+        mit Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (1990-2030)
         example: 2020
@@ -2027,7 +2949,7 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt,
-        ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+        mit Datumsableitung und Qualitätsflag
       tags:
       - Studierende
   /unemployment:
@@ -2055,6 +2977,16 @@ paths:
         example: 2024
         in: query
         name: year
+        type: integer
+      - description: Erstes Jahr (inklusiv)
+        example: 2020
+        in: query
+        name: from_year
+        type: integer
+      - description: Letztes Jahr (inklusiv)
+        example: 2024
+        in: query
+        name: to_year
         type: integer
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
@@ -2108,6 +3040,16 @@ paths:
         example: 2024
         in: query
         name: year
+        type: integer
+      - description: Erstes Jahr (inklusiv)
+        example: 2020
+        in: query
+        name: from_year
+        type: integer
+      - description: Letztes Jahr (inklusiv)
+        example: 2024
+        in: query
+        name: to_year
         type: integer
       - description: Start-Datum (YYYY-MM-DD)
         example: "2024-01-01"
@@ -2218,13 +3160,23 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne
-        _dlt-Felder, mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit
+        Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
         in: query
         name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
         type: string
       - description: Jahr der Beobachtung (2010-2030)
         example: 2020
@@ -2265,8 +3217,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Wohngeldhaushalte
 schemes:

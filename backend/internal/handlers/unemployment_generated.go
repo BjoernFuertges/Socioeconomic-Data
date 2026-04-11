@@ -21,6 +21,8 @@ import (
 // @Param from_date query string false "Start-Datum (YYYY-MM-DD)" example(2024-01-01)
 // @Param to_date query string false "End-Datum (YYYY-MM-DD)" example(2024-12-31)
 // @Param year query int false "Filter nach Jahr" example(2024)
+// @Param from_year query int false "Erstes Jahr (inklusiv)" example(2020)
+// @Param to_year query int false "Letztes Jahr (inklusiv)" example(2024)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.UnemploymentData}
@@ -70,6 +72,18 @@ func (h *Handler) GetUnemploymentData(c *gin.Context) {
 	if filter.Year != nil {
 		query += fmt.Sprintf(" AND year = $%d", argPos)
 		args = append(args, *filter.Year)
+		argPos++
+	}
+
+	if filter.FromYear != nil {
+		query += fmt.Sprintf(" AND year >= $%d", argPos)
+		args = append(args, *filter.FromYear)
+		argPos++
+	}
+
+	if filter.ToYear != nil {
+		query += fmt.Sprintf(" AND year <= $%d", argPos)
+		args = append(args, *filter.ToYear)
 		argPos++
 	}
 
@@ -183,6 +197,8 @@ func (h *Handler) GetUnemploymentByGeodataID(c *gin.Context) {
 // @Produce json
 // @Param geodata_id query string false "Filter nach Geodaten-ID" example(DE111)
 // @Param year query int false "Filter nach Jahr" example(2024)
+// @Param from_year query int false "Erstes Jahr (inklusiv)" example(2020)
+// @Param to_year query int false "Letztes Jahr (inklusiv)" example(2024)
 // @Param from_date query string false "Start-Datum (YYYY-MM-DD)" example(2024-01-01)
 // @Param to_date query string false "End-Datum (YYYY-MM-DD)" example(2024-12-31)
 // @Param limit query int false "Anzahl der Ergebnisse" default(100) example(100)
@@ -216,6 +232,18 @@ func (h *Handler) GetUnemploymentAggregated(c *gin.Context) {
 	if toDate := c.Query("to_date"); toDate != "" {
 		query += fmt.Sprintf(" AND observation_date <= $%d", argPos)
 		args = append(args, toDate)
+		argPos++
+	}
+
+	if fromYear := c.Query("from_year"); fromYear != "" {
+		query += fmt.Sprintf(" AND year >= $%d", argPos)
+		args = append(args, fromYear)
+		argPos++
+	}
+
+	if toYear := c.Query("to_year"); toYear != "" {
+		query += fmt.Sprintf(" AND year <= $%d", argPos)
+		args = append(args, toYear)
 		argPos++
 	}
 
