@@ -1181,8 +1181,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne
-        _dlt-Felder, mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit
+        Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -1238,16 +1238,16 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Arbeitslose
   /arbeitsvolumen:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -1303,16 +1303,16 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Arbeitsvolumen
   /auzubildende:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -1368,8 +1368,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Auzubildende
   /beschaeftigungsquote-gemeinden:
@@ -1377,7 +1377,7 @@ paths:
       consumes:
       - application/json
       description: Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt,
-        ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+        mit Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -1434,7 +1434,7 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt,
-        ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+        mit Datumsableitung und Qualitätsflag
       tags:
       - BeschaeftigungsquoteGemeinden
   /beschaeftigungsquote-nuts3:
@@ -1506,8 +1506,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne
-        _dlt-Felder, mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit
+        Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -1563,16 +1563,16 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Bevoelkerung
   /bruttoverdienst:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -1628,16 +1628,16 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Bruttoverdienst
   /durchschnittsalter:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne
-        _dlt-Felder, mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit
+        Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -1693,8 +1693,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Durchschnittsalter
   /erwerbstaetige_pro_1000_einwohner:
@@ -1702,7 +1702,7 @@ paths:
       consumes:
       - application/json
       description: Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis –
-        bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+        bereinigt, mit Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -1759,7 +1759,7 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt,
-        ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+        mit Datumsableitung und Qualitätsflag
       tags:
       - ErwerbstaetigePro1000Einwohner
   /geo:
@@ -2050,8 +2050,7 @@ paths:
       consumes:
       - application/json
       description: Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte
-        unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung
-        und Qualitätsflag
+        unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -2108,8 +2107,7 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte
-        unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung
-        und Qualitätsflag
+        unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Kinderarmut
   /lau:
@@ -2282,8 +2280,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -2339,8 +2337,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Medianeinkommen
   /metrics:
@@ -2716,8 +2714,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -2773,16 +2771,16 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Schuldnerquote
   /sgb_ii_quote:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -2838,8 +2836,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - SgbIiQuote
   /socioeconomic/inventory:
@@ -2894,7 +2892,7 @@ paths:
       consumes:
       - application/json
       description: Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt,
-        ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+        mit Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -2951,7 +2949,7 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt,
-        ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+        mit Datumsableitung und Qualitätsflag
       tags:
       - Studierende
   /unemployment:
@@ -3162,8 +3160,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne
-        _dlt-Felder, mit Datumsableitung und Qualitätsflag
+      description: Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit
+        Datumsableitung und Qualitätsflag
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -3219,8 +3217,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder,
-        mit Datumsableitung und Qualitätsflag
+      summary: Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung
+        und Qualitätsflag
       tags:
       - Wohngeldhaushalte
 schemes:

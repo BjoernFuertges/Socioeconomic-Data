@@ -17,7 +17,7 @@
     "paths": {
         "/arbeitslose": {
             "get": {
-                "description": "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -27,7 +27,7 @@
                 "tags": [
                     "Arbeitslose"
                 ],
-                "summary": "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
@@ -113,7 +113,7 @@
         },
         "/arbeitsvolumen": {
             "get": {
-                "description": "Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -123,7 +123,7 @@
                 "tags": [
                     "Arbeitsvolumen"
                 ],
-                "summary": "Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
@@ -209,7 +209,7 @@
         },
         "/auzubildende": {
             "get": {
-                "description": "Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -219,7 +219,7 @@
                 "tags": [
                     "Auzubildende"
                 ],
-                "summary": "Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
@@ -305,7 +305,7 @@
         },
         "/beschaeftigungsquote-gemeinden": {
             "get": {
-                "description": "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -315,7 +315,7 @@
                 "tags": [
                     "BeschaeftigungsquoteGemeinden"
                 ],
-                "summary": "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
@@ -497,7 +497,7 @@
         },
         "/bevoelkerung": {
             "get": {
-                "description": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -507,7 +507,7 @@
                 "tags": [
                     "Bevoelkerung"
                 ],
-                "summary": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
@@ -593,7 +593,7 @@
         },
         "/bruttoverdienst": {
             "get": {
-                "description": "Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -603,7 +603,7 @@
                 "tags": [
                     "Bruttoverdienst"
                 ],
-                "summary": "Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
@@ -689,7 +689,7 @@
         },
         "/durchschnittsalter": {
             "get": {
-                "description": "Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -699,7 +699,7 @@
                 "tags": [
                     "Durchschnittsalter"
                 ],
-                "summary": "Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
@@ -785,7 +785,7 @@
         },
         "/erwerbstaetige_pro_1000_einwohner": {
             "get": {
-                "description": "Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -795,7 +795,7 @@
                 "tags": [
                     "ErwerbstaetigePro1000Einwohner"
                 ],
-                "summary": "Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
@@ -1299,7 +1299,7 @@
         },
         "/kinderarmut": {
             "get": {
-                "description": "Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -1309,7 +1309,7 @@
                 "tags": [
                     "Kinderarmut"
                 ],
-                "summary": "Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
@@ -1651,7 +1651,7 @@
         },
         "/medianeinkommen": {
             "get": {
-                "description": "Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -1661,7 +1661,7 @@
                 "tags": [
                     "Medianeinkommen"
                 ],
-                "summary": "Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
@@ -2291,7 +2291,7 @@
         },
         "/schuldnerquote": {
             "get": {
-                "description": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -2301,7 +2301,7 @@
                 "tags": [
                     "Schuldnerquote"
                 ],
-                "summary": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
@@ -2387,7 +2387,7 @@
         },
         "/sgb_ii_quote": {
             "get": {
-                "description": "Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -2397,7 +2397,7 @@
                 "tags": [
                     "SgbIiQuote"
                 ],
-                "summary": "Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
@@ -2556,7 +2556,7 @@
         },
         "/studierende": {
             "get": {
-                "description": "Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -2566,7 +2566,7 @@
                 "tags": [
                     "Studierende"
                 ],
-                "summary": "Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
@@ -2961,7 +2961,7 @@
         },
         "/wohngeldhaushalte": {
             "get": {
-                "description": "Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
@@ -2971,7 +2971,7 @@
                 "tags": [
                     "Wohngeldhaushalte"
                 ],
-                "summary": "Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
