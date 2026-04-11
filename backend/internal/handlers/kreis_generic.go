@@ -52,10 +52,54 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 		argPos++
 	}
 
+	if filter.NutsParentID != "" {
+		normalizedParent := strings.ToUpper(strings.TrimSpace(filter.NutsParentID))
+		query += fmt.Sprintf(" AND d.geodata_id_nuts LIKE $%d", argPos)
+		args = append(args, normalizedParent+"%")
+		argPos++
+	}
+
+	if filter.GeodataNameContains != "" {
+		pattern := "%" + strings.TrimSpace(filter.GeodataNameContains) + "%"
+		query += fmt.Sprintf(" AND (d.geodata_name ILIKE $%d OR d.original_name ILIKE $%d)", argPos, argPos)
+		args = append(args, pattern)
+		argPos++
+	}
+
 	if filter.Year != nil {
 		query += fmt.Sprintf(" AND d.year = $%d", argPos)
 		args = append(args, *filter.Year)
 		argPos++
+	}
+
+	if filter.FromYear != nil {
+		query += fmt.Sprintf(" AND d.year >= $%d", argPos)
+		args = append(args, *filter.FromYear)
+		argPos++
+	}
+
+	if filter.ToYear != nil {
+		query += fmt.Sprintf(" AND d.year <= $%d", argPos)
+		args = append(args, *filter.ToYear)
+		argPos++
+	}
+
+	if strings.TrimSpace(filter.Point) != "" {
+		lon, lat, err := parseLonLatPoint(filter.Point)
+		if err != nil {
+			respondBadRequest(c, err.Error())
+			return
+		}
+		query += fmt.Sprintf(
+			` AND d.geodata_id_nuts = (`+
+				`SELECT nuts_id FROM transformed_data.mart_nuts_geometry `+
+				`WHERE levl_code = 3 AND has_valid_geometry `+
+				`AND ST_Contains(geometry_3035, ST_Transform(ST_SetSRID(ST_Point($%d, $%d), 4326), 3035)) `+
+				`LIMIT 1)`,
+			argPos, argPos+1,
+		)
+		args = append(args, lon, lat)
+		argPos += 2
 	}
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"

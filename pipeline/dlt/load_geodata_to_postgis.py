@@ -1,6 +1,6 @@
 """
-DLT Pipeline for loading LAU geodata and population data into PostGIS database.
-Loads all years into single tables with year columns in the 'store' schema.
+DLT pipeline for loading LAU and NUTS geodata plus LAU population data into PostGIS.
+Loads all years into single tables in the loaded_data schema.
 """
 
 import dlt
@@ -22,6 +22,12 @@ logger = logging.getLogger(__name__)
 BASE_PATH = Path(os.environ.get("GEODATA_BASE_PATH", "/home/bjoern/Software/HTW/soziooekonomische-daten/socioeconomic-data-parser"))
 GEODATA_PATH = BASE_PATH / "geodata" / "lau" / "output" / "geojson"
 POPULATION_PATH = BASE_PATH / "statistics" / "lokale_verwaltungseinheiten_eu" / "output"
+NUTS_GEODATA_PATH = Path(
+    os.environ.get(
+        "NUTS_GEODATA_PATH",
+        str(Path(__file__).resolve().parents[1] / "geo-mapper" / "geo_mapper" / "geodata_raw" / "nuts"),
+    )
+)
 
 def extract_year_from_filename(filename: str) -> int:
     """Extract year from filename like 'LAU_RG_01M_2011_3035_cleaned.geojson.gz'"""
@@ -93,6 +99,39 @@ def load_population_data() -> Iterator[Dict[str, Any]]:
             logger.error(f"Error processing {file_path.name}: {e}")
             continue
 
+@dlt.resource(name="nuts_geometry", write_disposition="replace")
+def load_nuts_geodata() -> Iterator[Dict[str, Any]]:
+    """Load all NUTS geometry data from GeoJSON files."""
+    logger.info("Starting NUTS geodata extraction...")
+
+    geojson_files = list(NUTS_GEODATA_PATH.glob("NUTS_RG_01M_*_3035.geojson"))
+    logger.info(f"Found {len(geojson_files)} NUTS geodata files")
+
+    for file_path in sorted(geojson_files):
+        try:
+            year = extract_year_from_filename(file_path.name)
+            logger.info(f"Processing NUTS geodata for year {year}: {file_path.name}")
+
+            with open(file_path, "rb") as f:
+                for feature in ijson.items(f, "features.item"):
+                    props = feature.get("properties") or {}
+                    geom = feature.get("geometry")
+                    record: Dict[str, Any] = {str(k).lower(): v for k, v in props.items()}
+                    record["year"] = year
+                    if geom is not None:
+                        try:
+                            record["geometry"] = shape(geom).wkt
+                        except Exception:
+                            record["geometry"] = None
+                    else:
+                        record["geometry"] = None
+                    yield record
+            gc.collect()
+
+        except Exception as e:
+            logger.error(f"Error processing {file_path.name}: {e}")
+            continue
+
 def create_pipeline():
     """Create and configure the DLT pipeline."""
     
@@ -107,8 +146,10 @@ def create_pipeline():
 
 def main():
     """Main execution function."""
-    logger.info("Starting LAU geodata and population data pipeline...")
-    logger.info(f"GEODATA_BASE_PATH={BASE_PATH}, GEODATA_PATH={GEODATA_PATH}, POPULATION_PATH={POPULATION_PATH}")
+    logger.info("Starting LAU/NUTS geodata and population data pipeline...")
+    logger.info(
+        f"GEODATA_BASE_PATH={BASE_PATH}, GEODATA_PATH={GEODATA_PATH}, POPULATION_PATH={POPULATION_PATH}, NUTS_GEODATA_PATH={NUTS_GEODATA_PATH}"
+    )
     
     # Create pipeline
     pipeline = create_pipeline()
@@ -126,6 +167,18 @@ def main():
                 table_name="lau_geometry"
             )
             logger.info(f"Geodata load completed: {geodata_info}")
+
+        nuts_geojson_files = list(NUTS_GEODATA_PATH.glob("NUTS_RG_01M_*_3035.geojson"))
+        if not nuts_geojson_files:
+            logger.warning(f"No NUTS geodata files found in {NUTS_GEODATA_PATH}, skipping NUTS geodata load")
+            nuts_geodata_info = None
+        else:
+            logger.info("Loading NUTS geodata...")
+            nuts_geodata_info = pipeline.run(
+                load_nuts_geodata(),
+                table_name="nuts_geometry"
+            )
+            logger.info(f"NUTS geodata load completed: {nuts_geodata_info}")
         
         # Load population data
         csv_files = list(POPULATION_PATH.glob("lau_population_*.csv"))
@@ -147,6 +200,7 @@ def main():
         print("PIPELINE SUMMARY")
         print("="*50)
         print(f"Geodata: {geodata_info}")
+        print(f"NUTS Geodata: {nuts_geodata_info}")
         print(f"Population: {population_info}")
         print("="*50)
         

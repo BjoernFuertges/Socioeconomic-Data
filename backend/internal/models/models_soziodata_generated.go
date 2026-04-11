@@ -3,7 +3,7 @@
 
 package models
 
-// ArbeitsloseData repräsentiert Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// ArbeitsloseData repräsentiert Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 type ArbeitsloseData struct {
 	SozioBaseData
 	Arbeitslose float64 `json:"arbeitslose" db:"arbeitslose" example:"0"`
@@ -20,7 +20,7 @@ var ArbeitsloseConfig = KreisDatasetConfig{
 	RouteSlug:    "arbeitslose",
 }
 
-// ArbeitsvolumenData repräsentiert Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// ArbeitsvolumenData repräsentiert Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 type ArbeitsvolumenData struct {
 	SozioBaseData
 	Arbeitsvolumen float64 `json:"arbeitsvolumen" db:"arbeitsvolumen" example:"0"`
@@ -37,7 +37,7 @@ var ArbeitsvolumenConfig = KreisDatasetConfig{
 	RouteSlug:    "arbeitsvolumen",
 }
 
-// AuzubildendeData repräsentiert Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// AuzubildendeData repräsentiert Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 type AuzubildendeData struct {
 	SozioBaseData
 	Auzubildende float64 `json:"auzubildende" db:"auzubildende" example:"0"`
@@ -54,7 +54,7 @@ var AuzubildendeConfig = KreisDatasetConfig{
 	RouteSlug:    "auzubildende",
 }
 
-// BeschaeftigungsquoteGemeindenData repräsentiert Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// BeschaeftigungsquoteGemeindenData repräsentiert Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag
 type BeschaeftigungsquoteGemeindenData struct {
 	SozioBaseData
 	BeschaeftigungsquoteProzent float64 `json:"beschaeftigungsquote_prozent" db:"beschaeftigungsquote_prozent" example:"50.00"`
@@ -91,7 +91,7 @@ var BeschaeftigungsquoteNuts3Config = KreisDatasetConfig{
 	RouteSlug:    "beschaeftigungsquote-nuts3",
 }
 
-// BevoelkerungData repräsentiert Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// BevoelkerungData repräsentiert Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 type BevoelkerungData struct {
 	SozioBaseData
 	Bevoelkerung float64 `json:"bevoelkerung" db:"bevoelkerung" example:"0"`
@@ -108,7 +108,7 @@ var BevoelkerungConfig = KreisDatasetConfig{
 	RouteSlug:    "bevoelkerung",
 }
 
-// BruttoverdienstData repräsentiert Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// BruttoverdienstData repräsentiert Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 type BruttoverdienstData struct {
 	SozioBaseData
 	Bruttoverdienst float64 `json:"bruttoverdienst" db:"bruttoverdienst" example:"0"`
@@ -125,7 +125,7 @@ var BruttoverdienstConfig = KreisDatasetConfig{
 	RouteSlug:    "bruttoverdienst",
 }
 
-// DurchschnittsalterData repräsentiert Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// DurchschnittsalterData repräsentiert Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 type DurchschnittsalterData struct {
 	SozioBaseData
 	Durchschnittsalter float64 `json:"durchschnittsalter" db:"durchschnittsalter" example:"50.00"`
@@ -142,7 +142,7 @@ var DurchschnittsalterConfig = KreisDatasetConfig{
 	RouteSlug:    "durchschnittsalter",
 }
 
-// ErwerbstaetigePro1000EinwohnerData repräsentiert Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// ErwerbstaetigePro1000EinwohnerData repräsentiert Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 type ErwerbstaetigePro1000EinwohnerData struct {
 	SozioBaseData
 	ErwerbstaetigePro1000Einwohner float64 `json:"erwerbstaetige_pro_1000_einwohner" db:"erwerbstaetige_pro_1000_einwohner" example:"0"`
@@ -159,7 +159,7 @@ var ErwerbstaetigePro1000EinwohnerConfig = KreisDatasetConfig{
 	RouteSlug:    "erwerbstaetige_pro_1000_einwohner",
 }
 
-// KinderarmutData repräsentiert Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// KinderarmutData repräsentiert Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
 type KinderarmutData struct {
 	SozioBaseData
 	Kinderarmut float64 `json:"kinderarmut" db:"kinderarmut" example:"50.00"`
@@ -176,7 +176,7 @@ var KinderarmutConfig = KreisDatasetConfig{
 	RouteSlug:    "kinderarmut",
 }
 
-// MedianeinkommenData repräsentiert Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// MedianeinkommenData repräsentiert Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 type MedianeinkommenData struct {
 	SozioBaseData
 	Medianeinkommen float64 `json:"medianeinkommen" db:"medianeinkommen" example:"0"`
@@ -193,7 +193,7 @@ var MedianeinkommenConfig = KreisDatasetConfig{
 	RouteSlug:    "medianeinkommen",
 }
 
-// SchuldnerquoteData repräsentiert Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// SchuldnerquoteData repräsentiert Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 type SchuldnerquoteData struct {
 	SozioBaseData
 	SchuldnerquoteProzent float64 `json:"schuldnerquote_prozent" db:"schuldnerquote_prozent" example:"50.00"`
@@ -210,7 +210,7 @@ var SchuldnerquoteConfig = KreisDatasetConfig{
 	RouteSlug:    "schuldnerquote",
 }
 
-// SgbIiQuoteData repräsentiert Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// SgbIiQuoteData repräsentiert Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 type SgbIiQuoteData struct {
 	SozioBaseData
 	SgbIiQuoteProzent float64 `json:"sgb_ii_quote_prozent" db:"sgb_ii_quote_prozent" example:"50.00"`
@@ -227,7 +227,7 @@ var SgbIiQuoteConfig = KreisDatasetConfig{
 	RouteSlug:    "sgb_ii_quote",
 }
 
-// StudierendeData repräsentiert Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// StudierendeData repräsentiert Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 type StudierendeData struct {
 	SozioBaseData
 	Studierende float64 `json:"studierende" db:"studierende" example:"0"`
@@ -244,7 +244,7 @@ var StudierendeConfig = KreisDatasetConfig{
 	RouteSlug:    "studierende",
 }
 
-// WohngeldhaushalteData repräsentiert Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// WohngeldhaushalteData repräsentiert Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 type WohngeldhaushalteData struct {
 	SozioBaseData
 	WohngeldhaushalteJe1000 float64 `json:"wohngeldhaushalte_je_1000" db:"wohngeldhaushalte_je_1000" example:"0"`

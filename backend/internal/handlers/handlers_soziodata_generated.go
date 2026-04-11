@@ -8,13 +8,15 @@ import (
 	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/models"
 )
 
-// GetArbeitsloseData gibt Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
-// @Summary Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
-// @Description Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// GetArbeitsloseData gibt Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Arbeitslose
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -26,13 +28,15 @@ func (h *Handler) GetArbeitsloseData(c *gin.Context) {
 	getKreisData[models.ArbeitsloseData](h, c, models.ArbeitsloseConfig)
 }
 
-// GetArbeitsvolumenData gibt Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
-// @Summary Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
-// @Description Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// GetArbeitsvolumenData gibt Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Arbeitsvolumen
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -44,13 +48,15 @@ func (h *Handler) GetArbeitsvolumenData(c *gin.Context) {
 	getKreisData[models.ArbeitsvolumenData](h, c, models.ArbeitsvolumenConfig)
 }
 
-// GetAuzubildendeData gibt Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
-// @Summary Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
-// @Description Staging-Modell für Auszubildende je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// GetAuzubildendeData gibt Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Auzubildende
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -62,13 +68,15 @@ func (h *Handler) GetAuzubildendeData(c *gin.Context) {
 	getKreisData[models.AuzubildendeData](h, c, models.AuzubildendeConfig)
 }
 
-// GetBeschaeftigungsquoteGemeindenData gibt Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
-// @Summary Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
-// @Description Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// GetBeschaeftigungsquoteGemeindenData gibt Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags BeschaeftigungsquoteGemeinden
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -87,6 +95,8 @@ func (h *Handler) GetBeschaeftigungsquoteGemeindenData(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -98,13 +108,15 @@ func (h *Handler) GetBeschaeftigungsquoteNuts3Data(c *gin.Context) {
 	getKreisData[models.BeschaeftigungsquoteNuts3Data](h, c, models.BeschaeftigungsquoteNuts3Config)
 }
 
-// GetBevoelkerungData gibt Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
-// @Summary Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
-// @Description Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// GetBevoelkerungData gibt Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Bevoelkerung
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -116,13 +128,15 @@ func (h *Handler) GetBevoelkerungData(c *gin.Context) {
 	getKreisData[models.BevoelkerungData](h, c, models.BevoelkerungConfig)
 }
 
-// GetBruttoverdienstData gibt Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
-// @Summary Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
-// @Description Staging-Modell für Bruttoverdienst je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// GetBruttoverdienstData gibt Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Bruttoverdienst
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -134,13 +148,15 @@ func (h *Handler) GetBruttoverdienstData(c *gin.Context) {
 	getKreisData[models.BruttoverdienstData](h, c, models.BruttoverdienstConfig)
 }
 
-// GetDurchschnittsalterData gibt Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
-// @Summary Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
-// @Description Staging-Modell für Durchschnittsalter je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// GetDurchschnittsalterData gibt Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Durchschnittsalter
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -152,13 +168,15 @@ func (h *Handler) GetDurchschnittsalterData(c *gin.Context) {
 	getKreisData[models.DurchschnittsalterData](h, c, models.DurchschnittsalterConfig)
 }
 
-// GetErwerbstaetigePro1000EinwohnerData gibt Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
-// @Summary Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
-// @Description Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// GetErwerbstaetigePro1000EinwohnerData gibt Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags ErwerbstaetigePro1000Einwohner
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -170,13 +188,15 @@ func (h *Handler) GetErwerbstaetigePro1000EinwohnerData(c *gin.Context) {
 	getKreisData[models.ErwerbstaetigePro1000EinwohnerData](h, c, models.ErwerbstaetigePro1000EinwohnerConfig)
 }
 
-// GetKinderarmutData gibt Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
-// @Summary Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
-// @Description Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// GetKinderarmutData gibt Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Kinderarmut
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -188,13 +208,15 @@ func (h *Handler) GetKinderarmutData(c *gin.Context) {
 	getKreisData[models.KinderarmutData](h, c, models.KinderarmutConfig)
 }
 
-// GetMedianeinkommenData gibt Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
-// @Summary Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
-// @Description Staging-Modell für Medianeinkommen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// GetMedianeinkommenData gibt Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Medianeinkommen
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -206,13 +228,15 @@ func (h *Handler) GetMedianeinkommenData(c *gin.Context) {
 	getKreisData[models.MedianeinkommenData](h, c, models.MedianeinkommenConfig)
 }
 
-// GetSchuldnerquoteData gibt Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
-// @Summary Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
-// @Description Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// GetSchuldnerquoteData gibt Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Schuldnerquote
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -224,13 +248,15 @@ func (h *Handler) GetSchuldnerquoteData(c *gin.Context) {
 	getKreisData[models.SchuldnerquoteData](h, c, models.SchuldnerquoteConfig)
 }
 
-// GetSgbIiQuoteData gibt Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
-// @Summary Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
-// @Description Staging-Modell für SGB-II-Quote je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// GetSgbIiQuoteData gibt Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags SgbIiQuote
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2005-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -242,13 +268,15 @@ func (h *Handler) GetSgbIiQuoteData(c *gin.Context) {
 	getKreisData[models.SgbIiQuoteData](h, c, models.SgbIiQuoteConfig)
 }
 
-// GetStudierendeData gibt Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
-// @Summary Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
-// @Description Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// GetStudierendeData gibt Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Studierende
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -260,13 +288,15 @@ func (h *Handler) GetStudierendeData(c *gin.Context) {
 	getKreisData[models.StudierendeData](h, c, models.StudierendeConfig)
 }
 
-// GetWohngeldhaushalteData gibt Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag zurück
-// @Summary Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
-// @Description Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag
+// GetWohngeldhaushalteData gibt Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Wohngeldhaushalte
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
+// @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
 // @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)

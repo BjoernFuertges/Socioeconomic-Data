@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: stg_schuldnerquote_kreise
-    description: "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag"
+    description: "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag"
     columns:
       - name: schuldnerquote_pk
         description: "Surrogate Key aus geodata_id_nuts und year"

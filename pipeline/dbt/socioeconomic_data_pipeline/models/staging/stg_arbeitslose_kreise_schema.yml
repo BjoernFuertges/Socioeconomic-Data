@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: stg_arbeitslose_kreise
-    description: "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag"
+    description: "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag"
     columns:
       - name: arbeitslose_pk
         description: "Surrogate Key aus geodata_id_nuts und year"

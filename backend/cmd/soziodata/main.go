@@ -10,6 +10,7 @@ import (
 	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/docs"
 	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/config"
 	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/handlers"
+	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/models"
 	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/routes"
 )
 
@@ -57,8 +58,17 @@ func main() {
 
 	log.Println("Datenbankverbindung erfolgreich hergestellt")
 
+	// Metriken-Katalog aus YAML laden
+	derivedCatalog, err := models.LoadMetricsCatalog("metrics_catalog.yaml")
+	if err != nil {
+		log.Printf("Warnung: Metriken-Katalog konnte nicht geladen werden: %v", err)
+		derivedCatalog = models.DerivedMetricsCatalog{}
+	} else {
+		log.Printf("Metriken-Katalog geladen: %d abgeleitete Metriken", len(derivedCatalog))
+	}
+
 	// Handler mit Datenbankverbindung erstellen
-	handler := handlers.NewHandler(db)
+	handler := handlers.NewHandler(db, derivedCatalog)
 
 	// Swagger Host dynamisch setzen (SWAGGER_HOST überschreibt API_HOST:PORT)
 	swaggerHost := getEnv("SWAGGER_HOST", fmt.Sprintf("%s:%s", apiHost, apiPort))

@@ -22,10 +22,15 @@ type SozioBaseData struct {
 
 // SozioKreisFilter sind die einheitlichen Query-Parameter für alle Kreis-Datensätze.
 type SozioKreisFilter struct {
-	GeodataIDNUTS string `form:"geodata_id_nuts" example:"DEF01"`
-	Year          *int   `form:"year" example:"2020"`
-	Limit         int    `form:"limit" binding:"omitempty,min=1,max=10000" example:"100"`
-	Offset        int    `form:"offset" binding:"omitempty,min=0" example:"0"`
+	GeodataIDNUTS       string `form:"geodata_id_nuts" example:"DEF01"`
+	NutsParentID        string `form:"nuts_parent_id" example:"DE1"`
+	GeodataNameContains string `form:"geodata_name_contains" example:"stuttgart"`
+	Year                *int   `form:"year" example:"2020"`
+	FromYear            *int   `form:"from_year" example:"2018"`
+	ToYear              *int   `form:"to_year" example:"2022"`
+	Point               string `form:"point" example:"13.404954,52.520008"`
+	Limit               int    `form:"limit" binding:"omitempty,min=1,max=10000" example:"100"`
+	Offset              int    `form:"offset" binding:"omitempty,min=0" example:"0"`
 }
 
 // KreisDatasetConfig beschreibt einen Kreis-Datensatz für das generische Query-System.
@@ -50,18 +55,47 @@ type SoziooekonomischesInventarEintrag struct {
 	DistinctGeodataARS  int    `json:"distinct_geodata_ars" db:"distinct_geodata_ars" example:"400"`
 }
 
+// RegionDataset beschreibt einen verfügbaren Soziodata-Datensatz für eine Region.
+type RegionDataset struct {
+	Dataset        string `json:"dataset" example:"bevoelkerung"`
+	RouteSlug      string `json:"route_slug" example:"bevoelkerung"`
+	AvailableYears []int  `json:"available_years" example:"2020,2021,2022"`
+}
+
+// RegionDatasets enthält alle verfügbaren Datensätze für eine Geo-Region.
+type RegionDatasets struct {
+	GeoID    string          `json:"geo_id" example:"DEF01"`
+	GeoType  string          `json:"geo_type" example:"NUTS"`
+	Datasets []RegionDataset `json:"datasets"`
+}
+
 // AllSoziodataConfigs liefert alle bekannten Soziodata-Datensatzkonfigurationen.
 func AllSoziodataConfigs() []KreisDatasetConfig {
 	return []KreisDatasetConfig{
 		ArbeitsloseConfig,
 		ArbeitsvolumenConfig,
+		AuzubildendeConfig,
 		BeschaeftigungsquoteGemeindenConfig,
 		BeschaeftigungsquoteNuts3Config,
 		BevoelkerungConfig,
 		BruttoverdienstConfig,
 		DurchschnittsalterConfig,
+		ErwerbstaetigePro1000EinwohnerConfig,
+		KinderarmutConfig,
+		MedianeinkommenConfig,
 		SchuldnerquoteConfig,
 		SgbIiQuoteConfig,
+		StudierendeConfig,
 		WohngeldhaushalteConfig,
 	}
+}
+
+// DatasetConfigBySlug gibt die KreisDatasetConfig für einen gegebenen RouteSlug zurück.
+func DatasetConfigBySlug(slug string) (KreisDatasetConfig, bool) {
+	for _, cfg := range AllSoziodataConfigs() {
+		if cfg.RouteSlug == slug {
+			return cfg, true
+		}
+	}
+	return KreisDatasetConfig{}, false
 }

@@ -31,6 +31,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 		lau := v1.Group("/lau")
 		{
 			lau.GET("", handler.GetLAURegions)
+			lau.GET("/:gisco_id/datasets", handler.GetLAUDatasets)
 			lau.GET("/:gisco_id", handler.GetLAURegionByID)
 		}
 
@@ -40,7 +41,16 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 		{
 			nutsGroup.GET("", handler.GetAllNutsRegions)
 			nutsGroup.GET("/:nuts_id/versions", handler.GetNutsRegionVersions)
+			nutsGroup.GET("/:nuts_id/datasets", handler.GetNutsDatasets)
 			nutsGroup.GET("/:nuts_id", handler.GetNutsRegionData)
+		}
+
+		geoGroup := v1.Group("/geo")
+		{
+			geoGroup.GET("", handler.GetGeoRegions)
+			geoGroup.GET("/:geo_id/versions", handler.GetGeoRegionVersions)
+			geoGroup.GET("/:geo_id", handler.GetGeoRegionByID)
+			geoGroup.POST("/query", handler.QueryGeoRegionsByGeometry)
 		}
 
 		// Arbeitslosenzahlen
@@ -54,6 +64,14 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 		socioeconomic := v1.Group("/socioeconomic")
 		{
 			socioeconomic.GET("/inventory", handler.GetSoziooekonomischesInventar)
+		}
+
+		// Metriken-Endpunkte: statistische Aggregationen über Soziodata-Datensätze
+		metricsGroup := v1.Group("/metrics")
+		{
+			metricsGroup.GET("", handler.GetMetrics)
+			metricsGroup.GET("/derived", handler.GetDerivedMetricsCatalog)
+			metricsGroup.GET("/derived/:slug", handler.GetDerivedMetricsCatalogEntry)
 		}
 
 		// Generierte Soziodata-Routen (aus dbt-Schema-YAML-Dateien)

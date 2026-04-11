@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: stg_kinderarmut_kreise
-    description: "Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, ohne _dlt-Felder, mit Datumsableitung und Qualitätsflag"
+    description: "Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag"
     columns:
       - name: kinderarmut_pk
         description: "Surrogate Key aus geodata_id_nuts und year"

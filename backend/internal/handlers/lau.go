@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/models"
@@ -15,7 +16,12 @@ import (
 // @Accept json
 // @Produce json
 // @Param country_code query string false "Filter nach Ländercode (z.B. DE)" example(DE)
+// @Param nuts_parent_id query string false "Filter nach NUTS-Präfix (z.B. DE1 für alle Regionen unter NUTS-1)" example(DE1)
+// @Param geodata_name_contains query string false "Teilstring-Suche im LAU-Namen" example(berlin)
+// @Param point query string false "Punktabfrage im Format lon,lat (WGS84)" example(13.404954,52.520008)
 // @Param year query int false "Filter nach Jahr" example(2024)
+// @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2020)
+// @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2024)
 // @Param has_population query bool false "Filter nach Vorhandensein von Bevölkerungsdaten" example(true)
 // @Param limit query int false "Anzahl der Ergebnisse (1-1000)" default(100) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -52,9 +58,46 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 		argPos++
 	}
 
+	if filter.NutsParentID != "" {
+		normalizedParent := strings.ToUpper(strings.TrimSpace(filter.NutsParentID))
+		query += fmt.Sprintf(" AND nuts_3_code IS NOT NULL AND nuts_3_code LIKE $%d", argPos)
+		args = append(args, normalizedParent+"%")
+		argPos++
+	}
+
+	if filter.GeodataNameContains != "" {
+		query += fmt.Sprintf(" AND lau_name ILIKE $%d", argPos)
+		args = append(args, "%"+strings.TrimSpace(filter.GeodataNameContains)+"%")
+		argPos++
+	}
+
+	if strings.TrimSpace(filter.Point) != "" {
+		lon, lat, err := parseLonLatPoint(filter.Point)
+		if err != nil {
+			respondBadRequest(c, err.Error())
+			return
+		}
+
+		query += fmt.Sprintf(" AND has_valid_geometry AND ST_Contains(geometry_3035, ST_Transform(ST_SetSRID(ST_Point($%d, $%d), 4326), 3035))", argPos, argPos+1)
+		args = append(args, lon, lat)
+		argPos += 2
+	}
+
 	if filter.Year != nil {
 		query += fmt.Sprintf(" AND year = $%d", argPos)
 		args = append(args, *filter.Year)
+		argPos++
+	}
+
+	if filter.FromYear != nil {
+		query += fmt.Sprintf(" AND year >= $%d", argPos)
+		args = append(args, *filter.FromYear)
+		argPos++
+	}
+
+	if filter.ToYear != nil {
+		query += fmt.Sprintf(" AND year <= $%d", argPos)
+		args = append(args, *filter.ToYear)
 		argPos++
 	}
 
@@ -117,6 +160,7 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 // @Produce json
 // @Param gisco_id path string true "GISCO ID der LAU-Region"
 // @Param year query int false "Jahr (optional, gibt neuestes Jahr zurück wenn nicht angegeben)"
+// @Param include_datasets query bool false "Verfügbare Soziodata-Datensätze einbetten" example(false)
 // @Success 200 {object} models.APIResponse{data=models.LAURegion}
 // @Failure 404 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -124,6 +168,7 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 func (h *Handler) GetLAURegionByID(c *gin.Context) {
 	giscoID := c.Param("gisco_id")
 	yearStr := c.Query("year")
+	includeDatasets := c.Query("include_datasets") == "true"
 
 	query := `SELECT gisco_id, year, lau_name, country_code, lau_id, 
 		geometry_wgs84, has_valid_geometry, lau_name_national, lau_name_latin,
@@ -150,6 +195,13 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 		}
 		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
 		return
+	}
+
+	if includeDatasets && region.NUTS3Code.Valid {
+		datasets, dsErr := h.regionNutsDatasets(region.NUTS3Code.String)
+		if dsErr == nil {
+			region.Datasets = datasets
+		}
 	}
 
 	c.JSON(http.StatusOK, models.APIResponse{
