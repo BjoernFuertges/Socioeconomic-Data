@@ -41,6 +41,51 @@ Alternative in einem Schritt:
 docker compose up -d --pull always --no-deps backend
 ```
 
+## Deployment: Geänderte Pipeline manuell auf dem Server ausführen
+
+Da `dlt/` und `dbt/` als Volumes in den `pipeline`-Container eingebunden sind, reicht nach einem `git pull` auf dem Server ein Neustart des Containers, damit Änderungen wirksam werden.
+
+```bash
+cd /root/soziooekonomische-daten
+
+# Aktuellen Branch/Stand ziehen
+git pull --ff-only
+
+# Pipeline-Container neu starten
+cd backend/deployments
+docker compose up -d --no-deps pipeline
+```
+
+### dlt-Pipelines manuell ausführen
+
+```bash
+docker exec pipeline bash -c "cd /app/dlt &&
+  python load_arbeitslosenzahlen_afa.py &&
+  python load_geodata_to_postgis.py &&
+  python load_soziodata_generic.py bevoelkerung/results_bevoelkerung_kreise &&
+  python load_soziodata_generic.py schuldnerquote/results_schuldnerquote_kreise &&
+  python load_soziodata_generic.py arbeitslose/results_arbeitslose_kreise"
+```
+
+### dbt manuell ausführen
+
+```bash
+docker exec pipeline bash -c "cd /app/dbt/socioeconomic_data_pipeline &&
+  dbt deps &&
+  if [ -f /app/data-exchange/1_friedrich-bjoern/arbeitslose/meta.json ] && \
+     [ -d /app/data-exchange/1_friedrich-bjoern/geodata/lau/output/geojson ] && \
+     [ -d /app/data-exchange/1_friedrich-bjoern/statistics/lokale_verwaltungseinheiten_eu/output ]; then
+    dbt run;
+  else
+    dbt run --select stg_bevoelkerung_kreise stg_schuldnerquote_kreise;
+  fi"
+```
+
+Logs prüfen:
+```bash
+docker compose logs --tail=80 pipeline
+```
+
 ## CI-Deployment auf der VM (erforderliche Schritte)
 
 Der Deploy-Job läuft im bestehenden GitLab Docker-Runner und verbindet sich per SSH auf die VM. Ein zusätzlicher lokaler Shell-Runner ist nicht nötig.

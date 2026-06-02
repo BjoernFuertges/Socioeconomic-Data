@@ -304,149 +304,134 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 }
 
 func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilter, limitNull bool) {
-	levels := []int{0, 1, 2, 3}
-	if filter.Level != nil {
-		levels = []int{*filter.Level}
+	argPos := 1
+	args := make([]interface{}, 0)
+
+	geometrySelect := `null::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	if filter.IncludeGeometry {
+		geometrySelect = `geometry_wgs84, has_valid_geometry`
 	}
 
-	result := make([]models.GeoRegionSummary, 0)
-	total := 0
-	responseOffset := filter.Offset
+	query := `SELECT DISTINCT ON (nuts_id)
+		nuts_id AS geo_id,
+		'NUTS' AS geo_type,
+		region_name,
+		levl_code AS nuts_level,
+		CASE levl_code
+			WHEN 0 THEN 'NUTS-0'
+			WHEN 1 THEN 'NUTS-1'
+			WHEN 2 THEN 'NUTS-2'
+			ELSE 'NUTS-3'
+		END AS nuts_level_code,
+		` + geometrySelect + `,
+		year
+	FROM transformed_data.mart_nuts_geometry
+	WHERE 1=1`
 
-	for _, lvl := range levels {
-		details, err := nutsLevelDetailsFromLevel(lvl)
-		if err != nil {
-			respondBadRequest(c, err.Error())
-			return
-		}
-
-		argPos := 1
-		geometrySelect := `null::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
-		geometryJoin := ""
-		geomJoinArgs := make([]interface{}, 0)
-		if filter.IncludeGeometry {
-			geometrySelect = `geom.geometry_wgs84, geom.has_valid_geometry`
-			geomYearClause := ""
-			if filter.GeometryStrategy == "exact" {
-				geomYearClause = fmt.Sprintf(" AND mg.year = $%d", argPos)
-				geomJoinArgs = append(geomJoinArgs, *filter.GeometryYear)
-				argPos++
-			} else if filter.GeometryYear != nil {
-				geomYearClause = fmt.Sprintf(" AND mg.year <= $%d", argPos)
-				geomJoinArgs = append(geomJoinArgs, *filter.GeometryYear)
-				argPos++
-			}
-
-			geometryJoin = `
-			LEFT JOIN LATERAL (
-				SELECT geometry_wgs84, has_valid_geometry
-				FROM transformed_data.mart_nuts_geometry mg
-				WHERE mg.nuts_id = base.nuts_id` + geomYearClause + `
-				ORDER BY mg.year DESC
-				LIMIT 1
-			) geom ON true`
-		}
-
-		query := `SELECT DISTINCT ON (base.nuts_id)
-			base.nuts_id AS geo_id,
-			'NUTS' AS geo_type,
-			base.region_name,
-			` + geometrySelect + `,
-			base.year
-		FROM ` + details.Table + ` base` + geometryJoin + `
-		WHERE 1=1`
-
-		args := append([]interface{}{}, geomJoinArgs...)
-
-		if filter.NutsParentID != "" {
-			query += fmt.Sprintf(" AND base.nuts_id LIKE $%d", argPos)
-			args = append(args, strings.ToUpper(strings.TrimSpace(filter.NutsParentID))+"%")
+	if filter.Level != nil {
+		query += fmt.Sprintf(" AND levl_code = $%d", argPos)
+		args = append(args, *filter.Level)
+		argPos++
+	}
+	if filter.IncludeGeometry {
+		if filter.GeometryStrategy == "exact" {
+			query += fmt.Sprintf(" AND year = $%d", argPos)
+			args = append(args, *filter.GeometryYear)
+			argPos++
+		} else if filter.GeometryYear != nil {
+			query += fmt.Sprintf(" AND year <= $%d", argPos)
+			args = append(args, *filter.GeometryYear)
 			argPos++
 		}
-		if filter.GeodataNameContains != "" {
-			query += fmt.Sprintf(" AND base.region_name ILIKE $%d", argPos)
-			args = append(args, "%"+strings.TrimSpace(filter.GeodataNameContains)+"%")
-			argPos++
-		}
-		if filter.Year != nil {
-			query += fmt.Sprintf(" AND base.year = $%d", argPos)
-			args = append(args, *filter.Year)
-			argPos++
-		}
-		if filter.FromYear != nil {
-			query += fmt.Sprintf(" AND base.year >= $%d", argPos)
-			args = append(args, *filter.FromYear)
-			argPos++
-		}
-		if filter.ToYear != nil {
-			query += fmt.Sprintf(" AND base.year <= $%d", argPos)
-			args = append(args, *filter.ToYear)
-			argPos++
-		}
+	}
+	if filter.NutsParentID != "" {
+		query += fmt.Sprintf(" AND nuts_id LIKE $%d", argPos)
+		args = append(args, strings.ToUpper(strings.TrimSpace(filter.NutsParentID))+"%")
+		argPos++
+	}
+	if filter.GeodataNameContains != "" {
+		query += fmt.Sprintf(" AND region_name ILIKE $%d", argPos)
+		args = append(args, "%"+strings.TrimSpace(filter.GeodataNameContains)+"%")
+		argPos++
+	}
+	if filter.Year != nil {
+		query += fmt.Sprintf(" AND year = $%d", argPos)
+		args = append(args, *filter.Year)
+		argPos++
+	}
+	if filter.FromYear != nil {
+		query += fmt.Sprintf(" AND year >= $%d", argPos)
+		args = append(args, *filter.FromYear)
+		argPos++
+	}
+	if filter.ToYear != nil {
+		query += fmt.Sprintf(" AND year <= $%d", argPos)
+		args = append(args, *filter.ToYear)
+		argPos++
+	}
 
-		countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
-		var count int
-		if err := h.DB.Get(&count, countQuery, args...); err != nil {
-			respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
-			return
-		}
-		total += count
+	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
+	var total int
+	if err := h.DB.Get(&total, countQuery, args...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+		return
+	}
 
-		pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
-			c,
-			query,
-			args,
-			argPos,
-			"nuts_id, year DESC",
-			100,
-			filter.Limit,
-			filter.Offset,
-			limitNull,
-		)
-		if err != nil {
-			respondBadRequest(c, err.Error())
-			return
-		}
-		responseOffset = offset
+	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
+		c,
+		query,
+		args,
+		argPos,
+		"nuts_id, year DESC",
+		100,
+		filter.Limit,
+		filter.Offset,
+		limitNull,
+	)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
 
-		type row struct {
-			GeoID            string          `db:"geo_id"`
-			GeoType          string          `db:"geo_type"`
-			RegionName       string          `db:"region_name"`
-			GeometryWGS84    json.RawMessage `db:"geometry_wgs84"`
-			HasValidGeometry *bool           `db:"has_valid_geometry"`
-			Year             int             `db:"year"`
-		}
+	type row struct {
+		GeoID            string          `db:"geo_id"`
+		GeoType          string          `db:"geo_type"`
+		RegionName       string          `db:"region_name"`
+		NutsLevel        int             `db:"nuts_level"`
+		NutsLevelCode    string          `db:"nuts_level_code"`
+		GeometryWGS84    json.RawMessage `db:"geometry_wgs84"`
+		HasValidGeometry *bool           `db:"has_valid_geometry"`
+		Year             int             `db:"year"`
+	}
 
-		rows := make([]row, 0)
-		if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
-			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
-			return
-		}
+	rows := make([]row, 0)
+	if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
 
-		for _, r := range rows {
-			level := lvl
-			code := details.Code
-			result = append(result, models.GeoRegionSummary{
-				GeoID:            r.GeoID,
-				GeoType:          r.GeoType,
-				RegionName:       r.RegionName,
-				NutsLevel:        &level,
-				NutsLevelCode:    &code,
-				GeometryWGS84:    r.GeometryWGS84,
-				HasValidGeometry: r.HasValidGeometry,
-				Year:             r.Year,
-			})
-		}
-
+	data := make([]models.GeoRegionSummary, 0, len(rows))
+	for _, r := range rows {
+		level := r.NutsLevel
+		code := r.NutsLevelCode
+		data = append(data, models.GeoRegionSummary{
+			GeoID:            r.GeoID,
+			GeoType:          r.GeoType,
+			RegionName:       r.RegionName,
+			NutsLevel:        &level,
+			NutsLevelCode:    &code,
+			GeometryWGS84:    r.GeometryWGS84,
+			HasValidGeometry: r.HasValidGeometry,
+			Year:             r.Year,
+		})
 	}
 
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
-		Data:    result,
+		Data:    data,
 		Meta: &models.MetaInfo{
 			Total:  total,
-			Offset: responseOffset,
+			Offset: offset,
 		},
 	})
 }
@@ -532,7 +517,7 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 		}
 
 		versions := make([]int, 0)
-		query := `SELECT DISTINCT year FROM ` + details.Table + ` WHERE nuts_id = $1 ORDER BY year DESC`
+		query := `SELECT DISTINCT year FROM transformed_data.mart_nuts_geometry WHERE nuts_id = $1 ORDER BY year DESC`
 		if err := h.DB.Select(&versions, query, details.NormalizedID); err != nil {
 			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
 			return
