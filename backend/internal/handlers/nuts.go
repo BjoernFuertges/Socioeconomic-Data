@@ -67,20 +67,19 @@ func (h *Handler) lookupNutsGeometry(nutsID string, geometryYear *int, geometryS
 	}
 
 	query := `SELECT geometry_wgs84, has_valid_geometry
-		FROM transformed_data.mart_nuts_geometry
+		FROM transformed_data.mart_nuts_geometry_historized
 		WHERE nuts_id = $1`
 	args := []interface{}{nutsID}
 
-	if geometryStrategy == "exact" && geometryYear != nil {
-		query += ` AND year = $2`
-		args = append(args, *geometryYear)
-	} else if geometryYear != nil {
-		query += ` AND year <= $2`
+	// In der historisierten Tabelle ist die Geometrie eines Jahres eindeutig:
+	// "exact" und "latest-before" fallen zusammen auf die Periode, die das Jahr abdeckt.
+	if geometryYear != nil {
+		query += ` AND valid_from <= $2 AND (valid_to IS NULL OR valid_to >= $2)`
 		args = append(args, *geometryYear)
 	}
 
 	query += `
-		ORDER BY year DESC
+		ORDER BY valid_from DESC
 		LIMIT 1`
 
 	if err := h.DB.Get(&row, query, args...); err != nil {

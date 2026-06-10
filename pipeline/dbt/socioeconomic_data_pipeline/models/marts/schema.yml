@@ -115,6 +115,64 @@ models:
       - name: issue_type
         description: "Description of data quality issue"
 
+  - name: mart_nuts_geometry_historized
+    description: "Historisierte NUTS-Geometrien. Eine Zeile je Region und Geometrie-Periode. Vintages mit identischer Geometrie werden zusammengefasst. Datenquelle: stg_nuts_geometry."
+    columns:
+      - name: nuts_id
+        description: "NUTS-Code der Region (z.B. DE111)"
+        tests:
+          - not_null
+      - name: levl_code
+        description: "NUTS-Level (0–3)"
+      - name: country_code
+        description: "ISO-Ländercode (2-stellig)"
+      - name: region_name
+        description: "Regionsname"
+      - name: valid_from
+        description: "Erstes Vintage-Jahr, in dem diese Geometrie-Version erscheint"
+        tests:
+          - not_null
+      - name: valid_to
+        description: "Letztes Jahr, in dem diese Version gültig war. NULL bedeutet noch aktuell."
+      - name: max_vintage_year
+        description: "Letztes Vintage-Jahr, in dem diese Geometrie-Version vorlag"
+      - name: geometry_3035
+        description: "PostGIS-Geometrie in EPSG:3035 (Lambert Azimuthal Equal-Area)"
+      - name: geometry_wgs84
+        description: "GeoJSON-Geometrie in WGS84 (EPSG:4326)"
+      - name: has_valid_geometry
+        description: "Flag: true wenn geometry_3035 nicht null und nicht leer"
+
+  - name: mart_lau_geometry_historized
+    description: "Historisierte LAU-Geometrien (Local Administrative Units). Eine Zeile je LAU-Einheit und Geometrie-Periode. Vintages mit identischer Geometrie werden zusammengefasst. Datenquelle: stg_lau_geometry."
+    columns:
+      - name: gisco_id
+        description: "Eindeutiger LAU-Identifier aus GISCO (Eurostat)"
+        tests:
+          - not_null
+      - name: country_code
+        description: "ISO-Ländercode (2-stellig)"
+      - name: lau_id
+        description: "LAU-Identifier (national)"
+      - name: lau_name
+        description: "Name der LAU-Einheit"
+      - name: nuts_3
+        description: "NUTS-3-Code der übergeordneten Region (nullable)"
+      - name: valid_from
+        description: "Erstes Vintage-Jahr, in dem diese Geometrie-Version erscheint"
+        tests:
+          - not_null
+      - name: valid_to
+        description: "Letztes Jahr, in dem diese Version gültig war. NULL bedeutet noch aktuell."
+      - name: max_vintage_year
+        description: "Letztes Vintage-Jahr, in dem diese Geometrie-Version vorlag"
+      - name: geometry_3035
+        description: "PostGIS-Geometrie in EPSG:3035 (Lambert Azimuthal Equal-Area)"
+      - name: geometry_wgs84
+        description: "GeoJSON-Geometrie in WGS84 (EPSG:4326)"
+      - name: has_valid_geometry
+        description: "Flag: true wenn geometry_3035 nicht null und nicht leer"
+
   - name: mart_socioeconomic_inventory
     description: "Voraggregiertes Inventar der verfügbaren Soziodaten je Datensatz, Jahr und Geodatenebene"
     columns:

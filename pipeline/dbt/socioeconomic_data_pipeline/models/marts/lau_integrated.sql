@@ -12,8 +12,27 @@
 
 -- Main integrated model combining LAU geometry and population data
 -- Joins on GISCO_ID (LAU code) and includes all years
+--
+-- Die Geometrie stammt aus dem historisierten Mart (mart_lau_geometry_historized),
+-- der pro Region nur noch eine Zeile je Geometrie-Periode hält. Für die
+-- jahresbezogene API-Granularität werden die Perioden hier per generate_series
+-- wieder auf die einzelnen Vintage-Jahre (valid_from .. max_vintage_year)
+-- expandiert. Da die LAU-Vintages lückenlos jährlich vorliegen, entspricht das
+-- exakt den ursprünglichen Geometrie-Jahren – nur mit dem historisierten Mart
+-- als einziger Geometrie-Quelle.
 WITH geometry_data AS (
-  SELECT * FROM {{ ref('stg_lau_geometry') }}
+  SELECT
+    g.gisco_id,
+    gs.year,
+    g.lau_name,
+    g.country_code,
+    g.lau_id,
+    g.nuts_3,
+    g.geometry_3035,
+    g.geometry_wgs84,
+    g.has_valid_geometry
+  FROM {{ ref('mart_lau_geometry_historized') }} g
+  CROSS JOIN LATERAL generate_series(g.valid_from, g.max_vintage_year) AS gs(year)
 ),
 
 population_data AS (
@@ -28,7 +47,8 @@ integrated_data AS (
     g.country_code,
     g.lau_id,
     g.geometry_3035,
-    ST_AsGeoJSON(g.geometry_wgs84)::json as geometry_wgs84,
+    -- geometry_wgs84 liegt im historisierten Mart bereits als GeoJSON vor
+    g.geometry_wgs84,
     g.has_valid_geometry,
     
     -- Population data

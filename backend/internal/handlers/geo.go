@@ -324,8 +324,8 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 			ELSE 'NUTS-3'
 		END AS nuts_level_code,
 		` + geometrySelect + `,
-		year
-	FROM transformed_data.mart_nuts_geometry
+		valid_from AS year
+	FROM transformed_data.mart_nuts_geometry_historized
 	WHERE 1=1`
 
 	if filter.Level != nil {
@@ -334,12 +334,10 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 		argPos++
 	}
 	if filter.IncludeGeometry {
-		if filter.GeometryStrategy == "exact" {
-			query += fmt.Sprintf(" AND year = $%d", argPos)
-			args = append(args, *filter.GeometryYear)
-			argPos++
-		} else if filter.GeometryYear != nil {
-			query += fmt.Sprintf(" AND year <= $%d", argPos)
+		// In der historisierten Tabelle deckt genau eine Periode ein Jahr ab;
+		// "exact" und "latest-before" fallen daher zusammen.
+		if filter.GeometryStrategy == "exact" || filter.GeometryYear != nil {
+			query += fmt.Sprintf(" AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d)", argPos, argPos)
 			args = append(args, *filter.GeometryYear)
 			argPos++
 		}
@@ -355,17 +353,17 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 		argPos++
 	}
 	if filter.Year != nil {
-		query += fmt.Sprintf(" AND year = $%d", argPos)
+		query += fmt.Sprintf(" AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d)", argPos, argPos)
 		args = append(args, *filter.Year)
 		argPos++
 	}
 	if filter.FromYear != nil {
-		query += fmt.Sprintf(" AND year >= $%d", argPos)
+		query += fmt.Sprintf(" AND (valid_to IS NULL OR valid_to >= $%d)", argPos)
 		args = append(args, *filter.FromYear)
 		argPos++
 	}
 	if filter.ToYear != nil {
-		query += fmt.Sprintf(" AND year <= $%d", argPos)
+		query += fmt.Sprintf(" AND valid_from <= $%d", argPos)
 		args = append(args, *filter.ToYear)
 		argPos++
 	}
@@ -517,7 +515,7 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 		}
 
 		versions := make([]int, 0)
-		query := `SELECT DISTINCT year FROM transformed_data.mart_nuts_geometry WHERE nuts_id = $1 ORDER BY year DESC`
+		query := `SELECT valid_from FROM transformed_data.mart_nuts_geometry_historized WHERE nuts_id = $1 ORDER BY valid_from DESC`
 		if err := h.DB.Select(&versions, query, details.NormalizedID); err != nil {
 			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
 			return
@@ -759,41 +757,39 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 			nuts_id,
 			levl_code,
 			region_name,
-			year,
+			valid_from,
 			geometry_3035,
 			geometry_wgs84,
 			has_valid_geometry
-		FROM transformed_data.mart_nuts_geometry
+		FROM transformed_data.mart_nuts_geometry_historized
 		WHERE has_valid_geometry`
 
 	args := make([]interface{}, 0)
-	if filter.GeometryStrategy == "exact" {
-		query += fmt.Sprintf(" AND year = $%d", argPos)
-		args = append(args, *filter.GeometryYear)
-		argPos++
-	} else if filter.GeometryYear != nil {
-		query += fmt.Sprintf(" AND year <= $%d", argPos)
+	// In der historisierten Tabelle deckt genau eine Periode ein Jahr ab;
+	// "exact" und "latest-before" fallen daher zusammen.
+	if filter.GeometryStrategy == "exact" || filter.GeometryYear != nil {
+		query += fmt.Sprintf(" AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d)", argPos, argPos)
 		args = append(args, *filter.GeometryYear)
 		argPos++
 	}
 
 	if filter.Year != nil {
-		query += fmt.Sprintf(" AND year = $%d", argPos)
+		query += fmt.Sprintf(" AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d)", argPos, argPos)
 		args = append(args, *filter.Year)
 		argPos++
 	}
 	if filter.FromYear != nil {
-		query += fmt.Sprintf(" AND year >= $%d", argPos)
+		query += fmt.Sprintf(" AND (valid_to IS NULL OR valid_to >= $%d)", argPos)
 		args = append(args, *filter.FromYear)
 		argPos++
 	}
 	if filter.ToYear != nil {
-		query += fmt.Sprintf(" AND year <= $%d", argPos)
+		query += fmt.Sprintf(" AND valid_from <= $%d", argPos)
 		args = append(args, *filter.ToYear)
 		argPos++
 	}
 	query += `
-		ORDER BY nuts_id, year DESC
+		ORDER BY nuts_id, valid_from DESC
 	)
 	SELECT
 		base.nuts_id AS geo_id,
@@ -808,7 +804,7 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 		END AS nuts_level_code,
 		null::text AS country_code,
 		` + geometrySelect + `,
-		base.year
+		base.valid_from AS year
 	FROM base
 	WHERE ` + spatialPredicateSQL(operation, "base.geometry_3035", argPos)
 	args = append(args, geometryJSON)

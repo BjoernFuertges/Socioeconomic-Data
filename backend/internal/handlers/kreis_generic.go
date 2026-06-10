@@ -92,8 +92,8 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 		}
 		query += fmt.Sprintf(
 			` AND d.geodata_id_nuts = (`+
-				`SELECT nuts_id FROM transformed_data.mart_nuts_geometry `+
-				`WHERE levl_code = 3 AND has_valid_geometry `+
+				`SELECT nuts_id FROM transformed_data.mart_nuts_geometry_historized `+
+				`WHERE levl_code = 3 AND has_valid_geometry AND valid_to IS NULL `+
 				`AND ST_Contains(geometry_3035, ST_Transform(ST_SetSRID(ST_Point($%d, $%d), 4326), 3035)) `+
 				`LIMIT 1)`,
 			argPos, argPos+1,
