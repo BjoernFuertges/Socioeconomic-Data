@@ -90,16 +90,36 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 			respondBadRequest(c, err.Error())
 			return
 		}
-		query += fmt.Sprintf(
-			` AND d.geodata_id_nuts = (`+
-				`SELECT nuts_id FROM transformed_data.mart_nuts_geometry_historized `+
-				`WHERE levl_code = 3 AND has_valid_geometry AND valid_to IS NULL `+
-				`AND ST_Contains(geometry_3035, ST_Transform(ST_SetSRID(ST_Point($%d, $%d), 4326), 3035)) `+
-				`LIMIT 1)`,
-			argPos, argPos+1,
-		)
-		args = append(args, lon, lat)
-		argPos += 2
+		// Wenn ein konkretes Datenjahr angefragt wird, wird die Kreisgrenze
+		// verwendet, die in diesem Jahr gültig war (valid_from <= year <=
+		// valid_to). Ohne Jahresfilter gilt die jeweils neueste Geometrie
+		// (valid_to IS NULL). Damit ist sichergestellt, dass der Punkt-Filter
+		// dieselbe Geometrie-Version wie die Soziodaten selbst verwendet
+		// (vergleiche geodata_year in SozioBaseData).
+		if filter.Year != nil {
+			query += fmt.Sprintf(
+				` AND d.geodata_id_nuts = (`+
+					`SELECT nuts_id FROM transformed_data.mart_nuts_geometry_historized `+
+					`WHERE levl_code = 3 AND has_valid_geometry `+
+					`AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d) `+
+					`AND ST_Contains(geometry_3035, ST_Transform(ST_SetSRID(ST_Point($%d, $%d), 4326), 3035)) `+
+					`ORDER BY valid_from DESC LIMIT 1)`,
+				argPos, argPos, argPos+1, argPos+2,
+			)
+			args = append(args, *filter.Year, lon, lat)
+			argPos += 3
+		} else {
+			query += fmt.Sprintf(
+				` AND d.geodata_id_nuts = (`+
+					`SELECT nuts_id FROM transformed_data.mart_nuts_geometry_historized `+
+					`WHERE levl_code = 3 AND has_valid_geometry AND valid_to IS NULL `+
+					`AND ST_Contains(geometry_3035, ST_Transform(ST_SetSRID(ST_Point($%d, $%d), 4326), 3035)) `+
+					`LIMIT 1)`,
+				argPos, argPos+1,
+			)
+			args = append(args, lon, lat)
+			argPos += 2
+		}
 	}
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"

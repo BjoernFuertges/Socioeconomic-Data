@@ -130,8 +130,8 @@ func spatialPredicateSQL(operation string, geomColumn string, geoJSONParam int) 
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Regionenamen" example(berlin)
 // @Param point query string false "Punktabfrage im Format lon,lat (nur für geo_type=lau)" example(13.404954,52.520008)
 // @Param include_geometry query bool false "Geometrie einschließen, wenn verfügbar" example(false)
-// @Param geometry_strategy query string false "Geometrieauswahl: latest oder exact" Enums(latest,exact) default(latest)
-// @Param geometry_year query int false "Zieljahr für Geometrie (bei exact erforderlich)" example(2024)
+// @Param geometry_strategy query string false "Geometrieauswahl (nur für geo_type=nuts): latest oder exact" Enums(latest,exact) default(latest)
+// @Param geometry_year query int false "Zieljahr für Geometrie (nur für geo_type=nuts; bei exact erforderlich)" example(2024)
 // @Param year query int false "Jahr (optional)" example(2024)
 // @Param limit query int false "Anzahl der Ergebnisse (1-1000)" default(100) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -595,7 +595,7 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 // @Tags Geo
 // @Accept json
 // @Produce json
-// @Param request body models.GeoSpatialQueryRequest true "GeoJSON-Abfrage"
+// @Param request body models.GeoSpatialQueryRequest true "GeoJSON-Abfrage. geometry_strategy und geometry_year wirken nur bei geo_type=nuts."
 // @Success 200 {object} models.APIResponse{data=[]models.GeoRegionSummary}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -682,6 +682,13 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 	if filter.Year != nil {
 		query += fmt.Sprintf(" AND year = $%d", argPos)
 		args = append(args, *filter.Year)
+		argPos++
+	} else if filter.IncludeGeometry && filter.GeometryYear != nil {
+		// Wenn kein Datenjahr gesetzt ist, aber eine explizite Geometrieversion
+		// angefordert wird, wird geometry_year als Jahresfilter auf lau_integrated
+		// verwendet (year-Spalte entspricht dort dem Vintage-Jahr der Geometrie).
+		query += fmt.Sprintf(" AND year = $%d", argPos)
+		args = append(args, *filter.GeometryYear)
 		argPos++
 	}
 	if filter.FromYear != nil {

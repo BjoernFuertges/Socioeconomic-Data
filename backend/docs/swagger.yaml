@@ -1818,14 +1818,14 @@ paths:
         name: include_geometry
         type: boolean
       - default: latest
-        description: 'Geometrieauswahl: latest oder exact'
+        description: 'Geometrieauswahl (nur für geo_type=nuts): latest oder exact'
         enum:
         - latest
         - exact
         in: query
         name: geometry_strategy
         type: string
-      - description: Zieljahr für Geometrie (bei exact erforderlich)
+      - description: Zieljahr für Geometrie (nur für geo_type=nuts; bei exact erforderlich)
         example: 2024
         in: query
         name: geometry_year
@@ -2004,7 +2004,8 @@ paths:
       description: Führt eine räumliche Abfrage (intersects/contains) gegen NUTS oder
         LAU Geometrien aus.
       parameters:
-      - description: GeoJSON-Abfrage
+      - description: GeoJSON-Abfrage. geometry_strategy und geometry_year wirken nur
+          bei geo_type=nuts.
         in: body
         name: request
         required: true

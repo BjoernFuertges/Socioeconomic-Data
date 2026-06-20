@@ -963,14 +963,14 @@ const docTemplate = `{
                         ],
                         "type": "string",
                         "default": "latest",
-                        "description": "Geometrieauswahl: latest oder exact",
+                        "description": "Geometrieauswahl (nur für geo_type=nuts): latest oder exact",
                         "name": "geometry_strategy",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "example": 2024,
-                        "description": "Zieljahr für Geometrie (bei exact erforderlich)",
+                        "description": "Zieljahr für Geometrie (nur für geo_type=nuts; bei exact erforderlich)",
                         "name": "geometry_year",
                         "in": "query"
                     },
@@ -1050,7 +1050,7 @@ const docTemplate = `{
                 "summary": "Räumliche Geo-Abfrage via GeoJSON",
                 "parameters": [
                     {
-                        "description": "GeoJSON-Abfrage",
+                        "description": "GeoJSON-Abfrage. geometry_strategy und geometry_year wirken nur bei geo_type=nuts.",
                         "name": "request",
                         "in": "body",
                         "required": true,
