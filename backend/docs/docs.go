@@ -1205,7 +1205,7 @@ const docTemplate = `{
         },
         "/geo/{geo_id}/versions": {
             "get": {
-                "description": "Gibt alle verfügbaren Jahre für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt.",
+                "description": "Gibt alle Geometrie-Perioden (valid_from/valid_to) für eine Geo-Region zurück.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1215,7 +1215,7 @@ const docTemplate = `{
                 "tags": [
                     "Geo"
                 ],
-                "summary": "Versionsliste für eine Geo-Region",
+                "summary": "Geometrie-Perioden einer Geo-Region",
                 "parameters": [
                     {
                         "type": "string",
@@ -3775,6 +3775,19 @@ const docTemplate = `{
                 }
             }
         },
+        "models.GeoPeriod": {
+            "type": "object",
+            "properties": {
+                "valid_from": {
+                    "type": "integer",
+                    "example": 2016
+                },
+                "valid_to": {
+                    "type": "integer",
+                    "example": 2023
+                }
+            }
+        },
         "models.GeoRegionSummary": {
             "type": "object",
             "properties": {
@@ -3840,16 +3853,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "NUTS-3"
                 },
-                "versions": {
+                "periods": {
                     "type": "array",
                     "items": {
-                        "type": "integer"
-                    },
-                    "example": [
-                        2024,
-                        2023,
-                        2022
-                    ]
+                        "$ref": "#/definitions/models.GeoPeriod"
+                    }
                 }
             }
         },

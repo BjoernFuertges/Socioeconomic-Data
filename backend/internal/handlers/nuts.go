@@ -60,7 +60,7 @@ func nutsMetadata(details nutsLevelDetails, regionName string, ars *string) *mod
 	}
 }
 
-func (h *Handler) lookupNutsGeometry(nutsID string, geometryYear *int, geometryStrategy string) (json.RawMessage, bool, error) {
+func (h *Handler) lookupNutsGeometry(nutsID string, geometryYear *int) (json.RawMessage, bool, error) {
 	var row struct {
 		GeometryWGS84    json.RawMessage `db:"geometry_wgs84"`
 		HasValidGeometry bool            `db:"has_valid_geometry"`
@@ -312,7 +312,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		}
 
 		metadata := nutsMetadata(levelDetails, rows[0].RegionName, rows[0].GeodataIDArs)
-		geometryWGS84, hasValidGeometry, err := h.lookupNutsGeometry(levelDetails.NormalizedID, geometryYear, geometryStrategy)
+		geometryWGS84, hasValidGeometry, err := h.lookupNutsGeometry(levelDetails.NormalizedID, geometryYear)
 		if err != nil {
 			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
 			return
@@ -367,7 +367,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	}
 
 	metadata := nutsMetadata(levelDetails, row.RegionName, row.GeodataIDArs)
-	geometryWGS84, hasValidGeometry, err := h.lookupNutsGeometry(levelDetails.NormalizedID, geometryYear, geometryStrategy)
+	geometryWGS84, hasValidGeometry, err := h.lookupNutsGeometry(levelDetails.NormalizedID, geometryYear)
 	if err != nil {
 		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
 		return

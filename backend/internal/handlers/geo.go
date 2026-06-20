@@ -336,7 +336,7 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 	if filter.IncludeGeometry {
 		// In der historisierten Tabelle deckt genau eine Periode ein Jahr ab;
 		// "exact" und "latest-before" fallen daher zusammen.
-		if filter.GeometryStrategy == "exact" || filter.GeometryYear != nil {
+		if filter.GeometryYear != nil {
 			query += fmt.Sprintf(" AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d)", argPos, argPos)
 			args = append(args, *filter.GeometryYear)
 			argPos++
@@ -478,9 +478,11 @@ func (h *Handler) GetGeoRegionByID(c *gin.Context) {
 	h.GetLAURegionByID(c)
 }
 
-// GetGeoRegionVersions gibt alle verfügbaren Jahre für eine Geo-Region zurück
-// @Summary Versionsliste für eine Geo-Region
-// @Description Gibt alle verfügbaren Jahre für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt.
+// GetGeoRegionVersions gibt alle Geometrie-Perioden für eine Geo-Region zurück
+// @Summary Geometrie-Perioden einer Geo-Region
+// @Description Gibt alle Geometrie-Perioden (valid_from/valid_to) für eine Geo-Region zurück.
+// Jede Periode repräsentiert eine Geometrie-Version; valid_to=null bedeutet noch aktuell.
+// Mit geo_type=auto wird der Typ aus der ID erkannt.
 // @Tags Geo
 // @Accept json
 // @Produce json
@@ -514,13 +516,16 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 			return
 		}
 
-		versions := make([]int, 0)
-		query := `SELECT valid_from FROM transformed_data.mart_nuts_geometry_historized WHERE nuts_id = $1 ORDER BY valid_from DESC`
-		if err := h.DB.Select(&versions, query, details.NormalizedID); err != nil {
+		periods := make([]models.GeoPeriod, 0)
+		query := `SELECT valid_from, valid_to
+			FROM transformed_data.mart_nuts_geometry_historized
+			WHERE nuts_id = $1
+			ORDER BY valid_from DESC`
+		if err := h.DB.Select(&periods, query, details.NormalizedID); err != nil {
 			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
 			return
 		}
-		if len(versions) == 0 {
+		if len(periods) == 0 {
 			respondNotFound(c, "Keine Versionsdaten für diese Geo-Region gefunden")
 			return
 		}
@@ -534,20 +539,23 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 				GeoType:       "NUTS",
 				NutsLevel:     &level,
 				NutsLevelCode: &levelCode,
-				Versions:      versions,
+				Periods:       periods,
 			},
 		})
 		return
 	}
 
 	normalizedGeoID := strings.ToUpper(geoID)
-	versions := make([]int, 0)
-	query := `SELECT DISTINCT year FROM transformed_data.lau_integrated WHERE gisco_id = $1 ORDER BY year DESC`
-	if err := h.DB.Select(&versions, query, normalizedGeoID); err != nil {
+	periods := make([]models.GeoPeriod, 0)
+	query := `SELECT valid_from, valid_to
+		FROM transformed_data.mart_lau_geometry_historized
+		WHERE gisco_id = $1
+		ORDER BY valid_from DESC`
+	if err := h.DB.Select(&periods, query, normalizedGeoID); err != nil {
 		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
 		return
 	}
-	if len(versions) == 0 {
+	if len(periods) == 0 {
 		respondNotFound(c, "Keine Versionsdaten für diese Geo-Region gefunden")
 		return
 	}
@@ -555,9 +563,9 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data: models.GeoRegionVersions{
-			GeoID:    normalizedGeoID,
-			GeoType:  "LAU",
-			Versions: versions,
+			GeoID:   normalizedGeoID,
+			GeoType: "LAU",
+			Periods: periods,
 		},
 	})
 }
@@ -767,7 +775,7 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 	args := make([]interface{}, 0)
 	// In der historisierten Tabelle deckt genau eine Periode ein Jahr ab;
 	// "exact" und "latest-before" fallen daher zusammen.
-	if filter.GeometryStrategy == "exact" || filter.GeometryYear != nil {
+	if filter.GeometryYear != nil {
 		query += fmt.Sprintf(" AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d)", argPos, argPos)
 		args = append(args, *filter.GeometryYear)
 		argPos++

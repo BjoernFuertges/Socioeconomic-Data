@@ -72,13 +72,21 @@ type GeoRegionFilter struct {
 	Offset              int    `form:"offset" binding:"omitempty,min=0"`
 }
 
-// GeoRegionVersions enthält verfügbare Jahre für eine Geo-Region (NUTS oder LAU).
+// GeoPeriod repräsentiert einen Gültigkeitszeitraum einer Geometrie-Version.
+// ValidTo ist nil, wenn die Version noch aktuell ist.
+type GeoPeriod struct {
+	ValidFrom int  `json:"valid_from" db:"valid_from" example:"2016"`
+	ValidTo   *int `json:"valid_to"   db:"valid_to"   example:"2023" swaggertype:"integer"`
+}
+
+// GeoRegionVersions enthält die Geometrie-Perioden einer Geo-Region (NUTS oder LAU).
+// Jede Periode repräsentiert eine Version der Geometrie; ValidTo=null bedeutet noch aktuell.
 type GeoRegionVersions struct {
-	GeoID         string  `json:"geo_id" example:"DE111"`
-	GeoType       string  `json:"geo_type" example:"NUTS"`
-	NutsLevel     *int    `json:"nuts_level,omitempty" example:"3"`
-	NutsLevelCode *string `json:"nuts_level_code,omitempty" example:"NUTS-3"`
-	Versions      []int   `json:"versions" example:"2024,2023,2022"`
+	GeoID         string      `json:"geo_id"                    example:"DE111"`
+	GeoType       string      `json:"geo_type"                  example:"NUTS"`
+	NutsLevel     *int        `json:"nuts_level,omitempty"      example:"3"`
+	NutsLevelCode *string     `json:"nuts_level_code,omitempty" example:"NUTS-3"`
+	Periods       []GeoPeriod `json:"periods"`
 }
 
 // GeoSpatialQueryRequest beschreibt eine räumliche Abfrage mit GeoJSON-Geometrie.

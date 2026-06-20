@@ -523,6 +523,15 @@ definitions:
         example: bevoelkerung
         type: string
     type: object
+  models.GeoPeriod:
+    properties:
+      valid_from:
+        example: 2016
+        type: integer
+      valid_to:
+        example: 2023
+        type: integer
+    type: object
   models.GeoRegionSummary:
     properties:
       country_code:
@@ -570,13 +579,9 @@ definitions:
       nuts_level_code:
         example: NUTS-3
         type: string
-      versions:
-        example:
-        - 2024
-        - 2023
-        - 2022
+      periods:
         items:
-          type: integer
+          $ref: '#/definitions/models.GeoPeriod'
         type: array
     type: object
   models.GeoSpatialQueryRequest:
@@ -1947,8 +1952,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Gibt alle verfügbaren Jahre für eine Geo-Region zurück. Mit geo_type=auto
-        wird der Typ aus der ID erkannt.
+      description: Gibt alle Geometrie-Perioden (valid_from/valid_to) für eine Geo-Region
+        zurück.
       parameters:
       - description: Geo-ID (NUTS oder GISCO-ID)
         example: DE111
@@ -1989,7 +1994,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Versionsliste für eine Geo-Region
+      summary: Geometrie-Perioden einer Geo-Region
       tags:
       - Geo
   /geo/query:
