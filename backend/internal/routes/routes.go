@@ -32,6 +32,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 		{
 			lau.GET("", handler.GetLAURegions)
 			lau.GET("/:gisco_id/datasets", handler.GetLAUDatasets)
+			lau.GET("/:gisco_id/versions", handler.GetLAURegionVersions)
 			lau.GET("/:gisco_id", handler.GetLAURegionByID)
 		}
 

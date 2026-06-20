@@ -849,13 +849,9 @@ definitions:
       nuts_level_code:
         example: NUTS-3
         type: string
-      versions:
-        example:
-        - 2024
-        - 2023
-        - 2022
+      periods:
         items:
-          type: integer
+          $ref: '#/definitions/models.GeoPeriod'
         type: array
     type: object
   models.NutsSocioeconomicData:
@@ -2282,6 +2278,47 @@ paths:
       summary: Verfügbare Datensätze für eine LAU-Region
       tags:
       - LAU
+  /lau/{gisco_id}/versions:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle Geometrie-Perioden (valid_from/valid_to) einer LAU-Region
+        aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null
+        bedeutet noch aktuell.
+      parameters:
+      - description: GISCO ID der LAU-Region
+        example: DE_11000000
+        in: path
+        name: gisco_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.GeoRegionVersions'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Geometrie-Perioden einer LAU-Region
+      tags:
+      - LAU
   /medianeinkommen:
     get:
       consumes:
@@ -2681,7 +2718,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: Gibt alle verfügbaren Jahre einer NUTS-Region zurück (neueste zuerst)
+      description: Gibt alle Geometrie-Perioden (valid_from/valid_to) einer NUTS-Region
+        aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null
+        bedeutet noch aktuell.
       parameters:
       - description: NUTS-Code der Region (Level 0–3)
         example: DE111
@@ -2713,7 +2752,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Versionsliste für eine NUTS-Region
+      summary: Geometrie-Perioden einer NUTS-Region
       tags:
       - NUTS
   /schuldnerquote:

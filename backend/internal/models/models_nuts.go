@@ -61,10 +61,12 @@ type NutsRegionSummary struct {
 	ARS           *string `db:"geodata_id_ars" json:"ars"             example:"08111000"`
 }
 
-// NutsRegionVersions enthält verfügbare Versionsstände (Jahre) für eine NUTS-Region.
+// NutsRegionVersions enthält die Geometrie-Perioden einer NUTS-Region.
+// Jede Periode repräsentiert einen Zeitraum, in dem eine Geometrie-Version gültig war.
+// ValidTo ist nil, wenn die Version noch aktuell ist.
 type NutsRegionVersions struct {
-	NutsID        string `json:"nuts_id"         example:"DE111"`
-	NutsLevel     int    `json:"nuts_level"      example:"3"`
-	NutsLevelCode string `json:"nuts_level_code" example:"NUTS-3"`
-	Versions      []int  `json:"versions"        example:"2024,2023,2022"`
+	NutsID        string      `json:"nuts_id"         example:"DE111"`
+	NutsLevel     int         `json:"nuts_level"      example:"3"`
+	NutsLevelCode string      `json:"nuts_level_code" example:"NUTS-3"`
+	Periods       []GeoPeriod `json:"periods"`
 }

@@ -402,9 +402,9 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: response})
 }
 
-// GetNutsRegionVersions gibt alle verfügbaren Versionsnummern (Jahre) für eine NUTS-Region zurück
-// @Summary Versionsliste für eine NUTS-Region
-// @Description Gibt alle verfügbaren Jahre einer NUTS-Region zurück (neueste zuerst)
+// GetNutsRegionVersions gibt alle Geometrie-Perioden einer NUTS-Region zurück
+// @Summary Geometrie-Perioden einer NUTS-Region
+// @Description Gibt alle Geometrie-Perioden (valid_from/valid_to) einer NUTS-Region aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null bedeutet noch aktuell.
 // @Tags NUTS
 // @Accept json
 // @Produce json
@@ -433,9 +433,12 @@ func (h *Handler) GetNutsRegionVersions(c *gin.Context) {
 		return
 	}
 
-	query := `SELECT DISTINCT year FROM ` + levelDetails.Table + ` WHERE nuts_id = $1 ORDER BY year DESC`
-	versions := make([]int, 0)
-	if err := h.DB.Select(&versions, query, levelDetails.NormalizedID); err != nil {
+	periods := make([]models.GeoPeriod, 0)
+	query := `SELECT valid_from, valid_to
+		FROM transformed_data.mart_nuts_geometry_historized
+		WHERE nuts_id = $1
+		ORDER BY valid_from DESC`
+	if err := h.DB.Select(&periods, query, levelDetails.NormalizedID); err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
 			Success: false,
 			Error:   fmt.Sprintf("Datenbankfehler: %v", err),
@@ -443,7 +446,7 @@ func (h *Handler) GetNutsRegionVersions(c *gin.Context) {
 		return
 	}
 
-	if len(versions) == 0 {
+	if len(periods) == 0 {
 		c.JSON(http.StatusNotFound, models.APIResponse{
 			Success: false,
 			Error:   "Keine Versionsdaten für diese NUTS-Region gefunden",
@@ -457,7 +460,7 @@ func (h *Handler) GetNutsRegionVersions(c *gin.Context) {
 			NutsID:        levelDetails.NormalizedID,
 			NutsLevel:     levelDetails.Number,
 			NutsLevelCode: levelDetails.Code,
-			Versions:      versions,
+			Periods:       periods,
 		},
 	})
 }

@@ -1653,6 +1653,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/lau/{gisco_id}/versions": {
+            "get": {
+                "description": "Gibt alle Geometrie-Perioden (valid_from/valid_to) einer LAU-Region aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null bedeutet noch aktuell.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "LAU"
+                ],
+                "summary": "Geometrie-Perioden einer LAU-Region",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE_11000000",
+                        "description": "GISCO ID der LAU-Region",
+                        "name": "gisco_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.GeoRegionVersions"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/medianeinkommen": {
             "get": {
                 "description": "Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
@@ -2232,7 +2295,7 @@ const docTemplate = `{
         },
         "/nuts/{nuts_id}/versions": {
             "get": {
-                "description": "Gibt alle verfügbaren Jahre einer NUTS-Region zurück (neueste zuerst)",
+                "description": "Gibt alle Geometrie-Perioden (valid_from/valid_to) einer NUTS-Region aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null bedeutet noch aktuell.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2242,7 +2305,7 @@ const docTemplate = `{
                 "tags": [
                     "NUTS"
                 ],
-                "summary": "Versionsliste für eine NUTS-Region",
+                "summary": "Geometrie-Perioden einer NUTS-Region",
                 "parameters": [
                     {
                         "type": "string",
@@ -4229,16 +4292,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "NUTS-3"
                 },
-                "versions": {
+                "periods": {
                     "type": "array",
                     "items": {
-                        "type": "integer"
-                    },
-                    "example": [
-                        2024,
-                        2023,
-                        2022
-                    ]
+                        "$ref": "#/definitions/models.GeoPeriod"
+                    }
                 }
             }
         },
