@@ -228,6 +228,13 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 		query += fmt.Sprintf(" AND year = $%d", argPos)
 		args = append(args, *filter.Year)
 		argPos++
+	} else if filter.IncludeGeometry && filter.GeometryYear != nil {
+		// Wenn kein Datenjahr gesetzt ist, aber eine explizite Geometrieversion
+		// angefordert wird, wird geometry_year als Jahresfilter auf lau_integrated
+		// verwendet (year-Spalte entspricht dort dem Vintage-Jahr der Geometrie).
+		query += fmt.Sprintf(" AND year = $%d", argPos)
+		args = append(args, *filter.GeometryYear)
+		argPos++
 	}
 	if filter.FromYear != nil {
 		query += fmt.Sprintf(" AND year >= $%d", argPos)
@@ -324,7 +331,7 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 			ELSE 'NUTS-3'
 		END AS nuts_level_code,
 		` + geometrySelect + `,
-		valid_from AS year
+		max_vintage_year AS year
 	FROM transformed_data.mart_nuts_geometry_historized
 	WHERE 1=1`
 
@@ -336,7 +343,11 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 	if filter.IncludeGeometry {
 		// In der historisierten Tabelle deckt genau eine Periode ein Jahr ab;
 		// "exact" und "latest-before" fallen daher zusammen.
-		if filter.GeometryYear != nil {
+		// geometry_year wird nur angewendet, wenn year nicht gesetzt ist –
+		// andernfalls würden zwei überschneidungsfreie Perioden-Filter zu 0
+		// Ergebnissen führen, wenn geometry_year und year auf verschiedene
+		// Perioden zeigen.
+		if filter.GeometryYear != nil && filter.Year == nil {
 			query += fmt.Sprintf(" AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d)", argPos, argPos)
 			args = append(args, *filter.GeometryYear)
 			argPos++
@@ -412,6 +423,14 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 	for _, r := range rows {
 		level := r.NutsLevel
 		code := r.NutsLevelCode
+		// Wenn ein konkretes Jahr abgefragt wurde, wird es direkt zurückgegeben
+		// (analog zu LAU, das den tatsächlichen Jahreswert aus der DB liefert).
+		// Ohne Jahresfilter kommt max_vintage_year: das neueste Vintage-Jahr
+		// der gültigen Periode – ebenfalls konsistent mit LAUs letztem verfügbaren Jahr.
+		year := r.Year
+		if filter.Year != nil {
+			year = *filter.Year
+		}
 		data = append(data, models.GeoRegionSummary{
 			GeoID:            r.GeoID,
 			GeoType:          r.GeoType,
@@ -420,7 +439,7 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 			NutsLevelCode:    &code,
 			GeometryWGS84:    r.GeometryWGS84,
 			HasValidGeometry: r.HasValidGeometry,
-			Year:             r.Year,
+			Year:             year,
 		})
 	}
 
@@ -766,6 +785,7 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 			levl_code,
 			region_name,
 			valid_from,
+			max_vintage_year,
 			geometry_3035,
 			geometry_wgs84,
 			has_valid_geometry
@@ -775,7 +795,11 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 	args := make([]interface{}, 0)
 	// In der historisierten Tabelle deckt genau eine Periode ein Jahr ab;
 	// "exact" und "latest-before" fallen daher zusammen.
-	if filter.GeometryYear != nil {
+	// geometry_year wird nur angewendet, wenn year nicht gesetzt ist –
+	// andernfalls würden zwei überschneidungsfreie Perioden-Filter zu 0
+	// Ergebnissen führen, wenn geometry_year und year auf verschiedene
+	// Perioden zeigen.
+	if filter.GeometryYear != nil && filter.Year == nil {
 		query += fmt.Sprintf(" AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d)", argPos, argPos)
 		args = append(args, *filter.GeometryYear)
 		argPos++
@@ -812,7 +836,7 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 		END AS nuts_level_code,
 		null::text AS country_code,
 		` + geometrySelect + `,
-		base.valid_from AS year
+		base.max_vintage_year AS year
 	FROM base
 	WHERE ` + spatialPredicateSQL(operation, "base.geometry_3035", argPos)
 	args = append(args, geometryJSON)
@@ -862,6 +886,10 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 	for _, r := range rows {
 		level := r.NutsLevel
 		code := r.NutsLevelCode
+		year := r.Year
+		if filter.Year != nil {
+			year = *filter.Year
+		}
 		data = append(data, models.GeoRegionSummary{
 			GeoID:            r.GeoID,
 			GeoType:          r.GeoType,
@@ -870,7 +898,7 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 			NutsLevelCode:    &code,
 			GeometryWGS84:    r.GeometryWGS84,
 			HasValidGeometry: r.HasValidGeometry,
-			Year:             r.Year,
+			Year:             year,
 		})
 	}
 

@@ -3828,7 +3828,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Stuttgart, Stadtkreis"
                 },
-                "year": {
+                "vintage_year": {
                     "type": "integer",
                     "example": 2024
                 }

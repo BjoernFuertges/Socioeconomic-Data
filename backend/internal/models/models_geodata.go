@@ -48,7 +48,7 @@ type GeoRegionSummary struct {
 	NutsLevel        *int            `json:"nuts_level,omitempty" example:"3"`
 	NutsLevelCode    *string         `json:"nuts_level_code,omitempty" example:"NUTS-3"`
 	CountryCode      *string         `json:"country_code,omitempty" example:"DE"`
-	Year             int             `json:"year" example:"2024"`
+	Year             int             `json:"vintage_year" example:"2024"`
 	GeometryWGS84    json.RawMessage `json:"geometry_wgs84,omitempty" swaggertype:"object"`
 	HasValidGeometry *bool           `json:"has_valid_geometry,omitempty" example:"true"`
 	Datasets         []RegionDataset `json:"datasets,omitempty"`

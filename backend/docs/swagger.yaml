@@ -561,7 +561,7 @@ definitions:
       region_name:
         example: Stuttgart, Stadtkreis
         type: string
-      year:
+      vintage_year:
         example: 2024
         type: integer
     type: object
