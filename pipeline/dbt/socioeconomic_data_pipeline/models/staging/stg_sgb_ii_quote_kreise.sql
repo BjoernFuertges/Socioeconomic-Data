@@ -10,7 +10,8 @@
 }}
 
 with source_data as (
-    select * from {{ source('loaded_data', 'results_sgb_ii_quote_kreise') }}
+    select * from {{ ref('snap_results_sgb_ii_quote_kreise') }}
+    where dbt_valid_to is null
 ),
 
 cleaned as (

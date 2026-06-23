@@ -26,6 +26,14 @@ clean-targets:         # directories to be removed by `dbt clean`
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
 
+snapshots:
+  socioeconomic_data_pipeline:
+    +target_schema: snapshots
+    +strategy: check
+    +check_cols: ['value']
+    +unique_key: "geodata_id_nuts || '_' || year::text"
+    +invalidate_hard_deletes: false
+
 models:
   socioeconomic_data_pipeline:
     # Staging models from loaded_data schema
