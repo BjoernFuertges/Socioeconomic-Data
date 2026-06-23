@@ -56,29 +56,12 @@ cd backend/deployments
 docker compose up -d --no-deps pipeline
 ```
 
-### dlt-Pipelines manuell ausführen
+### dlt-Pipelines + dbt manuell ausführen
+
+Alles auf einmal (alle dlt-Datasets + dbt):
 
 ```bash
-docker exec pipeline bash -c "cd /app/dlt &&
-  python load_arbeitslosenzahlen_afa.py &&
-  python load_geodata_to_postgis.py &&
-  python load_soziodata_generic.py bevoelkerung/results_bevoelkerung_kreise &&
-  python load_soziodata_generic.py schuldnerquote/results_schuldnerquote_kreise &&
-  python load_soziodata_generic.py arbeitslose/results_arbeitslose_kreise"
-```
-
-### dbt manuell ausführen
-
-```bash
-docker exec pipeline bash -c "cd /app/dbt/socioeconomic_data_pipeline &&
-  dbt deps &&
-  if [ -f /app/data-exchange/1_friedrich-bjoern/arbeitslose/meta.json ] && \
-     [ -d /app/data-exchange/1_friedrich-bjoern/geodata/lau/output/geojson ] && \
-     [ -d /app/data-exchange/1_friedrich-bjoern/statistics/lokale_verwaltungseinheiten_eu/output ]; then
-    dbt run;
-  else
-    dbt run --select stg_bevoelkerung_kreise stg_schuldnerquote_kreise;
-  fi"
+docker exec pipeline bash /app/dlt/run_all_pipelines.sh
 ```
 
 Logs prüfen:
