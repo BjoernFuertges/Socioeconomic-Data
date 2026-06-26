@@ -28,6 +28,9 @@ python load_soziodata_generic.py wohngeldhaushalte/results_wohngeldhaushalte_kre
 echo "=== dbt ==="
 cd /app/dbt/socioeconomic_data_pipeline
 dbt deps
+dbt snapshot
+
+echo "=== dbt run ==="
 dbt run
 
 echo "=== Pipeline abgeschlossen ==="
