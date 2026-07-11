@@ -1,0 +1,4 @@
+Methode,n verfügbar,MAE,RMSE,MAPE %,Bias (mean signed err)
+1. Lineare Interpolation,520,64.068,268.89,2.45,24.61
+3. Peer-basierte Fortschreibung,518,82.484,343.221,3.57,31.905
+4. Regressionsschätzung,520,2071.652,8846.757,45.88,-40.24

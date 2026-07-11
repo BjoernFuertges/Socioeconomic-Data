@@ -2293,6 +2293,80 @@ const docTemplate = `{
                 }
             }
         },
+        "/nuts/{nuts_id}/timeseries/{dataset}": {
+            "get": {
+                "description": "Liefert die vollständige Jahres-Zeitreihe eines Datensatzes für eine NUTS-3-Region aus mart_nuts3_timeseries_interpolated. Fehlende Jahre werden mit zwei Methoden geschätzt (lineare Interpolation und peer-basierte Fortschreibung über Regionen derselben NUTS-2-Gruppe); is_interpolated kennzeichnet geschätzte Werte, value_linear und value_peer_trend liefern beide Schätzungen transparent nebeneinander, statt sie stillschweigend zu vermischen.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NUTS"
+                ],
+                "summary": "Lückenlose Zeitreihe mit Interpolationskennzeichnung",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE226",
+                        "description": "NUTS-3-Code",
+                        "name": "nuts_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "wohngeldhaushalte",
+                        "description": "Dataset-Slug (z.B. bevoelkerung, wohngeldhaushalte)",
+                        "name": "dataset",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/nuts/{nuts_id}/versions": {
             "get": {
                 "description": "Gibt alle Geometrie-Perioden (valid_from/valid_to) einer NUTS-Region aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null bedeutet noch aktuell.",
@@ -4322,6 +4396,47 @@ const docTemplate = `{
                 "yoy_change_percent": {
                     "type": "number",
                     "example": -2.3
+                }
+            }
+        },
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint": {
+            "type": "object",
+            "properties": {
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "wohngeldhaushalte"
+                },
+                "is_interpolated": {
+                    "description": "true = Wert wurde imputiert (kein Originalwert vorhanden für dieses Jahr).",
+                    "type": "boolean",
+                    "example": true
+                },
+                "n_peer_regions": {
+                    "description": "Anzahl Peer-Regionen (gleiche NUTS-2-Gruppe), die zu value_peer_trend beigetragen haben.",
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE226"
+                },
+                "value": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_linear": {
+                    "description": "Methode-1-Schätzung (lineare Interpolation). Nur bei is_interpolated = true befüllt.",
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "description": "Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen\nVeränderung anderer Regionen derselben NUTS-2-Gruppe). Nur befüllt, wenn\nis_interpolated = true und die Schätzung berechenbar war.",
+                    "type": "number",
+                    "example": 8.5
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2021
                 }
             }
         },

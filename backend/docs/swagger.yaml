@@ -872,6 +872,43 @@ definitions:
         example: -2.3
         type: number
     type: object
+  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint:
+    properties:
+      dataset_slug:
+        example: wohngeldhaushalte
+        type: string
+      is_interpolated:
+        description: true = Wert wurde imputiert (kein Originalwert vorhanden für
+          dieses Jahr).
+        example: true
+        type: boolean
+      n_peer_regions:
+        description: Anzahl Peer-Regionen (gleiche NUTS-2-Gruppe), die zu value_peer_trend
+          beigetragen haben.
+        example: 11
+        type: integer
+      nuts_id:
+        example: DE226
+        type: string
+      value:
+        example: 8.78
+        type: number
+      value_linear:
+        description: Methode-1-Schätzung (lineare Interpolation). Nur bei is_interpolated
+          = true befüllt.
+        example: 8.78
+        type: number
+      value_peer_trend:
+        description: |-
+          Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen
+          Veränderung anderer Regionen derselben NUTS-2-Gruppe). Nur befüllt, wenn
+          is_interpolated = true und die Schätzung berechenbar war.
+        example: 8.5
+        type: number
+      year:
+        example: 2021
+        type: integer
+    type: object
   gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDataset:
     properties:
       available_years:
@@ -2712,6 +2749,58 @@ paths:
           schema:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Verfügbare Datensätze für eine NUTS-Region
+      tags:
+      - NUTS
+  /nuts/{nuts_id}/timeseries/{dataset}:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die vollständige Jahres-Zeitreihe eines Datensatzes für
+        eine NUTS-3-Region aus mart_nuts3_timeseries_interpolated. Fehlende Jahre
+        werden mit zwei Methoden geschätzt (lineare Interpolation und peer-basierte
+        Fortschreibung über Regionen derselben NUTS-2-Gruppe); is_interpolated kennzeichnet
+        geschätzte Werte, value_linear und value_peer_trend liefern beide Schätzungen
+        transparent nebeneinander, statt sie stillschweigend zu vermischen.
+      parameters:
+      - description: NUTS-3-Code
+        example: DE226
+        in: path
+        name: nuts_id
+        required: true
+        type: string
+      - description: Dataset-Slug (z.B. bevoelkerung, wohngeldhaushalte)
+        example: wohngeldhaushalte
+        in: path
+        name: dataset
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe mit Interpolationskennzeichnung
       tags:
       - NUTS
   /nuts/{nuts_id}/versions:
