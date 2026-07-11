@@ -155,6 +155,34 @@ services:
       - "traefik.http.middlewares.adminer-add-trailing-slash.redirectregex.permanent=true"
       - "traefik.http.services.adminer.loadbalancer.server.port=8080"
 
+  docs:
+    image: ${DOCKER_HUB_USERNAME}/soziodata-docs:latest
+    container_name: docs
+    restart: always
+    depends_on:
+      - traefik
+    networks:
+      - backend-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.docs.rule=Host(`fp-icw-soziooekonomische-daten.f4.htw-berlin.de`) && PathPrefix(`/docs/`)"
+      - "traefik.http.routers.docs.entrypoints=websecure"
+      - "traefik.http.routers.docs.tls=true"
+      - "traefik.http.routers.docs.tls.certresolver=le_http"
+      - "traefik.http.routers.docs.priority=90"
+      - "traefik.http.routers.docs.middlewares=docs-strip-prefix@docker"
+      - "traefik.http.middlewares.docs-strip-prefix.stripprefix.prefixes=/docs"
+      - "traefik.http.routers.docs-slash.rule=Host(`fp-icw-soziooekonomische-daten.f4.htw-berlin.de`) && Path(`/docs`)"
+      - "traefik.http.routers.docs-slash.entrypoints=websecure"
+      - "traefik.http.routers.docs-slash.tls=true"
+      - "traefik.http.routers.docs-slash.tls.certresolver=le_http"
+      - "traefik.http.routers.docs-slash.priority=91"
+      - "traefik.http.routers.docs-slash.middlewares=docs-add-trailing-slash@docker"
+      - "traefik.http.middlewares.docs-add-trailing-slash.redirectregex.regex=^https?://([^/]+)/docs$$"
+      - "traefik.http.middlewares.docs-add-trailing-slash.redirectregex.replacement=https://$${1}/docs/"
+      - "traefik.http.middlewares.docs-add-trailing-slash.redirectregex.permanent=true"
+      - "traefik.http.services.docs.loadbalancer.server.port=80"
+
 volumes:
   pgdata:
 

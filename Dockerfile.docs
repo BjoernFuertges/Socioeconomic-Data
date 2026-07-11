@@ -1,0 +1,23 @@
+# =============================================================================
+# Stage 1: Build the static MkDocs site
+# =============================================================================
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+
+COPY requirements-docs.txt ./
+RUN pip install --no-cache-dir -r requirements-docs.txt
+
+COPY mkdocs.yml ./
+COPY docs/ ./docs/
+
+RUN mkdocs build --strict -d /app/site
+
+# =============================================================================
+# Stage 2: Minimal static file server
+# =============================================================================
+FROM nginx:1.27-alpine
+
+COPY --from=builder /app/site /usr/share/nginx/html
+
+EXPOSE 80

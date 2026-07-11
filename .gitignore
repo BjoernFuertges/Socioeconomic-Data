@@ -13,3 +13,7 @@
 !/data-exchange/**/.gitkeep
 
 /***/__pycache__/
+
+# MkDocs build output
+/site/
+/public/
