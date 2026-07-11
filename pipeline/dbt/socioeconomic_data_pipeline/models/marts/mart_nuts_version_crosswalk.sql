@@ -18,47 +18,47 @@
   auf die jeweilige Ziel-Region entfällt. Die Summe aller Gewichte je
   (source_nuts_id, source_version, target_version) ergibt ≈ 1,0.
 
-  Bevölkerungsjahr für die Gewichtung (letztes bekanntes Jahr vor dem Wechsel):
-    2013 → 2016 : 2015
-    2016 → 2021 : 2020
-    2021 → 2024 : 2023
+  Die eigentliche Populationsgewichtung erfolgt über die Gemeinde(LAU)-Ebene
+  (int_lau_nuts3_population_weight): Nur dort kann sich die Bevölkerung
+  innerhalb einer Quellregion tatsächlich unterschiedlich auf mehrere
+  Zielregionen verteilen. Eine Gewichtung mit der Gesamt-Bevölkerung der
+  Quellregion selbst würde sich bei der Normierung immer herauskürzen und
+  wäre de facto nur eine Flächengewichtung.
+
+  Fallback auf reinen Flächenanteil (int_nuts_spatial_crosswalk), falls für
+  ein Regionenpaar keine LAU-Bevölkerung ermittelt werden konnte (z. B.
+  unbewohnte Fläche oder fehlende LAU-Daten).
 
   Beispiel Gebietsreform:
-    Kreis A (2016) überlappt zu 60 % mit Kreis X und zu 40 % mit Kreis Y (2021).
-    Bei Bevölkerung A = 100.000 EW: weight(A→X) = 0,60, weight(A→Y) = 0,40.
-    Ein Wert v für A ergibt: v × 0,60 in X und v × 0,40 in Y.
+    Kreis A (2016) überlappt räumlich mit Kreis X und Kreis Y (2021).
+    Leben 70 % der Einwohner von A auf dem Gebietsteil, der zu X wird, und
+    30 % auf dem Teil, der zu Y wird, ergibt sich weight(A→X) = 0,70 und
+    weight(A→Y) = 0,30 — unabhängig vom reinen Flächenverhältnis.
 */
 
 with spatial as (
     select * from {{ ref('int_nuts_spatial_crosswalk') }}
 ),
 
-pop as (
-    select * from {{ ref('int_nuts3_population_by_year') }}
+lau_pop_weight as (
+    select * from {{ ref('int_lau_nuts3_population_weight') }}
 ),
 
--- Bevölkerungsjahr = letztes bekanntes Jahr in der jeweiligen Quell-Version
-pop_year_map (source_version, pop_year) as (
-    values
-        (2013, 2015),
-        (2016, 2020),
-        (2021, 2023),
-        (2024, 2023)
-),
-
--- Rohgewicht: Flächenanteil × Quell-Bevölkerung
--- Fallback auf 1, wenn keine Bevölkerungsdaten vorhanden (rein flächenbasiert)
+-- Rohgewicht: echte Gemeinde(LAU)-Bevölkerung je (Quell-, Ziel-)-Regionenpaar.
+-- Fallback auf Flächenanteil, falls keine LAU-Bevölkerung vorhanden ist.
 raw_weights as (
     select
         s.source_version,
         s.target_version,
         s.source_nuts_id,
         s.target_nuts_id,
-        s.area_fraction * coalesce(p.total_population, 1) as raw_weight
+        coalesce(lpw.lau_population, s.area_fraction) as raw_weight
     from spatial s
-    left join pop_year_map pym on pym.source_version = s.source_version
-    left join pop          p   on  p.nuts3_id = s.source_nuts_id
-                                and p.year    = pym.pop_year
+    left join lau_pop_weight lpw
+        on  lpw.source_version = s.source_version
+        and lpw.target_version = s.target_version
+        and lpw.source_nuts_id = s.source_nuts_id
+        and lpw.target_nuts_id = s.target_nuts_id
 ),
 
 -- Normierung: Gewichte je Quell-Region auf Summe = 1,0 bringen

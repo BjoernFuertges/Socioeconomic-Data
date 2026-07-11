@@ -84,7 +84,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -92,7 +92,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.ArbeitsloseData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ArbeitsloseData"
                                             }
                                         }
                                     }
@@ -103,13 +103,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -180,7 +180,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -188,7 +188,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.ArbeitsvolumenData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ArbeitsvolumenData"
                                             }
                                         }
                                     }
@@ -199,13 +199,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -276,7 +276,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -284,7 +284,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.AuzubildendeData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.AuzubildendeData"
                                             }
                                         }
                                     }
@@ -295,13 +295,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -372,7 +372,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -380,7 +380,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.BeschaeftigungsquoteGemeindenData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BeschaeftigungsquoteGemeindenData"
                                             }
                                         }
                                     }
@@ -391,13 +391,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -468,7 +468,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -476,7 +476,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.BeschaeftigungsquoteNuts3Data"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BeschaeftigungsquoteNuts3Data"
                                             }
                                         }
                                     }
@@ -487,13 +487,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -564,7 +564,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -572,7 +572,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.BevoelkerungData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BevoelkerungData"
                                             }
                                         }
                                     }
@@ -583,13 +583,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -660,7 +660,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -668,7 +668,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.BruttoverdienstData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BruttoverdienstData"
                                             }
                                         }
                                     }
@@ -679,13 +679,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -756,7 +756,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -764,7 +764,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.DurchschnittsalterData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DurchschnittsalterData"
                                             }
                                         }
                                     }
@@ -775,13 +775,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -852,7 +852,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -860,7 +860,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.ErwerbstaetigePro1000EinwohnerData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ErwerbstaetigePro1000EinwohnerData"
                                             }
                                         }
                                     }
@@ -871,13 +871,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1004,7 +1004,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1012,7 +1012,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.GeoRegionSummary"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoRegionSummary"
                                             }
                                         }
                                     }
@@ -1023,13 +1023,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1055,7 +1055,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.GeoSpatialQueryRequest"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoSpatialQueryRequest"
                         }
                     }
                 ],
@@ -1065,7 +1065,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1073,7 +1073,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.GeoRegionSummary"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoRegionSummary"
                                             }
                                         }
                                     }
@@ -1084,13 +1084,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1179,25 +1179,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1244,13 +1244,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.GeoRegionVersions"
+                                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoRegionVersions"
                                         }
                                     }
                                 }
@@ -1260,19 +1260,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1366,7 +1366,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1374,7 +1374,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.KinderarmutData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.KinderarmutData"
                                             }
                                         }
                                     }
@@ -1385,13 +1385,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1490,7 +1490,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1498,7 +1498,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.LAURegion"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LAURegion"
                                             }
                                         }
                                     }
@@ -1509,13 +1509,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1562,13 +1562,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.LAURegion"
+                                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LAURegion"
                                         }
                                     }
                                 }
@@ -1578,13 +1578,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1619,13 +1619,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.RegionDatasets"
+                                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDatasets"
                                         }
                                     }
                                 }
@@ -1635,19 +1635,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1682,13 +1682,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.GeoRegionVersions"
+                                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoRegionVersions"
                                         }
                                     }
                                 }
@@ -1698,19 +1698,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1781,7 +1781,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1789,7 +1789,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.MedianeinkommenData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.MedianeinkommenData"
                                             }
                                         }
                                     }
@@ -1800,13 +1800,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1880,7 +1880,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1888,7 +1888,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.DatasetMetricsResult"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetMetricsResult"
                                             }
                                         }
                                     }
@@ -1899,13 +1899,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1930,7 +1930,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1938,7 +1938,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.DerivedMetricEntry"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DerivedMetricEntry"
                                             }
                                         }
                                     }
@@ -2013,13 +2013,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.DatasetMetricsResult"
+                                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetMetricsResult"
                                         }
                                     }
                                 }
@@ -2029,13 +2029,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2091,7 +2091,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2099,7 +2099,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsRegionSummary"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionSummary"
                                             }
                                         }
                                     }
@@ -2110,13 +2110,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2202,13 +2202,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.NutsRegionTimeSeries"
+                                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionTimeSeries"
                                         }
                                     }
                                 }
@@ -2218,19 +2218,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2265,13 +2265,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.RegionDatasets"
+                                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDatasets"
                                         }
                                     }
                                 }
@@ -2281,13 +2281,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2322,13 +2322,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.NutsRegionVersions"
+                                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionVersions"
                                         }
                                     }
                                 }
@@ -2338,19 +2338,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2421,7 +2421,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2429,7 +2429,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.SchuldnerquoteData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SchuldnerquoteData"
                                             }
                                         }
                                     }
@@ -2440,13 +2440,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2517,7 +2517,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2525,7 +2525,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.SgbIiQuoteData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SgbIiQuoteData"
                                             }
                                         }
                                     }
@@ -2536,13 +2536,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2590,7 +2590,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2598,7 +2598,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.SoziooekonomischesInventarEintrag"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SoziooekonomischesInventarEintrag"
                                             }
                                         }
                                     }
@@ -2609,13 +2609,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2686,7 +2686,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2694,7 +2694,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.StudierendeData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.StudierendeData"
                                             }
                                         }
                                     }
@@ -2705,13 +2705,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2796,7 +2796,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2804,7 +2804,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.UnemploymentData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentData"
                                             }
                                         }
                                     }
@@ -2815,13 +2815,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2906,7 +2906,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2914,7 +2914,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.UnemploymentAggregation"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentAggregation"
                                             }
                                         }
                                     }
@@ -2925,13 +2925,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2995,7 +2995,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3003,7 +3003,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.UnemploymentData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentData"
                                             }
                                         }
                                     }
@@ -3014,13 +3014,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -3091,7 +3091,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3099,7 +3099,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.WohngeldhaushalteData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.WohngeldhaushalteData"
                                             }
                                         }
                                     }
@@ -3110,13 +3110,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
                         }
                     }
                 }
@@ -3124,7 +3124,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.APIResponse": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -3137,7 +3137,7 @@ const docTemplate = `{
                     "example": "Operation erfolgreich"
                 },
                 "meta": {
-                    "$ref": "#/definitions/models.MetaInfo"
+                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.MetaInfo"
                 },
                 "success": {
                     "type": "boolean",
@@ -3145,7 +3145,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ArbeitsloseData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ArbeitsloseData": {
             "type": "object",
             "properties": {
                 "arbeitslose": {
@@ -3206,7 +3206,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ArbeitsvolumenData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ArbeitsvolumenData": {
             "type": "object",
             "properties": {
                 "arbeitsvolumen": {
@@ -3267,7 +3267,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.AuzubildendeData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.AuzubildendeData": {
             "type": "object",
             "properties": {
                 "auzubildende": {
@@ -3328,7 +3328,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.BeschaeftigungsquoteGemeindenData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BeschaeftigungsquoteGemeindenData": {
             "type": "object",
             "properties": {
                 "beschaeftigungsquote_prozent": {
@@ -3389,7 +3389,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.BeschaeftigungsquoteNuts3Data": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BeschaeftigungsquoteNuts3Data": {
             "type": "object",
             "properties": {
                 "beschaeftigungsquote_median": {
@@ -3462,7 +3462,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.BevoelkerungData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BevoelkerungData": {
             "type": "object",
             "properties": {
                 "bevoelkerung": {
@@ -3523,7 +3523,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.BruttoverdienstData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BruttoverdienstData": {
             "type": "object",
             "properties": {
                 "bruttoverdienst": {
@@ -3584,13 +3584,13 @@ const docTemplate = `{
                 }
             }
         },
-        "models.DatasetMetricsResult": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetMetricsResult": {
             "type": "object",
             "properties": {
                 "by_year": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.DatasetYearMetrics"
+                        "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetYearMetrics"
                     }
                 },
                 "column": {
@@ -3603,7 +3603,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.DatasetYearMetrics": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetYearMetrics": {
             "type": "object",
             "properties": {
                 "max": {
@@ -3656,7 +3656,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.DerivedMetricEntry": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DerivedMetricEntry": {
             "type": "object",
             "properties": {
                 "description": {
@@ -3664,7 +3664,7 @@ const docTemplate = `{
                     "example": "Einwohner je km²"
                 },
                 "formula": {
-                    "$ref": "#/definitions/models.FormulaDefinition"
+                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaDefinition"
                 },
                 "label": {
                     "type": "string",
@@ -3680,7 +3680,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.DurchschnittsalterData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DurchschnittsalterData": {
             "type": "object",
             "properties": {
                 "durchschnittsalter": {
@@ -3741,7 +3741,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ErwerbstaetigePro1000EinwohnerData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ErwerbstaetigePro1000EinwohnerData": {
             "type": "object",
             "properties": {
                 "erwerbstaetige_pro_1000_einwohner": {
@@ -3802,14 +3802,14 @@ const docTemplate = `{
                 }
             }
         },
-        "models.FormulaDefinition": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaDefinition": {
             "type": "object",
             "properties": {
                 "denominator": {
-                    "$ref": "#/definitions/models.FormulaSource"
+                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaSource"
                 },
                 "numerator": {
-                    "$ref": "#/definitions/models.FormulaSource"
+                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaSource"
                 },
                 "scale": {
                     "type": "number",
@@ -3821,7 +3821,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.FormulaSource": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaSource": {
             "type": "object",
             "properties": {
                 "builtin": {
@@ -3838,7 +3838,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.GeoPeriod": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoPeriod": {
             "type": "object",
             "properties": {
                 "valid_from": {
@@ -3851,7 +3851,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.GeoRegionSummary": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoRegionSummary": {
             "type": "object",
             "properties": {
                 "country_code": {
@@ -3861,7 +3861,7 @@ const docTemplate = `{
                 "datasets": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.RegionDataset"
+                        "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDataset"
                     }
                 },
                 "geo_id": {
@@ -3897,7 +3897,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.GeoRegionVersions": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoRegionVersions": {
             "type": "object",
             "properties": {
                 "geo_id": {
@@ -3919,12 +3919,12 @@ const docTemplate = `{
                 "periods": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.GeoPeriod"
+                        "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoPeriod"
                     }
                 }
             }
         },
-        "models.GeoSpatialQueryRequest": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoSpatialQueryRequest": {
             "type": "object",
             "properties": {
                 "from_year": {
@@ -3976,7 +3976,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.KinderarmutData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.KinderarmutData": {
             "type": "object",
             "properties": {
                 "geodata_id_ars": {
@@ -4037,7 +4037,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.LAURegion": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LAURegion": {
             "type": "object",
             "properties": {
                 "country": {
@@ -4050,7 +4050,7 @@ const docTemplate = `{
                 "datasets": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.RegionDataset"
+                        "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDataset"
                     }
                 },
                 "geometry_wgs84": {
@@ -4104,7 +4104,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.MedianeinkommenData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.MedianeinkommenData": {
             "type": "object",
             "properties": {
                 "geodata_id_ars": {
@@ -4165,7 +4165,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.MetaInfo": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.MetaInfo": {
             "type": "object",
             "properties": {
                 "limit": {
@@ -4182,7 +4182,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.NutsRegionMetadata": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionMetadata": {
             "type": "object",
             "properties": {
                 "ars": {
@@ -4215,24 +4215,24 @@ const docTemplate = `{
                 }
             }
         },
-        "models.NutsRegionResponse": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionResponse": {
             "type": "object",
             "properties": {
                 "datasets": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.RegionDataset"
+                        "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDataset"
                     }
                 },
                 "metadata": {
-                    "$ref": "#/definitions/models.NutsRegionMetadata"
+                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionMetadata"
                 },
                 "socioeconomic": {
-                    "$ref": "#/definitions/models.NutsSocioeconomicData"
+                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsSocioeconomicData"
                 }
             }
         },
-        "models.NutsRegionSummary": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionSummary": {
             "type": "object",
             "properties": {
                 "ars": {
@@ -4257,27 +4257,27 @@ const docTemplate = `{
                 }
             }
         },
-        "models.NutsRegionTimeSeries": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionTimeSeries": {
             "type": "object",
             "properties": {
                 "datasets": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.RegionDataset"
+                        "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDataset"
                     }
                 },
                 "metadata": {
-                    "$ref": "#/definitions/models.NutsRegionMetadata"
+                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionMetadata"
                 },
                 "socioeconomic": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.NutsSocioeconomicData"
+                        "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsSocioeconomicData"
                     }
                 }
             }
         },
-        "models.NutsRegionVersions": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionVersions": {
             "type": "object",
             "properties": {
                 "nuts_id": {
@@ -4295,12 +4295,12 @@ const docTemplate = `{
                 "periods": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.GeoPeriod"
+                        "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoPeriod"
                     }
                 }
             }
         },
-        "models.NutsSocioeconomicData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsSocioeconomicData": {
             "type": "object",
             "properties": {
                 "arbeitslose": {
@@ -4325,7 +4325,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.RegionDataset": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDataset": {
             "type": "object",
             "properties": {
                 "available_years": {
@@ -4349,13 +4349,13 @@ const docTemplate = `{
                 }
             }
         },
-        "models.RegionDatasets": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDatasets": {
             "type": "object",
             "properties": {
                 "datasets": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.RegionDataset"
+                        "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDataset"
                     }
                 },
                 "geo_id": {
@@ -4368,7 +4368,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.SchuldnerquoteData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SchuldnerquoteData": {
             "type": "object",
             "properties": {
                 "geodata_id_ars": {
@@ -4429,7 +4429,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.SgbIiQuoteData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SgbIiQuoteData": {
             "type": "object",
             "properties": {
                 "geodata_id_ars": {
@@ -4490,7 +4490,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.SoziooekonomischesInventarEintrag": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SoziooekonomischesInventarEintrag": {
             "type": "object",
             "properties": {
                 "dataset": {
@@ -4523,7 +4523,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.StudierendeData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.StudierendeData": {
             "type": "object",
             "properties": {
                 "geodata_id_ars": {
@@ -4584,7 +4584,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.UnemploymentAggregation": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentAggregation": {
             "type": "object",
             "properties": {
                 "avg_arbeitslose": {
@@ -4621,7 +4621,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.UnemploymentData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentData": {
             "type": "object",
             "properties": {
                 "arbeitslose": {
@@ -4669,7 +4669,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.WohngeldhaushalteData": {
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.WohngeldhaushalteData": {
             "type": "object",
             "properties": {
                 "geodata_id_ars": {
