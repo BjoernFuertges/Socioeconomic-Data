@@ -54,3 +54,6 @@ models:
     marts:
       +materialized: table
       +schema: transformed_data
+      fill_gaps:
+        +materialized: view
+        +schema: transformed_data

@@ -196,3 +196,40 @@ models:
         description: "Anzahl unterschiedlicher geodata_id_lau"
       - name: distinct_geodata_ars
         description: "Anzahl unterschiedlicher geodata_id_ars"
+
+  - name: mart_nuts3_timeseries_interpolated
+    description: >
+      Lückenlose Zeitreihen je (NUTS-3-Region, Dataset) mit zwei alternativen
+      Imputationsmethoden für fehlende Jahre: lineare Interpolation (Methode 1,
+      value_linear) und peer-basierte Fortschreibung über den Durchschnitt der
+      relativen Veränderung anderer Regionen derselben NUTS-2-Gruppe (Methode 3,
+      value_peer_trend). Kein Extrapolieren über den bekannten Jahresbereich
+      hinaus. Siehe Kommentar in mart_nuts3_timeseries_interpolated.sql und
+      docs/pipeline/dbt.md für Details und Evaluationsergebnisse.
+    columns:
+      - name: nuts3_id
+        description: "NUTS-3-Code der Zielregion (harmonisierte Zielversion, siehe mart_nuts3_sociodata_harmonized)"
+        tests:
+          - not_null
+      - name: dataset_slug
+        description: "Dataset-Slug (z.B. bevoelkerung, schuldnerquote)"
+        tests:
+          - not_null
+      - name: year
+        description: "Jahr der Beobachtung"
+        tests:
+          - not_null
+      - name: value
+        description: "Ausgabewert: Originalwert falls vorhanden, sonst die lineare Interpolation (Methode 1). Aus Gründen der Abwärtskompatibilität immer befüllt (kein Extrapolieren, daher keine Randjahre außerhalb der bekannten Spanne)."
+        tests:
+          - not_null
+      - name: is_interpolated
+        description: "true = Wert wurde imputiert (kein Originalwert vorhanden), false = Originalwert aus mart_nuts3_sociodata_harmonized"
+        tests:
+          - not_null
+      - name: value_linear
+        description: "Methode-1-Schätzung (lineare Interpolation zwischen letztem bekannten Vor- und nächstem bekannten Nachjahr). Nur befüllt wenn is_interpolated = true, sonst NULL."
+      - name: value_peer_trend
+        description: "Methode-3-Schätzung (Fortschreibung des Vorjahreswerts mit der durchschnittlichen relativen Veränderung anderer Regionen derselben NUTS-2-Gruppe). Nur befüllt wenn is_interpolated = true UND sowohl der eigene Vorjahreswert als auch mindestens ein Peer-Wert bekannt sind, sonst NULL."
+      - name: n_peer_regions
+        description: "Anzahl der Peer-Regionen (gleiche NUTS-2-Gruppe), die zur Berechnung von value_peer_trend beigetragen haben. NULL wenn is_interpolated = false oder value_peer_trend nicht berechenbar war."

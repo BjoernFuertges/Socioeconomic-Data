@@ -12,12 +12,14 @@ type ArbeitsloseData struct {
 // ArbeitsloseConfig ist die Dataset-Konfiguration für Arbeitslose-Daten,
 // generiert aus dbt/.../models/staging/stg_arbeitslose_kreise_schema.yml
 var ArbeitsloseConfig = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_arbeitslose_kreise",
-	ValueColumns: []string{"arbeitslose"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "arbeitslose",
+	Schema:            "transformed_data",
+	Table:             "stg_arbeitslose_kreise",
+	InterpolatedTable: "api_arbeitslose_fill_gaps",
+	ValueColumns:      []string{"arbeitslose"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "arbeitslose",
+	IsHarmonized:      true,
 }
 
 // ArbeitsvolumenData repräsentiert Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -29,12 +31,14 @@ type ArbeitsvolumenData struct {
 // ArbeitsvolumenConfig ist die Dataset-Konfiguration für Arbeitsvolumen-Daten,
 // generiert aus dbt/.../models/staging/stg_arbeitsvolumen_kreise_schema.yml
 var ArbeitsvolumenConfig = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_arbeitsvolumen_kreise",
-	ValueColumns: []string{"arbeitsvolumen"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "arbeitsvolumen",
+	Schema:            "transformed_data",
+	Table:             "stg_arbeitsvolumen_kreise",
+	InterpolatedTable: "api_arbeitsvolumen_fill_gaps",
+	ValueColumns:      []string{"arbeitsvolumen"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "arbeitsvolumen",
+	IsHarmonized:      true,
 }
 
 // AuzubildendeData repräsentiert Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -46,12 +50,14 @@ type AuzubildendeData struct {
 // AuzubildendeConfig ist die Dataset-Konfiguration für Auzubildende-Daten,
 // generiert aus dbt/.../models/staging/stg_auzubildende_kreise_schema.yml
 var AuzubildendeConfig = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_auzubildende_kreise",
-	ValueColumns: []string{"auzubildende"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "auzubildende",
+	Schema:            "transformed_data",
+	Table:             "stg_auzubildende_kreise",
+	InterpolatedTable: "api_auzubildende_fill_gaps",
+	ValueColumns:      []string{"auzubildende"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "auzubildende",
+	IsHarmonized:      true,
 }
 
 // BeschaeftigungsquoteGemeindenData repräsentiert Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -63,12 +69,14 @@ type BeschaeftigungsquoteGemeindenData struct {
 // BeschaeftigungsquoteGemeindenConfig ist die Dataset-Konfiguration für BeschaeftigungsquoteGemeinden-Daten,
 // generiert aus dbt/.../models/staging/stg_beschaeftigungsquote_gemeinden_schema.yml
 var BeschaeftigungsquoteGemeindenConfig = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_beschaeftigungsquote_gemeinden",
-	ValueColumns: []string{"beschaeftigungsquote_prozent"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "beschaeftigungsquote-gemeinden",
+	Schema:            "transformed_data",
+	Table:             "stg_beschaeftigungsquote_gemeinden",
+	InterpolatedTable: "",
+	ValueColumns:      []string{"beschaeftigungsquote_prozent"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "beschaeftigungsquote-gemeinden",
+	IsHarmonized:      false,
 }
 
 // BeschaeftigungsquoteNuts3Data repräsentiert Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
@@ -83,12 +91,14 @@ type BeschaeftigungsquoteNuts3Data struct {
 // BeschaeftigungsquoteNuts3Config ist die Dataset-Konfiguration für BeschaeftigungsquoteNuts3-Daten,
 // generiert aus dbt/.../models/staging/stg_beschaeftigungsquote_nuts3_schema.yml
 var BeschaeftigungsquoteNuts3Config = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_beschaeftigungsquote_nuts3",
-	ValueColumns: []string{"beschaeftigungsquote_prozent", "beschaeftigungsquote_median", "beschaeftigungsquote_ungewichtet", "gemeinden_count"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "beschaeftigungsquote-nuts3",
+	Schema:            "transformed_data",
+	Table:             "stg_beschaeftigungsquote_nuts3",
+	InterpolatedTable: "",
+	ValueColumns:      []string{"beschaeftigungsquote_prozent", "beschaeftigungsquote_median", "beschaeftigungsquote_ungewichtet", "gemeinden_count"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "beschaeftigungsquote-nuts3",
+	IsHarmonized:      true,
 }
 
 // BevoelkerungData repräsentiert Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -100,12 +110,14 @@ type BevoelkerungData struct {
 // BevoelkerungConfig ist die Dataset-Konfiguration für Bevoelkerung-Daten,
 // generiert aus dbt/.../models/staging/stg_bevoelkerung_kreise_schema.yml
 var BevoelkerungConfig = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_bevoelkerung_kreise",
-	ValueColumns: []string{"bevoelkerung"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "bevoelkerung",
+	Schema:            "transformed_data",
+	Table:             "stg_bevoelkerung_kreise",
+	InterpolatedTable: "api_bevoelkerung_fill_gaps",
+	ValueColumns:      []string{"bevoelkerung"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "bevoelkerung",
+	IsHarmonized:      true,
 }
 
 // BruttoverdienstData repräsentiert Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -117,12 +129,14 @@ type BruttoverdienstData struct {
 // BruttoverdienstConfig ist die Dataset-Konfiguration für Bruttoverdienst-Daten,
 // generiert aus dbt/.../models/staging/stg_bruttoverdienst_kreise_schema.yml
 var BruttoverdienstConfig = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_bruttoverdienst_kreise",
-	ValueColumns: []string{"bruttoverdienst"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "bruttoverdienst",
+	Schema:            "transformed_data",
+	Table:             "stg_bruttoverdienst_kreise",
+	InterpolatedTable: "api_bruttoverdienst_fill_gaps",
+	ValueColumns:      []string{"bruttoverdienst"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "bruttoverdienst",
+	IsHarmonized:      true,
 }
 
 // DurchschnittsalterData repräsentiert Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -134,12 +148,14 @@ type DurchschnittsalterData struct {
 // DurchschnittsalterConfig ist die Dataset-Konfiguration für Durchschnittsalter-Daten,
 // generiert aus dbt/.../models/staging/stg_durchschnittsalter_kreise_schema.yml
 var DurchschnittsalterConfig = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_durchschnittsalter_kreise",
-	ValueColumns: []string{"durchschnittsalter"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "durchschnittsalter",
+	Schema:            "transformed_data",
+	Table:             "stg_durchschnittsalter_kreise",
+	InterpolatedTable: "api_durchschnittsalter_fill_gaps",
+	ValueColumns:      []string{"durchschnittsalter"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "durchschnittsalter",
+	IsHarmonized:      true,
 }
 
 // ErwerbstaetigePro1000EinwohnerData repräsentiert Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -151,12 +167,14 @@ type ErwerbstaetigePro1000EinwohnerData struct {
 // ErwerbstaetigePro1000EinwohnerConfig ist die Dataset-Konfiguration für ErwerbstaetigePro1000Einwohner-Daten,
 // generiert aus dbt/.../models/staging/stg_erwerbstaetige_pro_1000_einwohner_kreise_schema.yml
 var ErwerbstaetigePro1000EinwohnerConfig = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_erwerbstaetige_pro_1000_einwohner_kreise",
-	ValueColumns: []string{"erwerbstaetige_pro_1000_einwohner"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "erwerbstaetige_pro_1000_einwohner",
+	Schema:            "transformed_data",
+	Table:             "stg_erwerbstaetige_pro_1000_einwohner_kreise",
+	InterpolatedTable: "api_erwerbstaetige_pro_1000_einwohner_fill_gaps",
+	ValueColumns:      []string{"erwerbstaetige_pro_1000_einwohner"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "erwerbstaetige_pro_1000_einwohner",
+	IsHarmonized:      true,
 }
 
 // KinderarmutData repräsentiert Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -168,12 +186,14 @@ type KinderarmutData struct {
 // KinderarmutConfig ist die Dataset-Konfiguration für Kinderarmut-Daten,
 // generiert aus dbt/.../models/staging/stg_kinderarmut_kreise_schema.yml
 var KinderarmutConfig = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_kinderarmut_kreise",
-	ValueColumns: []string{"kinderarmut"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "kinderarmut",
+	Schema:            "transformed_data",
+	Table:             "stg_kinderarmut_kreise",
+	InterpolatedTable: "api_kinderarmut_fill_gaps",
+	ValueColumns:      []string{"kinderarmut"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "kinderarmut",
+	IsHarmonized:      true,
 }
 
 // MedianeinkommenData repräsentiert Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -185,12 +205,14 @@ type MedianeinkommenData struct {
 // MedianeinkommenConfig ist die Dataset-Konfiguration für Medianeinkommen-Daten,
 // generiert aus dbt/.../models/staging/stg_medianeinkommen_kreise_schema.yml
 var MedianeinkommenConfig = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_medianeinkommen_kreise",
-	ValueColumns: []string{"medianeinkommen"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "medianeinkommen",
+	Schema:            "transformed_data",
+	Table:             "stg_medianeinkommen_kreise",
+	InterpolatedTable: "api_medianeinkommen_fill_gaps",
+	ValueColumns:      []string{"medianeinkommen"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "medianeinkommen",
+	IsHarmonized:      true,
 }
 
 // SchuldnerquoteData repräsentiert Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -202,12 +224,14 @@ type SchuldnerquoteData struct {
 // SchuldnerquoteConfig ist die Dataset-Konfiguration für Schuldnerquote-Daten,
 // generiert aus dbt/.../models/staging/stg_schuldnerquote_kreise_schema.yml
 var SchuldnerquoteConfig = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_schuldnerquote_kreise",
-	ValueColumns: []string{"schuldnerquote_prozent"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "schuldnerquote",
+	Schema:            "transformed_data",
+	Table:             "stg_schuldnerquote_kreise",
+	InterpolatedTable: "api_schuldnerquote_fill_gaps",
+	ValueColumns:      []string{"schuldnerquote_prozent"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "schuldnerquote",
+	IsHarmonized:      true,
 }
 
 // SgbIiQuoteData repräsentiert Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -219,12 +243,14 @@ type SgbIiQuoteData struct {
 // SgbIiQuoteConfig ist die Dataset-Konfiguration für SgbIiQuote-Daten,
 // generiert aus dbt/.../models/staging/stg_sgb_ii_quote_kreise_schema.yml
 var SgbIiQuoteConfig = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_sgb_ii_quote_kreise",
-	ValueColumns: []string{"sgb_ii_quote_prozent"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "sgb_ii_quote",
+	Schema:            "transformed_data",
+	Table:             "stg_sgb_ii_quote_kreise",
+	InterpolatedTable: "api_sgb_ii_quote_fill_gaps",
+	ValueColumns:      []string{"sgb_ii_quote_prozent"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "sgb_ii_quote",
+	IsHarmonized:      true,
 }
 
 // StudierendeData repräsentiert Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -236,12 +262,14 @@ type StudierendeData struct {
 // StudierendeConfig ist die Dataset-Konfiguration für Studierende-Daten,
 // generiert aus dbt/.../models/staging/stg_studierende_kreise_schema.yml
 var StudierendeConfig = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_studierende_kreise",
-	ValueColumns: []string{"studierende"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "studierende",
+	Schema:            "transformed_data",
+	Table:             "stg_studierende_kreise",
+	InterpolatedTable: "api_studierende_fill_gaps",
+	ValueColumns:      []string{"studierende"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "studierende",
+	IsHarmonized:      true,
 }
 
 // WohngeldhaushalteData repräsentiert Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -253,10 +281,12 @@ type WohngeldhaushalteData struct {
 // WohngeldhaushalteConfig ist die Dataset-Konfiguration für Wohngeldhaushalte-Daten,
 // generiert aus dbt/.../models/staging/stg_wohngeldhaushalte_kreise_schema.yml
 var WohngeldhaushalteConfig = KreisDatasetConfig{
-	Schema:       "transformed_data",
-	Table:        "stg_wohngeldhaushalte_kreise",
-	ValueColumns: []string{"wohngeldhaushalte_je_1000"},
-	DefaultLimit: 1000,
-	OrderBy:      "geodata_id_nuts, year",
-	RouteSlug:    "wohngeldhaushalte",
+	Schema:            "transformed_data",
+	Table:             "stg_wohngeldhaushalte_kreise",
+	InterpolatedTable: "api_wohngeldhaushalte_fill_gaps",
+	ValueColumns:      []string{"wohngeldhaushalte_je_1000"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "wohngeldhaushalte",
+	IsHarmonized:      true,
 }

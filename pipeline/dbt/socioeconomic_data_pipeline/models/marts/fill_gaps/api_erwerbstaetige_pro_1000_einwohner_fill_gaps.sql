@@ -1,0 +1,1 @@
+{{ render_nuts3_fill_gaps_view('stg_erwerbstaetige_pro_1000_einwohner_kreise', 'erwerbstaetige_pro_1000_einwohner', 'erwerbstaetige_pro_1000_einwohner') }}

@@ -1,0 +1,1 @@
+{{ render_nuts3_fill_gaps_view('stg_medianeinkommen_kreise', 'medianeinkommen', 'medianeinkommen') }}

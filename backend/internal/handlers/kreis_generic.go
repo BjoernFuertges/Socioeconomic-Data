@@ -31,16 +31,35 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 		return
 	}
 
+	if filter.FillGaps {
+		if cfg.InterpolatedTable == "" {
+			respondBadRequest(c, fmt.Sprintf(
+				"fill_gaps wird für den Datensatz %q nicht unterstützt",
+				cfg.RouteSlug,
+			))
+			return
+		}
+	}
+
 	if filter.Limit == 0 {
 		filter.Limit = cfg.DefaultLimit
 	}
 
+	schema := cfg.Schema
+	table := cfg.Table
+	extraColumns := ""
+	if filter.FillGaps {
+		table = cfg.InterpolatedTable
+		extraColumns = ", d.is_interpolated, d.value_linear, d.value_peer_trend, d.n_peer_regions"
+	}
+
 	query := fmt.Sprintf(
-		`SELECT %s, %s FROM %s.%s d WHERE 1=1`,
+		`SELECT %s, %s%s FROM %s.%s d WHERE 1=1`,
 		sozioKreisBaseColumns,
 		strings.Join(cfg.ValueColumns, ", "),
-		cfg.Schema,
-		cfg.Table,
+		extraColumns,
+		schema,
+		table,
 	)
 
 	args := []interface{}{}
@@ -156,6 +175,126 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data:    data,
+		Meta: &models.MetaInfo{
+			Total:  total,
+			Offset: offset,
+		},
+	})
+}
+
+// getKreisTimeseriesEndpoint liefert die typstabile Timeseries-Antwort für
+// harmonisierte Kreis-Datensätze. Der dedizierte Endpoint vermeidet, dass
+// dieselbe Route je nach Query-Parameter unterschiedliche Response-Schemata
+// zurückliefert.
+func getKreisTimeseriesEndpoint(h *Handler, c *gin.Context, cfg models.KreisDatasetConfig) {
+	limitNull := normalizeNullableLimitQuery(c)
+
+	var filter models.SozioKreisFilter
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		respondBadRequest(c, fmt.Sprintf("Ungültige Query-Parameter: %v", err))
+		return
+	}
+
+	getKreisTimeseriesData(h, c, cfg, filter, limitNull)
+}
+
+// getKreisTimeseriesData liefert die lückenlose, interpolierte Zeitreihe aus
+// transformed_data.mart_nuts3_timeseries_interpolated statt der rohen
+// Kreis-Tabelle (fill_gaps=true). Fehlende Jahre werden dabei mit
+// is_interpolated + value_linear + value_peer_trend transparent gekennzeichnet
+// statt einfach zu fehlen. Unterstützt nur die Filter, die auf
+// mart_nuts3_timeseries_interpolated sinnvoll anwendbar sind
+// (geodata_id_nuts, nuts_parent_id, year, from_year, to_year); geodata_name-
+// und point-Filter erfordern die Originaldaten und werden abgelehnt.
+func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetConfig, filter models.SozioKreisFilter, limitNull bool) {
+	if !cfg.IsHarmonized {
+		respondBadRequest(c, fmt.Sprintf(
+			"fill_gaps wird für den Datensatz %q nicht unterstützt (nicht Teil von mart_nuts3_sociodata_harmonized)",
+			cfg.RouteSlug,
+		))
+		return
+	}
+	if strings.TrimSpace(filter.GeodataNameContains) != "" {
+		respondBadRequest(c, "geodata_name_contains wird in Kombination mit fill_gaps nicht unterstützt")
+		return
+	}
+	if strings.TrimSpace(filter.Point) != "" {
+		respondBadRequest(c, "point wird in Kombination mit fill_gaps nicht unterstützt")
+		return
+	}
+
+	if filter.Limit == 0 {
+		filter.Limit = cfg.DefaultLimit
+	}
+
+	query := `SELECT nuts3_id, dataset_slug, year, value, is_interpolated, value_linear, value_peer_trend, n_peer_regions ` +
+		`FROM transformed_data.mart_nuts3_timeseries_interpolated WHERE dataset_slug = $1`
+	args := []interface{}{cfg.RouteSlug}
+	argPos := 2
+
+	if filter.GeodataIDNUTS != "" {
+		query += fmt.Sprintf(" AND nuts3_id = $%d", argPos)
+		args = append(args, filter.GeodataIDNUTS)
+		argPos++
+	}
+
+	if filter.NutsParentID != "" {
+		normalizedParent := strings.ToUpper(strings.TrimSpace(filter.NutsParentID))
+		query += fmt.Sprintf(" AND nuts3_id LIKE $%d", argPos)
+		args = append(args, normalizedParent+"%")
+		argPos++
+	}
+
+	if filter.Year != nil {
+		query += fmt.Sprintf(" AND year = $%d", argPos)
+		args = append(args, *filter.Year)
+		argPos++
+	}
+
+	if filter.FromYear != nil {
+		query += fmt.Sprintf(" AND year >= $%d", argPos)
+		args = append(args, *filter.FromYear)
+		argPos++
+	}
+
+	if filter.ToYear != nil {
+		query += fmt.Sprintf(" AND year <= $%d", argPos)
+		args = append(args, *filter.ToYear)
+		argPos++
+	}
+
+	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
+	var total int
+	if err := h.DB.QueryRow(countQuery, args...).Scan(&total); err != nil {
+		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+		return
+	}
+
+	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
+		c,
+		query,
+		args,
+		argPos,
+		"nuts3_id, year",
+		cfg.DefaultLimit,
+		filter.Limit,
+		filter.Offset,
+		limitNull,
+	)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+
+	points := make([]models.NutsTimeseriesPoint, 0)
+	if err := h.DB.Select(&points, pagedQuery, pagedArgs...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    points,
 		Meta: &models.MetaInfo{
 			Total:  total,
 			Offset: offset,

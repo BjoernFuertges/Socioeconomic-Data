@@ -10,12 +10,29 @@
 }}
 
 /*
-  Lückenlose Zeitreihen mit linearer Interpolation für fehlende Jahre.
+  Lückenlose Zeitreihen mit zwei alternativen Imputationsmethoden für
+  fehlende Jahre je (nuts3_id, dataset_slug):
+
+    Methode 1 (linear)      value_linear      - lineare Interpolation
+      zwischen dem letzten bekannten Vor- und dem nächsten bekannten
+      Nachjahr (ggf. über mehrere Lückenjahre hinweg).
+    Methode 3 (peer_trend)  value_peer_trend  - Fortschreibung des
+      zuletzt bekannten Eigenwerts (Jahr - 1) mit der durchschnittlichen
+      relativen Veränderung anderer Regionen derselben NUTS-2-Gruppe
+      (erste 4 Zeichen der NUTS-3-ID) von (Jahr - 1) auf Jahr. Im
+      Unterschied zu Methode 1 wird dabei NICHT über mehrere Jahre
+      hinweg fortgeschrieben - ist bereits der Vorjahreswert selbst
+      unbekannt, bleibt value_peer_trend NULL.
+
+  `value` bleibt aus Gründen der Abwärtskompatibilität der "amtliche"
+  Ausgabewert (Originalwert, sonst Methode-1-Schätzung). `value_linear`
+  und `value_peer_trend` werden nur für tatsächlich interpolierte Zeilen
+  befüllt (is_interpolated = true), damit Konsumenten (z.B. die API)
+  beide Schätzungen transparent nebeneinander ausgeben können, statt sie
+  stillschweigend zu vermischen.
 
   Für jede (nuts3_id, dataset_slug)-Kombination wird die bekannte Jahresspanne
   vollständig aufgefüllt (GENERATE_SERIES von min_year bis max_year).
-  Fehlende Werte werden linear zwischen den benachbarten Beobachtungen
-  interpoliert.
 
   Kein Extrapolieren: Werte außerhalb der bekannten Spanne bleiben NULL
   (werden gefiltert) — Randwerte werden nicht fortgeschrieben.
@@ -23,8 +40,20 @@
   is_interpolated = false  → Originalwert aus mart_nuts3_sociodata_harmonized
   is_interpolated = true   → Wert linear interpoliert zwischen Nachbarn
 
-  Interpolationsformel:
+  Interpolationsformel (Methode 1):
     value = v_prev + (v_next - v_prev) × (year - y_prev) / (y_next - y_prev)
+
+  Fortschreibungsformel (Methode 3):
+    value_peer_trend = v_own_prev × (1 + ⌀ rel_change_peers)
+    rel_change_peers  = (v_peer_year - v_peer_prevyear) / v_peer_prevyear
+    (nur Peers mit bekanntem, von 0 verschiedenem Vorjahreswert)
+
+  Laut Evaluation (analysis/impute_missing_values.py, Leave-one-out über
+  520 Stichproben aus allen 13 Kreis-Datensätzen, siehe
+  docs/pipeline/dbt.md#interpolationsmethoden-vergleich): Methode 1 liefert
+  im Mittel die genaueren Schätzungen (MAPE 2.45 %, Trefferquote 51 %),
+  Methode 3 ist bei einigen Datensätzen (u.a. schuldnerquote,
+  wohngeldhaushalte, medianeinkommen) knapp überlegen (Trefferquote 42 %).
 
   Technischer Hinweis zum LOCF-Trick (Last Observation Carried Forward):
     count(value) zählt kumulativ nicht-null Werte in der Fensterrahmung.
@@ -128,29 +157,120 @@ with_next as (
     from with_next_group
 ),
 
--- Schritt 3: Interpolation anwenden
-interpolated as (
+/*
+  Methode 3 - Peer-basierte Fortschreibung.
+
+  Schritt A: NUTS-2-Gruppe je Region (erste 4 Zeichen der NUTS-3-ID).
+  Schritt B: Relative Veränderung jeder Region von (Jahr - 1) auf Jahr,
+             basierend ausschließlich auf Originalwerten (with_values),
+             nicht auf bereits interpolierten/fortgeschriebenen Werten.
+  Schritt C: Durchschnittliche relative Veränderung je (NUTS-2-Gruppe,
+             Dataset, Jahr) über alle Regionen mit bekanntem Vor- und
+             Jahreswert (Vorjahreswert 0 wird ausgeschlossen, Division
+             durch 0). Die Zielregion selbst trägt hierzu nichts bei,
+             da ihr eigener Jahreswert per Definition unbekannt ist.
+  Schritt D: Eigener Vorjahreswert (unmittelbares Jahr - 1, aus
+             with_values, kein LOCF über mehrere Jahre) je Zielregion.
+*/
+with_peer_base as (
     select
         nuts3_id,
         dataset_slug,
         year,
+        value,
+        substr(nuts3_id, 1, 4) as nuts2_prefix
+    from with_values
+),
+
+peer_rel_change as (
+    select
+        cur.nuts2_prefix,
+        cur.dataset_slug,
+        cur.year,
+        case
+            when prev.value is not null
+                and prev.value != 0
+                and cur.value is not null
+                then (cur.value - prev.value) / prev.value
+        end as rel_change
+    from with_peer_base cur
+    join with_peer_base prev
+        on  prev.nuts3_id     = cur.nuts3_id
+        and prev.dataset_slug = cur.dataset_slug
+        and prev.year         = cur.year - 1
+),
+
+peer_avg_change as (
+    select
+        nuts2_prefix,
+        dataset_slug,
+        year,
+        avg(rel_change)   as avg_rel_change,
+        count(rel_change) as n_peer_regions
+    from peer_rel_change
+    where rel_change is not null
+    group by nuts2_prefix, dataset_slug, year
+),
+
+own_prev_actual as (
+    select
+        nuts3_id,
+        dataset_slug,
+        year + 1 as target_year,
+        value    as own_prev_value
+    from with_values
+    where value is not null
+),
+
+-- Schritt 3: Interpolation anwenden
+interpolated as (
+    select
+        n.nuts3_id,
+        n.dataset_slug,
+        n.year,
         case
             -- Originalwert vorhanden → unverändert
-            when value is not null
-                then value
+            when n.value is not null
+                then n.value
             -- Kein Vorgänger oder kein Nachfolger → kein Extrapolieren
-            when prev_value is null or next_value is null
+            when n.prev_value is null or n.next_value is null
                 then null
-            -- Lineare Interpolation
-            else prev_value
-                + (next_value - prev_value)
-                * (year       - prev_year )::numeric
-                / nullif((next_year - prev_year)::numeric, 0)
+            -- Lineare Interpolation (Methode 1)
+            else n.prev_value
+                + (n.next_value - n.prev_value)
+                * (n.year       - n.prev_year )::numeric
+                / nullif((n.next_year - n.prev_year)::numeric, 0)
         end                                                   as value,
-        value is null
-            and prev_value is not null
-            and next_value is not null                        as is_interpolated
-    from with_next
+        n.value is null
+            and n.prev_value is not null
+            and n.next_value is not null                      as is_interpolated,
+        -- Methode 1: nur für tatsächlich interpolierte Zeilen befüllt,
+        -- ansonsten identisch mit dem obigen "value" (kein Duplikat nötig).
+        case
+            when n.value is null
+                and n.prev_value is not null
+                and n.next_value is not null
+                then n.prev_value
+                    + (n.next_value - n.prev_value)
+                    * (n.year       - n.prev_year )::numeric
+                    / nullif((n.next_year - n.prev_year)::numeric, 0)
+        end                                                   as value_linear,
+        -- Methode 3: nur befüllt, wenn sowohl der eigene Vorjahreswert als
+        -- auch mindestens ein Peer-Wert für dieses (Jahr, Dataset) bekannt ist.
+        case
+            when n.value is null
+                then opa.own_prev_value * (1 + pac.avg_rel_change)
+        end                                                   as value_peer_trend,
+        case when n.value is null then pac.n_peer_regions end as n_peer_regions
+    from with_next n
+    left join peer_avg_change pac
+        on  pac.nuts2_prefix = substr(n.nuts3_id, 1, 4)
+        and pac.dataset_slug = n.dataset_slug
+        and pac.year         = n.year
+    left join own_prev_actual opa
+        on  opa.nuts3_id     = n.nuts3_id
+        and opa.dataset_slug = n.dataset_slug
+        and opa.target_year  = n.year
 )
 
 -- Zeilen ohne Wert (außerhalb Randbereich) rausfiltern

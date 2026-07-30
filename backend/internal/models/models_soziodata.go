@@ -18,6 +18,10 @@ type SozioBaseData struct {
 	Year            int    `json:"year" db:"year" example:"2020"`
 	ObservationDate string `json:"observation_date" db:"observation_date" example:"2020-01-01"`
 	HasValidValue   bool   `json:"has_valid_value" db:"has_valid_value" example:"true"`
+	IsInterpolated  *bool  `json:"is_interpolated,omitempty" db:"is_interpolated" example:"true"`
+	ValueLinear     *float64 `json:"value_linear,omitempty" db:"value_linear" example:"8.78"`
+	ValuePeerTrend  *float64 `json:"value_peer_trend,omitempty" db:"value_peer_trend" example:"8.50"`
+	NPeerRegions    *int   `json:"n_peer_regions,omitempty" db:"n_peer_regions" example:"11"`
 }
 
 // SozioKreisFilter sind die einheitlichen Query-Parameter für alle Kreis-Datensätze.
@@ -29,8 +33,12 @@ type SozioKreisFilter struct {
 	FromYear            *int   `form:"from_year" example:"2018"`
 	ToYear              *int   `form:"to_year" example:"2022"`
 	Point               string `form:"point" example:"13.404954,52.520008"`
-	Limit               int    `form:"limit" binding:"omitempty,min=1,max=10000" example:"100"`
-	Offset              int    `form:"offset" binding:"omitempty,min=0" example:"0"`
+	// FillGaps schaltet auf die lückenlose, interpolierte Zeitreihe aus
+	// mart_nuts3_timeseries_interpolated um (nur bei IsHarmonized-Datensätzen
+	// unterstützt, siehe KreisDatasetConfig.IsHarmonized).
+	FillGaps bool `form:"fill_gaps" example:"false"`
+	Limit    int  `form:"limit" binding:"omitempty,min=1,max=10000" example:"100"`
+	Offset   int  `form:"offset" binding:"omitempty,min=0" example:"0"`
 }
 
 // KreisDatasetConfig beschreibt einen Kreis-Datensatz für das generische Query-System.
@@ -38,10 +46,40 @@ type SozioKreisFilter struct {
 type KreisDatasetConfig struct {
 	Schema       string
 	Table        string
+	InterpolatedTable string
 	ValueColumns []string // datensatzspezifische DB-Spaltennamen (zusätzlich zu SozioBaseData)
 	DefaultLimit int
 	OrderBy      string
 	RouteSlug    string
+	// IsHarmonized = true, wenn dieser Datensatz mit demselben Slug (RouteSlug)
+	// auch in mart_nuts3_sociodata_harmonized / mart_nuts3_timeseries_interpolated
+	// enthalten ist. Nur dann unterstützt der Endpoint den fill_gaps-Query-
+	// Parameter (lückenlose Zeitreihe inkl. Interpolationskennzeichnung).
+	IsHarmonized bool
+}
+
+// NutsTimeseriesPoint repräsentiert einen Zeitreihenpunkt aus
+// transformed_data.mart_nuts3_timeseries_interpolated - wird von allen
+// harmonisierten Kreis-Endpoints zurückgegeben, wenn ?fill_gaps=true gesetzt
+// ist. Enthält den amtlichen Ausgabewert (value) sowie - transparent für
+// API-Konsumenten - beide alternativen Imputationsschätzungen für fehlende
+// Jahre (Methode 1: lineare Interpolation, Methode 3: peer-basierte
+// Fortschreibung).
+type NutsTimeseriesPoint struct {
+	NutsID      string  `db:"nuts3_id"        json:"nuts_id"        example:"DE226"`
+	DatasetSlug string  `db:"dataset_slug"    json:"dataset_slug"   example:"wohngeldhaushalte"`
+	Year        int     `db:"year"            json:"year"           example:"2021"`
+	Value       float64 `db:"value"           json:"value"          example:"8.78"`
+	// true = Wert wurde imputiert (kein Originalwert vorhanden für dieses Jahr).
+	IsInterpolated bool `db:"is_interpolated" json:"is_interpolated" example:"true"`
+	// Methode-1-Schätzung (lineare Interpolation). Nur bei is_interpolated = true befüllt.
+	ValueLinear *float64 `db:"value_linear" json:"value_linear,omitempty" example:"8.78"`
+	// Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen
+	// Veränderung anderer Regionen derselben NUTS-2-Gruppe). Nur befüllt, wenn
+	// is_interpolated = true und die Schätzung berechenbar war.
+	ValuePeerTrend *float64 `db:"value_peer_trend" json:"value_peer_trend,omitempty" example:"8.50"`
+	// Anzahl Peer-Regionen (gleiche NUTS-2-Gruppe), die zu value_peer_trend beigetragen haben.
+	NPeerRegions *int `db:"n_peer_regions" json:"n_peer_regions,omitempty" example:"11"`
 }
 
 // SoziooekonomischesInventarEintrag beschreibt die Datenverfügbarkeit je Datensatz, Jahr und Geodatenebene.

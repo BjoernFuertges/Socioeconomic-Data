@@ -69,6 +69,73 @@ from the dbt schema YAMLs (e.g. `bevoelkerung`, `schuldnerquote`,
 `arbeitslose`, ...). These are produced by `cmd/gen-models`, see
 [`handlers_soziodata_generated.go`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/backend/internal/handlers/handlers_soziodata_generated.go).
 
+### Gap-free time series (`fill_gaps` and `/timeseries`)
+
+13 of the single-value generated dataset endpoints fed into
+[`mart_nuts3_sociodata_harmonized`](../pipeline/dbt.md#interpolation-methods-and-evaluation),
+expose interpolated values directly on the standard route via `fill_gaps=true`:
+
+```
+GET /api/v1/wohngeldhaushalte?geodata_id_nuts=DE226&fill_gaps=true
+```
+
+The endpoint keeps the usual dataset-specific response shape and adds the
+optional interpolation metadata fields `is_interpolated`, `value_linear`,
+`value_peer_trend` and `n_peer_regions` when the fill-gaps output view is
+used. This works through per-dataset dbt views (`api_*_fill_gaps`) that join
+the generic timeseries mart back onto API-shaped region metadata.
+
+For consumers that want the reduced, explicitly timeseries-shaped payload,
+harmonized datasets also expose a dedicated endpoint:
+
+```
+GET /api/v1/wohngeldhaushalte/timeseries?geodata_id_nuts=DE226
+```
+
+The `/timeseries` endpoint switches from the raw per-dataset table to
+`transformed_data.mart_nuts3_timeseries_interpolated` and returns **one
+entry per year in the known range**, including years that were originally
+missing, transparently flagged instead of a single, silently-chosen number:
+
+```json
+{
+  "nuts_id": "DE226",
+  "dataset_slug": "wohngeldhaushalte",
+  "year": 2021,
+  "value": 8.775,
+  "is_interpolated": true,
+  "value_linear": 8.775,
+  "value_peer_trend": 8.500951924915944,
+  "n_peer_regions": 11
+}
+```
+
+- `value` is the value actually used downstream (original value, or the
+  linear-interpolation estimate if the year was missing).
+- `is_interpolated` flags whether the row was estimated rather than an
+  original observation.
+- `value_linear` / `value_peer_trend` are only populated for interpolated
+  rows and expose **both** estimation methods side by side (linear
+  interpolation vs. peer-region trend carry-forward, see
+  [dbt: Interpolation methods and evaluation](../pipeline/dbt.md#interpolation-methods-and-evaluation))
+  so consumers can decide which one to trust rather than the API silently
+  picking one. `value_peer_trend` can be `null` if it wasn't computable.
+- `n_peer_regions` reports how many regions of the same NUTS-2 group
+  contributed to `value_peer_trend`.
+
+`/timeseries` only supports the `geodata_id_nuts`, `nuts_parent_id`,
+`year`, `from_year` and `to_year` filters (not `geodata_name_contains` or
+`point`, since those require the original per-dataset columns that don't
+exist in the interpolated mart). `beschaeftigungsquote-gemeinden` has no
+`/timeseries` endpoint.
+
+`beschaeftigungsquote-nuts3` remains a special case: its route still has a
+dedicated `/timeseries` endpoint, but `fill_gaps=true` is not supported on the
+standard route because the generic interpolation mart only models the primary
+weighted percentage and not the additional columns
+`beschaeftigungsquote_median`, `beschaeftigungsquote_ungewichtet` and
+`gemeinden_count`.
+
 ## ID conventions
 
 There is deliberately **no** additional artificial "socio ID" – instead, the

@@ -63,6 +63,137 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ArbeitsloseData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/arbeitslose/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Arbeitslose"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -92,7 +223,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ArbeitsloseData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -159,6 +290,137 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ArbeitsvolumenData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/arbeitsvolumen/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Arbeitsvolumen"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -188,7 +450,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ArbeitsvolumenData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -255,6 +517,137 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.AuzubildendeData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auzubildende/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auzubildende"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -284,7 +677,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.AuzubildendeData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -347,6 +740,27 @@ const docTemplate = `{
                         "example": 2020,
                         "description": "Jahr der Beobachtung (2000-2030)",
                         "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -447,6 +861,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -477,6 +912,109 @@ const docTemplate = `{
                                             "type": "array",
                                             "items": {
                                                 "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BeschaeftigungsquoteNuts3Data"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/beschaeftigungsquote-nuts3/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "BeschaeftigungsquoteNuts3"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -543,6 +1081,137 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BevoelkerungData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/bevoelkerung/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bevoelkerung"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -572,7 +1241,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BevoelkerungData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -639,6 +1308,137 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BruttoverdienstData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/bruttoverdienst/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bruttoverdienst"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -668,7 +1468,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BruttoverdienstData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -735,6 +1535,137 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DurchschnittsalterData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/durchschnittsalter/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Durchschnittsalter"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -764,7 +1695,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DurchschnittsalterData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -831,6 +1762,137 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ErwerbstaetigePro1000EinwohnerData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/erwerbstaetige_pro_1000_einwohner/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ErwerbstaetigePro1000Einwohner"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -860,7 +1922,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ErwerbstaetigePro1000EinwohnerData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -1345,6 +2407,137 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.KinderarmutData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/kinderarmut/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Kinderarmut"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2010-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -1374,7 +2567,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.KinderarmutData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -1760,6 +2953,137 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.MedianeinkommenData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medianeinkommen/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Medianeinkommen"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2010-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -1789,7 +3113,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.MedianeinkommenData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -2293,80 +3617,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/nuts/{nuts_id}/timeseries/{dataset}": {
-            "get": {
-                "description": "Liefert die vollständige Jahres-Zeitreihe eines Datensatzes für eine NUTS-3-Region aus mart_nuts3_timeseries_interpolated. Fehlende Jahre werden mit zwei Methoden geschätzt (lineare Interpolation und peer-basierte Fortschreibung über Regionen derselben NUTS-2-Gruppe); is_interpolated kennzeichnet geschätzte Werte, value_linear und value_peer_trend liefern beide Schätzungen transparent nebeneinander, statt sie stillschweigend zu vermischen.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "NUTS"
-                ],
-                "summary": "Lückenlose Zeitreihe mit Interpolationskennzeichnung",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "DE226",
-                        "description": "NUTS-3-Code",
-                        "name": "nuts_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "wohngeldhaushalte",
-                        "description": "Dataset-Slug (z.B. bevoelkerung, wohngeldhaushalte)",
-                        "name": "dataset",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/nuts/{nuts_id}/versions": {
             "get": {
                 "description": "Gibt alle Geometrie-Perioden (valid_from/valid_to) einer NUTS-Region aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null bedeutet noch aktuell.",
@@ -2474,6 +3724,137 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SchuldnerquoteData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/schuldnerquote/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Schuldnerquote"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -2503,7 +3884,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SchuldnerquoteData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -2570,6 +3951,137 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SgbIiQuoteData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/sgb_ii_quote/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SgbIiQuote"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2005-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -2599,7 +4111,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SgbIiQuoteData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -2739,6 +4251,137 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.StudierendeData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/studierende/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Studierende"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -2768,7 +4411,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.StudierendeData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -3144,6 +4787,137 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.WohngeldhaushalteData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/wohngeldhaushalte/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Wohngeldhaushalte"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2010-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -3173,7 +4947,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.WohngeldhaushalteData"
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -3254,9 +5028,17 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -3273,6 +5055,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3315,9 +5105,17 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -3334,6 +5132,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3376,9 +5182,17 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -3395,6 +5209,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3437,9 +5259,17 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -3456,6 +5286,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3510,9 +5348,17 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -3529,6 +5375,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3571,9 +5425,17 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -3590,6 +5452,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3632,9 +5502,17 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -3651,6 +5529,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3789,9 +5675,17 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -3808,6 +5702,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3850,9 +5752,17 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -3869,6 +5779,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -4081,6 +5999,10 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "kinderarmut": {
                     "type": "number",
                     "example": 50
@@ -4088,6 +6010,10 @@ const docTemplate = `{
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -4104,6 +6030,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -4209,6 +6143,10 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
@@ -4216,6 +6154,10 @@ const docTemplate = `{
                 "medianeinkommen": {
                     "type": "number",
                     "example": 0
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -4232,6 +6174,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -4514,9 +6464,17 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -4537,6 +6495,14 @@ const docTemplate = `{
                 "schuldnerquote_prozent": {
                     "type": "number",
                     "example": 50
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -4575,9 +6541,17 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -4598,6 +6572,14 @@ const docTemplate = `{
                 "sgb_ii_quote_prozent": {
                     "type": "number",
                     "example": 50
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -4669,9 +6651,17 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -4692,6 +6682,14 @@ const docTemplate = `{
                 "studierende": {
                     "type": "number",
                     "example": 0
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -4815,9 +6813,17 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
                 },
                 "observation_date": {
                     "type": "string",
@@ -4834,6 +6840,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "wohngeldhaushalte_je_1000": {
                     "type": "number",

@@ -41,9 +41,15 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -56,6 +62,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -86,9 +98,15 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -101,6 +119,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -131,9 +155,15 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -146,6 +176,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -176,9 +212,15 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -191,6 +233,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -230,9 +278,15 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -245,6 +299,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -275,9 +335,15 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -290,6 +356,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -320,9 +392,15 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -335,6 +413,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -434,9 +518,15 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -449,6 +539,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -479,9 +575,15 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -494,6 +596,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -645,12 +753,18 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       kinderarmut:
         example: 50
         type: number
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -663,6 +777,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -737,12 +857,18 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       mapper:
         example: exact_id
         type: string
       medianeinkommen:
         example: 0
         type: number
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -755,6 +881,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -962,9 +1094,15 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -979,6 +1117,12 @@ definitions:
         type: string
       schuldnerquote_prozent:
         example: 50
+        type: number
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
         type: number
       year:
         example: 2020
@@ -1007,9 +1151,15 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -1024,6 +1174,12 @@ definitions:
         type: string
       sgb_ii_quote_prozent:
         example: 50
+        type: number
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
         type: number
       year:
         example: 2020
@@ -1076,9 +1232,15 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -1093,6 +1255,12 @@ definitions:
         type: string
       studierende:
         example: 0
+        type: number
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
         type: number
       year:
         example: 2020
@@ -1183,9 +1351,15 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -1198,6 +1372,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       wohngeldhaushalte_je_1000:
         example: 0
         type: number
@@ -1242,6 +1422,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1254,6 +1449,12 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1278,6 +1479,77 @@ paths:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Arbeitslose
+  /arbeitslose/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Arbeitslosenzahlen je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Arbeitslose
   /arbeitsvolumen:
@@ -1307,6 +1579,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1319,6 +1606,12 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1343,6 +1636,77 @@ paths:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Arbeitsvolumen
+  /arbeitsvolumen/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2000-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Arbeitsvolumen je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Arbeitsvolumen
   /auzubildende:
@@ -1372,6 +1736,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1384,6 +1763,12 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1408,6 +1793,77 @@ paths:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Auzubildende
+  /auzubildende/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Auszubildende je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Auzubildende
   /beschaeftigungsquote-gemeinden:
@@ -1437,6 +1893,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1502,6 +1973,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1540,6 +2026,77 @@ paths:
         aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
       tags:
       - BeschaeftigungsquoteNuts3
+  /beschaeftigungsquote-nuts3/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2000-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je
+        NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
+      tags:
+      - BeschaeftigungsquoteNuts3
   /bevoelkerung:
     get:
       consumes:
@@ -1567,6 +2124,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1579,6 +2151,12 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1603,6 +2181,77 @@ paths:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Bevoelkerung
+  /bevoelkerung/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Bevölkerungsdaten je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Bevoelkerung
   /bruttoverdienst:
@@ -1632,6 +2281,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1644,6 +2308,12 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1668,6 +2338,77 @@ paths:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Bruttoverdienst
+  /bruttoverdienst/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2000-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Bruttoverdienst je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Bruttoverdienst
   /durchschnittsalter:
@@ -1697,6 +2438,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1709,6 +2465,12 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1733,6 +2495,77 @@ paths:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Durchschnittsalter
+  /durchschnittsalter/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Durchschnittsalter je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Durchschnittsalter
   /erwerbstaetige_pro_1000_einwohner:
@@ -1762,6 +2595,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1774,6 +2622,12 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1798,6 +2652,77 @@ paths:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt,
         mit Datumsableitung und Qualitätsflag
+      tags:
+      - ErwerbstaetigePro1000Einwohner
+  /erwerbstaetige_pro_1000_einwohner/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Erwerbstätige je 1.000
+        Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - ErwerbstaetigePro1000Einwohner
   /geo:
@@ -2111,6 +3036,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -2123,6 +3063,12 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
       produces:
       - application/json
       responses:
@@ -2147,6 +3093,78 @@ paths:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte
         unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
+      tags:
+      - Kinderarmut
+  /kinderarmut/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2010-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Kinderarmut je Kreis –
+        nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Kinderarmut
   /lau:
@@ -2383,6 +3401,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -2395,6 +3428,12 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
       produces:
       - application/json
       responses:
@@ -2419,6 +3458,77 @@ paths:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Medianeinkommen
+  /medianeinkommen/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2010-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Medianeinkommen je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Medianeinkommen
   /metrics:
@@ -2751,58 +3861,6 @@ paths:
       summary: Verfügbare Datensätze für eine NUTS-Region
       tags:
       - NUTS
-  /nuts/{nuts_id}/timeseries/{dataset}:
-    get:
-      consumes:
-      - application/json
-      description: Liefert die vollständige Jahres-Zeitreihe eines Datensatzes für
-        eine NUTS-3-Region aus mart_nuts3_timeseries_interpolated. Fehlende Jahre
-        werden mit zwei Methoden geschätzt (lineare Interpolation und peer-basierte
-        Fortschreibung über Regionen derselben NUTS-2-Gruppe); is_interpolated kennzeichnet
-        geschätzte Werte, value_linear und value_peer_trend liefern beide Schätzungen
-        transparent nebeneinander, statt sie stillschweigend zu vermischen.
-      parameters:
-      - description: NUTS-3-Code
-        example: DE226
-        in: path
-        name: nuts_id
-        required: true
-        type: string
-      - description: Dataset-Slug (z.B. bevoelkerung, wohngeldhaushalte)
-        example: wohngeldhaushalte
-        in: path
-        name: dataset
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
-      summary: Lückenlose Zeitreihe mit Interpolationskennzeichnung
-      tags:
-      - NUTS
   /nuts/{nuts_id}/versions:
     get:
       consumes:
@@ -2871,6 +3929,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -2883,6 +3956,12 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
       produces:
       - application/json
       responses:
@@ -2907,6 +3986,77 @@ paths:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Schuldnerquote
+  /schuldnerquote/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2000-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Schuldnerquoten je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Schuldnerquote
   /sgb_ii_quote:
@@ -2936,6 +4086,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -2948,6 +4113,12 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
       produces:
       - application/json
       responses:
@@ -2972,6 +4143,77 @@ paths:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - SgbIiQuote
+  /sgb_ii_quote/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2005-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für SGB-II-Quote je Kreis –
+        bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - SgbIiQuote
   /socioeconomic/inventory:
@@ -3048,6 +4290,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -3060,6 +4317,12 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
       produces:
       - application/json
       responses:
@@ -3084,6 +4347,77 @@ paths:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt,
         mit Datumsableitung und Qualitätsflag
+      tags:
+      - Studierende
+  /studierende/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Studierende je 1.000 Einwohner
+        je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Studierende
   /unemployment:
@@ -3317,6 +4651,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -3329,6 +4678,12 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
       produces:
       - application/json
       responses:
@@ -3353,6 +4708,77 @@ paths:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Wohngeldhaushalte
+  /wohngeldhaushalte/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2010-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Wohngeldhaushalte je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Wohngeldhaushalte
 schemes:

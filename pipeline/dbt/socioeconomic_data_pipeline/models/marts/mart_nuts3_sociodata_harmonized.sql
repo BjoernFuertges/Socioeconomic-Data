@@ -28,6 +28,10 @@
 
 {% set target_version = var('target_nuts_version', 2024) %}
 
+-- Slugs entsprechen bewusst 1:1 den RouteSlugs der generierten Kreis-API-
+-- Endpoints (backend/internal/models/models_soziodata_generated.go), damit
+-- das Backend beide Seiten ohne Mapping-Tabelle zusammenführen kann
+-- (siehe kreis_generic.go, fill_gaps-Query-Parameter).
 {% set source_datasets = [
     {'slug': 'arbeitslose',        'table': 'results_arbeitslose_kreise'},
     {'slug': 'arbeitsvolumen',     'table': 'results_arbeitsvolumen_kreise'},
@@ -35,7 +39,7 @@
     {'slug': 'bevoelkerung',       'table': 'results_bevoelkerung_kreise'},
     {'slug': 'bruttoverdienst',    'table': 'results_bruttoverdienst_kreise'},
     {'slug': 'durchschnittsalter', 'table': 'results_durchschnittsalter_kreise'},
-    {'slug': 'erwerbstaetige',     'table': 'results_erwerbstaetige_pro_1000_einwohner_kreise'},
+    {'slug': 'erwerbstaetige_pro_1000_einwohner', 'table': 'results_erwerbstaetige_pro_1000_einwohner_kreise'},
     {'slug': 'kinderarmut',        'table': 'results_kinderarmut_kreise'},
     {'slug': 'medianeinkommen',    'table': 'results_medianeinkommen_kreise'},
     {'slug': 'schuldnerquote',     'table': 'results_schuldnerquote_kreise'},
@@ -46,8 +50,9 @@
 
 with all_source_data as (
 
-    -- Alle Datasets vereinen (Sources werden mit write_disposition=replace geladen,
-    -- daher keine Duplikate je (geodata_id_nuts, year) zu erwarten)
+    -- Alle Kreis-Rohdatensätze vereinen (Sources werden mit
+    -- write_disposition=replace geladen, daher keine Duplikate je
+    -- (geodata_id_nuts, year) zu erwarten)
     {% for ds in source_datasets %}
     select
         '{{ ds.slug }}'       as dataset_slug,
@@ -59,8 +64,23 @@ with all_source_data as (
     where geodata_id_nuts is not null
       and geodata_id_nuts != ''
       and value           is not null
-    {% if not loop.last %}union all{% endif %}
+    union all
     {% endfor %}
+
+    -- beschaeftigungsquote-nuts3 kommt nicht aus einer rohen loaded_data-
+    -- Quelle, sondern ist bereits über die Gemeinde(LAU)-Bevölkerung auf
+    -- NUTS-3 (2024) aggregiert (siehe stg_beschaeftigungsquote_nuts3.sql /
+    -- mart_beschaeftigungsquote_nuts3.sql) - daher ref() statt source().
+    select
+        'beschaeftigungsquote-nuts3' as dataset_slug,
+        geodata_id_nuts,
+        geodata_year::integer        as geodata_year,
+        year::integer                as year,
+        beschaeftigungsquote_prozent::numeric as value
+    from {{ ref('stg_beschaeftigungsquote_nuts3') }}
+    where geodata_id_nuts is not null
+      and geodata_id_nuts != ''
+      and beschaeftigungsquote_prozent is not null
 
 ),
 
