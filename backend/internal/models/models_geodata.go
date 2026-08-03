@@ -11,7 +11,7 @@ type LAURegion struct {
 	Year                  int             `json:"year" db:"year" example:"2024"`
 	LAUName               string          `json:"lau_name" db:"lau_name" example:"Stuttgart"`
 	CountryCode           string          `json:"country_code" db:"country_code" example:"DE"`
-	LAUID                 string          `json:"lau_id" db:"lau_id" example:"08111000"`
+	LAUID                 sql.NullString  `json:"lau_id,omitempty" db:"lau_id" swaggertype:"string" example:"08111000"`
 	GeometryWGS84         json.RawMessage `json:"geometry_wgs84,omitempty" db:"geometry_wgs84" swaggertype:"object"`
 	HasValidGeometry      bool            `json:"has_valid_geometry" db:"has_valid_geometry" example:"true"`
 	LAUNameNational       sql.NullString  `json:"lau_name_national,omitempty" db:"lau_name_national" swaggertype:"string"`

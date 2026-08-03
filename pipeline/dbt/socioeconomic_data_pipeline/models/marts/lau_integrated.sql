@@ -5,7 +5,9 @@
       "create index if not exists idx_lau_integrated_gisco_year on {{ this }} (gisco_id, year)",
       "create index if not exists idx_lau_integrated_country_year on {{ this }} (country_code, year)",
       "create index if not exists idx_lau_integrated_nuts3_tpo on {{ this }} (nuts_3_code text_pattern_ops) where nuts_3_code is not null",
-      "create index if not exists idx_lau_integrated_gist on {{ this }} using gist (geometry_3035) where has_valid_geometry"
+      "create index if not exists idx_lau_integrated_gist on {{ this }} using gist (geometry_3035) where has_valid_geometry",
+      "create extension if not exists pg_trgm",
+      "create index if not exists idx_lau_integrated_lau_name_trgm on {{ this }} using gin (lau_name gin_trgm_ops)"
     ]
   )
 }}
