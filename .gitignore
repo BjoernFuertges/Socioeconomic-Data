@@ -17,3 +17,6 @@
 # MkDocs build output
 /site/
 /public/
+
+# Frontend-Laufzeitkonfiguration (API-/Docs-URL), pro Umgebung anders
+/backend/web/static/config.js
