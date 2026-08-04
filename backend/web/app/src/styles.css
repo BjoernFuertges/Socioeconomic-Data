@@ -380,6 +380,114 @@ table.data-table tr.is-interpolated td {
   color: var(--text-secondary);
 }
 
+/* Map */
+
+.map-view .dataset-picker {
+  margin-top: 0;
+}
+
+.map-wrap {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.map-container {
+  height: 70vh;
+  min-height: 420px;
+  width: 100%;
+  background: var(--page-plane);
+}
+
+.map-legend {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  z-index: 400;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  max-width: 220px;
+}
+
+.map-legend-title {
+  margin: 0 0 0.4rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.map-legend-scale {
+  display: flex;
+  height: 10px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.map-legend-swatch {
+  flex: 1;
+  display: inline-block;
+}
+
+.map-legend-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.map-legend-note {
+  margin: 0.5rem 0 0;
+  line-height: 1.6;
+}
+
+.map-legend-note .map-legend-swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 0.3rem;
+  vertical-align: middle;
+}
+
+.map-legend-swatch--nodata {
+  background: var(--gridline);
+}
+
+.map-legend-swatch--interpolated {
+  background: var(--series-1-soft);
+  border: 1px dashed var(--series-1);
+}
+
+.leaflet-tooltip.map-tooltip {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.map-tooltip-dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.1rem 0.5rem;
+}
+
+.map-tooltip-dl dt {
+  color: var(--text-muted);
+}
+
+.map-tooltip-dl dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Footer */
 
 .app-footer {

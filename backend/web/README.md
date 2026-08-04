@@ -2,34 +2,54 @@
 
 Web application specific components: static web assets, server side templates and SPAs.
 
-## `static/` – Sozioökonomische-Daten-Frontend
+## `app/` – Sozioökonomische-Daten-Frontend
 
-Schlichtes, statisches Frontend (HTML/CSS/vanilla JS, kein Build-Schritt) zum
-Browsen der NUTS-3-Regionen und LAU-Gemeinden samt ihrer sozioökonomischen
-Zeitreihen. Es spricht die Go-API per `fetch()` an (CORS ist serverseitig
-bereits offen) und läuft komplett unabhängig vom Go-Server.
+Vue 3 + TypeScript-Single-Page-App (Vite) zum Browsen der NUTS-3-Regionen und
+LAU-Gemeinden samt ihrer sozioökonomischen Zeitreihen sowie einer Karte mit
+(interpolierten) Werten pro NUTS-3-Region. Es spricht die Go-API per
+`fetch()` an (CORS ist serverseitig bereits offen) und läuft komplett
+unabhängig vom Go-Server.
 
 ### Starten
 
-1. Konfiguration anlegen:
+1. Node (siehe `.nvmrc`/`package.json` – aktuell getestet mit Node 22/23)
+   aktivieren, z.B. mit nvm:
 
    ```bash
-   cp static/config.example.js static/config.js
+   cd app
+   nvm use
+   npm install
    ```
-
-   In `static/config.js` `apiBaseUrl` (Standard: `http://localhost:8081/api/v1`,
-   passend zu `cmd/soziodata/main.go`) und optional `docsUrl` (Link zur
-   veröffentlichten mkdocs-Doku, z.B. GitLab Pages) setzen. `config.js` ist
-   bewusst in `.gitignore`, damit jede Umgebung ihre eigene URL setzen kann,
-   ohne dass sie fest im Repo landet.
 
 2. Backend starten (siehe [`cmd/soziodata`](../cmd/soziodata/main.go) bzw.
    [Local development](../../docs/backend/development.md)).
 
-3. Die statischen Dateien mit einem beliebigen Webserver ausliefern, z.B.:
+3. Dev-Server starten:
 
    ```bash
-   cd static && python3 -m http.server 8082
+   npm run dev
    ```
 
-   und `http://localhost:8082` öffnen.
+   und die ausgegebene URL (Standard `http://localhost:5173`) öffnen. Die
+   API-Basis-URL wird über die Vite-Env-Variable `VITE_API_BASE_URL`
+   konfiguriert (Default in `.env.development`:
+   `http://localhost:8081/api/v1`, passend zu `cmd/soziodata/main.go`).
+   Für abweichende lokale Werte eine `.env.local` (gitignored) anlegen.
+   Optional kann `VITE_DOCS_URL` gesetzt werden (Link zur veröffentlichten
+   mkdocs-Doku, z.B. GitLab Pages) – ohne die Variable bleibt der
+   Dokumentations-Link im Header ausgeblendet.
+
+### Produktions-Build
+
+```bash
+npm run build
+```
+
+erzeugt ein statisches Bundle in `dist/`. Für den Produktivbetrieb wird das
+Bundle in `Dockerfile` per Multi-Stage-Build (Node → nginx) gebaut und über
+den `frontend`-Service in
+[`backend/deployments/docker-compose.yml`](../deployments/docker-compose.yml)
+hinter Traefik ausgeliefert (siehe dortige Labels für das Routing). Dort läuft
+das Frontend auf derselben Domain wie die API, daher ist `VITE_API_BASE_URL`
+im Produktions-Build nicht gesetzt – der Client fällt dann auf den relativen
+Pfad `/api/v1` zurück.

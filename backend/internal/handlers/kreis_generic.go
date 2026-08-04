@@ -222,6 +222,10 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 		respondBadRequest(c, "point wird in Kombination mit fill_gaps nicht unterstützt")
 		return
 	}
+	if filter.GeodataIDNUTS == "" && filter.Year == nil && filter.FromYear == nil && filter.ToYear == nil {
+		respondBadRequest(c, "ohne geodata_id_nuts muss year, from_year oder to_year gesetzt sein, um die Anfrage einzugrenzen")
+		return
+	}
 
 	if filter.Limit == 0 {
 		filter.Limit = cfg.DefaultLimit
