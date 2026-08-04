@@ -21,7 +21,7 @@ unabhängig vom Go-Server.
    npm install
    ```
 
-2. Backend starten (siehe [`cmd/soziodata`](../cmd/soziodata/main.go) bzw.
+2. Backend starten (siehe [`cmd/soziodata`](../../backend/cmd/soziodata/main.go) bzw.
    [Local development](../../docs/backend/development.md)).
 
 3. Dev-Server starten:
@@ -48,7 +48,7 @@ npm run build
 erzeugt ein statisches Bundle in `dist/`. Für den Produktivbetrieb wird das
 Bundle in `Dockerfile` per Multi-Stage-Build (Node → nginx) gebaut und über
 den `frontend`-Service in
-[`backend/deployments/docker-compose.yml`](../deployments/docker-compose.yml)
+[`backend/deployments/docker-compose.yml`](../../backend/deployments/docker-compose.yml)
 hinter Traefik ausgeliefert (siehe dortige Labels für das Routing). Dort läuft
 das Frontend auf derselben Domain wie die API, daher ist `VITE_API_BASE_URL`
 im Produktions-Build nicht gesetzt – der Client fällt dann auf den relativen
