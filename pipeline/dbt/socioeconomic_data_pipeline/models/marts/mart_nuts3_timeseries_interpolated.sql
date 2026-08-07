@@ -3,15 +3,15 @@
         materialized='table',
         schema='transformed_data',
         post_hook=[
-            "create index if not exists idx_mart_nuts3_ts_interp_id on {{ this }} (nuts3_id, dataset_slug, year)",
-            "create index if not exists idx_mart_nuts3_ts_interp_ds on {{ this }} (dataset_slug, year)"
+            "create index if not exists idx_mart_nuts3_ts_interp_id on {{ this }} (target_version, nuts3_id, dataset_slug, year)",
+            "create index if not exists idx_mart_nuts3_ts_interp_ds on {{ this }} (target_version, dataset_slug, year)"
         ]
     )
 }}
 
 /*
   Lückenlose Zeitreihen mit zwei alternativen Imputationsmethoden für
-  fehlende Jahre je (nuts3_id, dataset_slug):
+  fehlende Jahre je (nuts3_id, dataset_slug, target_version):
 
     Methode 1 (linear)      value_linear      - lineare Interpolation
       zwischen dem letzten bekannten Vor- und dem nächsten bekannten
@@ -24,6 +24,12 @@
       hinweg fortgeschrieben - ist bereits der Vorjahreswert selbst
       unbekannt, bleibt value_peer_trend NULL.
 
+  target_version: mart_nuts3_sociodata_harmonized führt dieselben Werte
+  bereits auf mehreren NUTS-3-Zielversionen parallel (siehe dort). Gap-
+  Filling und Peer-Trend laufen hier je target_version unabhängig, da eine
+  Region in unterschiedlichen Versionen unterschiedliche Nachbarregionen
+  und Wertelücken haben kann.
+
   `value` bleibt aus Gründen der Abwärtskompatibilität der "amtliche"
   Ausgabewert (Originalwert, sonst Methode-1-Schätzung). `value_linear`
   und `value_peer_trend` werden nur für tatsächlich interpolierte Zeilen
@@ -31,8 +37,9 @@
   beide Schätzungen transparent nebeneinander ausgeben können, statt sie
   stillschweigend zu vermischen.
 
-  Für jede (nuts3_id, dataset_slug)-Kombination wird die bekannte Jahresspanne
-  vollständig aufgefüllt (GENERATE_SERIES von min_year bis max_year).
+  Für jede (nuts3_id, dataset_slug, target_version)-Kombination wird die
+  bekannte Jahresspanne vollständig aufgefüllt (GENERATE_SERIES von
+  min_year bis max_year).
 
   Kein Extrapolieren: Werte außerhalb der bekannten Spanne bleiben NULL
   (werden gefiltert) — Randwerte werden nicht fortgeschrieben.
@@ -66,15 +73,16 @@ with source as (
     select * from {{ ref('mart_nuts3_sociodata_harmonized') }}
 ),
 
--- Jahresspanne je Region und Dataset
+-- Jahresspanne je Region, Dataset und Zielversion
 year_ranges as (
     select
         target_nuts_id,
         dataset_slug,
+        target_version,
         min(year) as min_year,
         max(year) as max_year
     from source
-    group by target_nuts_id, dataset_slug
+    group by target_nuts_id, dataset_slug, target_version
 ),
 
 -- Vollständige Jahresreihe ohne Lücken
@@ -82,6 +90,7 @@ all_years as (
     select
         r.target_nuts_id   as nuts3_id,
         r.dataset_slug,
+        r.target_version,
         g.year
     from year_ranges r
     cross join lateral generate_series(r.min_year, r.max_year) as g(year)
@@ -92,13 +101,15 @@ with_values as (
     select
         a.nuts3_id,
         a.dataset_slug,
+        a.target_version,
         a.year,
         s.harmonized_value as value
     from all_years a
     left join source s
-        on  s.target_nuts_id = a.nuts3_id
-        and s.dataset_slug   = a.dataset_slug
-        and s.year           = a.year
+        on  s.target_nuts_id  = a.nuts3_id
+        and s.dataset_slug    = a.dataset_slug
+        and s.target_version  = a.target_version
+        and s.year            = a.year
 ),
 
 /*
@@ -110,7 +121,7 @@ with_prev_group as (
     select
         *,
         count(value) over (
-            partition by nuts3_id, dataset_slug
+            partition by nuts3_id, dataset_slug, target_version
             order by year
             rows between unbounded preceding and current row
         ) as prev_grp
@@ -121,11 +132,11 @@ with_prev as (
     select
         *,
         first_value(value) over (
-            partition by nuts3_id, dataset_slug, prev_grp
+            partition by nuts3_id, dataset_slug, target_version, prev_grp
             order by year
         ) as prev_value,
         first_value(year) over (
-            partition by nuts3_id, dataset_slug, prev_grp
+            partition by nuts3_id, dataset_slug, target_version, prev_grp
             order by year
         ) as prev_year
     from with_prev_group
@@ -136,7 +147,7 @@ with_next_group as (
     select
         *,
         count(value) over (
-            partition by nuts3_id, dataset_slug
+            partition by nuts3_id, dataset_slug, target_version
             order by year desc
             rows between unbounded preceding and current row
         ) as next_grp
@@ -147,11 +158,11 @@ with_next as (
     select
         *,
         first_value(value) over (
-            partition by nuts3_id, dataset_slug, next_grp
+            partition by nuts3_id, dataset_slug, target_version, next_grp
             order by year desc
         ) as next_value,
         first_value(year) over (
-            partition by nuts3_id, dataset_slug, next_grp
+            partition by nuts3_id, dataset_slug, target_version, next_grp
             order by year desc
         ) as next_year
     from with_next_group
@@ -165,10 +176,10 @@ with_next as (
              basierend ausschließlich auf Originalwerten (with_values),
              nicht auf bereits interpolierten/fortgeschriebenen Werten.
   Schritt C: Durchschnittliche relative Veränderung je (NUTS-2-Gruppe,
-             Dataset, Jahr) über alle Regionen mit bekanntem Vor- und
-             Jahreswert (Vorjahreswert 0 wird ausgeschlossen, Division
-             durch 0). Die Zielregion selbst trägt hierzu nichts bei,
-             da ihr eigener Jahreswert per Definition unbekannt ist.
+             Dataset, Zielversion, Jahr) über alle Regionen mit bekanntem
+             Vor- und Jahreswert (Vorjahreswert 0 wird ausgeschlossen,
+             Division durch 0). Die Zielregion selbst trägt hierzu nichts
+             bei, da ihr eigener Jahreswert per Definition unbekannt ist.
   Schritt D: Eigener Vorjahreswert (unmittelbares Jahr - 1, aus
              with_values, kein LOCF über mehrere Jahre) je Zielregion.
 */
@@ -176,6 +187,7 @@ with_peer_base as (
     select
         nuts3_id,
         dataset_slug,
+        target_version,
         year,
         value,
         substr(nuts3_id, 1, 4) as nuts2_prefix
@@ -186,6 +198,7 @@ peer_rel_change as (
     select
         cur.nuts2_prefix,
         cur.dataset_slug,
+        cur.target_version,
         cur.year,
         case
             when prev.value is not null
@@ -195,27 +208,30 @@ peer_rel_change as (
         end as rel_change
     from with_peer_base cur
     join with_peer_base prev
-        on  prev.nuts3_id     = cur.nuts3_id
-        and prev.dataset_slug = cur.dataset_slug
-        and prev.year         = cur.year - 1
+        on  prev.nuts3_id       = cur.nuts3_id
+        and prev.dataset_slug   = cur.dataset_slug
+        and prev.target_version = cur.target_version
+        and prev.year           = cur.year - 1
 ),
 
 peer_avg_change as (
     select
         nuts2_prefix,
         dataset_slug,
+        target_version,
         year,
         avg(rel_change)   as avg_rel_change,
         count(rel_change) as n_peer_regions
     from peer_rel_change
     where rel_change is not null
-    group by nuts2_prefix, dataset_slug, year
+    group by nuts2_prefix, dataset_slug, target_version, year
 ),
 
 own_prev_actual as (
     select
         nuts3_id,
         dataset_slug,
+        target_version,
         year + 1 as target_year,
         value    as own_prev_value
     from with_values
@@ -227,6 +243,7 @@ interpolated as (
     select
         n.nuts3_id,
         n.dataset_slug,
+        n.target_version,
         n.year,
         case
             -- Originalwert vorhanden → unverändert
@@ -256,7 +273,8 @@ interpolated as (
                     / nullif((n.next_year - n.prev_year)::numeric, 0)
         end                                                   as value_linear,
         -- Methode 3: nur befüllt, wenn sowohl der eigene Vorjahreswert als
-        -- auch mindestens ein Peer-Wert für dieses (Jahr, Dataset) bekannt ist.
+        -- auch mindestens ein Peer-Wert für dieses (Jahr, Dataset,
+        -- Zielversion) bekannt ist.
         case
             when n.value is null
                 then opa.own_prev_value * (1 + pac.avg_rel_change)
@@ -264,17 +282,19 @@ interpolated as (
         case when n.value is null then pac.n_peer_regions end as n_peer_regions
     from with_next n
     left join peer_avg_change pac
-        on  pac.nuts2_prefix = substr(n.nuts3_id, 1, 4)
-        and pac.dataset_slug = n.dataset_slug
-        and pac.year         = n.year
+        on  pac.nuts2_prefix    = substr(n.nuts3_id, 1, 4)
+        and pac.dataset_slug    = n.dataset_slug
+        and pac.target_version  = n.target_version
+        and pac.year            = n.year
     left join own_prev_actual opa
-        on  opa.nuts3_id     = n.nuts3_id
-        and opa.dataset_slug = n.dataset_slug
-        and opa.target_year  = n.year
+        on  opa.nuts3_id        = n.nuts3_id
+        and opa.dataset_slug    = n.dataset_slug
+        and opa.target_version  = n.target_version
+        and opa.target_year     = n.year
 )
 
 -- Zeilen ohne Wert (außerhalb Randbereich) rausfiltern
 select *
 from interpolated
 where value is not null
-order by nuts3_id, dataset_slug, year
+order by target_version, nuts3_id, dataset_slug, year

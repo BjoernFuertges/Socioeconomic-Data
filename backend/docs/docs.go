@@ -194,6 +194,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -421,6 +428,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -644,6 +658,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
                         "in": "query"
                     },
                     {
@@ -985,6 +1006,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -1208,6 +1236,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
                         "in": "query"
                     },
                     {
@@ -1439,6 +1474,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -1666,6 +1708,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -1889,6 +1938,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
                         "in": "query"
                     },
                     {
@@ -2538,6 +2594,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -3080,6 +3143,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
                         "in": "query"
                     },
                     {
@@ -3855,6 +3925,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -4078,6 +4155,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
                         "in": "query"
                     },
                     {
@@ -4378,6 +4462,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
                         "in": "query"
                     },
                     {
@@ -4914,6 +5005,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
                         "in": "query"
                     },
                     {
@@ -6369,6 +6467,11 @@ const docTemplate = `{
                 "nuts_id": {
                     "type": "string",
                     "example": "DE226"
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieses Zeitreihenpunkts (2016, 2021 oder 2024).",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "value": {
                     "type": "number",

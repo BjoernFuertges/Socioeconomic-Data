@@ -37,8 +37,13 @@ type SozioKreisFilter struct {
 	// mart_nuts3_timeseries_interpolated um (nur bei IsHarmonized-Datensätzen
 	// unterstützt, siehe KreisDatasetConfig.IsHarmonized).
 	FillGaps bool `form:"fill_gaps" example:"false"`
-	Limit    int  `form:"limit" binding:"omitempty,min=1,max=10000" example:"100"`
-	Offset   int  `form:"offset" binding:"omitempty,min=0" example:"0"`
+	// NutsVersion wählt die NUTS-3-Zielversion für die harmonisierte
+	// Zeitreihe (getKreisTimeseriesEndpoint). Nur zusammen mit dem
+	// /timeseries-Endpoint relevant; erlaubte Werte siehe supportedNutsVersions
+	// in kreis_generic.go. Ohne Angabe: 2024 (bisheriges Verhalten).
+	NutsVersion *int `form:"nuts_version" example:"2021"`
+	Limit       int  `form:"limit" binding:"omitempty,min=1,max=10000" example:"100"`
+	Offset      int  `form:"offset" binding:"omitempty,min=0" example:"0"`
 }
 
 // KreisDatasetConfig beschreibt einen Kreis-Datensatz für das generische Query-System.
@@ -68,6 +73,8 @@ type KreisDatasetConfig struct {
 type NutsTimeseriesPoint struct {
 	NutsID      string  `db:"nuts3_id"        json:"nuts_id"        example:"DE226"`
 	DatasetSlug string  `db:"dataset_slug"    json:"dataset_slug"   example:"wohngeldhaushalte"`
+	// NutsVersion ist die NUTS-3-Zielversion dieses Zeitreihenpunkts (2016, 2021 oder 2024).
+	NutsVersion int     `db:"target_version"  json:"nuts_version"   example:"2021"`
 	Year        int     `db:"year"            json:"year"           example:"2021"`
 	Value       float64 `db:"value"           json:"value"          example:"8.78"`
 	// true = Wert wurde imputiert (kein Originalwert vorhanden für dieses Jahr).

@@ -12,6 +12,12 @@ const DARK_TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.pn
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
+// Unterstützte NUTS-3-Zielversionen - muss mit supportedNutsVersions in
+// backend/internal/handlers/kreis_generic.go übereinstimmen. 2013 ist nicht
+// erreichbar, da mart_nuts_version_crosswalk vom aktuellen Quelljahr 2024
+// aus nur 1-/2-Hop-Pfade (→2021, →2016) berechnet, kein 3-Hop-Pfad zu 2013.
+const NUTS_VERSIONS = [2016, 2021, 2024] as const;
+
 const mapContainer = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
 let tileLayer: L.TileLayer | null = null;
@@ -28,6 +34,7 @@ const inventoryError = ref<string | null>(null);
 const datasetYears = ref<Map<string, number[]>>(new Map());
 const selectedDataset = ref<string>("");
 const selectedYear = ref<number | null>(null);
+const selectedNutsVersion = ref<number>(2024);
 
 const valuesLoading = ref(false);
 const valuesError = ref<string | null>(null);
@@ -109,20 +116,19 @@ async function loadGeometries() {
   try {
     // country_code wird laut API nur für geo_type=lau ausgewertet; für NUTS
     // grenzt nuts_parent_id (Präfix-Filter) auf Deutschland ein.
+    // geometry_strategy=exact+geometry_year pinnt auf den Grenzverlauf der
+    // gewählten NUTS-Version (siehe mart_nuts_geometry_historized) - damit
+    // liefert /geo genau die Kreise, die in dieser Version gültig waren.
     const body = await apiGet<GeoRegionSummary[]>("/geo", {
       geo_type: "nuts",
       level: 3,
       nuts_parent_id: "DE",
       include_geometry: true,
+      geometry_strategy: "exact",
+      geometry_year: selectedNutsVersion.value,
       limit: "null",
     });
-    const all = (body.data ?? []).filter((r) => r.geometry_wgs84);
-    // /geo liefert bei geometry_strategy=latest (Default) auch stillgelegte
-    // NUTS-Codes aus früheren Gebietsreformen mit älterem vintage_year: nur
-    // der aktuellste Vintage entspricht den ~400 Kreisen, für die
-    // mart_nuts3_timeseries_interpolated tatsächlich Werte führt.
-    const maxVintage = Math.max(...all.map((r) => r.vintage_year ?? 0));
-    regions.value = all.filter((r) => r.vintage_year === maxVintage);
+    regions.value = (body.data ?? []).filter((r) => r.geometry_wgs84);
   } catch (err) {
     geoError.value = err instanceof Error ? err.message : String(err);
   }
@@ -158,6 +164,7 @@ async function loadValues() {
   try {
     const body = await apiGet<NutsTimeseriesPoint[]>(`/${selectedDataset.value}/timeseries`, {
       year: selectedYear.value,
+      nuts_version: selectedNutsVersion.value,
       limit: "null",
     });
     valuesByRegion.value = new Map((body.data ?? []).map((p) => [p.nuts_id, p]));
@@ -171,6 +178,10 @@ async function loadValues() {
 
 function buildLayer() {
   if (!map || !regions.value.length) return;
+  if (geoJsonLayer) {
+    map.removeLayer(geoJsonLayer);
+    geoJsonLayer = null;
+  }
   const featureCollection: GeoJSON.FeatureCollection = {
     type: "FeatureCollection",
     features: regions.value.map((r) => ({
@@ -240,6 +251,14 @@ watch(isDark, () => {
   swapTileLayer();
   restyleLayer();
 });
+// Beim Wechsel der NUTS-Version müssen sowohl der Grenzverlauf (andere
+// Vintage-Periode, ggf. andere Kreis-IDs) als auch die Werte (andere
+// target_version im harmonisierten Mart) neu geladen werden.
+watch(selectedNutsVersion, async () => {
+  await loadGeometries();
+  buildLayer();
+  await loadValues();
+});
 </script>
 
 <template>
@@ -256,6 +275,11 @@ watch(isDark, () => {
       <label for="map-year-select">Jahr</label>
       <select id="map-year-select" v-model.number="selectedYear">
         <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
+      </select>
+
+      <label for="map-nuts-version-select">NUTS-Version</label>
+      <select id="map-nuts-version-select" v-model.number="selectedNutsVersion">
+        <option v-for="version in NUTS_VERSIONS" :key="version" :value="version">{{ version }}</option>
       </select>
 
       <span v-if="valuesLoading" class="hint">Lade Werte…</span>

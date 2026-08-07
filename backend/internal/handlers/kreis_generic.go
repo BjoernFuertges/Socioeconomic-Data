@@ -9,6 +9,25 @@ import (
 	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/models"
 )
 
+// supportedNutsVersions sind die NUTS-3-Zielversionen, für die
+// mart_nuts3_sociodata_harmonized / mart_nuts3_timeseries_interpolated
+// Zeilen führen (siehe target_versions dort). Muss manuell synchron
+// gehalten werden - analog zu harmonizedRouteSlugs in cmd/gen-models/main.go.
+var supportedNutsVersions = []int{2016, 2021, 2024}
+
+// defaultNutsVersion ist die Zielversion, wenn nuts_version nicht gesetzt
+// ist - entspricht dem bisherigen (Vor-Multi-Version-)Verhalten.
+const defaultNutsVersion = 2024
+
+func isSupportedNutsVersion(v int) bool {
+	for _, sv := range supportedNutsVersions {
+		if sv == v {
+			return true
+		}
+	}
+	return false
+}
+
 // sozioKreisBaseColumns ist die SELECT-Spaltenliste gemeinsam für alle Kreis-Datensätze.
 // observation_date wird explizit als text gecastet, damit sqlx es in ein string-Feld scannen kann.
 const sozioKreisBaseColumns = `d.original_id_1, d.original_name, d.geodata_name, d.geodata_id_nuts, ` +
@@ -227,14 +246,26 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 		return
 	}
 
+	nutsVersion := defaultNutsVersion
+	if filter.NutsVersion != nil {
+		if !isSupportedNutsVersion(*filter.NutsVersion) {
+			respondBadRequest(c, fmt.Sprintf(
+				"nuts_version %d wird nicht unterstützt (erlaubt: %v)",
+				*filter.NutsVersion, supportedNutsVersions,
+			))
+			return
+		}
+		nutsVersion = *filter.NutsVersion
+	}
+
 	if filter.Limit == 0 {
 		filter.Limit = cfg.DefaultLimit
 	}
 
-	query := `SELECT nuts3_id, dataset_slug, year, value, is_interpolated, value_linear, value_peer_trend, n_peer_regions ` +
-		`FROM transformed_data.mart_nuts3_timeseries_interpolated WHERE dataset_slug = $1`
-	args := []interface{}{cfg.RouteSlug}
-	argPos := 2
+	query := `SELECT nuts3_id, dataset_slug, target_version, year, value, is_interpolated, value_linear, value_peer_trend, n_peer_regions ` +
+		`FROM transformed_data.mart_nuts3_timeseries_interpolated WHERE dataset_slug = $1 AND target_version = $2`
+	args := []interface{}{cfg.RouteSlug, nutsVersion}
+	argPos := 3
 
 	if filter.GeodataIDNUTS != "" {
 		query += fmt.Sprintf(" AND nuts3_id = $%d", argPos)

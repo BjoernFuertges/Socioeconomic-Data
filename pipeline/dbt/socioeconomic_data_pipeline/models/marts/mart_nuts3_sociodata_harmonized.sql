@@ -3,20 +3,27 @@
         materialized='table',
         schema='transformed_data',
         post_hook=[
-            "create index if not exists idx_mart_nuts3_harm_target on {{ this }} (target_nuts_id, dataset_slug, year)",
+            "create index if not exists idx_mart_nuts3_harm_target on {{ this }} (target_version, target_nuts_id, dataset_slug, year)",
             "create index if not exists idx_mart_nuts3_harm_ds_year on {{ this }} (dataset_slug, year)"
         ]
     )
 }}
 
 /*
-  Harmonisierte sozioökonomische Daten auf eine gemeinsame NUTS-3-Zielversion.
+  Harmonisierte sozioökonomische Daten auf mehrere NUTS-3-Zielversionen
+  gleichzeitig (siehe target_versions unten), unterscheidbar über die Spalte
+  target_version.
 
-  Alle Datasets werden auf die konfigurierte Ziel-NUTS-Version umgerechnet.
-  Standard: NUTS 2024 (aktuelle Mapping-Version).
-  Für andere Zielversionen: dbt run --vars 'target_nuts_version: 2021'
+  Erreichbar sind nur Versionen, die über mart_nuts_version_crosswalk vom
+  jeweiligen Quelljahr (geodata_year) aus in höchstens 2 Hops erreichbar
+  sind. Da alle aktuell geladenen Rohdatensätze geodata_year = 2024 führen
+  (die Quelle liefert historische Werte bereits rückwirkend auf den
+  aktuellen Gebietsstand umgerechnet), sind das ab 2024 aktuell: 2024 selbst
+  (0 Hops), 2021 (1 Hop), 2016 (2 Hops via 2021). 2013 bräuchte einen
+  3. Hop, den mart_nuts_version_crosswalk nicht berechnet, und ist daher
+  bewusst nicht in der Liste.
 
-  Strategie:
+  Strategie je Zielversion:
   - Regionen, deren geodata_year bereits der Zielversion entspricht → weight = 1,0
   - Alle anderen → Crosswalk aus mart_nuts_version_crosswalk
   - Bei Zusammenlegungen (merge): Werte mehrerer Quell-Regionen werden
@@ -26,7 +33,7 @@
   is_crosswalked = false  → Direktwert, kein Umrechnen nötig
 */
 
-{% set target_version = var('target_nuts_version', 2024) %}
+{% set target_versions = [2016, 2021, 2024] %}
 
 -- Slugs entsprechen bewusst 1:1 den RouteSlugs der generierten Kreis-API-
 -- Endpoints (backend/internal/models/models_soziodata_generated.go), damit
@@ -84,13 +91,14 @@ with all_source_data as (
 
 ),
 
-crosswalk as (
+{% for tv in target_versions %}
+crosswalk_{{ tv }} as (
     select *
     from {{ ref('mart_nuts_version_crosswalk') }}
-    where target_version = {{ target_version }}
+    where target_version = {{ tv }}
 ),
 
-harmonized as (
+harmonized_{{ tv }} as (
 
     -- Datensätze in der Zielversion → direkt übernehmen, kein Crosswalk
     select
@@ -103,7 +111,7 @@ harmonized as (
         s.geodata_year      as source_version,
         0                   as n_hops
     from all_source_data s
-    where s.geodata_year = {{ target_version }}
+    where s.geodata_year = {{ tv }}
 
     union all
 
@@ -118,26 +126,31 @@ harmonized as (
         s.geodata_year                as source_version,
         c.n_hops
     from all_source_data s
-    join crosswalk c
+    join crosswalk_{{ tv }} c
         on  c.source_nuts_id = s.geodata_id_nuts
         and c.source_version = s.geodata_year
-    where s.geodata_year != {{ target_version }}
+    where s.geodata_year != {{ tv }}
 
 ),
 
 -- Zusammenlegungen aufsummieren (mehrere source-Zeilen → eine target-Zeile)
-aggregated as (
+aggregated_{{ tv }} as (
     select
         dataset_slug,
         target_nuts_id,
         year,
+        {{ tv }}                as target_version,
         sum(harmonized_value)   as harmonized_value,
         bool_or(is_crosswalked) as is_crosswalked,
         min(source_version)     as source_version,
         max(n_hops)             as n_hops
-    from harmonized
+    from harmonized_{{ tv }}
     group by dataset_slug, target_nuts_id, year
-)
+){% if not loop.last %},{% endif %}
+{% endfor %}
 
-select * from aggregated
-order by dataset_slug, target_nuts_id, year
+{% for tv in target_versions %}
+select * from aggregated_{{ tv }}
+{% if not loop.last %}union all{% endif %}
+{% endfor %}
+order by target_version, dataset_slug, target_nuts_id, year

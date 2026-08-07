@@ -78,6 +78,7 @@ export interface TimeseriesPoint {
 export interface NutsTimeseriesPoint extends TimeseriesPoint {
   nuts_id: string;
   dataset_slug: string;
+  nuts_version: number;
 }
 
 export interface InventoryEntry {

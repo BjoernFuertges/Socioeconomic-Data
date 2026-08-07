@@ -197,15 +197,53 @@ models:
       - name: distinct_geodata_ars
         description: "Anzahl unterschiedlicher geodata_id_ars"
 
+  - name: mart_nuts3_sociodata_harmonized
+    description: >
+      Sozioökonomische Kreis-Datensätze, umgerechnet auf mehrere gemeinsame
+      NUTS-3-Zielversionen gleichzeitig (target_version), über den
+      bevölkerungsgewichteten Crosswalk aus mart_nuts_version_crosswalk.
+      Siehe Kommentar in mart_nuts3_sociodata_harmonized.sql für Details und
+      die Liste der unterstützten Zielversionen.
+    columns:
+      - name: dataset_slug
+        description: "Dataset-Slug (z.B. bevoelkerung, schuldnerquote)"
+        tests:
+          - not_null
+      - name: target_nuts_id
+        description: "NUTS-3-Code der Zielregion in der jeweiligen target_version"
+        tests:
+          - not_null
+      - name: year
+        description: "Jahr der Beobachtung"
+        tests:
+          - not_null
+      - name: target_version
+        description: "NUTS-3-Zielversion dieser Zeile (2016, 2021 oder 2024)"
+        tests:
+          - not_null
+      - name: harmonized_value
+        description: "Wert, umgerechnet auf target_version (bei Zusammenlegungen anteilig aufsummiert über mehrere Quellregionen)"
+        tests:
+          - not_null
+      - name: is_crosswalked
+        description: "true = Wert wurde über eine Versionsgrenze umgerechnet, false = geodata_year der Quelle entsprach bereits target_version"
+        tests:
+          - not_null
+      - name: source_version
+        description: "Ursprüngliche NUTS-3-Version der Quelldaten (geodata_year); bei Zusammenlegungen die kleinste beteiligte Quellversion"
+      - name: n_hops
+        description: "Anzahl Crosswalk-Hops zwischen source_version und target_version (0 = kein Crosswalk nötig)"
+
   - name: mart_nuts3_timeseries_interpolated
     description: >
-      Lückenlose Zeitreihen je (NUTS-3-Region, Dataset) mit zwei alternativen
-      Imputationsmethoden für fehlende Jahre: lineare Interpolation (Methode 1,
-      value_linear) und peer-basierte Fortschreibung über den Durchschnitt der
-      relativen Veränderung anderer Regionen derselben NUTS-2-Gruppe (Methode 3,
-      value_peer_trend). Kein Extrapolieren über den bekannten Jahresbereich
-      hinaus. Siehe Kommentar in mart_nuts3_timeseries_interpolated.sql und
-      docs/pipeline/dbt.md für Details und Evaluationsergebnisse.
+      Lückenlose Zeitreihen je (NUTS-3-Region, Dataset, target_version) mit
+      zwei alternativen Imputationsmethoden für fehlende Jahre: lineare
+      Interpolation (Methode 1, value_linear) und peer-basierte
+      Fortschreibung über den Durchschnitt der relativen Veränderung anderer
+      Regionen derselben NUTS-2-Gruppe (Methode 3, value_peer_trend). Kein
+      Extrapolieren über den bekannten Jahresbereich hinaus. Siehe Kommentar
+      in mart_nuts3_timeseries_interpolated.sql und docs/pipeline/dbt.md für
+      Details und Evaluationsergebnisse.
     columns:
       - name: nuts3_id
         description: "NUTS-3-Code der Zielregion (harmonisierte Zielversion, siehe mart_nuts3_sociodata_harmonized)"
@@ -213,6 +251,10 @@ models:
           - not_null
       - name: dataset_slug
         description: "Dataset-Slug (z.B. bevoelkerung, schuldnerquote)"
+        tests:
+          - not_null
+      - name: target_version
+        description: "NUTS-3-Zielversion dieser Zeile (2016, 2021 oder 2024) - Gap-Filling läuft je Zielversion unabhängig"
         tests:
           - not_null
       - name: year
