@@ -181,7 +181,7 @@ func (h *Handler) GetGeoRegions(c *gin.Context) {
 }
 
 func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter, limitNull bool) {
-	geometrySelect := `null::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
 	if filter.IncludeGeometry {
 		geometrySelect = `geometry_wgs84, has_valid_geometry`
 	}
@@ -314,7 +314,7 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 	argPos := 1
 	args := make([]interface{}, 0)
 
-	geometrySelect := `null::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
 	if filter.IncludeGeometry {
 		geometrySelect = `geometry_wgs84, has_valid_geometry`
 	}
@@ -660,7 +660,7 @@ func (h *Handler) QueryGeoRegionsByGeometry(c *gin.Context) {
 }
 
 func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, operation string) {
-	geometrySelect := `null::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
 	if filter.IncludeGeometry {
 		geometrySelect = `geometry_wgs84, has_valid_geometry`
 	}
@@ -780,7 +780,7 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 }
 
 func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, operation string) {
-	geometrySelect := `null::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
 	if filter.IncludeGeometry {
 		geometrySelect = `base.geometry_wgs84, base.has_valid_geometry`
 	}
