@@ -12,7 +12,15 @@
 /*
   Bevölkerungsgewichteter Crosswalk zwischen NUTS-3-Versionen (Deutschland).
 
-  Direkte (1-hop) und transitive (2-hop) Abbildungen.
+  Direkte (1-hop) Abbildung für JEDES Versionspaar - int_nuts_spatial_crosswalk
+  berechnet die räumliche Schnittmenge bereits für alle Kombinationen der
+  vorhandenen Vintage-Jahre (aktuell 2003, 2006, 2010, 2013, 2016, 2021,
+  2024), nicht nur für benachbarte Versionen. Eine Hop-Verkettung über
+  Zwischenversionen (z. B. 2003 → 2013 → 2021) ist dadurch nicht mehr nötig
+  und würde nur unnötig Rundungs-/Gewichtungsfehler pro Zwischenschritt
+  aufsummieren - jedes Paar hat hier bereits eine einzige, direkte
+  räumliche Schnittmenge zugrunde liegen. n_hops ist daher immer 1; die
+  Spalte bleibt zur Abwärtskompatibilität der Konsumenten erhalten.
 
   population_weight gibt an, welcher Anteil des Indikatorwerts einer Quell-Region
   auf die jeweilige Ziel-Region entfällt. Die Summe aller Gewichte je
@@ -59,57 +67,20 @@ raw_weights as (
         and lpw.target_version = s.target_version
         and lpw.source_nuts_id = s.source_nuts_id
         and lpw.target_nuts_id = s.target_nuts_id
-),
-
--- Normierung: Gewichte je Quell-Region auf Summe = 1,0 bringen
-direct as (
-    select
-        source_version,
-        target_version,
-        source_nuts_id,
-        target_nuts_id,
-        raw_weight / nullif(
-            sum(raw_weight) over (
-                partition by source_nuts_id, source_version, target_version
-            ), 0
-        )           as population_weight,
-        1           as n_hops
-    from raw_weights
-),
-
--- 2-Hop-Kompositionen: z. B. 2013 → 2016 → 2021  ergibt  2013 → 2021
--- Gewicht = w(2013→2016) × w(2016→2021)
-two_hop_raw as (
-    select
-        a.source_version,
-        b.target_version,
-        a.source_nuts_id,
-        b.target_nuts_id,
-        a.population_weight * b.population_weight as population_weight,
-        2                                          as n_hops
-    from direct a
-    join direct b
-        on  a.target_nuts_id = b.source_nuts_id
-        and a.target_version = b.source_version
-),
-
--- Mehrere Pfade zum gleichen Ziel summieren
-two_hop as (
-    select
-        source_version,
-        target_version,
-        source_nuts_id,
-        target_nuts_id,
-        sum(population_weight) as population_weight,
-        2                      as n_hops
-    from two_hop_raw
-    group by 1, 2, 3, 4
 )
 
--- Selbst-Referenz-Paare ausfiltern (source = target, durch Hin-Rück-Hops entstanden)
-select * from direct
+-- Normierung: Gewichte je Quell-Region auf Summe = 1,0 bringen
+select
+    source_version,
+    target_version,
+    source_nuts_id,
+    target_nuts_id,
+    raw_weight / nullif(
+        sum(raw_weight) over (
+            partition by source_nuts_id, source_version, target_version
+        ), 0
+    )           as population_weight,
+    1           as n_hops
+from raw_weights
 where source_version != target_version
-union all
-select * from two_hop
-where source_version != target_version
-order by source_version, target_version, source_nuts_id, n_hops, target_nuts_id
+order by source_version, target_version, source_nuts_id, target_nuts_id

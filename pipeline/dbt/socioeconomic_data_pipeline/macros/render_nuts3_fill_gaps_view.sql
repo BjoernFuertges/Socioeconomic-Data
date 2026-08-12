@@ -12,6 +12,11 @@ with timeseries as (
         n_peer_regions
     from {{ ref('mart_nuts3_timeseries_interpolated') }}
     where dataset_slug = '{{ dataset_slug }}'
+      -- mart_nuts3_timeseries_interpolated führt mehrere NUTS-3-Zielversionen
+      -- parallel (target_version-Spalte); ohne diesen Filter würde die View
+      -- Zeilen aus allen Zielversionen mischen (mehrfache, unterschiedliche
+      -- Werte je nuts3_id/year).
+      and target_version = {{ target_version }}
 ),
 
 source_rows as (
@@ -43,7 +48,11 @@ target_regions as (
 )
 
 select
-    coalesce(src.original_id_1, ts.nuts3_id) as original_id_1,
+    -- original_id_1 ist in den Kreis-Staging-Modellen double precision
+    -- (numerische Kennziffer, führende Nullen bereits beim Einlesen
+    -- verloren - z.B. 1001 statt "01001"), ts.nuts3_id dagegen text.
+    -- Cast nötig, damit COALESCE beide Typen vereinen kann.
+    coalesce(src.original_id_1::text, ts.nuts3_id) as original_id_1,
     coalesce(src.original_name, geo.region_name, ts.nuts3_id) as original_name,
     coalesce(src.geodata_name, geo.region_name, ts.nuts3_id) as geodata_name,
     ts.nuts3_id as geodata_id_nuts,

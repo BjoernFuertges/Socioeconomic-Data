@@ -47,7 +47,7 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 		nuts_3_code, lau_nat_code, population_count, country, has_valid_population,
 		missing_population_data, year_match
 		FROM transformed_data.lau_integrated
-		WHERE 1=1`
+		WHERE lau_name IS NOT NULL`
 
 	args := []interface{}{}
 	argPos := 1
@@ -175,7 +175,7 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 		nuts_3_code, lau_nat_code, population_count, country, has_valid_population,
 		missing_population_data, year_match
 		FROM transformed_data.lau_integrated
-		WHERE gisco_id = $1`
+		WHERE gisco_id = $1 AND lau_name IS NOT NULL`
 
 	args := []interface{}{giscoID}
 

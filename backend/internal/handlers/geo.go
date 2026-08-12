@@ -194,7 +194,7 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 		` + geometrySelect + `,
 		year
 	FROM transformed_data.lau_integrated
-	WHERE 1=1`
+	WHERE lau_name IS NOT NULL`
 
 	args := []interface{}{}
 	argPos := 1
@@ -224,10 +224,12 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 		args = append(args, lon, lat)
 		argPos += 2
 	}
+	yearFilterApplied := false
 	if filter.Year != nil {
 		query += fmt.Sprintf(" AND year = $%d", argPos)
 		args = append(args, *filter.Year)
 		argPos++
+		yearFilterApplied = true
 	} else if filter.IncludeGeometry && filter.GeometryYear != nil {
 		// Wenn kein Datenjahr gesetzt ist, aber eine explizite Geometrieversion
 		// angefordert wird, wird geometry_year als Jahresfilter auf lau_integrated
@@ -235,16 +237,29 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 		query += fmt.Sprintf(" AND year = $%d", argPos)
 		args = append(args, *filter.GeometryYear)
 		argPos++
+		yearFilterApplied = true
 	}
 	if filter.FromYear != nil {
 		query += fmt.Sprintf(" AND year >= $%d", argPos)
 		args = append(args, *filter.FromYear)
 		argPos++
+		yearFilterApplied = true
 	}
 	if filter.ToYear != nil {
 		query += fmt.Sprintf(" AND year <= $%d", argPos)
 		args = append(args, *filter.ToYear)
 		argPos++
+		yearFilterApplied = true
+	}
+	if !yearFilterApplied {
+		// Ohne jeglichen Jahresfilter nur den aktuellsten Vintage-Jahrgang
+		// berücksichtigen. lau_integrated hat (anders als die valid_from/
+		// valid_to-Perioden in mart_lau_geometry_historized) keinen Konzept
+		// von "noch aktuell" - DISTINCT ON (gisco_id) ... ORDER BY year DESC
+		// würde sonst auch stillgelegte/fusionierte gisco_ids mit ihrer
+		// letzten bekannten (alten) Zeile durchlassen, doppelt neben ihrem
+		// Nachfolgecode (analog zum NUTS-valid_to-Bug).
+		query += " AND year = (SELECT MAX(year) FROM transformed_data.lau_integrated)"
 	}
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
@@ -674,15 +689,18 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 		year
 	FROM transformed_data.lau_integrated
 	WHERE has_valid_geometry
+	  AND lau_name IS NOT NULL
 	  AND ` + spatialPredicateSQL(operation, "geometry_3035", 1)
 
 	args := []interface{}{geometryJSON}
 	argPos := 2
 
+	yearFilterApplied := false
 	if filter.Year != nil {
 		query += fmt.Sprintf(" AND year = $%d", argPos)
 		args = append(args, *filter.Year)
 		argPos++
+		yearFilterApplied = true
 	} else if filter.IncludeGeometry && filter.GeometryYear != nil {
 		// Wenn kein Datenjahr gesetzt ist, aber eine explizite Geometrieversion
 		// angefordert wird, wird geometry_year als Jahresfilter auf lau_integrated
@@ -690,16 +708,25 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 		query += fmt.Sprintf(" AND year = $%d", argPos)
 		args = append(args, *filter.GeometryYear)
 		argPos++
+		yearFilterApplied = true
 	}
 	if filter.FromYear != nil {
 		query += fmt.Sprintf(" AND year >= $%d", argPos)
 		args = append(args, *filter.FromYear)
 		argPos++
+		yearFilterApplied = true
 	}
 	if filter.ToYear != nil {
 		query += fmt.Sprintf(" AND year <= $%d", argPos)
 		args = append(args, *filter.ToYear)
 		argPos++
+		yearFilterApplied = true
+	}
+	if !yearFilterApplied {
+		// Ohne jeglichen Jahresfilter nur den aktuellsten Vintage-Jahrgang
+		// berücksichtigen - siehe getGeoRegionsLAU für die ausführliche
+		// Begründung (analog zum NUTS-valid_to-Bug).
+		query += " AND year = (SELECT MAX(year) FROM transformed_data.lau_integrated)"
 	}
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"

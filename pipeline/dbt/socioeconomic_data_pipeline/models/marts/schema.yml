@@ -218,7 +218,7 @@ models:
         tests:
           - not_null
       - name: target_version
-        description: "NUTS-3-Zielversion dieser Zeile (2016, 2021 oder 2024)"
+        description: "NUTS-3-Zielversion dieser Zeile (2003, 2006, 2010, 2013, 2016, 2021 oder 2024)"
         tests:
           - not_null
       - name: harmonized_value
@@ -254,7 +254,7 @@ models:
         tests:
           - not_null
       - name: target_version
-        description: "NUTS-3-Zielversion dieser Zeile (2016, 2021 oder 2024) - Gap-Filling läuft je Zielversion unabhängig"
+        description: "NUTS-3-Zielversion dieser Zeile (2003, 2006, 2010, 2013, 2016, 2021 oder 2024) - Gap-Filling läuft je Zielversion unabhängig"
         tests:
           - not_null
       - name: year

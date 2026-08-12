@@ -13,7 +13,7 @@ import (
 // mart_nuts3_sociodata_harmonized / mart_nuts3_timeseries_interpolated
 // Zeilen führen (siehe target_versions dort). Muss manuell synchron
 // gehalten werden - analog zu harmonizedRouteSlugs in cmd/gen-models/main.go.
-var supportedNutsVersions = []int{2016, 2021, 2024}
+var supportedNutsVersions = []int{2003, 2006, 2010, 2013, 2016, 2021, 2024}
 
 // defaultNutsVersion ist die Zielversion, wenn nuts_version nicht gesetzt
 // ist - entspricht dem bisherigen (Vor-Multi-Version-)Verhalten.

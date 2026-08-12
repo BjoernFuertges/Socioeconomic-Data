@@ -26,25 +26,40 @@
   variiert das Gewicht tatsächlich je Zielregion, abhängig davon, wo
   innerhalb der Quellregion die Bevölkerung wirklich lebt.
 
-  Bevölkerungsjahr je Versionswechsel (nächstgelegenes tatsächlich
-  verfügbares LAU-Bevölkerungsjahr, falls das exakte Jahr fehlt):
-    2013 → 2016 : 2015
-    2016 → 2021 : 2020
-    2021 → 2024 : 2023
+  Referenzjahr je Versionspaar: das jeweils jüngere der beiden beteiligten
+  NUTS-Versionsjahre minus 1 (Bevölkerungsstand kurz vor Inkrafttreten der
+  neueren Version) - ref_year = GREATEST(source_version, target_version) - 1.
+  Gilt unabhängig von der Richtung (vorwärts/rückwärts) und generalisiert
+  automatisch auf jedes Versionspaar, nicht nur benachbarte Vintages, z. B.:
+    2013 → 2016 : 2015        2016 → 2013 : 2015
+    2016 → 2021 : 2020        2021 → 2016 : 2020
+    2021 → 2024 : 2023        2024 → 2021 : 2023
+    2003 → 2024 : 2023        2024 → 2003 : 2023
+
+  Tatsächlich verwendet wird davon ausgehend das nächstgelegene *verfügbare*
+  LAU-Bevölkerungsjahr (siehe resolved unten) - aktuell ist nur 2024 geladen,
+  sodass jedes Paar de facto mit der 2024er-Bevölkerungsverteilung gewichtet
+  wird, bis weitere historische LAU-Bevölkerungsjahre geladen werden.
 */
 
 with available_years as (
     select distinct year from {{ ref('int_lau_population_geo') }}
 ),
 
-version_pairs (source_version, target_version, ref_year) as (
-    values
-        (2013, 2016, 2015),
-        (2016, 2021, 2020),
-        (2021, 2024, 2023),
-        (2016, 2013, 2015),
-        (2021, 2016, 2020),
-        (2024, 2021, 2023)
+nuts_version_years as (
+    select distinct version_year from {{ ref('int_lau_nuts3_membership') }}
+),
+
+-- Alle gerichteten Versionspaare (jedes Jahr → jedes andere Jahr), nicht nur
+-- benachbarte Vintages - analog zu int_nuts_spatial_crosswalk.
+version_pairs as (
+    select
+        a.version_year                                  as source_version,
+        b.version_year                                  as target_version,
+        greatest(a.version_year, b.version_year) - 1     as ref_year
+    from nuts_version_years a
+    cross join nuts_version_years b
+    where a.version_year != b.version_year
 ),
 
 -- Nächstgelegenes tatsächlich verfügbares LAU-Bevölkerungsjahr je Referenzjahr

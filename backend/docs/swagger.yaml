@@ -1519,7 +1519,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
         example: 2021
         in: query
         name: nuts_version
@@ -1681,7 +1682,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
         example: 2021
         in: query
         name: nuts_version
@@ -1843,7 +1845,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
         example: 2021
         in: query
         name: nuts_version
@@ -2079,7 +2082,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
         example: 2021
         in: query
         name: nuts_version
@@ -2241,7 +2245,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
         example: 2021
         in: query
         name: nuts_version
@@ -2403,7 +2408,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
         example: 2021
         in: query
         name: nuts_version
@@ -2565,7 +2571,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
         example: 2021
         in: query
         name: nuts_version
@@ -2727,7 +2734,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
         example: 2021
         in: query
         name: nuts_version
@@ -3173,7 +3181,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
         example: 2021
         in: query
         name: nuts_version
@@ -3543,7 +3552,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
         example: 2021
         in: query
         name: nuts_version
@@ -4076,7 +4086,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
         example: 2021
         in: query
         name: nuts_version
@@ -4238,7 +4249,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
         example: 2021
         in: query
         name: nuts_version
@@ -4447,7 +4459,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
         example: 2021
         in: query
         name: nuts_version
@@ -4813,7 +4826,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
         example: 2021
         in: query
         name: nuts_version

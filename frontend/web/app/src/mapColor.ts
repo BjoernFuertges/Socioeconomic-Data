@@ -23,3 +23,12 @@ export function sequentialSteps(isDark: boolean): string[] {
 // Wert verwechselt wird.
 export const NO_DATA_FILL_LIGHT = "#e1e0d9";
 export const NO_DATA_FILL_DARK = "#2c2c2a";
+
+// Eigene Farbe für den "Kein Datensatz (nur Karte)"-Modus, in dem ALLE
+// Regionen diesen Stil bekommen - NO_DATA_FILL_DARK ist dafür zu nah am
+// dunklen Kartenhintergrund (Carto dark_all) und würde die eigene
+// GeoJSON-Ebene praktisch unsichtbar machen. Bewusst ein Blaugrau statt
+// eines Grautons, damit es nicht wie ein neutrales "keine Daten" innerhalb
+// einer Choroplethe wirkt, sondern als eigener, deutlich sichtbarer Zustand.
+export const MAP_ONLY_FILL_LIGHT = "#8b95a6";
+export const MAP_ONLY_FILL_DARK = "#6b7893";

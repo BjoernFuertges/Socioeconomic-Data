@@ -5,7 +5,14 @@ import "leaflet/dist/leaflet.css";
 import { apiGet } from "../api/client";
 import type { GeoRegionSummary, InventoryEntry, NutsTimeseriesPoint } from "../types/api";
 import { formatDatasetLabel, formatNumber } from "../format";
-import { NO_DATA_FILL_DARK, NO_DATA_FILL_LIGHT, sequentialColor, sequentialSteps } from "../mapColor";
+import {
+  MAP_ONLY_FILL_DARK,
+  MAP_ONLY_FILL_LIGHT,
+  NO_DATA_FILL_DARK,
+  NO_DATA_FILL_LIGHT,
+  sequentialColor,
+  sequentialSteps,
+} from "../mapColor";
 
 const LIGHT_TILES = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const DARK_TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
@@ -13,10 +20,12 @@ const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 // Unterstützte NUTS-3-Zielversionen - muss mit supportedNutsVersions in
-// backend/internal/handlers/kreis_generic.go übereinstimmen. 2013 ist nicht
-// erreichbar, da mart_nuts_version_crosswalk vom aktuellen Quelljahr 2024
-// aus nur 1-/2-Hop-Pfade (→2021, →2016) berechnet, kein 3-Hop-Pfad zu 2013.
-const NUTS_VERSIONS = [2016, 2021, 2024] as const;
+// backend/internal/handlers/kreis_generic.go übereinstimmen. Entspricht den
+// in stg_nuts_geometry vorhandenen Vintage-Jahren; mart_nuts_version_crosswalk
+// berechnet für jedes Paar davon eine direkte (1-Hop) Abbildung.
+const NUTS_VERSIONS = [2003, 2006, 2010, 2013, 2016, 2021, 2024] as const;
+
+type GeoType = "nuts" | "lau";
 
 const mapContainer = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
@@ -32,9 +41,14 @@ const regions = ref<GeoRegionSummary[]>([]);
 const inventoryError = ref<string | null>(null);
 // dataset-slug -> verfügbare Jahre (absteigend, neuestes zuerst)
 const datasetYears = ref<Map<string, number[]>>(new Map());
+// "" = kein Datensatz gewählt -> Karte zeigt nur den Grenzverlauf, keine Werte.
 const selectedDataset = ref<string>("");
 const selectedYear = ref<number | null>(null);
 const selectedNutsVersion = ref<number>(2024);
+// Datensatz-Auswahl ist aktuell nur für NUTS-3 verdrahtet (/socioeconomic/inventory
+// liefert nur NUTS_3-Einträge, /{slug}/timeseries liefert nuts_id-Punkte) - bei
+// geo_type=lau wird die Karte deshalb immer ohne Datensatz angezeigt.
+const selectedGeoType = ref<GeoType>("nuts");
 
 const valuesLoading = ref(false);
 const valuesError = ref<string | null>(null);
@@ -61,12 +75,32 @@ function styleForFeature(feature?: GeoJSON.Feature): L.PathOptions {
   const geoId = feature?.properties?.geo_id as string | undefined;
   const point = geoId ? valuesByRegion.value.get(geoId) : undefined;
   const borderColor = isDark.value ? "#0d0d0d" : "#ffffff";
+
+  if (!selectedDataset.value) {
+    // "Kein Datensatz (nur Karte)" bzw. LAU-Ansicht: eigener, kontrastreicher
+    // Stil statt des dezenten "keine Daten"-Grautons weiter unten - der wäre
+    // auf dem dunklen Kartenhintergrund kaum sichtbar, wenn ihn ausnahmslos
+    // jede Region bekommt (siehe MAP_ONLY_FILL_* in mapColor.ts).
+    // dashArray explizit zurücksetzen: Leaflet's setStyle() merged Optionen nur
+    // (setOptions kopiert per for...in nur vorhandene Keys) statt sie zu
+    // ersetzen - ohne diese Zeile bliebe der gestrichelte Rand von zuvor
+    // interpolierten Regionen (aus einem vorher gewählten Datensatz) hängen.
+    return {
+      fillColor: isDark.value ? MAP_ONLY_FILL_DARK : MAP_ONLY_FILL_LIGHT,
+      fillOpacity: 0.75,
+      color: borderColor,
+      weight: 1,
+      dashArray: undefined,
+    };
+  }
+
   if (!point) {
     return {
       fillColor: isDark.value ? NO_DATA_FILL_DARK : NO_DATA_FILL_LIGHT,
       fillOpacity: 0.6,
       color: borderColor,
       weight: 1,
+      dashArray: undefined,
     };
   }
   return {
@@ -113,7 +147,22 @@ function swapTileLayer() {
 }
 
 async function loadGeometries() {
+  geoError.value = null;
   try {
+    if (selectedGeoType.value === "lau") {
+      // Kein Versions-/Vintage-Auswahl für LAU (anders als NUTS gibt es dafür
+      // keinen Werte-Crosswalk, hier zeigen wir schlicht den aktuellsten
+      // Grenzverlauf). country_code grenzt auf Deutschland ein.
+      const body = await apiGet<GeoRegionSummary[]>("/geo", {
+        geo_type: "lau",
+        country_code: "DE",
+        include_geometry: true,
+        limit: "null",
+      });
+      regions.value = (body.data ?? []).filter((r) => r.geometry_wgs84);
+      return;
+    }
+
     // country_code wird laut API nur für geo_type=lau ausgewertet; für NUTS
     // grenzt nuts_parent_id (Präfix-Filter) auf Deutschland ein.
     // geometry_strategy=exact+geometry_year pinnt auf den Grenzverlauf der
@@ -158,7 +207,16 @@ async function loadInventory() {
 }
 
 async function loadValues() {
-  if (!selectedDataset.value || selectedYear.value === null) return;
+  if (!selectedDataset.value || selectedYear.value === null) {
+    // Kein Datensatz gewählt (oder LAU-Ansicht) -> Karte bleibt ungefärbt,
+    // eventuell noch vorhandene Werte des zuvor gewählten Datensatzes verwerfen.
+    valuesError.value = null;
+    if (valuesByRegion.value.size > 0) {
+      valuesByRegion.value = new Map();
+      restyleLayer();
+    }
+    return;
+  }
   valuesLoading.value = true;
   valuesError.value = null;
   try {
@@ -177,11 +235,15 @@ async function loadValues() {
 }
 
 function buildLayer() {
-  if (!map || !regions.value.length) return;
+  if (!map) return;
+  // Alte Ebene immer zuerst entfernen, auch wenn die neue Region-Liste leer
+  // ist - sonst bliebe bei einem Versions-/Ebenenwechsel ohne Treffer die
+  // vorherige Kartenebene (Grenzen + Einfärbung) fälschlich stehen.
   if (geoJsonLayer) {
     map.removeLayer(geoJsonLayer);
     geoJsonLayer = null;
   }
+  if (!regions.value.length) return;
   const featureCollection: GeoJSON.FeatureCollection = {
     type: "FeatureCollection",
     features: regions.value.map((r) => ({
@@ -259,6 +321,18 @@ watch(selectedNutsVersion, async () => {
   buildLayer();
   await loadValues();
 });
+// Datensatz-Auswahl ist nur für NUTS-3 verdrahtet - beim Wechsel auf LAU
+// wird sie zurückgesetzt, damit keine NUTS-3-Werte auf LAU-Geometrien
+// hängen bleiben.
+watch(selectedGeoType, async () => {
+  if (selectedGeoType.value === "lau") {
+    selectedDataset.value = "";
+    selectedYear.value = null;
+  }
+  await loadGeometries();
+  buildLayer();
+  await loadValues();
+});
 </script>
 
 <template>
@@ -267,20 +341,31 @@ watch(selectedNutsVersion, async () => {
     <p v-if="inventoryError" class="error-text">Datensatz-Übersicht konnte nicht geladen werden: {{ inventoryError }}</p>
 
     <div class="dataset-picker">
-      <label for="map-dataset-select">Datensatz</label>
-      <select id="map-dataset-select" v-model="selectedDataset">
-        <option v-for="slug in datasetOptions" :key="slug" :value="slug">{{ formatDatasetLabel(slug) }}</option>
+      <label for="map-geo-type-select">Ebene</label>
+      <select id="map-geo-type-select" v-model="selectedGeoType">
+        <option value="nuts">NUTS-3 (Kreise)</option>
+        <option value="lau">LAU (Gemeinden)</option>
       </select>
 
-      <label for="map-year-select">Jahr</label>
-      <select id="map-year-select" v-model.number="selectedYear">
-        <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
-      </select>
+      <template v-if="selectedGeoType === 'nuts'">
+        <label for="map-dataset-select">Datensatz</label>
+        <select id="map-dataset-select" v-model="selectedDataset">
+          <option value="">Kein Datensatz (nur Karte)</option>
+          <option v-for="slug in datasetOptions" :key="slug" :value="slug">{{ formatDatasetLabel(slug) }}</option>
+        </select>
 
-      <label for="map-nuts-version-select">NUTS-Version</label>
-      <select id="map-nuts-version-select" v-model.number="selectedNutsVersion">
-        <option v-for="version in NUTS_VERSIONS" :key="version" :value="version">{{ version }}</option>
-      </select>
+        <template v-if="selectedDataset">
+          <label for="map-year-select">Jahr</label>
+          <select id="map-year-select" v-model.number="selectedYear">
+            <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
+          </select>
+        </template>
+
+        <label for="map-nuts-version-select">NUTS-Version</label>
+        <select id="map-nuts-version-select" v-model.number="selectedNutsVersion">
+          <option v-for="version in NUTS_VERSIONS" :key="version" :value="version">{{ version }}</option>
+        </select>
+      </template>
 
       <span v-if="valuesLoading" class="hint">Lade Werte…</span>
       <span v-if="valuesError" class="error-text">Fehler: {{ valuesError }}</span>
@@ -289,17 +374,34 @@ watch(selectedNutsVersion, async () => {
     <div class="map-wrap">
       <div ref="mapContainer" class="map-container"></div>
       <div class="map-legend">
-        <p class="map-legend-title">{{ formatDatasetLabel(selectedDataset) }}<template v-if="selectedYear"> · {{ selectedYear }}</template></p>
-        <div class="map-legend-scale">
-          <span v-for="step in sequentialSteps(isDark)" :key="step" class="map-legend-swatch" :style="{ background: step }"></span>
-        </div>
-        <div class="map-legend-labels">
-          <span>{{ valueDomain ? formatNumber(valueDomain[0]) : "–" }}</span>
-          <span>{{ valueDomain ? formatNumber(valueDomain[1]) : "–" }}</span>
-        </div>
-        <p class="map-legend-note">
-          <span class="map-legend-swatch map-legend-swatch--nodata"></span>keine Daten
-          <span class="map-legend-swatch map-legend-swatch--interpolated"></span>interpoliert (gestrichelter Rand)
+        <template v-if="selectedGeoType === 'nuts' && selectedDataset">
+          <p class="map-legend-title">{{ formatDatasetLabel(selectedDataset) }}<template v-if="selectedYear"> · {{ selectedYear }}</template></p>
+          <div class="map-legend-scale">
+            <span v-for="step in sequentialSteps(isDark)" :key="step" class="map-legend-swatch" :style="{ background: step }"></span>
+          </div>
+          <div class="map-legend-labels">
+            <span>{{ valueDomain ? formatNumber(valueDomain[0]) : "–" }}</span>
+            <span>{{ valueDomain ? formatNumber(valueDomain[1]) : "–" }}</span>
+          </div>
+          <p class="map-legend-note">
+            <span class="map-legend-swatch map-legend-swatch--nodata"></span>keine Daten
+            <span class="map-legend-swatch map-legend-swatch--interpolated"></span>interpoliert (gestrichelter Rand)
+          </p>
+        </template>
+        <p v-else class="map-legend-title">
+          <span
+            class="map-legend-swatch"
+            :style="{
+              background: isDark ? MAP_ONLY_FILL_DARK : MAP_ONLY_FILL_LIGHT,
+              display: 'inline-block',
+              width: '10px',
+              height: '10px',
+              borderRadius: '2px',
+              marginRight: '0.3rem',
+              verticalAlign: 'middle',
+            }"
+          ></span>
+          {{ selectedGeoType === "lau" ? "LAU-Gemeinden" : "Kein Datensatz ausgewählt" }}
         </p>
       </div>
     </div>

@@ -81,6 +81,10 @@ period_bounds as (
         region_name,
         year as valid_from,
         max(year) over (partition by nuts_id, period_id) as max_vintage_year,
+        -- Letztes insgesamt verfügbares Vintage-Jahr über alle Regionen -
+        -- Referenz, um "noch aktuell" von "stillgelegt" zu unterscheiden
+        -- (siehe valid_to unten).
+        max(year) over () as global_max_vintage_year,
         geometry_3035,
         geometry_wgs84,
         has_valid_geometry
@@ -94,11 +98,19 @@ select
     country_code,
     region_name,
     valid_from,
-    -- valid_to = Start der nächsten Periode - 1; NULL = noch aktuell
-    lead(valid_from) over (
-        partition by nuts_id
-        order by valid_from
-    ) - 1 as valid_to,
+    -- valid_to = Start der nächsten Periode - 1, falls eine existiert.
+    -- Gibt es keine nächste Periode (letzte bekannte Periode dieser Region),
+    -- ist NULL nur dann korrekt "noch aktuell", wenn die Region tatsächlich
+    -- im global letzten Vintage-Jahr noch erfasst wurde. Andernfalls wurde
+    -- der Code unter dieser ID schlicht nicht mehr fortgeschrieben (z. B.
+    -- durch Gebietsreform stillgelegt/umbenannt, siehe max_vintage_year) -
+    -- ohne diese Fallunterscheidung würde ein solcher Code für JEDES
+    -- spätere geometry_year (auch das aktuelle) fälschlich als gültig
+    -- gematcht, doppelt neben seinem Nachfolgecode.
+    coalesce(
+        lead(valid_from) over (partition by nuts_id order by valid_from) - 1,
+        case when max_vintage_year < global_max_vintage_year then max_vintage_year end
+    ) as valid_to,
     max_vintage_year,
     geometry_3035,
     ST_AsGeoJSON(geometry_wgs84)::json as geometry_wgs84,

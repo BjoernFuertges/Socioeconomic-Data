@@ -14,14 +14,12 @@
   gleichzeitig (siehe target_versions unten), unterscheidbar über die Spalte
   target_version.
 
-  Erreichbar sind nur Versionen, die über mart_nuts_version_crosswalk vom
-  jeweiligen Quelljahr (geodata_year) aus in höchstens 2 Hops erreichbar
-  sind. Da alle aktuell geladenen Rohdatensätze geodata_year = 2024 führen
-  (die Quelle liefert historische Werte bereits rückwirkend auf den
-  aktuellen Gebietsstand umgerechnet), sind das ab 2024 aktuell: 2024 selbst
-  (0 Hops), 2021 (1 Hop), 2016 (2 Hops via 2021). 2013 bräuchte einen
-  3. Hop, den mart_nuts_version_crosswalk nicht berechnet, und ist daher
-  bewusst nicht in der Liste.
+  mart_nuts_version_crosswalk berechnet mittlerweile für JEDES Paar der in
+  stg_nuts_geometry vorhandenen Vintage-Jahre eine direkte (1-Hop)
+  Abbildung (siehe int_nuts_spatial_crosswalk) - jede dort vorhandene
+  Version ist daher von jeder anderen aus direkt erreichbar, unabhängig vom
+  geodata_year der Quelldaten. target_versions listet deshalb einfach alle
+  aktuell verfügbaren NUTS-3-Vintage-Jahre.
 
   Strategie je Zielversion:
   - Regionen, deren geodata_year bereits der Zielversion entspricht → weight = 1,0
@@ -33,7 +31,7 @@
   is_crosswalked = false  → Direktwert, kein Umrechnen nötig
 */
 
-{% set target_versions = [2016, 2021, 2024] %}
+{% set target_versions = [2003, 2006, 2010, 2013, 2016, 2021, 2024] %}
 
 -- Slugs entsprechen bewusst 1:1 den RouteSlugs der generierten Kreis-API-
 -- Endpoints (backend/internal/models/models_soziodata_generated.go), damit

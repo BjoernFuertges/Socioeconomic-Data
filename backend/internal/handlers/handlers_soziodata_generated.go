@@ -43,7 +43,7 @@ func (h *Handler) GetArbeitsloseData(c *gin.Context) {
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
 // @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
-// @Param nuts_version query int false "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
@@ -89,7 +89,7 @@ func (h *Handler) GetArbeitsvolumenData(c *gin.Context) {
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
 // @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
 // @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
-// @Param nuts_version query int false "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
@@ -135,7 +135,7 @@ func (h *Handler) GetAuzubildendeData(c *gin.Context) {
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
 // @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
-// @Param nuts_version query int false "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
@@ -203,7 +203,7 @@ func (h *Handler) GetBeschaeftigungsquoteNuts3Data(c *gin.Context) {
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
 // @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
 // @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
-// @Param nuts_version query int false "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
@@ -249,7 +249,7 @@ func (h *Handler) GetBevoelkerungData(c *gin.Context) {
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
 // @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
-// @Param nuts_version query int false "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
@@ -295,7 +295,7 @@ func (h *Handler) GetBruttoverdienstData(c *gin.Context) {
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
 // @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
 // @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
-// @Param nuts_version query int false "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
@@ -341,7 +341,7 @@ func (h *Handler) GetDurchschnittsalterData(c *gin.Context) {
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
 // @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
-// @Param nuts_version query int false "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
@@ -387,7 +387,7 @@ func (h *Handler) GetErwerbstaetigePro1000EinwohnerData(c *gin.Context) {
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
 // @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
-// @Param nuts_version query int false "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
@@ -433,7 +433,7 @@ func (h *Handler) GetKinderarmutData(c *gin.Context) {
 // @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
 // @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
 // @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
-// @Param nuts_version query int false "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
@@ -479,7 +479,7 @@ func (h *Handler) GetMedianeinkommenData(c *gin.Context) {
 // @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
 // @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
 // @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
-// @Param nuts_version query int false "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
@@ -525,7 +525,7 @@ func (h *Handler) GetSchuldnerquoteData(c *gin.Context) {
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
 // @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
 // @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
-// @Param nuts_version query int false "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
@@ -571,7 +571,7 @@ func (h *Handler) GetSgbIiQuoteData(c *gin.Context) {
 // @Param year query int false "Jahr der Beobachtung (2005-2030)" example(2020)
 // @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
 // @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
-// @Param nuts_version query int false "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
@@ -617,7 +617,7 @@ func (h *Handler) GetStudierendeData(c *gin.Context) {
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
 // @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
 // @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
-// @Param nuts_version query int false "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
@@ -663,7 +663,7 @@ func (h *Handler) GetWohngeldhaushalteData(c *gin.Context) {
 // @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
 // @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
 // @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
-// @Param nuts_version query int false "Ziel-NUTS-Version (2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}

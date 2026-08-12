@@ -83,6 +83,10 @@ period_bounds as (
         nuts_3,
         year as valid_from,
         max(year) over (partition by gisco_id, period_id) as max_vintage_year,
+        -- Letztes insgesamt verfügbares Vintage-Jahr über alle LAUs -
+        -- Referenz, um "noch aktuell" von "stillgelegt" zu unterscheiden
+        -- (siehe valid_to unten).
+        max(year) over () as global_max_vintage_year,
         geometry_3035,
         geometry_wgs84,
         has_valid_geometry
@@ -97,11 +101,19 @@ select
     lau_name,
     nuts_3,
     valid_from,
-    -- valid_to = Start der nächsten Periode - 1; NULL = noch aktuell
-    lead(valid_from) over (
-        partition by gisco_id
-        order by valid_from
-    ) - 1 as valid_to,
+    -- valid_to = Start der nächsten Periode - 1, falls eine existiert.
+    -- Gibt es keine nächste Periode (letzte bekannte Periode dieser LAU),
+    -- ist NULL nur dann korrekt "noch aktuell", wenn die LAU tatsächlich im
+    -- global letzten Vintage-Jahr noch erfasst wurde. Andernfalls wurde der
+    -- Code unter dieser gisco_id schlicht nicht mehr fortgeschrieben (z. B.
+    -- durch Gemeindefusion stillgelegt, siehe max_vintage_year) - ohne diese
+    -- Fallunterscheidung würde ein solcher Code für JEDES spätere
+    -- geometry_year (auch das aktuelle) fälschlich als gültig gematcht,
+    -- doppelt neben seinem Nachfolgecode.
+    coalesce(
+        lead(valid_from) over (partition by gisco_id order by valid_from) - 1,
+        case when max_vintage_year < global_max_vintage_year then max_vintage_year end
+    ) as valid_to,
     max_vintage_year,
     geometry_3035,
     ST_AsGeoJSON(geometry_wgs84)::json as geometry_wgs84,
