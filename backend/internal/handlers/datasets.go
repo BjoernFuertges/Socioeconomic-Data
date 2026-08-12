@@ -99,7 +99,7 @@ func (h *Handler) GetLAUDatasets(c *gin.Context) {
 
 	var nuts3Code string
 	err := h.DB.Get(&nuts3Code,
-		`SELECT nuts_3_code FROM transformed_data.lau_integrated WHERE gisco_id = $1 AND nuts_3_code IS NOT NULL LIMIT 1`,
+		`SELECT nuts_3_code FROM transformed_data.lau_integrated WHERE gisco_id = $1 AND nuts_3_code IS NOT NULL AND lau_name IS NOT NULL LIMIT 1`,
 		giscoID,
 	)
 	if err != nil {

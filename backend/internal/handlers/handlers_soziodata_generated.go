@@ -24,6 +24,7 @@ import (
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
+// @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.ArbeitsloseData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -70,6 +71,7 @@ func (h *Handler) GetArbeitsloseTimeseriesData(c *gin.Context) {
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
+// @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.ArbeitsvolumenData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -116,6 +118,7 @@ func (h *Handler) GetArbeitsvolumenTimeseriesData(c *gin.Context) {
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
+// @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.AuzubildendeData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -230,6 +233,7 @@ func (h *Handler) GetBeschaeftigungsquoteNuts3TimeseriesData(c *gin.Context) {
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
+// @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.BevoelkerungData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -276,6 +280,7 @@ func (h *Handler) GetBevoelkerungTimeseriesData(c *gin.Context) {
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
+// @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.BruttoverdienstData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -322,6 +327,7 @@ func (h *Handler) GetBruttoverdienstTimeseriesData(c *gin.Context) {
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
+// @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.DurchschnittsalterData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -368,6 +374,7 @@ func (h *Handler) GetDurchschnittsalterTimeseriesData(c *gin.Context) {
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
+// @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.ErwerbstaetigePro1000EinwohnerData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -414,6 +421,7 @@ func (h *Handler) GetErwerbstaetigePro1000EinwohnerTimeseriesData(c *gin.Context
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
+// @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.KinderarmutData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -460,6 +468,7 @@ func (h *Handler) GetKinderarmutTimeseriesData(c *gin.Context) {
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
+// @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.MedianeinkommenData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -506,6 +515,7 @@ func (h *Handler) GetMedianeinkommenTimeseriesData(c *gin.Context) {
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
+// @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.SchuldnerquoteData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -552,6 +562,7 @@ func (h *Handler) GetSchuldnerquoteTimeseriesData(c *gin.Context) {
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
+// @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.SgbIiQuoteData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -598,6 +609,7 @@ func (h *Handler) GetSgbIiQuoteTimeseriesData(c *gin.Context) {
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
+// @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.StudierendeData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -644,6 +656,7 @@ func (h *Handler) GetStudierendeTimeseriesData(c *gin.Context) {
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
+// @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.WohngeldhaushalteData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse

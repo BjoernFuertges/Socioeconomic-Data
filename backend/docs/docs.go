@@ -104,6 +104,13 @@ const docTemplate = `{
                         "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
                         "name": "fill_gaps",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -338,6 +345,13 @@ const docTemplate = `{
                         "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
                         "name": "fill_gaps",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -571,6 +585,13 @@ const docTemplate = `{
                         "example": false,
                         "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
                         "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
                         "in": "query"
                     }
                 ],
@@ -1150,6 +1171,13 @@ const docTemplate = `{
                         "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
                         "name": "fill_gaps",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1383,6 +1411,13 @@ const docTemplate = `{
                         "example": false,
                         "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
                         "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
                         "in": "query"
                     }
                 ],
@@ -1618,6 +1653,13 @@ const docTemplate = `{
                         "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
                         "name": "fill_gaps",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1851,6 +1893,13 @@ const docTemplate = `{
                         "example": false,
                         "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
                         "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
                         "in": "query"
                     }
                 ],
@@ -2504,6 +2553,13 @@ const docTemplate = `{
                         "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
                         "name": "fill_gaps",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3056,6 +3112,13 @@ const docTemplate = `{
                         "example": false,
                         "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
                         "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
                         "in": "query"
                     }
                 ],
@@ -3835,6 +3898,13 @@ const docTemplate = `{
                         "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
                         "name": "fill_gaps",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4068,6 +4138,13 @@ const docTemplate = `{
                         "example": false,
                         "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
                         "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
                         "in": "query"
                     }
                 ],
@@ -4375,6 +4452,13 @@ const docTemplate = `{
                         "example": false,
                         "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
                         "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
                         "in": "query"
                     }
                 ],
@@ -4919,6 +5003,13 @@ const docTemplate = `{
                         "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
                         "name": "fill_gaps",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5138,6 +5229,11 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 11
                 },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "observation_date": {
                     "type": "string",
                     "example": "2020-01-01"
@@ -5214,6 +5310,11 @@ const docTemplate = `{
                 "n_peer_regions": {
                     "type": "integer",
                     "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -5292,6 +5393,11 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 11
                 },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "observation_date": {
                     "type": "string",
                     "example": "2020-01-01"
@@ -5368,6 +5474,11 @@ const docTemplate = `{
                 "n_peer_regions": {
                     "type": "integer",
                     "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -5458,6 +5569,11 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 11
                 },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "observation_date": {
                     "type": "string",
                     "example": "2020-01-01"
@@ -5535,6 +5651,11 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 11
                 },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "observation_date": {
                     "type": "string",
                     "example": "2020-01-01"
@@ -5611,6 +5732,11 @@ const docTemplate = `{
                 "n_peer_regions": {
                     "type": "integer",
                     "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -5785,6 +5911,11 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 11
                 },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "observation_date": {
                     "type": "string",
                     "example": "2020-01-01"
@@ -5861,6 +5992,11 @@ const docTemplate = `{
                 "n_peer_regions": {
                     "type": "integer",
                     "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -6113,6 +6249,11 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 11
                 },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "observation_date": {
                     "type": "string",
                     "example": "2020-01-01"
@@ -6256,6 +6397,11 @@ const docTemplate = `{
                 "n_peer_regions": {
                     "type": "integer",
                     "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -6579,6 +6725,11 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 11
                 },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "observation_date": {
                     "type": "string",
                     "example": "2020-01-01"
@@ -6655,6 +6806,11 @@ const docTemplate = `{
                 "n_peer_regions": {
                     "type": "integer",
                     "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -6765,6 +6921,11 @@ const docTemplate = `{
                 "n_peer_regions": {
                     "type": "integer",
                     "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -6927,6 +7088,11 @@ const docTemplate = `{
                 "n_peer_regions": {
                     "type": "integer",
                     "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",

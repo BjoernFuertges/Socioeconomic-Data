@@ -1,9 +1,10 @@
 {% macro render_nuts3_fill_gaps_view(stage_model, dataset_slug, value_column) %}
-{% set target_version = var('target_nuts_version', 2024) %}
+{% set target_versions = [2003, 2006, 2010, 2013, 2016, 2021, 2024] %}
 
 with timeseries as (
     select
         nuts3_id,
+        target_version,
         year,
         value,
         is_interpolated,
@@ -12,11 +13,6 @@ with timeseries as (
         n_peer_regions
     from {{ ref('mart_nuts3_timeseries_interpolated') }}
     where dataset_slug = '{{ dataset_slug }}'
-      -- mart_nuts3_timeseries_interpolated führt mehrere NUTS-3-Zielversionen
-      -- parallel (target_version-Spalte); ohne diesen Filter würde die View
-      -- Zeilen aus allen Zielversionen mischen (mehrfache, unterschiedliche
-      -- Werte je nuts3_id/year).
-      and target_version = {{ target_version }}
 ),
 
 source_rows as (
@@ -37,14 +33,17 @@ source_rows as (
     from {{ ref(stage_model) }} src
 ),
 
+-- Regionsnamen je NUTS-Zielversion - eine Region kann in unterschiedlichen
+-- Versionen unterschiedliche valid_from/valid_to-Perioden (und damit ggf.
+-- einen anderen Namen) haben, daher Join über beides statt nur nuts_id.
 target_regions as (
     select
         nuts_id,
-        region_name
+        region_name,
+        valid_from,
+        valid_to
     from {{ ref('mart_nuts_geometry_historized') }}
     where levl_code = 3
-      and valid_from <= {{ target_version }}
-      and (valid_to is null or valid_to >= {{ target_version }})
 )
 
 select
@@ -61,7 +60,12 @@ select
     coalesce(src.mapper, 'harmonized_fill_gaps') as mapper,
     coalesce(src.parameter, 'geodata_id_nuts') as parameter,
     coalesce(src.geodata_level, 'NUTS_3') as geodata_level,
-    coalesce(src.geodata_year, {{ target_version }}) as geodata_year,
+    coalesce(src.geodata_year, ts.target_version) as geodata_year,
+    -- NUTS-Zielversion dieser Zeile - macht die View konsistent mit dem
+    -- nuts_version-Parameter von /{slug}/timeseries (beide lesen jetzt
+    -- dieselben, mehrere Zielversionen führenden mart_nuts3_*-Modelle,
+    -- statt die fill_gaps-Seite auf eine dbt-Build-Zeit-Version zu fixieren).
+    ts.target_version as nuts_version,
     ts.year,
     coalesce(src.observation_date, make_date(ts.year, 1, 1)) as observation_date,
     coalesce(src.has_valid_value, true) as has_valid_value,
@@ -75,6 +79,8 @@ left join source_rows src
     on  src.geodata_id_nuts = ts.nuts3_id
     and src.year = ts.year
 left join target_regions geo
-    on geo.nuts_id = ts.nuts3_id
-order by geodata_id_nuts, year
+    on  geo.nuts_id = ts.nuts3_id
+    and geo.valid_from <= ts.target_version
+    and (geo.valid_to is null or geo.valid_to >= ts.target_version)
+order by geodata_id_nuts, nuts_version, year
 {% endmacro %}

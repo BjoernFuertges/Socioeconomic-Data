@@ -22,6 +22,11 @@ type SozioBaseData struct {
 	ValueLinear     *float64 `json:"value_linear,omitempty" db:"value_linear" example:"8.78"`
 	ValuePeerTrend  *float64 `json:"value_peer_trend,omitempty" db:"value_peer_trend" example:"8.50"`
 	NPeerRegions    *int   `json:"n_peer_regions,omitempty" db:"n_peer_regions" example:"11"`
+	// NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+	// befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+	// /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+	// Zielversion erkennbar zurückgeben.
+	NutsVersion *int `json:"nuts_version,omitempty" db:"nuts_version" example:"2021"`
 }
 
 // SozioKreisFilter sind die einheitlichen Query-Parameter für alle Kreis-Datensätze.

@@ -50,6 +50,14 @@ definitions:
       n_peer_regions:
         example: 11
         type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -106,6 +114,14 @@ definitions:
         type: string
       n_peer_regions:
         example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
         type: integer
       observation_date:
         example: "2020-01-01"
@@ -164,6 +180,14 @@ definitions:
       n_peer_regions:
         example: 11
         type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -220,6 +244,14 @@ definitions:
         type: string
       n_peer_regions:
         example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
         type: integer
       observation_date:
         example: "2020-01-01"
@@ -287,6 +319,14 @@ definitions:
       n_peer_regions:
         example: 11
         type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -344,6 +384,14 @@ definitions:
       n_peer_regions:
         example: 11
         type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -400,6 +448,14 @@ definitions:
         type: string
       n_peer_regions:
         example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
         type: integer
       observation_date:
         example: "2020-01-01"
@@ -527,6 +583,14 @@ definitions:
       n_peer_regions:
         example: 11
         type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -583,6 +647,14 @@ definitions:
         type: string
       n_peer_regions:
         example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
         type: integer
       observation_date:
         example: "2020-01-01"
@@ -765,6 +837,14 @@ definitions:
       n_peer_regions:
         example: 11
         type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -868,6 +948,14 @@ definitions:
         type: number
       n_peer_regions:
         example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
         type: integer
       observation_date:
         example: "2020-01-01"
@@ -1108,6 +1196,14 @@ definitions:
       n_peer_regions:
         example: 11
         type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -1164,6 +1260,14 @@ definitions:
         type: string
       n_peer_regions:
         example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
         type: integer
       observation_date:
         example: "2020-01-01"
@@ -1245,6 +1349,14 @@ definitions:
         type: string
       n_peer_regions:
         example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
         type: integer
       observation_date:
         example: "2020-01-01"
@@ -1365,6 +1477,14 @@ definitions:
       n_peer_regions:
         example: 11
         type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -1460,6 +1580,12 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -1623,6 +1749,12 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -1786,6 +1918,12 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -2186,6 +2324,12 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -2349,6 +2493,12 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -2512,6 +2662,12 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -2675,6 +2831,12 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -3122,6 +3284,12 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -3493,6 +3661,12 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -4027,6 +4201,12 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -4190,6 +4370,12 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -4400,6 +4586,12 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -4767,6 +4959,12 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:

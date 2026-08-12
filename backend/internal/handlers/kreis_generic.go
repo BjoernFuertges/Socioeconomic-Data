@@ -67,9 +67,27 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 	schema := cfg.Schema
 	table := cfg.Table
 	extraColumns := ""
+	// nutsVersion != nil nur bei fill_gaps=true - der Filter unten greift dann
+	// gegen die api_*_fill_gaps-View, die (wie mart_nuts3_timeseries_interpolated)
+	// mehrere NUTS-Zielversionen parallel führt. Ohne diesen Filter würde
+	// fill_gaps=true stillschweigend Zeilen aus allen Versionen mischen und
+	// unabhängig vom nuts_version-Parameter des /timeseries-Endpoints laufen.
+	var nutsVersion *int
 	if filter.FillGaps {
 		table = cfg.InterpolatedTable
-		extraColumns = ", d.is_interpolated, d.value_linear, d.value_peer_trend, d.n_peer_regions"
+		extraColumns = ", d.is_interpolated, d.value_linear, d.value_peer_trend, d.n_peer_regions, d.nuts_version"
+		v := defaultNutsVersion
+		if filter.NutsVersion != nil {
+			if !isSupportedNutsVersion(*filter.NutsVersion) {
+				respondBadRequest(c, fmt.Sprintf(
+					"nuts_version %d wird nicht unterstützt (erlaubt: %v)",
+					*filter.NutsVersion, supportedNutsVersions,
+				))
+				return
+			}
+			v = *filter.NutsVersion
+		}
+		nutsVersion = &v
 	}
 
 	query := fmt.Sprintf(
@@ -83,6 +101,12 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 
 	args := []interface{}{}
 	argPos := 1
+
+	if nutsVersion != nil {
+		query += fmt.Sprintf(" AND d.nuts_version = $%d", argPos)
+		args = append(args, *nutsVersion)
+		argPos++
+	}
 
 	if filter.GeodataIDNUTS != "" {
 		query += fmt.Sprintf(" AND d.geodata_id_nuts = $%d", argPos)
