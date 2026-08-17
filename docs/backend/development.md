@@ -1,5 +1,12 @@
 # Local Development
 
+!!! tip "Full local stack via Docker Compose"
+    To run the pipeline, database, backend, and frontend together with a
+    single command instead of setting each one up individually, see
+    `compose.local.yml` at the repo root (documented in the root
+    [README.md](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/README.md#lokal-testen-docker-compose)).
+    The rest of this page covers running the backend standalone.
+
 ## Prerequisites
 
 - Go (see [`go.mod`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/backend/go.mod) for the version)

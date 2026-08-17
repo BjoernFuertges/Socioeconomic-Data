@@ -1,4 +1,50 @@
 # Sozioökonomische Daten
+
+## Lokal testen (Docker Compose)
+
+`compose.local.yml` startet die gesamte Anwendung (Pipeline, Postgres/
+PostGIS, Backend, Frontend) lokal auf dem Dev-Rechner — ohne Traefik/TLS,
+ohne Docker-Hub-Images (Backend wird aus `backend/Dockerfile` gebaut, das
+Frontend läuft als Vite-Dev-Server mit Hot Reload). Details und Portliste
+stehen als Kommentar im Kopf der Datei.
+
+```bash
+docker compose -f compose.local.yml up --build
+```
+
+- Backend: http://localhost:8081/api/v1 (Swagger: `/api/docs/index.html`)
+- Frontend: http://localhost:5174
+- Adminer: http://localhost:8082 (Server `postgis`)
+
+`transformed_data` ist zu Beginn leer. Pipeline einmalig anstoßen, sobald
+die Container laufen:
+
+```bash
+docker compose -f compose.local.yml exec pipeline \
+  bash /app/dlt/run_all_pipelines.sh
+```
+
+Geodaten laden dabei über lokale Fallback-Pfade (`geo-mapper/`,
+`geo-importer/`) ohne weiteres Zutun. Die übrigen Kreis-Datensätze
+(`arbeitslose`, `bevoelkerung`, `schuldnerquote`, ...) lesen aus
+`data-exchange/1_friedrich-bjoern`, das im Repo-Checkout standardmäßig leer
+ist (produktiv per Nextcloud-Sync befüllt, siehe
+[backend/scripts/sync_nextcloud_data_exchange.sh](backend/scripts/sync_nextcloud_data_exchange.sh)).
+
+!!! Ohne diese Rohdaten schlägt `run_all_pipelines.sh` bei `dbt snapshot`
+fehl (alle `snap_results_*_kreise`-Snapshots referenzieren
+`loaded_data.results_*_kreise`-Tabellen, die dlt beim Fehlen der
+Quelldateien überspringt statt anzulegen) und bricht dort ab — `dbt run`
+läuft dann nie, das `transformed_data`-Schema entsteht gar nicht erst, und
+Backend-Endpunkte wie die NUTS-/LAU-Regionenliste liefern
+`relation "transformed_data.mart_nuts3_summary" does not exist`. Das ist
+kein Fehler in diesem Compose-Setup, sondern eine direkte Folge fehlender
+Kreis-Rohdaten. Um lokal mit echten Werten zu testen, entweder den
+Nextcloud-Sync einmalig ausführen (braucht Zugangsdaten in
+`backend/deployments/.env.nextcloud-sync`, siehe
+[backend/scripts/sync_nextcloud_data_exchange.sh](backend/scripts/sync_nextcloud_data_exchange.sh))
+oder per Hand in den Pfad kopieren.
+
 ## GLFS
 This project is using [Git Large File Storage (git LFS)](https://git-lfs.com/).
 

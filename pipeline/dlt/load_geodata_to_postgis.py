@@ -96,7 +96,22 @@ def load_geodata() -> Iterator[Dict[str, Any]]:
             logger.error(f"Error processing {file_path.name}: {e}")
             continue
 
-@dlt.resource(name="lau_population", write_disposition="replace")
+@dlt.resource(
+    name="lau_population",
+    write_disposition="replace",
+    # gisco_id/nuts_3_code/lau_name_latin/population/country kommen nur aus dem
+    # primären GEODATA_BASE_PATH-Pfad; im Fallback (geo-importer LAU.csv) sind
+    # sie durchgehend NULL. Ohne expliziten Typ-Hint lässt dlt eine Spalte, die
+    # in allen Zeilen NULL ist, komplett weg (Typinferenz schlägt fehl), was
+    # stg_lau_population.sql mit "column does not exist" abbrechen lässt.
+    columns={
+        "gisco_id": {"data_type": "text", "nullable": True},
+        "nuts_3_code": {"data_type": "text", "nullable": True},
+        "lau_name_latin": {"data_type": "text", "nullable": True},
+        "population": {"data_type": "text", "nullable": True},
+        "country": {"data_type": "text", "nullable": True},
+    },
+)
 def load_population_data() -> Iterator[Dict[str, Any]]:
     """Load all LAU population data from CSV files.
 
@@ -135,6 +150,14 @@ def load_population_data() -> Iterator[Dict[str, Any]]:
                 df['year'] = year
                 # Rename columns to match expected schema
                 df = df.rename(columns={'id': 'lau_nat_code', 'name': 'lau_name_national'})
+                # Fallback hat keine Bevölkerungszahlen/gisco_id (nur im primären
+                # GEODATA_BASE_PATH-Output vorhanden) — Spalten als NULL ergänzen,
+                # damit stg_lau_population.sql (erwartet diese Spalten) nicht mit
+                # "column does not exist" abbricht; nachgelagerte, populationsbasierte
+                # Marts bleiben dadurch leer statt den ganzen dbt-Lauf zu blockieren.
+                for col in ("gisco_id", "nuts_3_code", "lau_name_latin", "population", "country"):
+                    if col not in df.columns:
+                        df[col] = None
                 for _, row in df.iterrows():
                     yield {str(k): v for k, v in row.to_dict().items()}
             except Exception as e:
