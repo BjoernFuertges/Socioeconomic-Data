@@ -38,6 +38,10 @@ models:
           - not_null
       - name: nuts_id
         description: "NUTS region identifier"
+      - name: nuts3_id
+        description: "Kanonischer NUTS-3-Parent: deklarierte Quellspalte (nuts_3_code/nuts_3), sonst räumlich ermittelter Fallback über int_lau_nuts3_spatial_link (größte Flächenüberlappung gegen die aktuelle NUTS-3-Version)"
+      - name: nuts3_link_source
+        description: "'declared' (aus Quelldaten) oder 'spatial_estimate' (räumlich ermittelt, keine amtliche Zuordnung)"
       - name: geometry
         description: "PostGIS geometry (polygon) in EPSG:3035"
       - name: population
@@ -275,3 +279,80 @@ models:
         description: "Methode-3-Schätzung (Fortschreibung des Vorjahreswerts mit der durchschnittlichen relativen Veränderung anderer Regionen derselben NUTS-2-Gruppe). Nur befüllt wenn is_interpolated = true UND sowohl der eigene Vorjahreswert als auch mindestens ein Peer-Wert bekannt sind, sonst NULL."
       - name: n_peer_regions
         description: "Anzahl der Peer-Regionen (gleiche NUTS-2-Gruppe), die zur Berechnung von value_peer_trend beigetragen haben. NULL wenn is_interpolated = false oder value_peer_trend nicht berechenbar war."
+
+  - name: mart_lau_sociodata_harmonized
+    description: >
+      LAU-Pendant zu mart_nuts3_sociodata_harmonized: sozioökonomische
+      Gemeinde(LAU)-Datensätze, umgerechnet auf mehrere gemeinsame
+      LAU-Zielversionen gleichzeitig (target_version), über den
+      Crosswalk aus mart_lau_version_crosswalk. Siehe Kommentar in
+      mart_lau_sociodata_harmonized.sql für Details, measure_type-
+      Aggregationslogik und die Liste der unterstützten Zielversionen.
+    columns:
+      - name: dataset_slug
+        description: "Dataset-Slug (z.B. beschaeftigungsquote-gemeinden)"
+        tests:
+          - not_null
+      - name: target_gisco_id
+        description: "GISCO-ID der Zielregion in der jeweiligen target_version"
+        tests:
+          - not_null
+      - name: year
+        description: "Jahr der Beobachtung"
+        tests:
+          - not_null
+      - name: target_version
+        description: "LAU-Zielversion dieser Zeile (2011-2024)"
+        tests:
+          - not_null
+      - name: harmonized_value
+        description: "Wert, umgerechnet auf target_version - je measure_type entweder anteilig aufsummiert ('sum') oder gewichtet gemittelt ('weighted_avg') über mehrere Quellregionen"
+        tests:
+          - not_null
+      - name: is_crosswalked
+        description: "true = Wert wurde über eine Versionsgrenze umgerechnet, false = geodata_year der Quelle entsprach bereits target_version"
+        tests:
+          - not_null
+      - name: source_version
+        description: "Ursprüngliche LAU-Version der Quelldaten (geodata_year); bei Zusammenlegungen die kleinste beteiligte Quellversion"
+      - name: n_hops
+        description: "0 = kein Crosswalk nötig, 1 = über mart_lau_version_crosswalk umgerechnet"
+
+  - name: mart_lau_timeseries_interpolated
+    description: >
+      LAU-Pendant zu mart_nuts3_timeseries_interpolated: lückenlose
+      Zeitreihen je (Gemeinde, Dataset, target_version) mit denselben zwei
+      Imputationsmethoden (linear / peer_trend), aber mit dem Kreis (erste
+      5 Stellen des Amtlichen Gemeindeschlüssels) statt der NUTS-2-Gruppe
+      als Peer-Gruppe. Siehe Kommentar in mart_lau_timeseries_interpolated.sql.
+    columns:
+      - name: gisco_id
+        description: "GISCO-ID der Zielregion (harmonisierte Zielversion, siehe mart_lau_sociodata_harmonized)"
+        tests:
+          - not_null
+      - name: dataset_slug
+        description: "Dataset-Slug (z.B. beschaeftigungsquote-gemeinden)"
+        tests:
+          - not_null
+      - name: target_version
+        description: "LAU-Zielversion dieser Zeile (2011-2024) - Gap-Filling läuft je Zielversion unabhängig"
+        tests:
+          - not_null
+      - name: year
+        description: "Jahr der Beobachtung"
+        tests:
+          - not_null
+      - name: value
+        description: "Ausgabewert: Originalwert falls vorhanden, sonst die lineare Interpolation (Methode 1)."
+        tests:
+          - not_null
+      - name: is_interpolated
+        description: "true = Wert wurde imputiert (kein Originalwert vorhanden), false = Originalwert aus mart_lau_sociodata_harmonized"
+        tests:
+          - not_null
+      - name: value_linear
+        description: "Methode-1-Schätzung (lineare Interpolation). Nur befüllt wenn is_interpolated = true, sonst NULL."
+      - name: value_peer_trend
+        description: "Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen Veränderung anderer Gemeinden desselben Kreises). Nur befüllt wenn is_interpolated = true UND sowohl der eigene Vorjahreswert als auch mindestens ein Peer-Wert bekannt sind, sonst NULL."
+      - name: n_peer_regions
+        description: "Anzahl der Peer-Gemeinden (gleicher Kreis), die zur Berechnung von value_peer_trend beigetragen haben. NULL wenn is_interpolated = false oder value_peer_trend nicht berechenbar war."

@@ -77,7 +77,7 @@ async function selectRegion(giscoId: string) {
     return;
   }
 
-  const nuts3 = unwrapNull(selectedRegion.value.nuts_3_code);
+  const nuts3 = unwrapNull(selectedRegion.value.nuts3_id);
   if (!nuts3) return;
   try {
     const body = await apiGet<DatasetCatalogResponse>(`/lau/${giscoId}/datasets`);
@@ -91,7 +91,12 @@ const population = computed(() => (selectedRegion.value ? unwrapNull(selectedReg
 const country = computed(() =>
   selectedRegion.value ? unwrapNull(selectedRegion.value.country) || selectedRegion.value.country_code : null,
 );
-const nuts3Code = computed(() => (selectedRegion.value ? unwrapNull(selectedRegion.value.nuts_3_code) : null));
+// nuts3Code ist die kanonische LAU->NUTS-3-Verlinkung (deklariert oder
+// räumlich ermittelt) - siehe nuts3LinkSource für die Kennzeichnung.
+const nuts3Code = computed(() => (selectedRegion.value ? unwrapNull(selectedRegion.value.nuts3_id) : null));
+const nuts3LinkIsEstimate = computed(
+  () => selectedRegion.value != null && unwrapNull(selectedRegion.value.nuts3_link_source) === "spatial_estimate",
+);
 </script>
 
 <template>
@@ -125,7 +130,12 @@ const nuts3Code = computed(() => (selectedRegion.value ? unwrapNull(selectedRegi
           <dt>Bevölkerung</dt>
           <dd>{{ population !== null ? formatNumber(population) : "unbekannt" }}</dd>
           <dt>NUTS-3</dt>
-          <dd>{{ nuts3Code || "keine Zuordnung" }}</dd>
+          <dd>
+            {{ nuts3Code || "keine Zuordnung" }}
+            <span v-if="nuts3Code && nuts3LinkIsEstimate" class="hint" title="Räumlich ermittelt (größte Flächenüberlappung), keine amtliche Zuordnung aus den Quelldaten.">
+              (räumlich ermittelt)
+            </span>
+          </dd>
         </dl>
 
         <p v-if="!nuts3Code" class="hint">

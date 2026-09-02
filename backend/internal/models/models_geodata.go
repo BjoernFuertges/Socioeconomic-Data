@@ -7,16 +7,25 @@ import (
 
 // LAURegion repräsentiert eine LAU-Region mit Geometrie und Population
 type LAURegion struct {
-	GiscoID               string          `json:"gisco_id" db:"gisco_id" example:"DE111"`
-	Year                  int             `json:"year" db:"year" example:"2024"`
-	LAUName               string          `json:"lau_name" db:"lau_name" example:"Stuttgart"`
-	CountryCode           string          `json:"country_code" db:"country_code" example:"DE"`
-	LAUID                 sql.NullString  `json:"lau_id,omitempty" db:"lau_id" swaggertype:"string" example:"08111000"`
-	GeometryWGS84         json.RawMessage `json:"geometry_wgs84,omitempty" db:"geometry_wgs84" swaggertype:"object"`
-	HasValidGeometry      bool            `json:"has_valid_geometry" db:"has_valid_geometry" example:"true"`
-	LAUNameNational       sql.NullString  `json:"lau_name_national,omitempty" db:"lau_name_national" swaggertype:"string"`
-	LAUNameLatin          sql.NullString  `json:"lau_name_latin,omitempty" db:"lau_name_latin" swaggertype:"string"`
-	NUTS3Code             sql.NullString  `json:"nuts_3_code,omitempty" db:"nuts_3_code" swaggertype:"string"`
+	GiscoID          string          `json:"gisco_id" db:"gisco_id" example:"DE111"`
+	Year             int             `json:"year" db:"year" example:"2024"`
+	LAUName          string          `json:"lau_name" db:"lau_name" example:"Stuttgart"`
+	CountryCode      string          `json:"country_code" db:"country_code" example:"DE"`
+	LAUID            sql.NullString  `json:"lau_id,omitempty" db:"lau_id" swaggertype:"string" example:"08111000"`
+	GeometryWGS84    json.RawMessage `json:"geometry_wgs84,omitempty" db:"geometry_wgs84" swaggertype:"object"`
+	HasValidGeometry bool            `json:"has_valid_geometry" db:"has_valid_geometry" example:"true"`
+	LAUNameNational  sql.NullString  `json:"lau_name_national,omitempty" db:"lau_name_national" swaggertype:"string"`
+	LAUNameLatin     sql.NullString  `json:"lau_name_latin,omitempty" db:"lau_name_latin" swaggertype:"string"`
+	NUTS3Code        sql.NullString  `json:"nuts_3_code,omitempty" db:"nuts_3_code" swaggertype:"string"`
+	// NUTS3ID ist die kanonische LAU->NUTS-3-Verlinkung: deklarierte
+	// Quellspalte (nuts_3_code/nuts_3), sonst räumlich ermittelter Fallback
+	// (siehe int_lau_nuts3_spatial_link.sql). Robuster als NUTS3Code, das
+	// oft NULL ist, wenn die Quelldaten keinen NUTS-3-Code führen.
+	NUTS3ID sql.NullString `json:"nuts3_id,omitempty" db:"nuts3_id" swaggertype:"string"`
+	// NUTS3LinkSource kennzeichnet, woher NUTS3ID stammt: 'declared' (aus
+	// Quelldaten) oder 'spatial_estimate' (räumlich ermittelt, keine
+	// amtliche Zuordnung) - siehe lau_integrated.sql.
+	NUTS3LinkSource       sql.NullString  `json:"nuts3_link_source,omitempty" db:"nuts3_link_source" swaggertype:"string"`
 	LAUNatCode            sql.NullString  `json:"lau_nat_code,omitempty" db:"lau_nat_code" swaggertype:"string"`
 	PopulationCount       sql.NullInt64   `json:"population_count,omitempty" db:"population_count" swaggertype:"integer"`
 	Country               sql.NullString  `json:"country,omitempty" db:"country" swaggertype:"string"`

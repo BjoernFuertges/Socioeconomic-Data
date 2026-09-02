@@ -37,6 +37,13 @@
   ein Regionenpaar keine LAU-Bevölkerung ermittelt werden konnte (z. B.
   unbewohnte Fläche oder fehlende LAU-Daten).
 
+  absolute_weight (= raw_weight vor der Normierung auf Summe 1,0) wird
+  zusätzlich zur normierten population_weight-Spalte geführt - gebraucht
+  für die gewichtete Mittelwertbildung bei Quoten/Durchschnitten in
+  mart_nuts3_sociodata_harmonized (measure_type = 'weighted_avg'): dort
+  darf eine Zusammenlegung mehrerer Quellregionen den Wert nicht aufsummieren
+  (das wäre nur für Zählgrößen richtig), sondern muss ihn gewichtet mitteln.
+
   Beispiel Gebietsreform:
     Kreis A (2016) überlappt räumlich mit Kreis X und Kreis Y (2021).
     Leben 70 % der Einwohner von A auf dem Gebietsteil, der zu X wird, und
@@ -79,8 +86,9 @@ select
         sum(raw_weight) over (
             partition by source_nuts_id, source_version, target_version
         ), 0
-    )           as population_weight,
-    1           as n_hops
+    )              as population_weight,
+    raw_weight     as absolute_weight,
+    1              as n_hops
 from raw_weights
 where source_version != target_version
 order by source_version, target_version, source_nuts_id, target_nuts_id

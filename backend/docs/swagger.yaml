@@ -44,6 +44,13 @@ definitions:
       is_interpolated:
         example: true
         type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -109,6 +116,13 @@ definitions:
       is_interpolated:
         example: true
         type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -174,6 +188,13 @@ definitions:
       is_interpolated:
         example: true
         type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -239,6 +260,13 @@ definitions:
       is_interpolated:
         example: true
         type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -313,6 +341,13 @@ definitions:
       is_interpolated:
         example: true
         type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -378,6 +413,13 @@ definitions:
       is_interpolated:
         example: true
         type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -443,6 +485,13 @@ definitions:
       is_interpolated:
         example: true
         type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -577,6 +626,13 @@ definitions:
       is_interpolated:
         example: true
         type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -642,6 +698,13 @@ definitions:
       is_interpolated:
         example: true
         type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -831,6 +894,13 @@ definitions:
       kinderarmut:
         example: 50
         type: number
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -905,6 +975,19 @@ definitions:
         type: boolean
       nuts_3_code:
         type: string
+      nuts3_id:
+        description: |-
+          NUTS3ID ist die kanonische LAU->NUTS-3-Verlinkung: deklarierte
+          Quellspalte (nuts_3_code/nuts_3), sonst räumlich ermittelter Fallback
+          (siehe int_lau_nuts3_spatial_link.sql). Robuster als NUTS3Code, das
+          oft NULL ist, wenn die Quelldaten keinen NUTS-3-Code führen.
+        type: string
+      nuts3_link_source:
+        description: |-
+          NUTS3LinkSource kennzeichnet, woher NUTS3ID stammt: 'declared' (aus
+          Quelldaten) oder 'spatial_estimate' (räumlich ermittelt, keine
+          amtliche Zuordnung) - siehe lau_integrated.sql.
+        type: string
       population_count:
         type: integer
       year:
@@ -913,6 +996,47 @@ definitions:
       year_match:
         example: true
         type: boolean
+    type: object
+  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LauTimeseriesPoint:
+    properties:
+      dataset_slug:
+        example: beschaeftigungsquote-gemeinden
+        type: string
+      gisco_id:
+        example: DE_11000000
+        type: string
+      is_interpolated:
+        description: true = Wert wurde imputiert (kein Originalwert vorhanden für
+          dieses Jahr).
+        example: true
+        type: boolean
+      lau_version:
+        description: LauVersion ist die LAU-Zielversion dieses Zeitreihenpunkts (2011-2024).
+        example: 2021
+        type: integer
+      n_peer_regions:
+        description: Anzahl Peer-Gemeinden (gleicher Kreis), die zu value_peer_trend
+          beigetragen haben.
+        example: 8
+        type: integer
+      value:
+        example: 58.3
+        type: number
+      value_linear:
+        description: Methode-1-Schätzung (lineare Interpolation). Nur bei is_interpolated
+          = true befüllt.
+        example: 58.3
+        type: number
+      value_peer_trend:
+        description: |-
+          Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen
+          Veränderung anderer Gemeinden desselben Kreises). Nur befüllt, wenn
+          is_interpolated = true und die Schätzung berechenbar war.
+        example: 57.9
+        type: number
+      year:
+        example: 2021
+        type: integer
     type: object
   gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.MedianeinkommenData:
     properties:
@@ -940,6 +1064,13 @@ definitions:
       is_interpolated:
         example: true
         type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -1190,6 +1321,13 @@ definitions:
       is_interpolated:
         example: true
         type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -1255,6 +1393,13 @@ definitions:
       is_interpolated:
         example: true
         type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -1344,6 +1489,13 @@ definitions:
       is_interpolated:
         example: true
         type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -1471,6 +1623,13 @@ definitions:
       is_interpolated:
         example: true
         type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
@@ -2081,6 +2240,18 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-LAU-Version (2011-2024,
+          Default 2024)'
+        example: 2021
+        in: query
+        name: lau_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -2105,6 +2276,83 @@ paths:
             $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
       summary: Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt,
         mit Datumsableitung und Qualitätsflag
+      tags:
+      - BeschaeftigungsquoteGemeinden
+  /beschaeftigungsquote-gemeinden/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte LAU-Zeitreihe aus mart_lau_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: GISCO-ID der Gemeinde
+        example: DE_11000000
+        in: query
+        name: geodata_id_lau
+        type: string
+      - description: NUTS-3-Präfix für Hierarchieabfragen (über die kanonische LAU->NUTS-3-Verlinkung,
+          z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2000-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-LAU-Version (2011-2024, Default 2024)
+        example: 2021
+        in: query
+        name: lau_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LauTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je
+        Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - BeschaeftigungsquoteGemeinden
   /beschaeftigungsquote-nuts3:

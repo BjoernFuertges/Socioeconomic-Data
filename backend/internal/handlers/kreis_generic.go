@@ -67,27 +67,47 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 	schema := cfg.Schema
 	table := cfg.Table
 	extraColumns := ""
-	// nutsVersion != nil nur bei fill_gaps=true - der Filter unten greift dann
-	// gegen die api_*_fill_gaps-View, die (wie mart_nuts3_timeseries_interpolated)
-	// mehrere NUTS-Zielversionen parallel führt. Ohne diesen Filter würde
+	// nutsVersion/lauVersion != nil nur bei fill_gaps=true - der Filter unten
+	// greift dann gegen die api_*_fill_gaps-View, die (wie
+	// mart_nuts3_timeseries_interpolated / mart_lau_timeseries_interpolated)
+	// mehrere Zielversionen parallel führt. Ohne diesen Filter würde
 	// fill_gaps=true stillschweigend Zeilen aus allen Versionen mischen und
-	// unabhängig vom nuts_version-Parameter des /timeseries-Endpoints laufen.
+	// unabhängig vom nuts_version/lau_version-Parameter des /timeseries-
+	// Endpoints laufen. Ein Datensatz ist immer nur entweder IsHarmonized
+	// (NUTS) oder IsHarmonizedLau, nie beides - siehe KreisDatasetConfig.
 	var nutsVersion *int
+	var lauVersion *int
 	if filter.FillGaps {
 		table = cfg.InterpolatedTable
-		extraColumns = ", d.is_interpolated, d.value_linear, d.value_peer_trend, d.n_peer_regions, d.nuts_version"
-		v := defaultNutsVersion
-		if filter.NutsVersion != nil {
-			if !isSupportedNutsVersion(*filter.NutsVersion) {
-				respondBadRequest(c, fmt.Sprintf(
-					"nuts_version %d wird nicht unterstützt (erlaubt: %v)",
-					*filter.NutsVersion, supportedNutsVersions,
-				))
-				return
+		if cfg.IsHarmonizedLau {
+			extraColumns = ", d.is_interpolated, d.value_linear, d.value_peer_trend, d.n_peer_regions, d.lau_version"
+			v := defaultLauVersion
+			if filter.LauVersion != nil {
+				if !isSupportedLauVersion(*filter.LauVersion) {
+					respondBadRequest(c, fmt.Sprintf(
+						"lau_version %d wird nicht unterstützt (erlaubt: %v)",
+						*filter.LauVersion, supportedLauVersions,
+					))
+					return
+				}
+				v = *filter.LauVersion
 			}
-			v = *filter.NutsVersion
+			lauVersion = &v
+		} else {
+			extraColumns = ", d.is_interpolated, d.value_linear, d.value_peer_trend, d.n_peer_regions, d.nuts_version"
+			v := defaultNutsVersion
+			if filter.NutsVersion != nil {
+				if !isSupportedNutsVersion(*filter.NutsVersion) {
+					respondBadRequest(c, fmt.Sprintf(
+						"nuts_version %d wird nicht unterstützt (erlaubt: %v)",
+						*filter.NutsVersion, supportedNutsVersions,
+					))
+					return
+				}
+				v = *filter.NutsVersion
+			}
+			nutsVersion = &v
 		}
-		nutsVersion = &v
 	}
 
 	query := fmt.Sprintf(
@@ -105,6 +125,12 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 	if nutsVersion != nil {
 		query += fmt.Sprintf(" AND d.nuts_version = $%d", argPos)
 		args = append(args, *nutsVersion)
+		argPos++
+	}
+
+	if lauVersion != nil {
+		query += fmt.Sprintf(" AND d.lau_version = $%d", argPos)
+		args = append(args, *lauVersion)
 		argPos++
 	}
 

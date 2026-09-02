@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { apiGet } from "../api/client";
-import type { GeoRegionSummary, InventoryEntry, NutsTimeseriesPoint } from "../types/api";
+import type { GeoRegionSummary, InventoryEntry, LauTimeseriesPoint, NutsTimeseriesPoint, TimeseriesPoint } from "../types/api";
 import { formatDatasetLabel, formatNumber } from "../format";
 import {
   MAP_ONLY_FILL_DARK,
@@ -25,6 +25,12 @@ const TILE_ATTRIBUTION =
 // berechnet für jedes Paar davon eine direkte (1-Hop) Abbildung.
 const NUTS_VERSIONS = [2003, 2006, 2010, 2013, 2016, 2021, 2024] as const;
 
+// Unterstützte LAU-Zielversionen - muss mit supportedLauVersions in
+// backend/internal/handlers/lau_generic.go übereinstimmen. Entspricht den
+// in mart_lau_geometry_historized vorhandenen Vintage-Jahren;
+// mart_lau_version_crosswalk berechnet für jedes Paar davon eine Abbildung.
+const LAU_VERSIONS = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024] as const;
+
 type GeoType = "nuts" | "lau";
 
 const mapContainer = ref<HTMLDivElement | null>(null);
@@ -39,21 +45,24 @@ const geoError = ref<string | null>(null);
 const regions = ref<GeoRegionSummary[]>([]);
 
 const inventoryError = ref<string | null>(null);
-// dataset-slug -> verfügbare Jahre (absteigend, neuestes zuerst)
-const datasetYears = ref<Map<string, number[]>>(new Map());
+// dataset-slug -> verfügbare Jahre (absteigend, neuestes zuerst), getrennt je
+// Geo-Ebene (/socioeconomic/inventory liefert NUTS_3- und LAU-Einträge
+// getrennt, und /{slug}/timeseries erwartet je nach Ebene nuts_version oder
+// lau_version).
+const datasetYearsNuts = ref<Map<string, number[]>>(new Map());
+const datasetYearsLau = ref<Map<string, number[]>>(new Map());
 // "" = kein Datensatz gewählt -> Karte zeigt nur den Grenzverlauf, keine Werte.
 const selectedDataset = ref<string>("");
 const selectedYear = ref<number | null>(null);
 const selectedNutsVersion = ref<number>(2024);
-// Datensatz-Auswahl ist aktuell nur für NUTS-3 verdrahtet (/socioeconomic/inventory
-// liefert nur NUTS_3-Einträge, /{slug}/timeseries liefert nuts_id-Punkte) - bei
-// geo_type=lau wird die Karte deshalb immer ohne Datensatz angezeigt.
+const selectedLauVersion = ref<number>(2024);
 const selectedGeoType = ref<GeoType>("nuts");
 
 const valuesLoading = ref(false);
 const valuesError = ref<string | null>(null);
-const valuesByRegion = ref<Map<string, NutsTimeseriesPoint>>(new Map());
+const valuesByRegion = ref<Map<string, TimeseriesPoint>>(new Map());
 
+const datasetYears = computed(() => (selectedGeoType.value === "lau" ? datasetYearsLau.value : datasetYearsNuts.value));
 const datasetOptions = computed(() => Array.from(datasetYears.value.keys()).sort());
 const yearOptions = computed(() => datasetYears.value.get(selectedDataset.value) ?? []);
 
@@ -150,13 +159,15 @@ async function loadGeometries() {
   geoError.value = null;
   try {
     if (selectedGeoType.value === "lau") {
-      // Kein Versions-/Vintage-Auswahl für LAU (anders als NUTS gibt es dafür
-      // keinen Werte-Crosswalk, hier zeigen wir schlicht den aktuellsten
-      // Grenzverlauf). country_code grenzt auf Deutschland ein.
+      // geometry_year pinnt auf den Grenzverlauf der gewählten LAU-Version -
+      // /geo?geo_type=lau interpretiert geometry_year dabei als Jahresfilter
+      // auf lau_integrated (siehe backend/internal/handlers/geo.go).
+      // country_code grenzt auf Deutschland ein.
       const body = await apiGet<GeoRegionSummary[]>("/geo", {
         geo_type: "lau",
         country_code: "DE",
         include_geometry: true,
+        geometry_year: selectedLauVersion.value,
         limit: "null",
       });
       regions.value = (body.data ?? []).filter((r) => r.geometry_wgs84);
@@ -183,23 +194,32 @@ async function loadGeometries() {
   }
 }
 
+// Lädt die Datensatz-Übersicht für eine Geo-Ebene und wählt (falls noch
+// nichts gewählt ist oder die bisherige Auswahl in dieser Ebene nicht
+// existiert) den ersten verfügbaren Datensatz vor.
+async function loadInventoryFor(geoType: GeoType) {
+  const geodataLevel = geoType === "lau" ? "LAU" : "NUTS_3";
+  const target = geoType === "lau" ? datasetYearsLau : datasetYearsNuts;
+  const body = await apiGet<InventoryEntry[]>("/socioeconomic/inventory", { geodata_level: geodataLevel });
+  const byDataset = new Map<string, Set<number>>();
+  for (const entry of body.data ?? []) {
+    if (!byDataset.has(entry.dataset)) byDataset.set(entry.dataset, new Set());
+    byDataset.get(entry.dataset)!.add(entry.year);
+  }
+  const sorted = new Map<string, number[]>();
+  for (const [slug, years] of byDataset) {
+    sorted.set(slug, Array.from(years).sort((a, b) => b - a));
+  }
+  target.value = sorted;
+}
+
 async function loadInventory() {
   try {
-    const body = await apiGet<InventoryEntry[]>("/socioeconomic/inventory", { geodata_level: "NUTS_3" });
-    const byDataset = new Map<string, Set<number>>();
-    for (const entry of body.data ?? []) {
-      if (!byDataset.has(entry.dataset)) byDataset.set(entry.dataset, new Set());
-      byDataset.get(entry.dataset)!.add(entry.year);
-    }
-    const sorted = new Map<string, number[]>();
-    for (const [slug, years] of byDataset) {
-      sorted.set(slug, Array.from(years).sort((a, b) => b - a));
-    }
-    datasetYears.value = sorted;
-    const firstDataset = Array.from(sorted.keys()).sort()[0];
-    if (firstDataset) {
-      selectedDataset.value = firstDataset;
-      selectedYear.value = sorted.get(firstDataset)?.[0] ?? null;
+    await Promise.all([loadInventoryFor("nuts"), loadInventoryFor("lau")]);
+    if (!selectedDataset.value || !datasetYears.value.has(selectedDataset.value)) {
+      const firstDataset = Array.from(datasetYears.value.keys()).sort()[0];
+      selectedDataset.value = firstDataset ?? "";
+      selectedYear.value = firstDataset ? datasetYears.value.get(firstDataset)?.[0] ?? null : null;
     }
   } catch (err) {
     inventoryError.value = err instanceof Error ? err.message : String(err);
@@ -208,8 +228,8 @@ async function loadInventory() {
 
 async function loadValues() {
   if (!selectedDataset.value || selectedYear.value === null) {
-    // Kein Datensatz gewählt (oder LAU-Ansicht) -> Karte bleibt ungefärbt,
-    // eventuell noch vorhandene Werte des zuvor gewählten Datensatzes verwerfen.
+    // Kein Datensatz gewählt -> Karte bleibt ungefärbt, eventuell noch
+    // vorhandene Werte des zuvor gewählten Datensatzes verwerfen.
     valuesError.value = null;
     if (valuesByRegion.value.size > 0) {
       valuesByRegion.value = new Map();
@@ -220,12 +240,21 @@ async function loadValues() {
   valuesLoading.value = true;
   valuesError.value = null;
   try {
-    const body = await apiGet<NutsTimeseriesPoint[]>(`/${selectedDataset.value}/timeseries`, {
-      year: selectedYear.value,
-      nuts_version: selectedNutsVersion.value,
-      limit: "null",
-    });
-    valuesByRegion.value = new Map((body.data ?? []).map((p) => [p.nuts_id, p]));
+    if (selectedGeoType.value === "lau") {
+      const body = await apiGet<LauTimeseriesPoint[]>(`/${selectedDataset.value}/timeseries`, {
+        year: selectedYear.value,
+        lau_version: selectedLauVersion.value,
+        limit: "null",
+      });
+      valuesByRegion.value = new Map((body.data ?? []).map((p) => [p.gisco_id, p]));
+    } else {
+      const body = await apiGet<NutsTimeseriesPoint[]>(`/${selectedDataset.value}/timeseries`, {
+        year: selectedYear.value,
+        nuts_version: selectedNutsVersion.value,
+        limit: "null",
+      });
+      valuesByRegion.value = new Map((body.data ?? []).map((p) => [p.nuts_id, p]));
+    }
     restyleLayer();
   } catch (err) {
     valuesError.value = err instanceof Error ? err.message : String(err);
@@ -317,17 +346,27 @@ watch(isDark, () => {
 // Vintage-Periode, ggf. andere Kreis-IDs) als auch die Werte (andere
 // target_version im harmonisierten Mart) neu geladen werden.
 watch(selectedNutsVersion, async () => {
+  if (selectedGeoType.value !== "nuts") return;
   await loadGeometries();
   buildLayer();
   await loadValues();
 });
-// Datensatz-Auswahl ist nur für NUTS-3 verdrahtet - beim Wechsel auf LAU
-// wird sie zurückgesetzt, damit keine NUTS-3-Werte auf LAU-Geometrien
-// hängen bleiben.
+// Analog für die LAU-Version (andere target_version im LAU-harmonisierten Mart).
+watch(selectedLauVersion, async () => {
+  if (selectedGeoType.value !== "lau") return;
+  await loadGeometries();
+  buildLayer();
+  await loadValues();
+});
+// Beim Wechsel der Ebene: falls der bisher gewählte Datensatz in der neuen
+// Ebene nicht existiert (NUTS-3- und LAU-Datensätze sind getrennte Mengen),
+// auf den ersten verfügbaren Datensatz der neuen Ebene umschalten (oder
+// "" ohne Datensatz-Auswahl in dieser Ebene).
 watch(selectedGeoType, async () => {
-  if (selectedGeoType.value === "lau") {
-    selectedDataset.value = "";
-    selectedYear.value = null;
+  if (!selectedDataset.value || !datasetYears.value.has(selectedDataset.value)) {
+    const firstDataset = datasetOptions.value[0];
+    selectedDataset.value = firstDataset ?? "";
+    selectedYear.value = firstDataset ? datasetYears.value.get(firstDataset)?.[0] ?? null : null;
   }
   await loadGeometries();
   buildLayer();
@@ -347,23 +386,29 @@ watch(selectedGeoType, async () => {
         <option value="lau">LAU (Gemeinden)</option>
       </select>
 
-      <template v-if="selectedGeoType === 'nuts'">
-        <label for="map-dataset-select">Datensatz</label>
-        <select id="map-dataset-select" v-model="selectedDataset">
-          <option value="">Kein Datensatz (nur Karte)</option>
-          <option v-for="slug in datasetOptions" :key="slug" :value="slug">{{ formatDatasetLabel(slug) }}</option>
+      <label for="map-dataset-select">Datensatz</label>
+      <select id="map-dataset-select" v-model="selectedDataset">
+        <option value="">Kein Datensatz (nur Karte)</option>
+        <option v-for="slug in datasetOptions" :key="slug" :value="slug">{{ formatDatasetLabel(slug) }}</option>
+      </select>
+
+      <template v-if="selectedDataset">
+        <label for="map-year-select">Jahr</label>
+        <select id="map-year-select" v-model.number="selectedYear">
+          <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
         </select>
+      </template>
 
-        <template v-if="selectedDataset">
-          <label for="map-year-select">Jahr</label>
-          <select id="map-year-select" v-model.number="selectedYear">
-            <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
-          </select>
-        </template>
-
+      <template v-if="selectedGeoType === 'nuts'">
         <label for="map-nuts-version-select">NUTS-Version</label>
         <select id="map-nuts-version-select" v-model.number="selectedNutsVersion">
           <option v-for="version in NUTS_VERSIONS" :key="version" :value="version">{{ version }}</option>
+        </select>
+      </template>
+      <template v-else>
+        <label for="map-lau-version-select">LAU-Version</label>
+        <select id="map-lau-version-select" v-model.number="selectedLauVersion">
+          <option v-for="version in LAU_VERSIONS" :key="version" :value="version">{{ version }}</option>
         </select>
       </template>
 
@@ -374,7 +419,7 @@ watch(selectedGeoType, async () => {
     <div class="map-wrap">
       <div ref="mapContainer" class="map-container"></div>
       <div class="map-legend">
-        <template v-if="selectedGeoType === 'nuts' && selectedDataset">
+        <template v-if="selectedDataset">
           <p class="map-legend-title">{{ formatDatasetLabel(selectedDataset) }}<template v-if="selectedYear"> · {{ selectedYear }}</template></p>
           <div class="map-legend-scale">
             <span v-for="step in sequentialSteps(isDark)" :key="step" class="map-legend-swatch" :style="{ background: step }"></span>

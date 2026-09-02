@@ -72,9 +72,9 @@ flowchart TB
 - **`mart_nuts_version_crosswalk`** – combines area and population weight
   (falls back to area if no LAU population can be determined), including
   2-hop compositions (e.g. 2013 → 2016 → 2021).
-- **`mart_nuts3_sociodata_harmonized`** – converts 14 datasets onto a common
-  target NUTS version (default: `var('target_nuts_version', 2024)`,
-  configurable via `dbt run --vars 'target_nuts_version: 2021'`): the 13
+- **`mart_nuts3_sociodata_harmonized`** – converts 14 datasets onto every
+  available target NUTS version simultaneously (2003/2006/2010/2013/2016/
+  2021/2024, distinguished by the `target_version` column): the 13
   county (Kreis) datasets (sourced directly from `loaded_data.results_*`)
   plus `beschaeftigungsquote-nuts3` (sourced via `ref()` from
   `stg_beschaeftigungsquote_nuts3`, since it is itself a population-weighted
@@ -83,6 +83,14 @@ flowchart TB
   `erwerbstaetige_pro_1000_einwohner`, `beschaeftigungsquote-nuts3`) so the
   backend can join both sides without a separate mapping table – see
   `KreisDatasetConfig.IsHarmonized` in [API: fill_gaps](../backend/api.md#gap-free-time-series-fill_gaps).
+  Each dataset carries a `measure_type` ('sum' for counts like
+  `bevoelkerung`, 'weighted_avg' for rates/averages like `schuldnerquote`)
+  that decides how a merge of several source regions into one target region
+  is combined: extensive measures are summed (`Σ value_i × weight_i`),
+  intensive measures are weighted-averaged (`Σ value_i × absolute_weight_i
+  / Σ absolute_weight_i`, using the crosswalk's pre-normalization weight) –
+  summing a percentage/average across a merge would otherwise silently
+  shrink it.
 - **`mart_nuts3_timeseries_interpolated`** – fills missing years per region
   and dataset with two alternative imputation methods (no extrapolation
   beyond the known time range), see below.
@@ -144,6 +152,67 @@ Takeaways:
   unstandardized absolute-count and percentage predictors. It is
   implemented in the analysis script for comparison but **not** used in
   the dbt model.
+
+## LAU version harmonization
+
+LAU (municipality) boundaries change even more often than NUTS-3 ones
+(mergers/splits), and GISCO re-generalizes the boundary lines on every
+yearly vintage release even where nothing administrative changed. The same
+harmonization pattern as NUTS-3 exists for LAU, structurally mirrored but
+with two differences: there is no sub-LAU population layer to weight by
+(LAU is the finest level in this project), so weighting is area-based; and
+same-`gisco_id` geometry changes across periods are treated as a trivial
+identity mapping (weight 1.0) without any spatial computation, rather than
+going through the spatial crosswalk – LAU geometry historization collapses
+far less than NUTS's (~12 periods per municipality out of 14 vintage years
+on average, mostly re-generalization noise, not real changes), so
+spatially intersecting every period against every other period of the same
+municipality does not finish in reasonable time and answers the same
+("unchanged") every time anyway. Only genuine cross-`gisco_id` overlaps
+(actual mergers/splits) go through the spatial crosswalk.
+
+```mermaid
+flowchart TB
+    lau_geo_hist["mart_lau_geometry_historized"] --> lau_spatial["int_lau_spatial_crosswalk\n(area shares, source_gisco_id != target_gisco_id only)"]
+    lau_geo_hist --> lau_link["int_lau_nuts3_spatial_link\n(LAU period -> NUTS-3, largest overlap)"]
+    lau_spatial --> lau_xwalk["mart_lau_version_crosswalk\n(identity pairs + spatial crosswalk)"]
+    lau_xwalk --> lau_harmonized["mart_lau_sociodata_harmonized\n(all LAU datasets on every target LAU version)"]
+    lau_harmonized --> lau_interpolated["mart_lau_timeseries_interpolated\n(gap-free yearly series, per Kreis peer group)"]
+    lau_link --> lau_integrated["lau_integrated.nuts3_id\n(declared source column, else spatial fallback)"]
+```
+
+- **`int_lau_spatial_crosswalk`** – area intersections between LAU
+  geometry periods of *different* `gisco_id`s only (real mergers/splits);
+  joins directly against the `mart_lau_geometry_historized` table twice
+  (not through a shared CTE) so Postgres keeps using its GiST index on
+  `geometry_3035` – a CTE referenced twice gets materialized by Postgres
+  (≥ v12) and loses index support, which turns the self-join into an
+  unindexed nested loop that does not finish. Also disables bitmap-scan
+  plans for this model specifically (`pre_hook`), because the planner
+  otherwise rebuilds a large, barely-selective `country_code` bitmap on
+  every outer-loop iteration instead of using a cheap post-filter.
+- **`int_lau_nuts3_spatial_link`** – LAU→NUTS-3 assignment by largest
+  intersection area (not `ST_Contains`, to tolerate boundary-touching
+  noise), one row per LAU geometry period against the current NUTS-3
+  vintage. Feeds the canonical `nuts3_id` in `lau_integrated`, used as a
+  fallback whenever the declared source columns (`nuts_3_code`/`nuts_3`)
+  are NULL – which they usually are for locally-loaded GISCO fixtures,
+  since the raw LAU files don't carry a NUTS-3 property.
+- **`mart_lau_version_crosswalk`** – union of a cheap identity mapping
+  (same `gisco_id`, weight 1.0, no geometry computation, covering a
+  municipality's entire lifespan across all its geometry periods) and the
+  real spatial crosswalk for genuine boundary changes, normalized like the
+  NUTS crosswalk.
+- **`mart_lau_sociodata_harmonized`** / **`mart_lau_timeseries_interpolated`**
+  – LAU-grain counterparts to the NUTS-3 harmonized/interpolated marts,
+  same `measure_type` mechanism, same two interpolation methods but with
+  the Kreis (first 5 digits of the Amtlicher Gemeindeschlüssel) as the peer
+  group for Method 3 instead of the NUTS-2 prefix (LAU codes have no
+  hierarchical structure).
+- **`api_beschaeftigungsquote_gemeinden_fill_gaps`** – LAU counterpart to
+  the NUTS `api_*_fill_gaps` views, built by the
+  `render_lau_fill_gaps_view` macro; exposes `lau_version` instead of
+  `nuts_version`.
 
 ## Conventions
 

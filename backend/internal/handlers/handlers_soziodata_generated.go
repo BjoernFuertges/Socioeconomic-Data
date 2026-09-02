@@ -164,12 +164,36 @@ func (h *Handler) GetAuzubildendeTimeseriesData(c *gin.Context) {
 // @Param point query string false "Punktabfrage im Format lon,lat (WGS84)" example(13.404954,52.520008)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
+// @Param lau_version query int false "Nur zusammen mit fill_gaps=true: Ziel-LAU-Version (2011-2024, Default 2024)" example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.BeschaeftigungsquoteGemeindenData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /beschaeftigungsquote-gemeinden [get]
 func (h *Handler) GetBeschaeftigungsquoteGemeindenData(c *gin.Context) {
 	getKreisData[models.BeschaeftigungsquoteGemeindenData](h, c, models.BeschaeftigungsquoteGemeindenConfig)
+}
+
+// GetBeschaeftigungsquoteGemeindenTimeseriesData gibt die lückenlose, interpolierte Zeitreihe für Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// @Summary Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag
+// @Description Liefert die harmonisierte LAU-Zeitreihe aus mart_lau_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
+// @Tags BeschaeftigungsquoteGemeinden
+// @Accept json
+// @Produce json
+// @Param geodata_id_lau query string false "GISCO-ID der Gemeinde" example(DE_11000000)
+// @Param nuts_parent_id query string false "NUTS-3-Präfix für Hierarchieabfragen (über die kanonische LAU->NUTS-3-Verlinkung, z.B. DE1)" example(DE1)
+// @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
+// @Param from_year query int false "Nur Jahre >= from_year zurückgeben" example(2018)
+// @Param to_year query int false "Nur Jahre <= to_year zurückgeben" example(2022)
+// @Param lau_version query int false "Ziel-LAU-Version (2011-2024, Default 2024)" example(2021)
+// @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
+// @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Success 200 {object} models.APIResponse{data=[]models.LauTimeseriesPoint}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /beschaeftigungsquote-gemeinden/timeseries [get]
+func (h *Handler) GetBeschaeftigungsquoteGemeindenTimeseriesData(c *gin.Context) {
+	getLauTimeseriesEndpoint(h, c, models.BeschaeftigungsquoteGemeindenConfig)
 }
 
 // GetBeschaeftigungsquoteNuts3Data gibt Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung zurück

@@ -97,9 +97,13 @@ func (h *Handler) GetNutsDatasets(c *gin.Context) {
 func (h *Handler) GetLAUDatasets(c *gin.Context) {
 	giscoID := strings.ToUpper(strings.TrimSpace(c.Param("gisco_id")))
 
+	// nuts3_id ist die kanonische LAU->NUTS-3-Verlinkung (deklarierte
+	// Quellspalte, sonst räumlich ermittelter Fallback - siehe
+	// int_lau_nuts3_spatial_link.sql / lau_integrated.sql), robuster als
+	// die oft NULLe nuts_3_code-Rohspalte.
 	var nuts3Code string
 	err := h.DB.Get(&nuts3Code,
-		`SELECT nuts_3_code FROM transformed_data.lau_integrated WHERE gisco_id = $1 AND nuts_3_code IS NOT NULL AND lau_name IS NOT NULL LIMIT 1`,
+		`SELECT nuts3_id FROM transformed_data.lau_integrated WHERE gisco_id = $1 AND nuts3_id IS NOT NULL AND lau_name IS NOT NULL LIMIT 1`,
 		giscoID,
 	)
 	if err != nil {

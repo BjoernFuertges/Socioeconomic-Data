@@ -44,6 +44,12 @@ export interface LauRegion {
   country?: Nullable<string>;
   population_count?: Nullable<number>;
   nuts_3_code?: Nullable<string>;
+  // nuts3_id ist die kanonische LAU->NUTS-3-Verlinkung (deklariert oder
+  // räumlich ermittelt) - robuster als nuts_3_code, das oft NULL ist.
+  nuts3_id?: Nullable<string>;
+  // 'declared' (aus Quelldaten) oder 'spatial_estimate' (räumlich
+  // ermittelt, keine amtliche Zuordnung) - siehe backend lau_integrated.sql.
+  nuts3_link_source?: Nullable<string>;
   geometry_wgs84?: GeoJSON.Geometry | null;
   has_valid_geometry?: boolean;
 }
@@ -55,6 +61,12 @@ export interface GeoRegionSummary {
   nuts_level?: number;
   vintage_year?: number;
   geometry_wgs84?: GeoJSON.Geometry | null;
+}
+
+export interface LauTimeseriesPoint extends TimeseriesPoint {
+  gisco_id: string;
+  dataset_slug: string;
+  lau_version: number;
 }
 
 export interface DatasetCatalogEntry {

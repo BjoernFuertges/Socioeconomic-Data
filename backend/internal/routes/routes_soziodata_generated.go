@@ -18,6 +18,7 @@ func RegisterSoziodataRoutes(v1 *gin.RouterGroup, h *handlers.Handler) {
 	v1.GET("/auzubildende", h.GetAuzubildendeData)
 	v1.GET("/auzubildende/timeseries", h.GetAuzubildendeTimeseriesData)
 	v1.GET("/beschaeftigungsquote-gemeinden", h.GetBeschaeftigungsquoteGemeindenData)
+	v1.GET("/beschaeftigungsquote-gemeinden/timeseries", h.GetBeschaeftigungsquoteGemeindenTimeseriesData)
 	v1.GET("/beschaeftigungsquote-nuts3", h.GetBeschaeftigungsquoteNuts3Data)
 	v1.GET("/beschaeftigungsquote-nuts3/timeseries", h.GetBeschaeftigungsquoteNuts3TimeseriesData)
 	v1.GET("/bevoelkerung", h.GetBevoelkerungData)

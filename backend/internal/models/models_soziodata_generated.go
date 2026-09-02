@@ -20,6 +20,7 @@ var ArbeitsloseConfig = KreisDatasetConfig{
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "arbeitslose",
 	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
 }
 
 // ArbeitsvolumenData repräsentiert Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -39,6 +40,7 @@ var ArbeitsvolumenConfig = KreisDatasetConfig{
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "arbeitsvolumen",
 	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
 }
 
 // AuzubildendeData repräsentiert Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -58,6 +60,7 @@ var AuzubildendeConfig = KreisDatasetConfig{
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "auzubildende",
 	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
 }
 
 // BeschaeftigungsquoteGemeindenData repräsentiert Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -71,12 +74,13 @@ type BeschaeftigungsquoteGemeindenData struct {
 var BeschaeftigungsquoteGemeindenConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_beschaeftigungsquote_gemeinden",
-	InterpolatedTable: "",
+	InterpolatedTable: "api_beschaeftigungsquote_gemeinden_fill_gaps",
 	ValueColumns:      []string{"beschaeftigungsquote_prozent"},
 	DefaultLimit:      1000,
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "beschaeftigungsquote-gemeinden",
 	IsHarmonized:      false,
+	IsHarmonizedLau:   true,
 }
 
 // BeschaeftigungsquoteNuts3Data repräsentiert Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
@@ -99,6 +103,7 @@ var BeschaeftigungsquoteNuts3Config = KreisDatasetConfig{
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "beschaeftigungsquote-nuts3",
 	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
 }
 
 // BevoelkerungData repräsentiert Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -118,6 +123,7 @@ var BevoelkerungConfig = KreisDatasetConfig{
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "bevoelkerung",
 	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
 }
 
 // BruttoverdienstData repräsentiert Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -137,6 +143,7 @@ var BruttoverdienstConfig = KreisDatasetConfig{
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "bruttoverdienst",
 	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
 }
 
 // DurchschnittsalterData repräsentiert Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -156,6 +163,7 @@ var DurchschnittsalterConfig = KreisDatasetConfig{
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "durchschnittsalter",
 	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
 }
 
 // ErwerbstaetigePro1000EinwohnerData repräsentiert Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -175,6 +183,7 @@ var ErwerbstaetigePro1000EinwohnerConfig = KreisDatasetConfig{
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "erwerbstaetige_pro_1000_einwohner",
 	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
 }
 
 // KinderarmutData repräsentiert Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -194,6 +203,7 @@ var KinderarmutConfig = KreisDatasetConfig{
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "kinderarmut",
 	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
 }
 
 // MedianeinkommenData repräsentiert Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -213,6 +223,7 @@ var MedianeinkommenConfig = KreisDatasetConfig{
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "medianeinkommen",
 	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
 }
 
 // SchuldnerquoteData repräsentiert Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -232,6 +243,7 @@ var SchuldnerquoteConfig = KreisDatasetConfig{
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "schuldnerquote",
 	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
 }
 
 // SgbIiQuoteData repräsentiert Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -251,6 +263,7 @@ var SgbIiQuoteConfig = KreisDatasetConfig{
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "sgb_ii_quote",
 	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
 }
 
 // StudierendeData repräsentiert Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -270,6 +283,7 @@ var StudierendeConfig = KreisDatasetConfig{
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "studierende",
 	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
 }
 
 // WohngeldhaushalteData repräsentiert Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -289,4 +303,5 @@ var WohngeldhaushalteConfig = KreisDatasetConfig{
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "wohngeldhaushalte",
 	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
 }

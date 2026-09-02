@@ -42,9 +42,9 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 		filter.Limit = 100
 	}
 
-	query := `SELECT gisco_id, year, lau_name, country_code, lau_id, 
+	query := `SELECT gisco_id, year, lau_name, country_code, lau_id,
 		geometry_wgs84, has_valid_geometry, lau_name_national, lau_name_latin,
-		nuts_3_code, lau_nat_code, population_count, country, has_valid_population,
+		nuts_3_code, nuts3_id, nuts3_link_source, lau_nat_code, population_count, country, has_valid_population,
 		missing_population_data, year_match
 		FROM transformed_data.lau_integrated
 		WHERE lau_name IS NOT NULL`
@@ -59,8 +59,10 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 	}
 
 	if filter.NutsParentID != "" {
+		// nuts3_id ist die kanonische LAU->NUTS-3-Verlinkung (deklariert oder
+		// räumlich ermittelt) - robuster als die oft NULLe nuts_3_code-Rohspalte.
 		normalizedParent := strings.ToUpper(strings.TrimSpace(filter.NutsParentID))
-		query += fmt.Sprintf(" AND nuts_3_code IS NOT NULL AND nuts_3_code LIKE $%d", argPos)
+		query += fmt.Sprintf(" AND nuts3_id IS NOT NULL AND nuts3_id LIKE $%d", argPos)
 		args = append(args, normalizedParent+"%")
 		argPos++
 	}
@@ -170,9 +172,9 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 	yearStr := c.Query("year")
 	includeDatasets := c.Query("include_datasets") == "true"
 
-	query := `SELECT gisco_id, year, lau_name, country_code, lau_id, 
+	query := `SELECT gisco_id, year, lau_name, country_code, lau_id,
 		geometry_wgs84, has_valid_geometry, lau_name_national, lau_name_latin,
-		nuts_3_code, lau_nat_code, population_count, country, has_valid_population,
+		nuts_3_code, nuts3_id, nuts3_link_source, lau_nat_code, population_count, country, has_valid_population,
 		missing_population_data, year_match
 		FROM transformed_data.lau_integrated
 		WHERE gisco_id = $1 AND lau_name IS NOT NULL`
@@ -197,8 +199,10 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 		return
 	}
 
-	if includeDatasets && region.NUTS3Code.Valid {
-		datasets, dsErr := h.regionNutsDatasets(region.NUTS3Code.String)
+	// nuts3_id ist die kanonische Verlinkung (deklariert oder räumlich
+	// ermittelt) - siehe Kommentar auf models.LAURegion.NUTS3ID.
+	if includeDatasets && region.NUTS3ID.Valid {
+		datasets, dsErr := h.regionNutsDatasets(region.NUTS3ID.String)
 		if dsErr == nil {
 			region.Datasets = datasets
 		}

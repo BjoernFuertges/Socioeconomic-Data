@@ -820,6 +820,20 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-LAU-Version (2011-2024, Default 2024)",
+                        "name": "lau_version",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -837,6 +851,116 @@ const docTemplate = `{
                                             "type": "array",
                                             "items": {
                                                 "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BeschaeftigungsquoteGemeindenData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/beschaeftigungsquote-gemeinden/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte LAU-Zeitreihe aus mart_lau_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "BeschaeftigungsquoteGemeinden"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE_11000000",
+                        "description": "GISCO-ID der Gemeinde",
+                        "name": "geodata_id_lau",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-3-Präfix für Hierarchieabfragen (über die kanonische LAU-\u003eNUTS-3-Verlinkung, z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-LAU-Version (2011-2024, Default 2024)",
+                        "name": "lau_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LauTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -5221,6 +5345,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
@@ -5302,6 +5431,11 @@ const docTemplate = `{
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "mapper": {
                     "type": "string",
@@ -5385,6 +5519,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
@@ -5466,6 +5605,11 @@ const docTemplate = `{
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "mapper": {
                     "type": "string",
@@ -5561,6 +5705,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
@@ -5643,6 +5792,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
@@ -5724,6 +5878,11 @@ const docTemplate = `{
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "mapper": {
                     "type": "string",
@@ -5903,6 +6062,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
@@ -5984,6 +6148,11 @@ const docTemplate = `{
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "mapper": {
                     "type": "string",
@@ -6241,6 +6410,11 @@ const docTemplate = `{
                     "type": "number",
                     "example": 50
                 },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
@@ -6335,6 +6509,14 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
+                "nuts3_id": {
+                    "description": "NUTS3ID ist die kanonische LAU-\u003eNUTS-3-Verlinkung: deklarierte\nQuellspalte (nuts_3_code/nuts_3), sonst räumlich ermittelter Fallback\n(siehe int_lau_nuts3_spatial_link.sql). Robuster als NUTS3Code, das\noft NULL ist, wenn die Quelldaten keinen NUTS-3-Code führen.",
+                    "type": "string"
+                },
+                "nuts3_link_source": {
+                    "description": "NUTS3LinkSource kennzeichnet, woher NUTS3ID stammt: 'declared' (aus\nQuelldaten) oder 'spatial_estimate' (räumlich ermittelt, keine\namtliche Zuordnung) - siehe lau_integrated.sql.",
+                    "type": "string"
+                },
                 "nuts_3_code": {
                     "type": "string"
                 },
@@ -6348,6 +6530,52 @@ const docTemplate = `{
                 "year_match": {
                     "type": "boolean",
                     "example": true
+                }
+            }
+        },
+        "gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LauTimeseriesPoint": {
+            "type": "object",
+            "properties": {
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "beschaeftigungsquote-gemeinden"
+                },
+                "gisco_id": {
+                    "type": "string",
+                    "example": "DE_11000000"
+                },
+                "is_interpolated": {
+                    "description": "true = Wert wurde imputiert (kein Originalwert vorhanden für dieses Jahr).",
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist die LAU-Zielversion dieses Zeitreihenpunkts (2011-2024).",
+                    "type": "integer",
+                    "example": 2021
+                },
+                "n_peer_regions": {
+                    "description": "Anzahl Peer-Gemeinden (gleicher Kreis), die zu value_peer_trend beigetragen haben.",
+                    "type": "integer",
+                    "example": 8
+                },
+                "value": {
+                    "type": "number",
+                    "example": 58.3
+                },
+                "value_linear": {
+                    "description": "Methode-1-Schätzung (lineare Interpolation). Nur bei is_interpolated = true befüllt.",
+                    "type": "number",
+                    "example": 58.3
+                },
+                "value_peer_trend": {
+                    "description": "Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen\nVeränderung anderer Gemeinden desselben Kreises). Nur befüllt, wenn\nis_interpolated = true und die Schätzung berechenbar war.",
+                    "type": "number",
+                    "example": 57.9
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2021
                 }
             }
         },
@@ -6385,6 +6613,11 @@ const docTemplate = `{
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "mapper": {
                     "type": "string",
@@ -6717,6 +6950,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
@@ -6798,6 +7036,11 @@ const docTemplate = `{
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "mapper": {
                     "type": "string",
@@ -6913,6 +7156,11 @@ const docTemplate = `{
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "mapper": {
                     "type": "string",
@@ -7080,6 +7328,11 @@ const docTemplate = `{
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "mapper": {
                     "type": "string",

@@ -126,8 +126,16 @@ missing, transparently flagged instead of a single, silently-chosen number:
 `/timeseries` only supports the `geodata_id_nuts`, `nuts_parent_id`,
 `year`, `from_year` and `to_year` filters (not `geodata_name_contains` or
 `point`, since those require the original per-dataset columns that don't
-exist in the interpolated mart). `beschaeftigungsquote-gemeinden` has no
-`/timeseries` endpoint.
+exist in the interpolated mart).
+
+`beschaeftigungsquote-gemeinden` is the LAU-grain counterpart: it is fed by
+[`mart_lau_sociodata_harmonized`](../pipeline/dbt.md#lau-version-harmonization)
+instead and exposes the same `fill_gaps=true` / `/timeseries` mechanism, but
+with `lau_version` (2011–2024) instead of `nuts_version`, `geodata_id_lau`
+instead of `geodata_id_nuts` for a direct region filter (`nuts_parent_id`
+still works, filtering via the canonical LAU→NUTS-3 link in
+`lau_integrated.nuts3_id`), and `gisco_id`/Kreis-peer-group fields instead
+of `nuts_id`/NUTS-2-peer-group ones in the timeseries response.
 
 `beschaeftigungsquote-nuts3` remains a special case: its route still has a
 dedicated `/timeseries` endpoint, but `fill_gaps=true` is not supported on the

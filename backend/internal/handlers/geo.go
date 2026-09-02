@@ -205,7 +205,10 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 		argPos++
 	}
 	if filter.NutsParentID != "" {
-		query += fmt.Sprintf(" AND nuts_3_code IS NOT NULL AND nuts_3_code LIKE $%d", argPos)
+		// nuts3_id ist die kanonische LAU->NUTS-3-Verlinkung (deklariert oder
+		// räumlich ermittelt, siehe lau_integrated.sql) - robuster als die oft
+		// NULLe nuts_3_code-Rohspalte.
+		query += fmt.Sprintf(" AND nuts3_id IS NOT NULL AND nuts3_id LIKE $%d", argPos)
 		args = append(args, strings.ToUpper(strings.TrimSpace(filter.NutsParentID))+"%")
 		argPos++
 	}
@@ -786,7 +789,7 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 		for i := range data {
 			var nuts3Code string
 			if err := h.DB.Get(&nuts3Code,
-				`SELECT nuts_3_code FROM transformed_data.lau_integrated WHERE gisco_id = $1 AND nuts_3_code IS NOT NULL AND lau_name IS NOT NULL LIMIT 1`,
+				`SELECT nuts3_id FROM transformed_data.lau_integrated WHERE gisco_id = $1 AND nuts3_id IS NOT NULL AND lau_name IS NOT NULL LIMIT 1`,
 				data[i].GeoID,
 			); err == nil && nuts3Code != "" {
 				if datasets, dsErr := h.regionNutsDatasets(nuts3Code); dsErr == nil {
