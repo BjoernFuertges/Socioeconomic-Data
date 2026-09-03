@@ -397,7 +397,11 @@ table.data-table tr.is-interpolated td {
   height: 70vh;
   min-height: 420px;
   width: 100%;
-  background: var(--page-plane);
+  /* leaflet.css setzt .leaflet-container { background: #ddd } (Platzhalter
+     fürs Kachel-Laden) mit derselben Spezifität - ohne Kachel-Ebene würde das
+     sonst durchscheinen und je nach Ladereihenfolge var(--page-plane)
+     überschreiben. */
+  background: var(--page-plane) !important;
 }
 
 .map-legend {

@@ -14,10 +14,10 @@ import {
   sequentialSteps,
 } from "../mapColor";
 
-const LIGHT_TILES = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
-const DARK_TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-const TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+// Kein externer Tile-Anbieter: statt Kacheln aus API, Bundeslandgrenzen aus der eigenen, historisierten NUTS-Geometrie gezeichnet
+// (NUTS-0 = Staatsgrenze, NUTS-1 = Bundesländer in Deutschland), keine Ortsnamen oder andere Kartenbeschriftungen
+const BOUNDARY_COLOR_LIGHT = "#1a1a1a";
+const BOUNDARY_COLOR_DARK = "#f5f5f5";
 
 // Unterstützte NUTS-3-Zielversionen - muss mit supportedNutsVersions in
 // backend/internal/handlers/kreis_generic.go übereinstimmen. Entspricht den
@@ -35,14 +35,17 @@ type GeoType = "nuts" | "lau";
 
 const mapContainer = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
-let tileLayer: L.TileLayer | null = null;
 let geoJsonLayer: L.GeoJSON | null = null;
+let boundaryLayer: L.GeoJSON | null = null;
 let lastBounds: L.LatLngBounds | null = null;
 
 const isDark = ref(window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false);
 
 const geoError = ref<string | null>(null);
 const regions = ref<GeoRegionSummary[]>([]);
+
+const boundaryError = ref<string | null>(null);
+const boundaries = ref<GeoRegionSummary[]>([]);
 
 const inventoryError = ref<string | null>(null);
 // dataset-slug -> verfügbare Jahre (absteigend, neuestes zuerst), getrennt je
@@ -144,15 +147,70 @@ function restyleLayer() {
   });
 }
 
-function swapTileLayer() {
-  if (!map) return;
-  if (tileLayer) map.removeLayer(tileLayer);
-  tileLayer = L.tileLayer(isDark.value ? DARK_TILES : LIGHT_TILES, {
-    attribution: TILE_ATTRIBUTION,
-    subdomains: "abcd",
-    maxZoom: 19,
+function styleForBoundary(feature?: GeoJSON.Feature): L.PathOptions {
+  const level = feature?.properties?.nuts_level as number | undefined;
+  return {
+    fill: false,
+    color: isDark.value ? BOUNDARY_COLOR_DARK : BOUNDARY_COLOR_LIGHT,
+    weight: level === 0 ? 2.5 : 1.25,
+    opacity: level === 0 ? 0.9 : 0.6,
+  };
+}
+
+function restyleBoundaryLayer() {
+  boundaryLayer?.eachLayer((layer) => {
+    const l = layer as L.Path & { feature?: GeoJSON.Feature };
+    l.setStyle(styleForBoundary(l.feature));
   });
-  tileLayer.addTo(map);
+}
+
+// Staats- (NUTS-0) und Bundeslandgrenzen (NUTS-1) laden - unabhängig von der
+// gewählten Ebene (NUTS/LAU), damit die Karte auch in der LAU-Ansicht eine
+// geografische Orientierung ohne Ortsnamen bietet.
+async function loadBoundaries() {
+  boundaryError.value = null;
+  try {
+    const [countries, states] = await Promise.all(
+      [0, 1].map((level) =>
+        apiGet<GeoRegionSummary[]>("/geo", {
+          geo_type: "nuts",
+          level,
+          nuts_parent_id: "DE",
+          include_geometry: true,
+          geometry_strategy: "exact",
+          geometry_year: selectedNutsVersion.value,
+          limit: "null",
+        }),
+      ),
+    );
+    boundaries.value = [...(countries.data ?? []), ...(states.data ?? [])].filter((r) => r.geometry_wgs84);
+  } catch (err) {
+    boundaryError.value = err instanceof Error ? err.message : String(err);
+  }
+}
+
+function buildBoundaryLayer() {
+  if (!map) return;
+  if (boundaryLayer) {
+    map.removeLayer(boundaryLayer);
+    boundaryLayer = null;
+  }
+  if (!boundaries.value.length) return;
+  const featureCollection: GeoJSON.FeatureCollection = {
+    type: "FeatureCollection",
+    features: boundaries.value.map((r) => ({
+      type: "Feature",
+      properties: { nuts_level: r.nuts_level },
+      geometry: r.geometry_wgs84 as GeoJSON.Geometry,
+    })),
+  };
+  boundaryLayer = L.geoJSON(featureCollection, {
+    style: (feature) => styleForBoundary(feature),
+    interactive: false,
+  }).addTo(map);
+  // Muss über der (gefüllten) Regionen-Ebene liegen, sonst verschwinden die
+  // Grenzlinien unter deren Füllfarbe.
+  boundaryLayer.bringToFront();
 }
 
 async function loadGeometries() {
@@ -292,8 +350,18 @@ function buildLayer() {
   const bounds = geoJsonLayer.getBounds();
   if (bounds.isValid()) {
     lastBounds = bounds;
-    map.fitBounds(bounds, { padding: [8, 8] });
+    // Der Karten-Tab ist ggf. noch per v-show ausgeblendet (Container-Größe
+    // 0x0) - fitBounds() würde dann mit einer Zoomstufe rechnen, die die
+    // interne Kartenprojektion dauerhaft korrumpiert (SVG-Layer bleiben bei
+    // "M0 0" hängen, spätere invalidateSize()-Aufrufe werfen). Der
+    // ResizeObserver unten holt das fitBounds nach, sobald der Container
+    // sichtbar wird.
+    const size = map.getSize();
+    if (size.x > 0 && size.y > 0) {
+      map.fitBounds(bounds, { padding: [8, 8] });
+    }
   }
+  boundaryLayer?.bringToFront();
 }
 
 let darkModeQuery: MediaQueryList | null = null;
@@ -311,7 +379,6 @@ let resizeObserver: ResizeObserver | null = null;
 onMounted(async () => {
   if (mapContainer.value) {
     map = L.map(mapContainer.value, { center: [51.2, 10.4], zoom: 6, scrollWheelZoom: false });
-    swapTileLayer();
 
     resizeObserver = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
@@ -326,8 +393,9 @@ onMounted(async () => {
   darkModeQuery = window.matchMedia?.("(prefers-color-scheme: dark)") ?? null;
   darkModeQuery?.addEventListener("change", handleDarkModeChange);
 
-  await loadGeometries();
+  await Promise.all([loadGeometries(), loadBoundaries()]);
   buildLayer();
+  buildBoundaryLayer();
   await loadInventory();
 });
 
@@ -339,13 +407,17 @@ onUnmounted(() => {
 
 watch([selectedDataset, selectedYear], loadValues);
 watch(isDark, () => {
-  swapTileLayer();
   restyleLayer();
+  restyleBoundaryLayer();
 });
 // Beim Wechsel der NUTS-Version müssen sowohl der Grenzverlauf (andere
 // Vintage-Periode, ggf. andere Kreis-IDs) als auch die Werte (andere
-// target_version im harmonisierten Mart) neu geladen werden.
+// target_version im harmonisierten Mart) neu geladen werden. Die Staats-/
+// Bundeslandgrenzen hängen an derselben Version und werden unabhängig von
+// der gewählten Ebene (NUTS/LAU) mit aktualisiert.
 watch(selectedNutsVersion, async () => {
+  await loadBoundaries();
+  buildBoundaryLayer();
   if (selectedGeoType.value !== "nuts") return;
   await loadGeometries();
   buildLayer();
@@ -377,6 +449,7 @@ watch(selectedGeoType, async () => {
 <template>
   <div class="map-view">
     <p v-if="geoError" class="error-text">Geometrien konnten nicht geladen werden: {{ geoError }}</p>
+    <p v-if="boundaryError" class="error-text">Staats-/Bundeslandgrenzen konnten nicht geladen werden: {{ boundaryError }}</p>
     <p v-if="inventoryError" class="error-text">Datensatz-Übersicht konnte nicht geladen werden: {{ inventoryError }}</p>
 
     <div class="dataset-picker">
