@@ -67,7 +67,7 @@ PGPASSWORD = os.environ.get("PGPASSWORD", "sozio_data_compose_user")
 KREISE_TABLES = {
     "arbeitslose": "results_arbeitslose_kreise",
     "arbeitsvolumen": "results_arbeitsvolumen_kreise",
-    "auzubildende": "results_auzubildende_kreise",
+    "auszubildende": "results_auszubildende_kreise",
     "bevoelkerung": "results_bevoelkerung_kreise",
     "bruttoverdienst": "results_bruttoverdienst_kreise",
     "durchschnittsalter": "results_durchschnittsalter_kreise",

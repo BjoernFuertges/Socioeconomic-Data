@@ -159,9 +159,9 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.AuzubildendeData:
+  models.AuszubildendeData:
     properties:
-      auzubildende:
+      auszubildende:
         example: 0
         type: number
       geodata_id_ars:
@@ -2070,7 +2070,7 @@ paths:
         – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Arbeitsvolumen
-  /auzubildende:
+  /auszubildende:
     get:
       consumes:
       - application/json
@@ -2147,7 +2147,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.AuzubildendeData'
+                    $ref: '#/definitions/models.AuszubildendeData'
                   type: array
               type: object
         "400":
@@ -2161,8 +2161,8 @@ paths:
       summary: Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
       tags:
-      - Auzubildende
-  /auzubildende/timeseries:
+      - Auszubildende
+  /auszubildende/timeseries:
     get:
       consumes:
       - application/json
@@ -2238,7 +2238,7 @@ paths:
       summary: Lückenlose Zeitreihe für Staging-Modell für Auszubildende je Kreis
         – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
-      - Auzubildende
+      - Auszubildende
   /beschaeftigungsquote-gemeinden:
     get:
       consumes:
@@ -2909,8 +2909,7 @@ paths:
       - application/json
       description: |-
         Liefert pro Datensatz Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum
-        sowie eine persistente URI. Lizenz ist "unbekannt", solange die tatsächlichen
-        Nutzungsbedingungen der Quelle noch nicht recherchiert wurden.
+        sowie eine persistente URI. Lizenz ist "unbekannt", solange die tatsächlichen Nutzungsbedingungen der Quelle noch nicht recherchiert wurden.
       produces:
       - application/json
       responses:

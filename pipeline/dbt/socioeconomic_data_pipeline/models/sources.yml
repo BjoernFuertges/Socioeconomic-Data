@@ -400,7 +400,7 @@ sources:
           - name: dataset_name
             description: "Name des Datensatzes (results_wohngeldhaushalte_kreise)"
 
-      - name: results_auzubildende_kreise
+      - name: results_auszubildende_kreise
         description: "Auszubildende je Kreis – long format, ein Record pro Region und Jahr (je 1.000 SV-Beschäftigte)"
         columns:
           - name: original_id_1

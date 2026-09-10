@@ -42,8 +42,8 @@ derived_metrics:
     formula:
       type: ratio
       numerator:
-        dataset: auzubildende
-        column: auzubildende
+        dataset: auszubildende
+        column: auszubildende
       denominator:
         dataset: bevoelkerung
         column: bevoelkerung

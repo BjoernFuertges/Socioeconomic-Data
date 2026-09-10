@@ -192,7 +192,7 @@ func AllSoziodataConfigs() []KreisDatasetConfig {
 	return []KreisDatasetConfig{
 		ArbeitsloseConfig,
 		ArbeitsvolumenConfig,
-		AuzubildendeConfig,
+		AuszubildendeConfig,
 		BeschaeftigungsquoteGemeindenConfig,
 		BeschaeftigungsquoteNuts3Config,
 		BevoelkerungConfig,

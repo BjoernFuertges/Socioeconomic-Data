@@ -143,7 +143,7 @@ Takeaways:
   backward compatibility.
 - Peer-based carry-forward (Method 3) is close behind and actually wins on
   several datasets with strong regional correlation (`arbeitsvolumen`,
-  `auzubildende`, `medianeinkommen`, `schuldnerquote`, `sgb_ii_quote`,
+  `auszubildende`, `medianeinkommen`, `schuldnerquote`, `sgb_ii_quote`,
   `wohngeldhaushalte`) – this is why both estimates are exposed via the API
   rather than only the "usually better" one.
 - A naive multi-linear regression across all other indicators (Method 4)

@@ -54,7 +54,7 @@
 {% set source_datasets = [
     {'slug': 'arbeitslose',        'table': 'results_arbeitslose_kreise', 'measure_type': 'sum'},
     {'slug': 'arbeitsvolumen',     'table': 'results_arbeitsvolumen_kreise', 'measure_type': 'sum'},
-    {'slug': 'auzubildende',       'table': 'results_auzubildende_kreise', 'measure_type': 'sum'},
+    {'slug': 'auszubildende',      'table': 'results_auszubildende_kreise', 'measure_type': 'sum'},
     {'slug': 'bevoelkerung',       'table': 'results_bevoelkerung_kreise', 'measure_type': 'sum'},
     {'slug': 'bruttoverdienst',    'table': 'results_bruttoverdienst_kreise', 'measure_type': 'weighted_avg'},
     {'slug': 'durchschnittsalter', 'table': 'results_durchschnittsalter_kreise', 'measure_type': 'weighted_avg'},

@@ -10,7 +10,7 @@
 }}
 
 with source_data as (
-    select * from {{ ref('snap_results_auzubildende_kreise') }}
+    select * from {{ ref('snap_results_auszubildende_kreise') }}
     where dbt_valid_to is null
 ),
 
@@ -29,7 +29,7 @@ cleaned as (
 
         -- Observation fields
         year::integer as year,
-        value as auzubildende,
+        value as auszubildende,
 
         -- Derived date (Jahreswert → 1. Januar des Jahres)
         make_date(year::integer, 1, 1) as observation_date,
@@ -46,7 +46,7 @@ cleaned as (
 
 final as (
     select
-        {{ dbt_utils.generate_surrogate_key(['geodata_id_nuts', 'year']) }} as auzubildende_pk,
+        {{ dbt_utils.generate_surrogate_key(['geodata_id_nuts', 'year']) }} as auszubildende_pk,
         *
     from cleaned
 )

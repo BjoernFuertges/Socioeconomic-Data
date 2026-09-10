@@ -12,7 +12,7 @@ python load_geodata_to_postgis.py
 echo "=== dlt: Sozioökonomische Daten ==="
 python load_soziodata_generic.py arbeitslose/results_arbeitslose_kreise
 python load_soziodata_generic.py arbeitsvolumen/results_arbeitsvolumen_kreise
-python load_soziodata_generic.py auzubildende/results_auzubildende_kreise
+python load_soziodata_generic.py auszubildende/results_auszubildende_kreise
 python load_soziodata_generic.py beschaeftigungsquote/results_beschaeftigungsquote_gemeinden
 python load_soziodata_generic.py bevoelkerung/results_bevoelkerung_kreise
 python load_soziodata_generic.py bruttoverdienst/results_bruttoverdienst_kreise

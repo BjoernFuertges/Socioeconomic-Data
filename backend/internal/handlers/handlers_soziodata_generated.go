@@ -102,10 +102,10 @@ func (h *Handler) GetArbeitsvolumenTimeseriesData(c *gin.Context) {
 	getKreisTimeseriesEndpoint(h, c, models.ArbeitsvolumenConfig)
 }
 
-// GetAuzubildendeData gibt Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// GetAuszubildendeData gibt Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
 // @Summary Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Description Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
-// @Tags Auzubildende
+// @Tags Auszubildende
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
@@ -119,18 +119,18 @@ func (h *Handler) GetArbeitsvolumenTimeseriesData(c *gin.Context) {
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
-// @Success 200 {object} models.APIResponse{data=[]models.AuzubildendeData}
+// @Success 200 {object} models.APIResponse{data=[]models.AuszubildendeData}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
-// @Router /auzubildende [get]
-func (h *Handler) GetAuzubildendeData(c *gin.Context) {
-	getKreisData[models.AuzubildendeData](h, c, models.AuzubildendeConfig)
+// @Router /auszubildende [get]
+func (h *Handler) GetAuszubildendeData(c *gin.Context) {
+	getKreisData[models.AuszubildendeData](h, c, models.AuszubildendeConfig)
 }
 
-// GetAuzubildendeTimeseriesData gibt die lückenlose, interpolierte Zeitreihe für Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
+// GetAuszubildendeTimeseriesData gibt die lückenlose, interpolierte Zeitreihe für Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück
 // @Summary Lückenlose Zeitreihe für Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
-// @Tags Auzubildende
+// @Tags Auszubildende
 // @Accept json
 // @Produce json
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
@@ -144,9 +144,9 @@ func (h *Handler) GetAuzubildendeData(c *gin.Context) {
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
-// @Router /auzubildende/timeseries [get]
-func (h *Handler) GetAuzubildendeTimeseriesData(c *gin.Context) {
-	getKreisTimeseriesEndpoint(h, c, models.AuzubildendeConfig)
+// @Router /auszubildende/timeseries [get]
+func (h *Handler) GetAuszubildendeTimeseriesData(c *gin.Context) {
+	getKreisTimeseriesEndpoint(h, c, models.AuszubildendeConfig)
 }
 
 // GetBeschaeftigungsquoteGemeindenData gibt Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag zurück

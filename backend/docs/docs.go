@@ -501,7 +501,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/auzubildende": {
+        "/auszubildende": {
             "get": {
                 "description": "Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
@@ -511,7 +511,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Auzubildende"
+                    "Auszubildende"
                 ],
                 "summary": "Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
@@ -609,7 +609,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.AuzubildendeData"
+                                                "$ref": "#/definitions/models.AuszubildendeData"
                                             }
                                         }
                                     }
@@ -632,7 +632,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/auzubildende/timeseries": {
+        "/auszubildende/timeseries": {
             "get": {
                 "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
                 "consumes": [
@@ -642,7 +642,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Auzubildende"
+                    "Auszubildende"
                 ],
                 "summary": "Lückenlose Zeitreihe für Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
@@ -1694,7 +1694,7 @@ const docTemplate = `{
         },
         "/datasets": {
             "get": {
-                "description": "Liefert pro Datensatz Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum\nsowie eine persistente URI. Lizenz ist \"unbekannt\", solange die tatsächlichen\nNutzungsbedingungen der Quelle noch nicht recherchiert wurden.",
+                "description": "Liefert pro Datensatz Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum\nsowie eine persistente URI. Lizenz ist \"unbekannt\", solange die tatsächlichen Nutzungsbedingungen der Quelle noch nicht recherchiert wurden.",
                 "consumes": [
                     "application/json"
                 ],
@@ -5581,10 +5581,10 @@ const docTemplate = `{
                 }
             }
         },
-        "models.AuzubildendeData": {
+        "models.AuszubildendeData": {
             "type": "object",
             "properties": {
-                "auzubildende": {
+                "auszubildende": {
                     "type": "number",
                     "example": 0
                 },

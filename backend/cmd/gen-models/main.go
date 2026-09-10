@@ -74,7 +74,7 @@ type dataset struct {
 var harmonizedRouteSlugs = map[string]bool{
 	"arbeitslose":                       true,
 	"arbeitsvolumen":                    true,
-	"auzubildende":                      true,
+	"auszubildende":                     true,
 	"beschaeftigungsquote-nuts3":        true,
 	"bevoelkerung":                      true,
 	"bruttoverdienst":                   true,

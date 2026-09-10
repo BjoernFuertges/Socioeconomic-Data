@@ -43,22 +43,22 @@ var ArbeitsvolumenConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// AuzubildendeData repräsentiert Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
-type AuzubildendeData struct {
+// AuszubildendeData repräsentiert Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+type AuszubildendeData struct {
 	SozioBaseData
-	Auzubildende float64 `json:"auzubildende" db:"auzubildende" example:"0"`
+	Auszubildende float64 `json:"auszubildende" db:"auszubildende" example:"0"`
 }
 
-// AuzubildendeConfig ist die Dataset-Konfiguration für Auzubildende-Daten,
-// generiert aus dbt/.../models/staging/stg_auzubildende_kreise_schema.yml
-var AuzubildendeConfig = KreisDatasetConfig{
+// AuszubildendeConfig ist die Dataset-Konfiguration für Auszubildende-Daten,
+// generiert aus dbt/.../models/staging/stg_auszubildende_kreise_schema.yml
+var AuszubildendeConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
-	Table:             "stg_auzubildende_kreise",
-	InterpolatedTable: "api_auzubildende_fill_gaps",
-	ValueColumns:      []string{"auzubildende"},
+	Table:             "stg_auszubildende_kreise",
+	InterpolatedTable: "api_auszubildende_fill_gaps",
+	ValueColumns:      []string{"auszubildende"},
 	DefaultLimit:      1000,
 	OrderBy:           "geodata_id_nuts, year",
-	RouteSlug:         "auzubildende",
+	RouteSlug:         "auszubildende",
 	IsHarmonized:      true,
 	IsHarmonizedLau:   false,
 }

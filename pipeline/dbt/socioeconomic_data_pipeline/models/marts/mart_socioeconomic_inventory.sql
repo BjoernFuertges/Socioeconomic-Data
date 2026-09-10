@@ -1,6 +1,6 @@
 -- depends_on: {{ ref('stg_arbeitslose_kreise') }}
 -- depends_on: {{ ref('stg_arbeitsvolumen_kreise') }}
--- depends_on: {{ ref('stg_auzubildende_kreise') }}
+-- depends_on: {{ ref('stg_auszubildende_kreise') }}
 -- depends_on: {{ ref('stg_beschaeftigungsquote_gemeinden') }}
 -- depends_on: {{ ref('stg_beschaeftigungsquote_nuts3') }}
 -- depends_on: {{ ref('stg_bevoelkerung_kreise') }}

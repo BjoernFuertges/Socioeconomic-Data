@@ -1,10 +1,10 @@
 version: 2
 
 models:
-  - name: stg_auzubildende_kreise
+  - name: stg_auszubildende_kreise
     description: "Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag"
     columns:
-      - name: auzubildende_pk
+      - name: auszubildende_pk
         description: "Surrogate Key aus geodata_id_nuts und year"
         data_type: text
         tests:
@@ -62,7 +62,7 @@ models:
               min_value: 1990
               max_value: 2030
 
-      - name: auzubildende
+      - name: auszubildende
         description: "Auszubildende je 1.000 sozialversicherungspflichtig Beschäftigte"
         data_type: numeric
         tests:
