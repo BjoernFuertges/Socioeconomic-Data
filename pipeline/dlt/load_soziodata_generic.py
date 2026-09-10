@@ -13,11 +13,22 @@ Expected directory layout:
         mapped_pairs.csv    -- columns: original_id_1, original_name, geodata_name,
                                geodata_id_nuts, geodata_id_ars, mapper, parameter,
                                <year1>, <year2>, ...
-        meta.yaml           -- geodata_level, geodata_year
+        meta.yaml           -- geodata_level, geodata_year, name, description,
+                               description_long, unit, source, algorithm,
+                               number_type, and optionally license, license_url
+                               (both default to null/"unbekannt" if absent -
+                               the actual license terms of the source have not
+                               been researched for every dataset yet)
 
 The dataset_name (and resulting DB table name) is derived from the last path segment of
 <dataset_subdir>, e.g. "results_bevoelkerung_kreise" → table "results_bevoelkerung_kreise"
 in the "loaded_data" dataset.
+
+In addition to the data table, every run upserts one row into the shared
+"loaded_data.dataset_metadata" table (merge on dataset_slug), so provenance/
+license/description information from meta.yaml reaches the database instead
+of staying on disk only (see stg_dataset_metadata.sql / mart_dataset_catalog.sql
+downstream in dbt).
 """
 
 import sys
@@ -72,6 +83,76 @@ def _load_meta(dataset_dir: Path) -> Dict[str, Any]:
         raise FileNotFoundError(f"meta.yaml not found at {meta_path}")
     with open(meta_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def _derive_slug(table_name: str) -> str:
+    """
+    Mirror the slug derivation used by mart_socioeconomic_inventory.sql /
+    mart_region_datasets.sql (there applied to stg_<slug><suffix> model
+    names) so dataset_metadata.dataset_slug lines up with the dataset_slug
+    values already used throughout the marts, e.g.:
+        results_bevoelkerung_kreise              -> bevoelkerung
+        results_beschaeftigungsquote_gemeinden   -> beschaeftigungsquote-gemeinden
+    """
+    slug = table_name
+    if slug.startswith("results_"):
+        slug = slug[len("results_"):]
+    for suffix, replacement in (
+        ("_kreise", ""),
+        ("_gemeinden", "-gemeinden"),
+        ("_nuts3", "-nuts3"),
+        ("_lau", "-lau"),
+    ):
+        if slug.endswith(suffix):
+            slug = slug[: -len(suffix)] + replacement
+            break
+    return slug
+
+
+def make_metadata_resource(dataset_name: str, meta: Dict[str, Any]):
+    """
+    Factory for the dataset_metadata upsert resource, analogous to
+    make_resource() above. Runs alongside the data resource on every
+    invocation and keeps one row per dataset_slug in
+    loaded_data.dataset_metadata up to date (merge, not append/replace -
+    each invocation only knows about a single dataset and must not
+    clobber the others' rows).
+    """
+    dataset_slug = _derive_slug(dataset_name)
+
+    @dlt.resource(
+        name="dataset_metadata",
+        write_disposition="merge",
+        primary_key="dataset_slug",
+        # Explicit type hints: license/license_url/algorithm are legitimately
+        # null for most datasets today (not yet researched), and dlt cannot
+        # infer a column type from an all-null value - without these hints
+        # it silently drops the column instead of creating it as NULL.
+        columns={
+            "license": {"data_type": "text"},
+            "license_url": {"data_type": "text"},
+            "algorithm": {"data_type": "text"},
+        },
+    )
+    def _metadata_resource() -> Iterator[Dict[str, Any]]:
+        yield {
+            "dataset_slug": dataset_slug,
+            "table_name": dataset_name,
+            "name": meta.get("name"),
+            "description": meta.get("description"),
+            "description_long": meta.get("description_long"),
+            "unit": meta.get("unit"),
+            "source": meta.get("source"),
+            "license": meta.get("license"),
+            "license_url": meta.get("license_url"),
+            "algorithm": meta.get("algorithm"),
+            "number_type": meta.get("number_type"),
+            "geodata_level": meta.get("geodata_level"),
+            "geodata_year": meta.get("geodata_year"),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    return _metadata_resource
 
 
 def _year_columns(df: pd.DataFrame) -> list[str]:
@@ -185,9 +266,10 @@ def main() -> None:
     )
 
     resource = make_resource(dataset_dir, dataset_name, meta)
+    metadata_resource = make_metadata_resource(dataset_name, meta)
 
     logger.info(f"Running pipeline for table '{dataset_name}'...")
-    load_info = pipeline.run(resource())
+    load_info = pipeline.run([resource(), metadata_resource()])
     logger.info(f"Load completed: {load_info}")
 
     print("\n" + "=" * 70)

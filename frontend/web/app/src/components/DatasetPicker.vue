@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { apiGet } from "../api/client";
-import type { DatasetCatalogEntry, GenericDatasetRow, NutsTimeseriesPoint } from "../types/api";
+import type {
+  DatasetCatalogEntry,
+  DatasetMetadataEntry,
+  GenericDatasetRow,
+  NutsTimeseriesPoint,
+} from "../types/api";
 import { formatDatasetLabel } from "../format";
 import TimeseriesChart from "./TimeseriesChart.vue";
 import DataTable from "./DataTable.vue";
+import DatasetInfo from "./DatasetInfo.vue";
 
 const props = defineProps<{
   datasets: DatasetCatalogEntry[];
@@ -17,6 +23,21 @@ const error = ref<string | null>(null);
 const result = ref<{ kind: "timeseries"; points: NutsTimeseriesPoint[] } | { kind: "raw"; rows: GenericDatasetRow[] } | null>(
   null,
 );
+
+// Herkunft/Lizenz/Beschreibung - separat vom Zeitreihen-/Rohdaten-Request geladen, damit ein 404 im Katalog die eigentliche Datenanzeige nicht blockiert.
+const metadata = ref<DatasetMetadataEntry | null>(null);
+
+async function loadMetadata() {
+  const slug = selectedSlug.value;
+  metadata.value = null;
+  if (!slug) return;
+  try {
+    const body = await apiGet<DatasetMetadataEntry>(`/datasets/${slug}`);
+    metadata.value = body.data ?? null;
+  } catch {
+    // Kein Katalogeintrag für diesen Slug
+  }
+}
 
 // Probiert zuerst den lückenlosen /{slug}/timeseries-Endpoint (einheitliches
 // Schema, Interpolationsmetadaten inklusive); fällt für die wenigen
@@ -50,6 +71,7 @@ async function load() {
 }
 
 watch(selectedSlug, load, { immediate: true });
+watch(selectedSlug, loadMetadata, { immediate: true });
 watch(
   () => props.nutsCode,
   () => load(),
@@ -65,6 +87,8 @@ watch(
       </option>
     </select>
   </div>
+
+  <DatasetInfo v-if="metadata" :metadata="metadata" />
 
   <div>
     <p v-if="loading" class="hint">Lade Daten…</p>

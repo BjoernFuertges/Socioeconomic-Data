@@ -93,6 +93,28 @@ export interface NutsTimeseriesPoint extends TimeseriesPoint {
   nuts_version: number;
 }
 
+// Metadaten-Katalogeintrag von GET /datasets (backend models.DatasetCatalogEintrag) -
+// Herkunft/Lizenz/Beschreibung
+export interface DatasetMetadataEntry {
+  dataset_slug: string;
+  dataset_uri: string;
+  name?: string | null;
+  description?: string | null;
+  description_long?: string | null;
+  unit?: string | null;
+  provenance?: string | null;
+  license: string;
+  license_url?: string | null;
+  algorithm?: string | null;
+  number_type?: string | null;
+  geodata_level?: string | null;
+  geodata_year?: number | null;
+  min_year?: number | null;
+  max_year?: number | null;
+  total_records?: number | null;
+  updated_at?: string | null;
+}
+
 export interface InventoryEntry {
   dataset: string;
   year: number;

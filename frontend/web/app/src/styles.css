@@ -276,6 +276,58 @@ body {
   min-width: 220px;
 }
 
+.dataset-info {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-1);
+}
+
+.dataset-info summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dataset-info .license-badge {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--series-1-soft);
+  color: var(--text-primary);
+}
+
+.dataset-info .license-badge.is-unknown {
+  background: var(--gridline);
+  color: var(--text-muted);
+}
+
+.dataset-info dl {
+  margin: 0.6rem 0 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.3rem 0.75rem;
+}
+
+.dataset-info dt {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.dataset-info dd {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.dataset-info code {
+  font-size: 0.8rem;
+}
+
 /* Chart */
 
 .chart-wrap {

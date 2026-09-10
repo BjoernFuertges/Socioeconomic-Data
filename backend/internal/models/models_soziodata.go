@@ -148,6 +148,31 @@ type SoziooekonomischesInventarEintrag struct {
 	DistinctGeodataARS  int    `json:"distinct_geodata_ars" db:"distinct_geodata_ars" example:"400"`
 }
 
+// DatasetCatalogEintrag beschreibt Herkunft, Lizenz und Beschreibung eines Datensatzes
+// Umfasst aktuell die meta.yaml-basierten Kreis-/Gemeinden-Datensätze; siehe
+// mart_dataset_catalog.sql für die noch offene Migration der AfA-Arbeitslosenzahlen.
+type DatasetCatalogEintrag struct {
+	DatasetSlug string `json:"dataset_slug" db:"dataset_slug" example:"bevoelkerung"`
+	// DatasetURI ist eine persistente, deterministisch aus DatasetSlug abgeleitete
+	// Kennung (urn:soziodata:dataset:<slug>) - keine künstliche Zufalls-ID.
+	DatasetURI      string  `json:"dataset_uri" db:"dataset_uri" example:"urn:soziodata:dataset:bevoelkerung"`
+	Name            *string `json:"name,omitempty" db:"name" example:"Bevölkerung"`
+	Description     *string `json:"description,omitempty" db:"description" example:"Zahl der Erwerbstätigen in 1000 Personen"`
+	DescriptionLong *string `json:"description_long,omitempty" db:"description_long"`
+	Unit            *string `json:"unit,omitempty" db:"unit" example:"Einwohner"`
+	Provenance      *string `json:"provenance,omitempty" db:"provenance" example:"Laufende Raumbeobachtung des BBSR; Fortschreibung des Bevölkerungsstandes"`
+	License         string  `json:"license" db:"license" example:"unbekannt"`
+	LicenseURL      *string `json:"license_url,omitempty" db:"license_url"`
+	Algorithm       *string `json:"algorithm,omitempty" db:"algorithm"`
+	NumberType      *string `json:"number_type,omitempty" db:"number_type" example:"absolute"`
+	GeodataLevel    *string `json:"geodata_level,omitempty" db:"geodata_level" example:"NUTS_3"`
+	GeodataYear     *int    `json:"geodata_year,omitempty" db:"geodata_year" example:"2024"`
+	MinYear         *int    `json:"min_year,omitempty" db:"min_year" example:"1995"`
+	MaxYear         *int    `json:"max_year,omitempty" db:"max_year" example:"2023"`
+	TotalRecords    *int64  `json:"total_records,omitempty" db:"total_records" example:"11600"`
+	UpdatedAt       *string `json:"updated_at,omitempty" db:"updated_at"`
+}
+
 // RegionDataset beschreibt einen verfügbaren Soziodata-Datensatz für eine Region.
 type RegionDataset struct {
 	Dataset        string `json:"dataset" example:"bevoelkerung"`

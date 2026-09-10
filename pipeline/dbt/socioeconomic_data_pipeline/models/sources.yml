@@ -175,6 +175,41 @@ sources:
           - name: value
             description: "Anzahl Arbeitsloser"
 
+      - name: dataset_metadata
+        description: "Provenance/license/description metadata for the generic (meta.yaml-driven) Kreis/Gemeinden datasets, one row per dataset_slug, upserted by load_soziodata_generic.py on every run"
+        columns:
+          - name: dataset_slug
+            description: "Stable slug identifying the dataset, matches the dataset_slug used in mart_*_sociodata_harmonized/mart_socioeconomic_inventory"
+            tests:
+              - unique
+              - not_null
+          - name: table_name
+            description: "loaded_data table this metadata belongs to (results_<dataset>_kreise/_gemeinden)"
+          - name: name
+            description: "Short display name"
+          - name: description
+            description: "Short description"
+          - name: description_long
+            description: "Long-form methodological description"
+          - name: unit
+            description: "Unit of the value column"
+          - name: source
+            description: "Publisher / source series (provenance)"
+          - name: license
+            description: "Data usage license, null if not yet researched"
+          - name: license_url
+            description: "URL to the license text, null if not yet researched"
+          - name: algorithm
+            description: "Free-text note on how the value is computed/derived, if applicable"
+          - name: number_type
+            description: "absolute or relative"
+          - name: geodata_level
+            description: "Geodata level the dataset is mapped to (e.g. NUTS_3)"
+          - name: geodata_year
+            description: "Reference year of the geodata used for mapping"
+          - name: updated_at
+            description: "Timestamp of the last upsert"
+
       - name: results_bevoelkerung_kreise
         description: "Bevölkerungsdaten je Kreis (Destatis) – long format, ein Record pro Region und Jahr"
         columns:

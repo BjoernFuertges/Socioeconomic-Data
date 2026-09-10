@@ -53,6 +53,25 @@ Defined in [`internal/routes/routes.go`](https://gitlab.htw-berlin.de/s0595954/s
 |---|---|---|
 | GET | `/socioeconomic/inventory` | Overview of all available socioeconomic datasets |
 
+## Dataset catalog
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/datasets` | Provenance/license/description catalog for all datasets |
+| GET | `/datasets/{slug}` | Catalog entry for a single dataset |
+
+Reads `transformed_data.mart_dataset_catalog` (name, description, unit,
+provenance, license/license_url, geodata level/year, year coverage, and a
+persistent `dataset_uri` of the form `urn:soziodata:dataset:<slug>`).
+`license` is the literal string `"unbekannt"` for datasets whose actual
+usage terms haven't been researched yet (most of them, currently) rather
+than a bare `null` — see
+[`stg_dataset_metadata.sql`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/dbt/socioeconomic_data_pipeline/models/staging/stg_dataset_metadata.sql).
+Currently covers only the `meta.yaml`-driven Kreis/Gemeinden datasets (see
+[dlt.md](../pipeline/dlt.md)); the AfA unemployment figures
+(`arbeitslosenzahlen_metadata`) use an older, separate metadata mechanism
+and are not yet in this catalog.
+
 ## Metrics
 
 | Method | Path | Purpose |

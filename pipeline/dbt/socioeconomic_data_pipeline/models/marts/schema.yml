@@ -201,6 +201,52 @@ models:
       - name: distinct_geodata_ars
         description: "Anzahl unterschiedlicher geodata_id_ars"
 
+  - name: mart_dataset_catalog
+    description: "Ein Katalog-Eintrag pro Datensatz mit Herkunft, Lizenz, Beschreibung und persistenter URI (F09/F10/F11/F15/F16). Umfasst aktuell die meta.yaml-basierten Kreis-/Gemeinden-Datensätze; die AfA-Arbeitslosenzahlen (eigener, älterer Metadaten-Mechanismus) sind noch nicht migriert."
+    columns:
+      - name: dataset_slug
+        description: "Dataset-Slug, identisch zu dataset in mart_socioeconomic_inventory"
+        tests:
+          - unique
+          - not_null
+      - name: dataset_uri
+        description: "Persistente, aus dataset_slug abgeleitete URI (urn:soziodata:dataset:<slug>), keine künstliche Zufalls-ID"
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "Kurzer Anzeigename"
+      - name: description
+        description: "Kurzbeschreibung"
+      - name: description_long
+        description: "Ausführliche methodische Beschreibung"
+      - name: unit
+        description: "Einheit des value-Feldes"
+      - name: provenance
+        description: "Herkunft/Publisher/Quellenreihe"
+      - name: license
+        description: "Lizenz; 'unbekannt' solange nicht recherchiert"
+        tests:
+          - not_null
+      - name: license_url
+        description: "URL zum Lizenztext, null solange nicht recherchiert"
+      - name: algorithm
+        description: "Freitext-Hinweis zur Berechnung/Ableitung des Wertes, falls zutreffend"
+      - name: number_type
+        description: "absolute oder relative"
+      - name: geodata_level
+        description: "Geodatenebene, auf die der Datensatz gemappt ist"
+      - name: geodata_year
+        description: "Referenzjahr der für das Mapping verwendeten Geodaten"
+      - name: min_year
+        description: "Frühestes verfügbares Beobachtungsjahr (aus mart_socioeconomic_inventory)"
+      - name: max_year
+        description: "Spätestes verfügbares Beobachtungsjahr (aus mart_socioeconomic_inventory)"
+      - name: total_records
+        description: "Gesamtzahl der Datensätze über alle Jahre/Geodatenebenen"
+      - name: updated_at
+        description: "Zeitpunkt des letzten Metadaten-Upserts"
+
   - name: mart_nuts3_sociodata_harmonized
     description: >
       Sozioökonomische Kreis-Datensätze, umgerechnet auf mehrere gemeinsame

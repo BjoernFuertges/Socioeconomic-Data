@@ -1,6 +1,6 @@
 basePath: /api/v1
 definitions:
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse:
+  models.APIResponse:
     properties:
       data: {}
       error:
@@ -10,12 +10,12 @@ definitions:
         example: Operation erfolgreich
         type: string
       meta:
-        $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.MetaInfo'
+        $ref: '#/definitions/models.MetaInfo'
       success:
         example: true
         type: boolean
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ArbeitsloseData:
+  models.ArbeitsloseData:
     properties:
       arbeitslose:
         example: 0
@@ -87,7 +87,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ArbeitsvolumenData:
+  models.ArbeitsvolumenData:
     properties:
       arbeitsvolumen:
         example: 0
@@ -159,7 +159,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.AuzubildendeData:
+  models.AuzubildendeData:
     properties:
       auzubildende:
         example: 0
@@ -231,7 +231,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BeschaeftigungsquoteGemeindenData:
+  models.BeschaeftigungsquoteGemeindenData:
     properties:
       beschaeftigungsquote_prozent:
         example: 50
@@ -303,7 +303,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BeschaeftigungsquoteNuts3Data:
+  models.BeschaeftigungsquoteNuts3Data:
     properties:
       beschaeftigungsquote_median:
         example: 0
@@ -384,7 +384,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BevoelkerungData:
+  models.BevoelkerungData:
     properties:
       bevoelkerung:
         example: 0
@@ -456,7 +456,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BruttoverdienstData:
+  models.BruttoverdienstData:
     properties:
       bruttoverdienst:
         example: 0
@@ -528,11 +528,64 @@ definitions:
         example: 2020
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetMetricsResult:
+  models.DatasetCatalogEintrag:
+    properties:
+      algorithm:
+        type: string
+      dataset_slug:
+        example: bevoelkerung
+        type: string
+      dataset_uri:
+        description: |-
+          DatasetURI ist eine persistente, deterministisch aus DatasetSlug abgeleitete
+          Kennung (urn:soziodata:dataset:<slug>) - keine künstliche Zufalls-ID.
+        example: urn:soziodata:dataset:bevoelkerung
+        type: string
+      description:
+        example: Zahl der Erwerbstätigen in 1000 Personen
+        type: string
+      description_long:
+        type: string
+      geodata_level:
+        example: NUTS_3
+        type: string
+      geodata_year:
+        example: 2024
+        type: integer
+      license:
+        example: unbekannt
+        type: string
+      license_url:
+        type: string
+      max_year:
+        example: 2023
+        type: integer
+      min_year:
+        example: 1995
+        type: integer
+      name:
+        example: Bevölkerung
+        type: string
+      number_type:
+        example: absolute
+        type: string
+      provenance:
+        example: Laufende Raumbeobachtung des BBSR; Fortschreibung des Bevölkerungsstandes
+        type: string
+      total_records:
+        example: 11600
+        type: integer
+      unit:
+        example: Einwohner
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.DatasetMetricsResult:
     properties:
       by_year:
         items:
-          $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetYearMetrics'
+          $ref: '#/definitions/models.DatasetYearMetrics'
         type: array
       column:
         example: schuldnerquote_prozent
@@ -541,7 +594,7 @@ definitions:
         example: schuldnerquote
         type: string
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetYearMetrics:
+  models.DatasetYearMetrics:
     properties:
       max:
         example: 42.7
@@ -580,13 +633,13 @@ definitions:
         example: 1.8
         type: number
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DerivedMetricEntry:
+  models.DerivedMetricEntry:
     properties:
       description:
         example: Einwohner je km²
         type: string
       formula:
-        $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaDefinition'
+        $ref: '#/definitions/models.FormulaDefinition'
       label:
         example: Bevölkerungsdichte
         type: string
@@ -597,7 +650,7 @@ definitions:
         example: EW/km²
         type: string
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DurchschnittsalterData:
+  models.DurchschnittsalterData:
     properties:
       durchschnittsalter:
         example: 50
@@ -669,7 +722,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ErwerbstaetigePro1000EinwohnerData:
+  models.ErwerbstaetigePro1000EinwohnerData:
     properties:
       erwerbstaetige_pro_1000_einwohner:
         example: 0
@@ -741,12 +794,12 @@ definitions:
         example: 2020
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaDefinition:
+  models.FormulaDefinition:
     properties:
       denominator:
-        $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaSource'
+        $ref: '#/definitions/models.FormulaSource'
       numerator:
-        $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaSource'
+        $ref: '#/definitions/models.FormulaSource'
       scale:
         example: 100
         type: number
@@ -754,7 +807,7 @@ definitions:
         example: ratio
         type: string
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.FormulaSource:
+  models.FormulaSource:
     properties:
       builtin:
         example: nuts_geometry_area_sqkm
@@ -766,7 +819,7 @@ definitions:
         example: bevoelkerung
         type: string
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoPeriod:
+  models.GeoPeriod:
     properties:
       valid_from:
         example: 2016
@@ -775,14 +828,14 @@ definitions:
         example: 2023
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoRegionSummary:
+  models.GeoRegionSummary:
     properties:
       country_code:
         example: DE
         type: string
       datasets:
         items:
-          $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDataset'
+          $ref: '#/definitions/models.RegionDataset'
         type: array
       geo_id:
         example: DE111
@@ -808,7 +861,7 @@ definitions:
         example: 2024
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoRegionVersions:
+  models.GeoRegionVersions:
     properties:
       geo_id:
         example: DE111
@@ -824,10 +877,10 @@ definitions:
         type: string
       periods:
         items:
-          $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoPeriod'
+          $ref: '#/definitions/models.GeoPeriod'
         type: array
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoSpatialQueryRequest:
+  models.GeoSpatialQueryRequest:
     properties:
       from_year:
         example: 2020
@@ -865,7 +918,7 @@ definitions:
         example: 2024
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.KinderarmutData:
+  models.KinderarmutData:
     properties:
       geodata_id_ars:
         example: "01001"
@@ -937,7 +990,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LAURegion:
+  models.LAURegion:
     properties:
       country:
         type: string
@@ -946,7 +999,7 @@ definitions:
         type: string
       datasets:
         items:
-          $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDataset'
+          $ref: '#/definitions/models.RegionDataset'
         type: array
       geometry_wgs84:
         type: object
@@ -997,7 +1050,7 @@ definitions:
         example: true
         type: boolean
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LauTimeseriesPoint:
+  models.LauTimeseriesPoint:
     properties:
       dataset_slug:
         example: beschaeftigungsquote-gemeinden
@@ -1038,7 +1091,7 @@ definitions:
         example: 2021
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.MedianeinkommenData:
+  models.MedianeinkommenData:
     properties:
       geodata_id_ars:
         example: "01001"
@@ -1110,7 +1163,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.MetaInfo:
+  models.MetaInfo:
     properties:
       limit:
         example: 100
@@ -1122,7 +1175,7 @@ definitions:
         example: 140400
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionMetadata:
+  models.NutsRegionMetadata:
     properties:
       ars:
         description: ARS (Amtlicher Regionalschlüssel) – nur für NUTS-3 verfügbar,
@@ -1147,18 +1200,18 @@ definitions:
         example: Stuttgart, Stadtkreis
         type: string
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionResponse:
+  models.NutsRegionResponse:
     properties:
       datasets:
         items:
-          $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDataset'
+          $ref: '#/definitions/models.RegionDataset'
         type: array
       metadata:
-        $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionMetadata'
+        $ref: '#/definitions/models.NutsRegionMetadata'
       socioeconomic:
-        $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsSocioeconomicData'
+        $ref: '#/definitions/models.NutsSocioeconomicData'
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionSummary:
+  models.NutsRegionSummary:
     properties:
       ars:
         example: "08111000"
@@ -1176,20 +1229,20 @@ definitions:
         example: Stuttgart, Stadtkreis
         type: string
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionTimeSeries:
+  models.NutsRegionTimeSeries:
     properties:
       datasets:
         items:
-          $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDataset'
+          $ref: '#/definitions/models.RegionDataset'
         type: array
       metadata:
-        $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionMetadata'
+        $ref: '#/definitions/models.NutsRegionMetadata'
       socioeconomic:
         items:
-          $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsSocioeconomicData'
+          $ref: '#/definitions/models.NutsSocioeconomicData'
         type: array
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionVersions:
+  models.NutsRegionVersions:
     properties:
       nuts_id:
         example: DE111
@@ -1202,10 +1255,10 @@ definitions:
         type: string
       periods:
         items:
-          $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoPeriod'
+          $ref: '#/definitions/models.GeoPeriod'
         type: array
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsSocioeconomicData:
+  models.NutsSocioeconomicData:
     properties:
       arbeitslose:
         example: 17423
@@ -1223,7 +1276,7 @@ definitions:
         example: -2.3
         type: number
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint:
+  models.NutsTimeseriesPoint:
     properties:
       dataset_slug:
         example: wohngeldhaushalte
@@ -1265,7 +1318,7 @@ definitions:
         example: 2021
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDataset:
+  models.RegionDataset:
     properties:
       available_years:
         example:
@@ -1282,11 +1335,11 @@ definitions:
         example: bevoelkerung
         type: string
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDatasets:
+  models.RegionDatasets:
     properties:
       datasets:
         items:
-          $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDataset'
+          $ref: '#/definitions/models.RegionDataset'
         type: array
       geo_id:
         example: DEF01
@@ -1295,7 +1348,7 @@ definitions:
         example: NUTS
         type: string
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SchuldnerquoteData:
+  models.SchuldnerquoteData:
     properties:
       geodata_id_ars:
         example: "01001"
@@ -1367,7 +1420,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SgbIiQuoteData:
+  models.SgbIiQuoteData:
     properties:
       geodata_id_ars:
         example: "01001"
@@ -1439,7 +1492,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SoziooekonomischesInventarEintrag:
+  models.SoziooekonomischesInventarEintrag:
     properties:
       dataset:
         example: arbeitslose
@@ -1463,7 +1516,7 @@ definitions:
         example: 2022
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.StudierendeData:
+  models.StudierendeData:
     properties:
       geodata_id_ars:
         example: "01001"
@@ -1535,7 +1588,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentAggregation:
+  models.UnemploymentAggregation:
     properties:
       avg_arbeitslose:
         example: 18622.03
@@ -1562,7 +1615,7 @@ definitions:
         example: 351
         type: integer
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentData:
+  models.UnemploymentData:
     properties:
       arbeitslose:
         example: 20749
@@ -1597,7 +1650,7 @@ definitions:
         example: 12.67
         type: number
     type: object
-  gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.WohngeldhaushalteData:
+  models.WohngeldhaushalteData:
     properties:
       geodata_id_ars:
         example: "01001"
@@ -1752,21 +1805,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ArbeitsloseData'
+                    $ref: '#/definitions/models.ArbeitsloseData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
       tags:
@@ -1829,21 +1882,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für Arbeitslosenzahlen je Kreis
         – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
@@ -1921,21 +1974,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ArbeitsvolumenData'
+                    $ref: '#/definitions/models.ArbeitsvolumenData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
       tags:
@@ -1998,21 +2051,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für Arbeitsvolumen je Kreis
         – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
@@ -2090,21 +2143,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.AuzubildendeData'
+                    $ref: '#/definitions/models.AuzubildendeData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
       tags:
@@ -2167,21 +2220,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für Auszubildende je Kreis
         – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
@@ -2259,21 +2312,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BeschaeftigungsquoteGemeindenData'
+                    $ref: '#/definitions/models.BeschaeftigungsquoteGemeindenData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt,
         mit Datumsableitung und Qualitätsflag
       tags:
@@ -2336,21 +2389,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LauTimeseriesPoint'
+                    $ref: '#/definitions/models.LauTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je
         Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
@@ -2416,21 +2469,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BeschaeftigungsquoteNuts3Data'
+                    $ref: '#/definitions/models.BeschaeftigungsquoteNuts3Data'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert
         aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
       tags:
@@ -2493,21 +2546,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je
         NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
       tags:
@@ -2585,21 +2638,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BevoelkerungData'
+                    $ref: '#/definitions/models.BevoelkerungData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
       tags:
@@ -2662,21 +2715,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für Bevölkerungsdaten je Kreis
         – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
@@ -2754,21 +2807,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.BruttoverdienstData'
+                    $ref: '#/definitions/models.BruttoverdienstData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
       tags:
@@ -2831,25 +2884,90 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für Bruttoverdienst je Kreis
         – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Bruttoverdienst
+  /datasets:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Liefert pro Datensatz Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum
+        sowie eine persistente URI. Lizenz ist "unbekannt", solange die tatsächlichen
+        Nutzungsbedingungen der Quelle noch nicht recherchiert wurden.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.DatasetCatalogEintrag'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Datensatz-Katalog (Herkunft, Lizenz, Beschreibung)
+      tags:
+      - Datensatz-Katalog
+  /datasets/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Liefert Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum
+        für einen Datensatz-Slug.
+      parameters:
+      - description: Datensatz-Slug (z.B. bevoelkerung)
+        example: bevoelkerung
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.DatasetCatalogEintrag'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Katalogeintrag eines einzelnen Datensatzes
+      tags:
+      - Datensatz-Katalog
   /durchschnittsalter:
     get:
       consumes:
@@ -2923,21 +3041,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DurchschnittsalterData'
+                    $ref: '#/definitions/models.DurchschnittsalterData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
       tags:
@@ -3000,21 +3118,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für Durchschnittsalter je Kreis
         – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
@@ -3092,21 +3210,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.ErwerbstaetigePro1000EinwohnerData'
+                    $ref: '#/definitions/models.ErwerbstaetigePro1000EinwohnerData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt,
         mit Datumsableitung und Qualitätsflag
       tags:
@@ -3169,21 +3287,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für Erwerbstätige je 1.000
         Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
@@ -3275,21 +3393,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoRegionSummary'
+                    $ref: '#/definitions/models.GeoRegionSummary'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Liste allgemeiner Geo-Regionen
       tags:
       - Geo
@@ -3353,19 +3471,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Allgemeine Geo-Region nach ID
       tags:
       - Geo
@@ -3398,23 +3516,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoRegionVersions'
+                  $ref: '#/definitions/models.GeoRegionVersions'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Geometrie-Perioden einer Geo-Region
       tags:
       - Geo
@@ -3431,7 +3549,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoSpatialQueryRequest'
+          $ref: '#/definitions/models.GeoSpatialQueryRequest'
       produces:
       - application/json
       responses:
@@ -3439,21 +3557,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoRegionSummary'
+                    $ref: '#/definitions/models.GeoRegionSummary'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Räumliche Geo-Abfrage via GeoJSON
       tags:
       - Geo
@@ -3545,21 +3663,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.KinderarmutData'
+                    $ref: '#/definitions/models.KinderarmutData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte
         unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
@@ -3622,21 +3740,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für Kinderarmut je Kreis –
         nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner
         – bereinigt, mit Datumsableitung und Qualitätsflag
@@ -3707,21 +3825,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LAURegion'
+                    $ref: '#/definitions/models.LAURegion'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Liste aller LAU-Regionen
       tags:
       - LAU
@@ -3752,19 +3870,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.LAURegion'
+                  $ref: '#/definitions/models.LAURegion'
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: LAU-Region Details
       tags:
       - LAU
@@ -3788,23 +3906,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDatasets'
+                  $ref: '#/definitions/models.RegionDatasets'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Verfügbare Datensätze für eine LAU-Region
       tags:
       - LAU
@@ -3829,23 +3947,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.GeoRegionVersions'
+                  $ref: '#/definitions/models.GeoRegionVersions'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Geometrie-Perioden einer LAU-Region
       tags:
       - LAU
@@ -3922,21 +4040,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.MedianeinkommenData'
+                    $ref: '#/definitions/models.MedianeinkommenData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
       tags:
@@ -3999,21 +4117,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für Medianeinkommen je Kreis
         – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
@@ -4070,21 +4188,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetMetricsResult'
+                    $ref: '#/definitions/models.DatasetMetricsResult'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Statistische Metriken für Soziodata-Datensätze
       tags:
       - Metriken
@@ -4103,11 +4221,11 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DerivedMetricEntry'
+                    $ref: '#/definitions/models.DerivedMetricEntry'
                   type: array
               type: object
       summary: Abgeleitete Metriken-Definitionen
@@ -4159,19 +4277,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.DatasetMetricsResult'
+                  $ref: '#/definitions/models.DatasetMetricsResult'
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Statistiken für eine abgeleitete Metrik
       tags:
       - Metriken
@@ -4211,21 +4329,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionSummary'
+                    $ref: '#/definitions/models.NutsRegionSummary'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Liste aller NUTS-Regionen
       tags:
       - NUTS
@@ -4292,23 +4410,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionTimeSeries'
+                  $ref: '#/definitions/models.NutsRegionTimeSeries'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Alle Indikatoren für eine NUTS-Region (Level 0–3)
       tags:
       - NUTS
@@ -4332,19 +4450,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.RegionDatasets'
+                  $ref: '#/definitions/models.RegionDatasets'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Verfügbare Datensätze für eine NUTS-Region
       tags:
       - NUTS
@@ -4369,23 +4487,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsRegionVersions'
+                  $ref: '#/definitions/models.NutsRegionVersions'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Geometrie-Perioden einer NUTS-Region
       tags:
       - NUTS
@@ -4462,21 +4580,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SchuldnerquoteData'
+                    $ref: '#/definitions/models.SchuldnerquoteData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
       tags:
@@ -4539,21 +4657,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für Schuldnerquoten je Kreis
         – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
@@ -4631,21 +4749,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SgbIiQuoteData'
+                    $ref: '#/definitions/models.SgbIiQuoteData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
       tags:
@@ -4708,21 +4826,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für SGB-II-Quote je Kreis –
         bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
@@ -4756,21 +4874,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.SoziooekonomischesInventarEintrag'
+                    $ref: '#/definitions/models.SoziooekonomischesInventarEintrag'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Inventar verfügbarer Soziodaten
       tags:
       - Soziooekonomie
@@ -4847,21 +4965,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.StudierendeData'
+                    $ref: '#/definitions/models.StudierendeData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt,
         mit Datumsableitung und Qualitätsflag
       tags:
@@ -4924,21 +5042,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für Studierende je 1.000 Einwohner
         je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
@@ -4998,21 +5116,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentData'
+                    $ref: '#/definitions/models.UnemploymentData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Arbeitslosenzahlen abrufen
       tags:
       - Unemployment
@@ -5071,21 +5189,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentAggregation'
+                    $ref: '#/definitions/models.UnemploymentAggregation'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Aggregierte Arbeitslosenstatistiken
       tags:
       - Unemployment
@@ -5129,21 +5247,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.UnemploymentData'
+                    $ref: '#/definitions/models.UnemploymentData'
                   type: array
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Arbeitslosenzahlen für ein Gebiet
       tags:
       - Unemployment
@@ -5220,21 +5338,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.WohngeldhaushalteData'
+                    $ref: '#/definitions/models.WohngeldhaushalteData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
       tags:
@@ -5297,21 +5415,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            - $ref: '#/definitions/models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/gitlab_htw-berlin_de_s0595954_soziooekonomische-daten_internal_models.APIResponse'
+            $ref: '#/definitions/models.APIResponse'
       summary: Lückenlose Zeitreihe für Staging-Modell für Wohngeldhaushalte je Kreis
         – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:

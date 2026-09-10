@@ -67,6 +67,13 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			socioeconomic.GET("/inventory", handler.GetSoziooekonomischesInventar)
 		}
 
+		// Datensatz-Katalog: Herkunft, Lizenz, Beschreibung
+		datasetsGroup := v1.Group("/datasets")
+		{
+			datasetsGroup.GET("", handler.GetDatasetCatalog)
+			datasetsGroup.GET("/:slug", handler.GetDatasetCatalogEntry)
+		}
+
 		// Metriken-Endpunkte: statistische Aggregationen über Soziodata-Datensätze
 		metricsGroup := v1.Group("/metrics")
 		{
