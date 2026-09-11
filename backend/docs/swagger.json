@@ -6058,6 +6058,16 @@
                     "type": "string",
                     "example": "unbekannt"
                 },
+                "license_backfilled": {
+                    "description": "LicenseBackfilled ist true, wenn der Datensatz Jahre vor LicenseTrackedSince\nenthält - die aktuelle Lizenz wurde dann rückwirkend auf diese älteren Jahre\nangewendet, ohne für sie unabhängig verifiziert zu sein.",
+                    "type": "boolean",
+                    "example": true
+                },
+                "license_tracked_since": {
+                    "description": "LicenseTrackedSince ist das Datum, seit dem die Lizenz dieses Datensatzes\nper snap_dataset_license beobachtet wird; null falls noch kein dbt snapshot\ngelaufen ist.",
+                    "type": "string",
+                    "example": "2026-09-11"
+                },
                 "license_url": {
                     "type": "string"
                 },

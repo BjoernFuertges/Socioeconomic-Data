@@ -39,8 +39,15 @@ Expected input structure under `<DATA_EXCHANGE_PATH>/<dataset_subdir>/`:
   plus one column per year
 - `meta.yaml` – `geodata_level`, `geodata_year`, `name`, `description`,
   `description_long`, `unit`, `source`, `algorithm`, `number_type`, and
-  optionally `license`/`license_url` (both default to null/"unbekannt" -
-  most datasets' actual usage terms haven't been researched yet)
+  optionally `license`/`license_url` as a manual override. Normally these
+  two are left unset: for any dataset whose `source` mentions BBSR
+  (currently all of them),
+  [`bbsr_license.py`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/dlt/bbsr_license.py)
+  looks up the license BBSR currently states for "Laufende
+  Raumbeobachtung"/INKAR automatically on every pipeline run (cached for
+  24h, falls back to a stale cache or `"unbekannt"` rather than failing
+  the load if BBSR is unreachable) - no manual research or maintenance
+  required.
 
 The table name is derived from the last path segment
 (`results_bevoelkerung_kreise` → table `results_bevoelkerung_kreise`).

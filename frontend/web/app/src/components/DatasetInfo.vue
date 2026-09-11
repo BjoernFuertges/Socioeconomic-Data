@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { DatasetMetadataEntry } from "../types/api";
+import { formatDateDE } from "../format";
 
 // Zeigt Herkunft/Lizenz/Beschreibung eines Datensatzes sowie die persistente URI. Lizenz "unbekannt" wird bewusst sichtbar
 // dargestellt statt versteckt.
@@ -28,6 +29,11 @@ const licenseKnown = computed(
         :class="{ 'is-unknown': !licenseKnown }"
         :title="licenseKnown ? metadata.license : 'Lizenz noch nicht recherchiert'"
       >
+        <span
+          v-if="metadata.license_backfilled"
+          class="marker marker-assumed"
+          title="Für ältere Jahre rückwirkend angenommen, nicht einzeln verifiziert"
+        ></span>
         Lizenz: {{ metadata.license }}
       </span>
     </summary>
@@ -59,6 +65,11 @@ const licenseKnown = computed(
           metadata.license
         }}</a>
         <span v-else>{{ metadata.license }}</span>
+        <span v-if="metadata.license_backfilled" class="license-backfilled-note">
+          <span class="marker marker-assumed"></span>
+          Nachweislich verifiziert erst ab {{ formatDateDE(metadata.license_tracked_since ?? "") }}; für ältere Jahre
+          rückwirkend angenommen.
+        </span>
       </dd>
 
       <dt>Persistente ID</dt>

@@ -113,6 +113,8 @@ export interface DatasetMetadataEntry {
   max_year?: number | null;
   total_records?: number | null;
   updated_at?: string | null;
+  license_tracked_since?: string | null;
+  license_backfilled: boolean;
 }
 
 export interface InventoryEntry {

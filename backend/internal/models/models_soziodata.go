@@ -171,6 +171,14 @@ type DatasetCatalogEintrag struct {
 	MaxYear         *int    `json:"max_year,omitempty" db:"max_year" example:"2023"`
 	TotalRecords    *int64  `json:"total_records,omitempty" db:"total_records" example:"11600"`
 	UpdatedAt       *string `json:"updated_at,omitempty" db:"updated_at"`
+	// LicenseTrackedSince ist das Datum, seit dem die Lizenz dieses Datensatzes
+	// per snap_dataset_license beobachtet wird; null falls noch kein dbt snapshot
+	// gelaufen ist.
+	LicenseTrackedSince *string `json:"license_tracked_since,omitempty" db:"license_tracked_since" example:"2026-09-11"`
+	// LicenseBackfilled ist true, wenn der Datensatz Jahre vor LicenseTrackedSince
+	// enthält - die aktuelle Lizenz wurde dann rückwirkend auf diese älteren Jahre
+	// angewendet, ohne für sie unabhängig verifiziert zu sein.
+	LicenseBackfilled bool `json:"license_backfilled" db:"license_backfilled" example:"true"`
 }
 
 // RegionDataset beschreibt einen verfügbaren Soziodata-Datensatz für eine Region.

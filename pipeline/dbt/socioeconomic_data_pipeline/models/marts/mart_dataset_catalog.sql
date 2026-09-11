@@ -1,5 +1,6 @@
 -- depends_on: {{ ref('stg_dataset_metadata') }}
 -- depends_on: {{ ref('mart_socioeconomic_inventory') }}
+-- depends_on: {{ ref('stg_dataset_license_history') }}
 {{
     config(
         materialized='table',
@@ -42,6 +43,15 @@ coverage as (
     group by dataset
 ),
 
+-- Wann wurde die Lizenz dieses Datensatzes erstmals per snap_dataset_license beobachtet?
+license_tracking as (
+    select
+        dataset_slug,
+        min(valid_from) as license_tracked_since
+    from {{ ref('stg_dataset_license_history') }}
+    group by dataset_slug
+),
+
 final as (
     select
         m.dataset_slug,
@@ -60,9 +70,19 @@ final as (
         c.min_year,
         c.max_year,
         c.total_records,
-        m.updated_at
+        m.updated_at,
+        lt.license_tracked_since,
+        -- true, wenn der Datensatz Jahre enthält, die älter sind als der Beginn des Lizenz-Trackings (license_tracked_since). Fehlt license_tracked_since
+        -- (z. B. dbt run ohne vorherigen dbt snapshot) --> false (sicher ist sicher).
+        coalesce(
+            c.min_year is not null
+            and lt.license_tracked_since is not null
+            and c.min_year < extract(year from lt.license_tracked_since)::int,
+            false
+        ) as license_backfilled
     from metadata m
     left join coverage c on c.dataset_slug = m.dataset_slug
+    left join license_tracking lt on lt.dataset_slug = m.dataset_slug
 )
 
 select * from final

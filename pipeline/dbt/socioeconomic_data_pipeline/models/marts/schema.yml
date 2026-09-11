@@ -246,6 +246,12 @@ models:
         description: "Gesamtzahl der Datensätze über alle Jahre/Geodatenebenen"
       - name: updated_at
         description: "Zeitpunkt des letzten Metadaten-Upserts"
+      - name: license_tracked_since
+        description: "Datum, seit dem die Lizenz dieses Datensatzes per snap_dataset_license beobachtet wird; null falls noch kein dbt snapshot gelaufen ist"
+      - name: license_backfilled
+        description: "true, wenn der Datensatz Jahre vor license_tracked_since enthält - die aktuelle Lizenz wurde dann rückwirkend auf diese älteren Jahre angewendet, ohne für sie unabhängig verifiziert zu sein"
+        tests:
+          - not_null
 
   - name: mart_nuts3_sociodata_harmonized
     description: >

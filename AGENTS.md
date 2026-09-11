@@ -15,6 +15,12 @@ duplicate implementation detail that already lives in code, code comments,
 or Swagger; link to it instead. Skip doc updates for purely internal
 refactors that don't change behavior or structure visible to the docs.
 
+The same applies to the per-directory `CLAUDE.md` files (`backend/`,
+`frontend/`, `dbt/`, `dlt/`, `analysis/`, `arbeitslosenzahlen-berlin/`):
+if a change alters commands, generated-file boundaries, model/mart
+layering, or another fact one of them states, update that `CLAUDE.md` in
+the same change rather than letting it drift out of date.
+
 ## Project overview
 
 Monorepo that loads socioeconomic/geographic data (unemployment, population,
@@ -58,16 +64,27 @@ built/tested independently as shown above.
 - **The backend never transforms data.** It only reads finished
   views/tables from the `transformed_data` schema. Any data cleaning,
   joining, or aggregation logic belongs in dbt, not in Go handlers.
-- **dlt never historizes.** All dlt resources load with
-  `write_disposition="replace"`. History over time is exclusively built by
-  dbt snapshots (`snapshots/snap_results_*.sql`). Do not add historization
-  logic to a dlt script.
-- **NUTS-3 region IDs are not stable over time** (2013/2016/2021/2024
-  boundary versions exist). Any new model that aggregates or compares
-  NUTS-3 data across years must go through
+- **dlt never historizes.** History over time is exclusively built by dbt
+  snapshots (`snapshots/snap_results_*.sql`). Do not add historization
+  logic to a dlt script. Note `write_disposition` is currently *not*
+  uniformly `"replace"` across `dlt/` — `load_soziodata_generic.py` uses
+  `"append"` (no primary key/dedup) and `load_arbeitslosenzahlen_afa.py`
+  mixes `"merge"` and `"replace"`; only `load_beschaeftigungsquote.py` and
+  `load_geodata_to_postgis.py` are pure `"replace"`. This is a known
+  inconsistency, not an intentional per-script historization strategy —
+  the `"append"` case in particular means reruns accumulate duplicate
+  `loaded_data` rows rather than overwrite them, which should be fixed
+  (target `"replace"` there too) rather than treated as precedent for new
+  scripts.
+- **NUTS-3 region IDs are not stable over time** (2003/2006/2010/2013/
+  2016/2021/2024 boundary versions exist). Any new model that aggregates
+  or compares NUTS-3 data across years must go through
   `mart_nuts3_sociodata_harmonized` / `mart_nuts3_timeseries_interpolated`
   (see [docs/pipeline/dbt.md](docs/pipeline/dbt.md)) rather than joining raw
-  year-over-year data directly.
+  year-over-year data directly. The same applies to LAU (gisco_id) data
+  across the 2011–2024 vintages: use `mart_lau_sociodata_harmonized` /
+  `mart_lau_timeseries_interpolated` instead of joining raw year-over-year
+  LAU data directly.
 - **No artificial "socio ID".** Existing geodata references
   (`geodata_id_nuts`, `geodata_id_lau`, `geodata_id_ars`, `nuts_id`,
   `gisco_id`) are the domain keys everywhere — see

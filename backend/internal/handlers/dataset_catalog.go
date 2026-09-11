@@ -10,7 +10,8 @@ import (
 
 const datasetCatalogColumns = `dataset_slug, dataset_uri, name, description, description_long, unit,
 	provenance, license, license_url, algorithm, number_type, geodata_level, geodata_year,
-	min_year, max_year, total_records, updated_at`
+	min_year, max_year, total_records, updated_at, license_tracked_since::text as license_tracked_since,
+	license_backfilled`
 
 // GetDatasetCatalog gibt den Metadaten-Katalog aller Datensätze zurück.
 // @Summary Datensatz-Katalog (Herkunft, Lizenz, Beschreibung)

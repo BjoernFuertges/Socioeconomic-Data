@@ -555,6 +555,20 @@ definitions:
       license:
         example: unbekannt
         type: string
+      license_backfilled:
+        description: |-
+          LicenseBackfilled ist true, wenn der Datensatz Jahre vor LicenseTrackedSince
+          enthält - die aktuelle Lizenz wurde dann rückwirkend auf diese älteren Jahre
+          angewendet, ohne für sie unabhängig verifiziert zu sein.
+        example: true
+        type: boolean
+      license_tracked_since:
+        description: |-
+          LicenseTrackedSince ist das Datum, seit dem die Lizenz dieses Datensatzes
+          per snap_dataset_license beobachtet wird; null falls noch kein dbt snapshot
+          gelaufen ist.
+        example: "2026-09-11"
+        type: string
       license_url:
         type: string
       max_year:

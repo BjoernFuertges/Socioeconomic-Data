@@ -2,6 +2,14 @@ export function formatDatasetLabel(routeSlug: string): string {
   return routeSlug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Erwartet ein ISO-Datum (z.B. "2026-09-11" oder "2026-09-11T00:00:00Z") -> "11.09.2026".
+export function formatDateDE(value: string): string {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return value;
+  const [, year, month, day] = match;
+  return `${day}.${month}.${year}`;
+}
+
 export function formatNumber(value: unknown): string {
   if (typeof value !== "number") return String(value);
   return value.toLocaleString("de-DE", { maximumFractionDigits: 2 });

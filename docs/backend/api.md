@@ -63,14 +63,27 @@ Defined in [`internal/routes/routes.go`](https://gitlab.htw-berlin.de/s0595954/s
 Reads `transformed_data.mart_dataset_catalog` (name, description, unit,
 provenance, license/license_url, geodata level/year, year coverage, and a
 persistent `dataset_uri` of the form `urn:soziodata:dataset:<slug>`).
-`license` is the literal string `"unbekannt"` for datasets whose actual
-usage terms haven't been researched yet (most of them, currently) rather
-than a bare `null` — see
+`license` is the literal string `"unbekannt"` rather than a bare `null`
+for any dataset whose usage terms couldn't be determined — see
 [`stg_dataset_metadata.sql`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/dbt/socioeconomic_data_pipeline/models/staging/stg_dataset_metadata.sql).
-Currently covers only the `meta.yaml`-driven Kreis/Gemeinden datasets (see
-[dlt.md](../pipeline/dlt.md)); the AfA unemployment figures
-(`arbeitslosenzahlen_metadata`) use an older, separate metadata mechanism
-and are not yet in this catalog.
+For BBSR-sourced datasets (currently all of them) the license is looked
+up automatically and kept up to date by
+[`dlt/bbsr_license.py`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/dlt/bbsr_license.py)
+— no manual research needed, see [dlt.md](../pipeline/dlt.md).
+
+Two additional fields make the license's temporal coverage honest:
+`license_tracked_since` (date the license was first observed for this
+dataset) and `license_backfilled` (`true` if the dataset has data years
+older than `license_tracked_since` — the current license was then
+retroactively applied to those older years without independent
+verification for that period, since neither BBSR nor we kept a license
+history before that date). Historized via
+[`snap_dataset_license.sql`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/dbt/socioeconomic_data_pipeline/snapshots/snap_dataset_license.sql)
+/ `stg_dataset_license_history`.
+
+Currently covers only the `meta.yaml`-driven Kreis/Gemeinden datasets;
+the AfA unemployment figures (`arbeitslosenzahlen_metadata`) use an
+older, separate metadata mechanism and are not yet in this catalog.
 
 ## Metrics
 

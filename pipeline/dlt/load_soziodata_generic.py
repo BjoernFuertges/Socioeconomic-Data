@@ -16,9 +16,7 @@ Expected directory layout:
         meta.yaml           -- geodata_level, geodata_year, name, description,
                                description_long, unit, source, algorithm,
                                number_type, and optionally license, license_url
-                               (both default to null/"unbekannt" if absent -
-                               the actual license terms of the source have not
-                               been researched for every dataset yet)
+                               as a manual override (see below - normally unset)
 
 The dataset_name (and resulting DB table name) is derived from the last path segment of
 <dataset_subdir>, e.g. "results_bevoelkerung_kreise" → table "results_bevoelkerung_kreise"
@@ -28,7 +26,11 @@ In addition to the data table, every run upserts one row into the shared
 "loaded_data.dataset_metadata" table (merge on dataset_slug), so provenance/
 license/description information from meta.yaml reaches the database instead
 of staying on disk only (see stg_dataset_metadata.sql / mart_dataset_catalog.sql
-downstream in dbt).
+downstream in dbt). license/license_url are populated automatically via
+bbsr_license.get_license() for any dataset whose `source` mentions BBSR
+(currently all of them) - no manual research/maintenance needed; set
+license/license_url explicitly in meta.yaml only to override that for a
+future non-BBSR dataset.
 """
 
 import sys
@@ -38,6 +40,8 @@ import yaml
 import os
 import logging
 from datetime import datetime, timezone
+
+import bbsr_license
 from pathlib import Path
 from typing import Iterator, Dict, Any
 
@@ -109,6 +113,22 @@ def _derive_slug(table_name: str) -> str:
     return slug
 
 
+def _resolve_license(meta: Dict[str, Any]) -> tuple[str | None, str | None]:
+    """
+    An explicit license/license_url in meta.yaml always wins (manual
+    override). Otherwise, for any dataset whose source mentions BBSR
+    (currently all of them), look it up automatically - no per-dataset
+    maintenance needed. Datasets from a future non-BBSR source with no
+    explicit override fall back to (None, None), normalized to
+    "unbekannt" downstream by stg_dataset_metadata.sql.
+    """
+    if meta.get("license"):
+        return meta.get("license"), meta.get("license_url")
+    if "bbsr" in str(meta.get("source", "")).lower():
+        return bbsr_license.get_license()
+    return None, None
+
+
 def make_metadata_resource(dataset_name: str, meta: Dict[str, Any]):
     """
     Factory for the dataset_metadata upsert resource, analogous to
@@ -119,6 +139,7 @@ def make_metadata_resource(dataset_name: str, meta: Dict[str, Any]):
     clobber the others' rows).
     """
     dataset_slug = _derive_slug(dataset_name)
+    license_name, license_url = _resolve_license(meta)
 
     @dlt.resource(
         name="dataset_metadata",
@@ -143,8 +164,8 @@ def make_metadata_resource(dataset_name: str, meta: Dict[str, Any]):
             "description_long": meta.get("description_long"),
             "unit": meta.get("unit"),
             "source": meta.get("source"),
-            "license": meta.get("license"),
-            "license_url": meta.get("license_url"),
+            "license": license_name,
+            "license_url": license_url,
             "algorithm": meta.get("algorithm"),
             "number_type": meta.get("number_type"),
             "geodata_level": meta.get("geodata_level"),
