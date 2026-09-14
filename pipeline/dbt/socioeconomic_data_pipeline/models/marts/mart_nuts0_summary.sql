@@ -14,8 +14,8 @@
   Die YoY-Veränderung wird aus den aggregierten Arbeitslosenzahlen neu berechnet.
   Als region_name wird mangels übergeordneter Namen der NUTS-0-Code selbst verwendet.
 
-  Hinweis: Arbeitslosenzahlen können unvollständig sein, da die Arbeitsagenturbezirke
-  nicht 1:1 den NUTS-Kreisen entsprechen (vgl. mart_nuts3_summary).
+  Hinweis: Arbeitslosenzahlen (arbeitslose_kreise) können unvollständig sein, da
+  stg_arbeitslose_kreise nicht jedes Jahr für jeden Kreis abdeckt (vgl. mart_nuts3_summary).
 */
 
 with nuts3 as (
@@ -58,7 +58,7 @@ aggregated as (
                      )
             else avg(schuldnerquote_prozent)
         end                 as schuldnerquote_prozent,
-        sum(arbeitslose)    as arbeitslose_raw
+        sum(arbeitslose_kreise)::numeric as arbeitslose_raw
     from nuts3
     group by left(nuts_id, 2), year
 ),

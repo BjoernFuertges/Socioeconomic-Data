@@ -39,13 +39,18 @@ Defined in [`internal/routes/routes.go`](https://gitlab.htw-berlin.de/s0595954/s
 | GET | `/geo/{geo_id}/versions` | Available versions of a geo region |
 | POST | `/geo/query` | Spatial query by geometry (e.g. point/polygon) |
 
-## Unemployment figures
+## Agenturbezirke (AfA unemployment figures)
+
+Agenturbezirke are a Bundesagentur-für-Arbeit-internal district partition,
+distinct from and not congruent with NUTS-3/LAU/Kreise — complements
+(does not replace) the Kreis-level `arbeitslose` dataset available through
+the generic socioeconomic-data routes below.
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/unemployment` | Raw data |
-| GET | `/unemployment/aggregated` | Aggregated values |
-| GET | `/unemployment/geodata/{geodata_id}` | Values for a specific geodata ID |
+| GET | `/agenturbezirke` | List of all Agenturbezirke, with geometry |
+| GET | `/agenturbezirke/{ba_schl}` | A single Agenturbezirk |
+| GET | `/agenturbezirke/{ba_schl}/arbeitslosigkeit` | Monthly unemployment/underemployment series (since Jan 2007) |
 
 ## Socioeconomic inventory
 
@@ -81,9 +86,10 @@ history before that date). Historized via
 [`snap_dataset_license.sql`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/dbt/socioeconomic_data_pipeline/snapshots/snap_dataset_license.sql)
 / `stg_dataset_license_history`.
 
-Currently covers only the `meta.yaml`-driven Kreis/Gemeinden datasets;
-the AfA unemployment figures (`arbeitslosenzahlen_metadata`) use an
-older, separate metadata mechanism and are not yet in this catalog.
+Covers every dataset whose loader upserts a `loaded_data.dataset_metadata`
+row — the `meta.yaml`-driven Kreis/Gemeinden datasets as well as
+`arbeitslosenzahlen-afa-agenturbezirke` (own upsert in
+`load_arbeitslosenzahlen_afa.py`).
 
 ## Metrics
 

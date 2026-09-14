@@ -54,6 +54,25 @@ export interface LauRegion {
   has_valid_geometry?: boolean;
 }
 
+// Agenturbezirke sind eine eigenständige Gebietsgliederung der
+// Bundesagentur für Arbeit - nicht deckungsgleich mit NUTS-3/LAU/ARS.
+export interface AgenturbezirkSummary {
+  ba_schl: string;
+  name: string;
+  geometry_wgs84?: GeoJSON.Geometry | null;
+  has_valid_geometry?: boolean;
+  valid_from?: string | null;
+  valid_to?: string | null;
+}
+
+export interface AgenturbezirkArbeitslosigkeitPoint {
+  year: number;
+  month: number;
+  observation_date: string;
+  arbeitslose?: Nullable<number>;
+  unterbeschaeftigung?: Nullable<number>;
+}
+
 export interface GeoRegionSummary {
   geo_id: string;
   geo_type: "nuts" | "lau";

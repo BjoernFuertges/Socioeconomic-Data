@@ -15,6 +15,41 @@ definitions:
         example: true
         type: boolean
     type: object
+  models.AgenturbezirkArbeitslosigkeitPoint:
+    properties:
+      arbeitslose:
+        type: number
+      month:
+        example: 8
+        type: integer
+      observation_date:
+        example: "2026-08-01"
+        type: string
+      unterbeschaeftigung:
+        type: number
+      year:
+        example: 2026
+        type: integer
+    type: object
+  models.AgenturbezirkSummary:
+    properties:
+      ba_schl:
+        example: "962"
+        type: string
+      geometry_wgs84:
+        type: object
+      has_valid_geometry:
+        type: boolean
+      name:
+        example: Berlin Mitte
+        type: string
+      valid_from:
+        example: "2019-06-01"
+        type: string
+      valid_to:
+        example: "2050-12-31"
+        type: string
+    type: object
   models.ArbeitsloseData:
     properties:
       arbeitslose:
@@ -1602,68 +1637,6 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.UnemploymentAggregation:
-    properties:
-      avg_arbeitslose:
-        example: 18622.03
-        type: number
-      earliest_observation:
-        example: "1998-01-01T00:00:00Z"
-        type: string
-      geodata_id:
-        example: DE111
-        type: string
-      geodata_name:
-        example: Stuttgart, Stadtkreis
-        type: string
-      latest_observation:
-        example: "2024-12-31T00:00:00Z"
-        type: string
-      max_arbeitslose:
-        example: 31655
-        type: number
-      min_arbeitslose:
-        example: 13334
-        type: number
-      total_records:
-        example: 351
-        type: integer
-    type: object
-  models.UnemploymentData:
-    properties:
-      arbeitslose:
-        example: 20749
-        type: number
-      arbeitslose_previous_year:
-        example: 18416
-        type: number
-      arbeitslosenzahlen_pk:
-        type: string
-      geodata_id:
-        example: DE111
-        type: string
-      geodata_id_ars:
-        example: "08111000"
-        type: string
-      geodata_level:
-        example: NUTS_3
-        type: string
-      geodata_name:
-        example: Stuttgart, Stadtkreis
-        type: string
-      geodata_year:
-        example: 2021
-        type: integer
-      observation_date:
-        example: "2024-01-01T00:00:00Z"
-        type: string
-      year:
-        example: 2024
-        type: integer
-      yoy_change_percent:
-        example: 12.67
-        type: number
-    type: object
   models.WohngeldhaushalteData:
     properties:
       geodata_id_ars:
@@ -1746,6 +1719,106 @@ info:
   title: Sozioökonomische Daten API
   version: "1.0"
 paths:
+  /agenturbezirke:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle Agenturbezirke mit Geometrie zurück. Agenturbezirke sind
+        eine eigenständige Gebietsgliederung, nicht deckungsgleich mit NUTS-3/LAU/ARS.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturbezirkSummary'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Liste aller Agenturbezirke
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/{ba_schl}:
+    get:
+      consumes:
+      - application/json
+      description: Gibt Details eines Agenturbezirks mit Geometrie zurück
+      parameters:
+      - description: Amtlicher BA-Schlüssel des Agenturbezirks
+        example: "962"
+        in: path
+        name: ba_schl
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.AgenturbezirkSummary'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Agenturbezirk-Details
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/{ba_schl}/arbeitslosigkeit:
+    get:
+      consumes:
+      - application/json
+      description: Gibt die monatliche Zeitreihe (Arbeitslose, Unterbeschäftigung)
+        für einen Agenturbezirk zurück (AfA Lange Zeitreihen, ab Januar 2007)
+      parameters:
+      - description: Amtlicher BA-Schlüssel des Agenturbezirks
+        example: "962"
+        in: path
+        name: ba_schl
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturbezirkArbeitslosigkeitPoint'
+                  type: array
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Monatliche Arbeitslosenzahlen eines Agenturbezirks
+      tags:
+      - Agenturbezirke
   /arbeitslose:
     get:
       consumes:
@@ -5074,210 +5147,6 @@ paths:
         je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Studierende
-  /unemployment:
-    get:
-      consumes:
-      - application/json
-      description: Gibt Arbeitslosenzahlen mit optionalen Filtern zurück
-      parameters:
-      - description: Filter nach Geodaten-ID
-        example: DE111
-        in: query
-        name: geodata_id
-        type: string
-      - description: Start-Datum (YYYY-MM-DD)
-        example: "2024-01-01"
-        in: query
-        name: from_date
-        type: string
-      - description: End-Datum (YYYY-MM-DD)
-        example: "2024-12-31"
-        in: query
-        name: to_date
-        type: string
-      - description: Filter nach Jahr
-        example: 2024
-        in: query
-        name: year
-        type: integer
-      - description: Erstes Jahr (inklusiv)
-        example: 2020
-        in: query
-        name: from_year
-        type: integer
-      - description: Letztes Jahr (inklusiv)
-        example: 2024
-        in: query
-        name: to_year
-        type: integer
-      - default: 1000
-        description: Anzahl der Ergebnisse (1-10000)
-        example: 100
-        in: query
-        name: limit
-        type: integer
-      - default: 0
-        description: Offset für Pagination
-        example: 0
-        in: query
-        name: offset
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/models.APIResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/models.UnemploymentData'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Arbeitslosenzahlen abrufen
-      tags:
-      - Unemployment
-  /unemployment/aggregated:
-    get:
-      consumes:
-      - application/json
-      description: Gibt aggregierte Statistiken pro Gebiet zurück
-      parameters:
-      - description: Filter nach Geodaten-ID
-        example: DE111
-        in: query
-        name: geodata_id
-        type: string
-      - description: Filter nach Jahr
-        example: 2024
-        in: query
-        name: year
-        type: integer
-      - description: Erstes Jahr (inklusiv)
-        example: 2020
-        in: query
-        name: from_year
-        type: integer
-      - description: Letztes Jahr (inklusiv)
-        example: 2024
-        in: query
-        name: to_year
-        type: integer
-      - description: Start-Datum (YYYY-MM-DD)
-        example: "2024-01-01"
-        in: query
-        name: from_date
-        type: string
-      - description: End-Datum (YYYY-MM-DD)
-        example: "2024-12-31"
-        in: query
-        name: to_date
-        type: string
-      - default: 100
-        description: Anzahl der Ergebnisse
-        example: 100
-        in: query
-        name: limit
-        type: integer
-      - default: 0
-        description: Offset für Pagination
-        example: 0
-        in: query
-        name: offset
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/models.APIResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/models.UnemploymentAggregation'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Aggregierte Arbeitslosenstatistiken
-      tags:
-      - Unemployment
-  /unemployment/geodata/{geodata_id}:
-    get:
-      consumes:
-      - application/json
-      description: Gibt alle Arbeitslosenzahlen für eine spezifische Geodaten-ID zurück
-      parameters:
-      - description: Geodaten-ID
-        example: DE111
-        in: path
-        name: geodata_id
-        required: true
-        type: string
-      - description: Start-Datum (YYYY-MM-DD)
-        example: "2024-01-01"
-        in: query
-        name: from_date
-        type: string
-      - description: End-Datum (YYYY-MM-DD)
-        example: "2024-12-31"
-        in: query
-        name: to_date
-        type: string
-      - description: 'Zeittyp: yearly, monthly'
-        example: monthly
-        in: query
-        name: time_type
-        type: string
-      - default: 100
-        description: Anzahl der Ergebnisse
-        example: 12
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/models.APIResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/models.UnemploymentData'
-                  type: array
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/models.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Arbeitslosenzahlen für ein Gebiet
-      tags:
-      - Unemployment
   /wohngeldhaushalte:
     get:
       consumes:

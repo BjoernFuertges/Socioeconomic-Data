@@ -16,7 +16,8 @@ Configuration (target DB connection, etc.) via `dlt/config.toml` or
 
 | Script | Purpose | Target tables (`loaded_data`) |
 |---|---|---|
-| [`load_arbeitslosenzahlen_afa.py`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/dlt/load_arbeitslosenzahlen_afa.py) | Unemployment figures from the Agentur für Arbeit (transposed/normalized) | `arbeitslosenzahlen_agentur_arbeit`, `arbeitslosenzahlen_metadata` |
+| [`load_arbeitslosenzahlen_afa.py`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/dlt/load_arbeitslosenzahlen_afa.py) | Monthly unemployment/underemployment figures per Agenturbezirk (Bundesagentur-für-Arbeit district partition, distinct from NUTS-3/LAU/Kreise), pulled live from the official "Lange Zeitreihen" REST API on every run | `results_arbeitslosenzahlen_afa_agenturbezirke`, `dataset_metadata` |
+| [`load_agenturbezirke_geodata.py`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/dlt/load_agenturbezirke_geodata.py) | Agenturbezirk boundaries (official BA-Gebietsstruktur shapefile, all ~146 districts) | `agenturbezirk_geometry` |
 | [`load_geodata_to_postgis.py`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/dlt/load_geodata_to_postgis.py) | LAU/NUTS geometries (GeoJSON) + LAU population (CSV) | `lau_geometry`, `lau_population`, `nuts_geometry` |
 | [`load_beschaeftigungsquote.py`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/dlt/load_beschaeftigungsquote.py) | Employment rate (special case: municipalities/LAU) | `results_beschaeftigungsquote_gemeinden` |
 | [`load_soziodata_generic.py`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/dlt/load_soziodata_generic.py) | generic format `mapped_pairs.csv` + `meta.yaml` for all remaining county-level (Kreis) datasets (population, debtor quota, work volume, ...) | `results_<dataset>_kreise`, `dataset_metadata` |

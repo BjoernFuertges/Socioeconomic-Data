@@ -3,11 +3,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-echo "=== dlt: Arbeitslosenzahlen ==="
-python load_arbeitslosenzahlen_afa.py
-
 echo "=== dlt: Geodaten ==="
 python load_geodata_to_postgis.py
+python load_agenturbezirke_geodata.py
 
 echo "=== dlt: Sozioökonomische Daten ==="
 python load_soziodata_generic.py arbeitslose/results_arbeitslose_kreise
@@ -24,6 +22,9 @@ python load_soziodata_generic.py schuldnerquote/results_schuldnerquote_kreise
 python load_soziodata_generic.py sgb_ii_quote/results_sgb_ii_quote_kreise
 python load_soziodata_generic.py studierende/results_studierende_kreise
 python load_soziodata_generic.py wohngeldhaushalte/results_wohngeldhaushalte_kreise
+
+echo "=== dlt: Arbeitslosenzahlen (Agenturbezirke, AfA Lange Zeitreihen) ==="
+python load_arbeitslosenzahlen_afa.py
 
 echo "=== dbt ==="
 cd /app/dbt/socioeconomic_data_pipeline

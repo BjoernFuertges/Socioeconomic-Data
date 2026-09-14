@@ -1,0 +1,69 @@
+version: 2
+
+models:
+  - name: stg_arbeitslosenzahlen_afa_agenturbezirke
+    description: "Staging-Modell für monatliche Arbeitslosen-/Unterbeschäftigungszahlen je Agenturbezirk (AfA Lange Zeitreihen)"
+    columns:
+      - name: arbeitslosenzahlen_afa_pk
+        description: "Surrogate Key aus geodata_id_agentur, year und month"
+        data_type: text
+        tests:
+          - unique
+          - not_null
+
+      - name: geodata_id_agentur
+        description: "Amtlicher BA-Schlüssel des Agenturbezirks"
+        data_type: text
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_agenturbezirk_geometry')
+              field: ba_schl
+
+      - name: geodata_name
+        description: "Name des Agenturbezirks"
+        data_type: text
+
+      - name: year
+        description: "Jahr des Berichtsmonats"
+        data_type: integer
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2007
+              max_value: 2100
+
+      - name: month
+        description: "Monat des Berichtsmonats (1-12)"
+        data_type: integer
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 12
+
+      - name: arbeitslose
+        description: "Anzahl Arbeitsloser im Berichtsmonat, null wenn statistisch gesperrt"
+        data_type: numeric
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+              config:
+                where: "arbeitslose is not null"
+
+      - name: unterbeschaeftigung
+        description: "Unterbeschäftigung (ohne Kurzarbeit) im Berichtsmonat, null wenn statistisch gesperrt"
+        data_type: numeric
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+              config:
+                where: "unterbeschaeftigung is not null"
+
+      - name: observation_date
+        description: "Beobachtungsdatum (01. des jeweiligen Berichtsmonats)"
+        data_type: date
+        tests:
+          - not_null

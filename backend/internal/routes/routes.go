@@ -54,12 +54,14 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			geoGroup.POST("/query", handler.QueryGeoRegionsByGeometry)
 		}
 
-		// Arbeitslosenzahlen
-		unemployment := v1.Group("/unemployment")
+		// Agenturbezirke (eigenständige Gebietsgliederung der Bundesagentur
+		// für Arbeit, nicht deckungsgleich mit NUTS/LAU/ARS) mit monatlichen
+		// Arbeitslosenzahlen (AfA Lange Zeitreihen)
+		agenturbezirkeGroup := v1.Group("/agenturbezirke")
 		{
-			unemployment.GET("", handler.GetUnemploymentData)
-			unemployment.GET("/aggregated", handler.GetUnemploymentAggregated)
-			unemployment.GET("/geodata/:geodata_id", handler.GetUnemploymentByGeodataID)
+			agenturbezirkeGroup.GET("", handler.GetAgenturbezirke)
+			agenturbezirkeGroup.GET("/:ba_schl", handler.GetAgenturbezirkByID)
+			agenturbezirkeGroup.GET("/:ba_schl/arbeitslosigkeit", handler.GetAgenturbezirkArbeitslosigkeit)
 		}
 
 		socioeconomic := v1.Group("/socioeconomic")

@@ -56,7 +56,7 @@ models:
         description: "Number of years with population data for this LAU"
 
   - name: mart_nuts3_summary
-    description: "Alle verfügbaren sozioökonomischen Indikatoren je NUTS-3-Region und Jahr. Basis ist ein FULL OUTER JOIN zwischen Bevölkerung und Schuldnerquote; Arbeitslosenzahlen werden per LEFT JOIN ergänzt (nur Jahresdaten)."
+    description: "Alle verfügbaren sozioökonomischen Indikatoren je NUTS-3-Region und Jahr. Basis ist ein FULL OUTER JOIN zwischen Bevölkerung und Schuldnerquote; weitere Indikatoren werden per LEFT JOIN ergänzt."
     columns:
       - name: nuts_id
         description: "NUTS-3-Code der Region (z.B. DE111)"
@@ -72,10 +72,8 @@ models:
         description: "Bevölkerungszahl (null wenn keine Daten für dieses Jahr)"
       - name: schuldnerquote_prozent
         description: "Schuldnerquote in Prozent (null wenn keine Daten für dieses Jahr)"
-      - name: arbeitslose
-        description: "Zahl der Arbeitslosen (Jahresdurchschnitt). Kann null sein, da Arbeitsagenturbezirke nicht 1:1 mit NUTS-3-Kreisen übereinstimmen."
-      - name: yoy_change_percent
-        description: "Veränderung der Arbeitslosenzahlen gegenüber dem Vorjahr in Prozent"
+      - name: arbeitslose_kreise
+        description: "Zahl der Arbeitslosen je Kreis (INKAR/BBSR, Jahresdurchschnitt). Für Agenturbezirk-Arbeitslosenzahlen (AfA, monatlich) siehe stattdessen mart_agenturbezirk_sociodata - andere, nicht deckungsgleiche Gebietsgliederung."
 
   - name: mart_nuts_geometry
     description: "NUTS-Geometrien mit GeoJSON-Ausgabe und Geometrie-Metadaten für verfügbare Referenzjahre"
@@ -202,7 +200,7 @@ models:
         description: "Anzahl unterschiedlicher geodata_id_ars"
 
   - name: mart_dataset_catalog
-    description: "Ein Katalog-Eintrag pro Datensatz mit Herkunft, Lizenz, Beschreibung und persistenter URI (F09/F10/F11/F15/F16). Umfasst aktuell die meta.yaml-basierten Kreis-/Gemeinden-Datensätze; die AfA-Arbeitslosenzahlen (eigener, älterer Metadaten-Mechanismus) sind noch nicht migriert."
+    description: "Ein Katalog-Eintrag pro Datensatz mit Herkunft, Lizenz, Beschreibung und persistenter URI (F09/F10/F11/F15/F16). Umfasst die meta.yaml-basierten Kreis-/Gemeinden-Datensätze sowie arbeitslosenzahlen-afa-agenturbezirke."
     columns:
       - name: dataset_slug
         description: "Dataset-Slug, identisch zu dataset in mart_socioeconomic_inventory"
@@ -408,3 +406,31 @@ models:
         description: "Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen Veränderung anderer Gemeinden desselben Kreises). Nur befüllt wenn is_interpolated = true UND sowohl der eigene Vorjahreswert als auch mindestens ein Peer-Wert bekannt sind, sonst NULL."
       - name: n_peer_regions
         description: "Anzahl der Peer-Gemeinden (gleicher Kreis), die zur Berechnung von value_peer_trend beigetragen haben. NULL wenn is_interpolated = false oder value_peer_trend nicht berechenbar war."
+
+  - name: mart_agenturbezirk_sociodata
+    description: "Monatliche Arbeitslosen-/Unterbeschäftigungszahlen je Agenturbezirk, verknüpft mit der Agenturbezirk-Geometrie. Agenturbezirke sind eine eigenständige Gebietsgliederung (nicht NUTS-3/LAU/ARS)."
+    columns:
+      - name: ba_schl
+        description: "Amtlicher BA-Schlüssel des Agenturbezirks"
+        tests:
+          - not_null
+      - name: name
+        description: "Name des Agenturbezirks"
+      - name: geometry_wgs84
+        description: "PostGIS-Geometrie in WGS84 (EPSG:4326)"
+      - name: has_valid_geometry
+        description: "true, wenn eine nicht-leere Geometrie vorhanden ist"
+      - name: valid_from
+        description: "Gültig-ab-Datum der Grenzen laut Shapefile"
+      - name: valid_to
+        description: "Gültig-bis-Datum der Grenzen laut Shapefile"
+      - name: year
+        description: "Jahr des Berichtsmonats (null, falls für diesen Bezirk keine Werte geladen werden konnten)"
+      - name: month
+        description: "Monat des Berichtsmonats (1-12)"
+      - name: observation_date
+        description: "Beobachtungsdatum (01. des jeweiligen Berichtsmonats)"
+      - name: arbeitslose
+        description: "Anzahl Arbeitsloser im Berichtsmonat, null wenn statistisch gesperrt"
+      - name: unterbeschaeftigung
+        description: "Unterbeschäftigung (ohne Kurzarbeit) im Berichtsmonat, null wenn statistisch gesperrt"

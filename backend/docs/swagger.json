@@ -15,6 +15,167 @@
     },
     "basePath": "/api/v1",
     "paths": {
+        "/agenturbezirke": {
+            "get": {
+                "description": "Gibt alle Agenturbezirke mit Geometrie zurück. Agenturbezirke sind eine eigenständige Gebietsgliederung, nicht deckungsgleich mit NUTS-3/LAU/ARS.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Liste aller Agenturbezirke",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturbezirkSummary"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/{ba_schl}": {
+            "get": {
+                "description": "Gibt Details eines Agenturbezirks mit Geometrie zurück",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Agenturbezirk-Details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "962",
+                        "description": "Amtlicher BA-Schlüssel des Agenturbezirks",
+                        "name": "ba_schl",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.AgenturbezirkSummary"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/{ba_schl}/arbeitslosigkeit": {
+            "get": {
+                "description": "Gibt die monatliche Zeitreihe (Arbeitslose, Unterbeschäftigung) für einen Agenturbezirk zurück (AfA Lange Zeitreihen, ab Januar 2007)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Monatliche Arbeitslosenzahlen eines Agenturbezirks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "962",
+                        "description": "Amtlicher BA-Schlüssel des Agenturbezirks",
+                        "name": "ba_schl",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturbezirkArbeitslosigkeitPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/arbeitslose": {
             "get": {
                 "description": "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
@@ -4830,315 +4991,6 @@
                 }
             }
         },
-        "/unemployment": {
-            "get": {
-                "description": "Gibt Arbeitslosenzahlen mit optionalen Filtern zurück",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Unemployment"
-                ],
-                "summary": "Arbeitslosenzahlen abrufen",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "DE111",
-                        "description": "Filter nach Geodaten-ID",
-                        "name": "geodata_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "2024-01-01",
-                        "description": "Start-Datum (YYYY-MM-DD)",
-                        "name": "from_date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "2024-12-31",
-                        "description": "End-Datum (YYYY-MM-DD)",
-                        "name": "to_date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "example": 2024,
-                        "description": "Filter nach Jahr",
-                        "name": "year",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "example": 2020,
-                        "description": "Erstes Jahr (inklusiv)",
-                        "name": "from_year",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "example": 2024,
-                        "description": "Letztes Jahr (inklusiv)",
-                        "name": "to_year",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 1000,
-                        "example": 100,
-                        "description": "Anzahl der Ergebnisse (1-10000)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "example": 0,
-                        "description": "Offset für Pagination",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/models.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/models.UnemploymentData"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/unemployment/aggregated": {
-            "get": {
-                "description": "Gibt aggregierte Statistiken pro Gebiet zurück",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Unemployment"
-                ],
-                "summary": "Aggregierte Arbeitslosenstatistiken",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "DE111",
-                        "description": "Filter nach Geodaten-ID",
-                        "name": "geodata_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "example": 2024,
-                        "description": "Filter nach Jahr",
-                        "name": "year",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "example": 2020,
-                        "description": "Erstes Jahr (inklusiv)",
-                        "name": "from_year",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "example": 2024,
-                        "description": "Letztes Jahr (inklusiv)",
-                        "name": "to_year",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "2024-01-01",
-                        "description": "Start-Datum (YYYY-MM-DD)",
-                        "name": "from_date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "2024-12-31",
-                        "description": "End-Datum (YYYY-MM-DD)",
-                        "name": "to_date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 100,
-                        "example": 100,
-                        "description": "Anzahl der Ergebnisse",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "example": 0,
-                        "description": "Offset für Pagination",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/models.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/models.UnemploymentAggregation"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/unemployment/geodata/{geodata_id}": {
-            "get": {
-                "description": "Gibt alle Arbeitslosenzahlen für eine spezifische Geodaten-ID zurück",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Unemployment"
-                ],
-                "summary": "Arbeitslosenzahlen für ein Gebiet",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "DE111",
-                        "description": "Geodaten-ID",
-                        "name": "geodata_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "2024-01-01",
-                        "description": "Start-Datum (YYYY-MM-DD)",
-                        "name": "from_date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "2024-12-31",
-                        "description": "End-Datum (YYYY-MM-DD)",
-                        "name": "to_date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "monthly",
-                        "description": "Zeittyp: yearly, monthly",
-                        "name": "time_type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 100,
-                        "example": 12,
-                        "description": "Anzahl der Ergebnisse",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/models.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/models.UnemploymentData"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/wohngeldhaushalte": {
             "get": {
                 "description": "Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
@@ -5400,6 +5252,56 @@
                 "success": {
                     "type": "boolean",
                     "example": true
+                }
+            }
+        },
+        "models.AgenturbezirkArbeitslosigkeitPoint": {
+            "type": "object",
+            "properties": {
+                "arbeitslose": {
+                    "type": "number"
+                },
+                "month": {
+                    "type": "integer",
+                    "example": 8
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2026-08-01"
+                },
+                "unterbeschaeftigung": {
+                    "type": "number"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2026
+                }
+            }
+        },
+        "models.AgenturbezirkSummary": {
+            "type": "object",
+            "properties": {
+                "ba_schl": {
+                    "type": "string",
+                    "example": "962"
+                },
+                "geometry_wgs84": {
+                    "type": "object"
+                },
+                "has_valid_geometry": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Berlin Mitte"
+                },
+                "valid_from": {
+                    "type": "string",
+                    "example": "2019-06-01"
+                },
+                "valid_to": {
+                    "type": "string",
+                    "example": "2050-12-31"
                 }
             }
         },
@@ -7383,91 +7285,6 @@
                 "year": {
                     "type": "integer",
                     "example": 2020
-                }
-            }
-        },
-        "models.UnemploymentAggregation": {
-            "type": "object",
-            "properties": {
-                "avg_arbeitslose": {
-                    "type": "number",
-                    "example": 18622.03
-                },
-                "earliest_observation": {
-                    "type": "string",
-                    "example": "1998-01-01T00:00:00Z"
-                },
-                "geodata_id": {
-                    "type": "string",
-                    "example": "DE111"
-                },
-                "geodata_name": {
-                    "type": "string",
-                    "example": "Stuttgart, Stadtkreis"
-                },
-                "latest_observation": {
-                    "type": "string",
-                    "example": "2024-12-31T00:00:00Z"
-                },
-                "max_arbeitslose": {
-                    "type": "number",
-                    "example": 31655
-                },
-                "min_arbeitslose": {
-                    "type": "number",
-                    "example": 13334
-                },
-                "total_records": {
-                    "type": "integer",
-                    "example": 351
-                }
-            }
-        },
-        "models.UnemploymentData": {
-            "type": "object",
-            "properties": {
-                "arbeitslose": {
-                    "type": "number",
-                    "example": 20749
-                },
-                "arbeitslose_previous_year": {
-                    "type": "number",
-                    "example": 18416
-                },
-                "arbeitslosenzahlen_pk": {
-                    "type": "string"
-                },
-                "geodata_id": {
-                    "type": "string",
-                    "example": "DE111"
-                },
-                "geodata_id_ars": {
-                    "type": "string",
-                    "example": "08111000"
-                },
-                "geodata_level": {
-                    "type": "string",
-                    "example": "NUTS_3"
-                },
-                "geodata_name": {
-                    "type": "string",
-                    "example": "Stuttgart, Stadtkreis"
-                },
-                "geodata_year": {
-                    "type": "integer",
-                    "example": 2021
-                },
-                "observation_date": {
-                    "type": "string",
-                    "example": "2024-01-01T00:00:00Z"
-                },
-                "year": {
-                    "type": "integer",
-                    "example": 2024
-                },
-                "yoy_change_percent": {
-                    "type": "number",
-                    "example": 12.67
                 }
             }
         },

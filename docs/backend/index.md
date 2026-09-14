@@ -22,7 +22,7 @@ Full details (git hooks, standard Go project layout) live in
 | `cmd/gen-models/` | code generator that produces Go models/handlers/routes from dbt schema YAMLs (see `handlers_soziodata_generated.go`, `models_soziodata_generated.go`) |
 | `internal/config/` | loads `.env` + validates required variables against `.env.example` |
 | `internal/routes/` | route definitions (`SetupRoutes`), CORS/logging middleware |
-| `internal/handlers/` | HTTP handlers per resource (LAU, NUTS, Geo, unemployment, metrics, generic socioeconomic data) |
+| `internal/handlers/` | HTTP handlers per resource (LAU, NUTS, Geo, Agenturbezirke, metrics, generic socioeconomic data) |
 | `internal/models/` | data models (partly generated from dbt schemas) |
 | `internal/pkg/` | shared internal helper packages |
 | `docs/` | generated Swagger spec (`swag init`) |

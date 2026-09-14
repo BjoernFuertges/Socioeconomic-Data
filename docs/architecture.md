@@ -25,13 +25,13 @@ from it, which are then served by the **backend**.
 
 ```mermaid
 flowchart LR
-    subgraph sources["Source data (data-exchange/1_friedrich-bjoern/)"]
+    subgraph sources["Source data"]
         direction TB
-        src_arb[/"arbeitslosenzahlen/\nmapped_pairs.csv\nmeta.json"/]
-        src_geo[/"geodata/lau/\nLAU_RG_*.geojson.gz"/]
-        src_pop[/"statistics/\nlau_population_*.csv"/]
-        src_bev[/"bevoelkerung/results_*/\nmapped_pairs.csv + meta.yaml"/]
-        src_sq[/"schuldnerquote/results_*/\nmapped_pairs.csv + meta.yaml"/]
+        src_arb[/"statistik.arbeitsagentur.de\n'Lange Zeitreihen' REST API\n(live, one call per Agenturbezirk)"/]
+        src_geo[/"data-exchange/1_friedrich-bjoern/\ngeodata/lau/LAU_RG_*.geojson.gz"/]
+        src_pop[/"data-exchange/1_friedrich-bjoern/\nstatistics/lau_population_*.csv"/]
+        src_bev[/"data-exchange/1_friedrich-bjoern/\nbevoelkerung/results_*/mapped_pairs.csv + meta.yaml"/]
+        src_sq[/"data-exchange/1_friedrich-bjoern/\nschuldnerquote/results_*/mapped_pairs.csv + meta.yaml"/]
     end
 
     subgraph dlt["dlt Pipelines"]
@@ -43,8 +43,8 @@ flowchart LR
 
     subgraph pg_loaded["PostgreSQL: Schema loaded_data"]
         direction TB
-        t_arb[("arbeitslosenzahlen_\nagentur_arbeit")]
-        t_meta[("arbeitslosenzahlen_\nmetadata")]
+        t_arb[("results_arbeitslosenzahlen_\nafa_agenturbezirke")]
+        t_meta[("dataset_metadata")]
         t_geo[("lau_geometry")]
         t_pop[("lau_population")]
         t_bev[("results_bevoelkerung_\nkreise")]
@@ -54,14 +54,15 @@ flowchart LR
     subgraph pg_transformed["PostgreSQL: Schema transformed_data"]
         direction TB
         subgraph stg["Staging (Views)"]
-            stg_arb["stg_arbeitslosenzahlen"]
+            stg_arb["stg_arbeitslosenzahlen_\nafa_agenturbezirke"]
+            stg_ageo["stg_agenturbezirk_geometry"]
             stg_geo["stg_lau_geometry"]
             stg_pop["stg_lau_population"]
             stg_bev["stg_bevoelkerung_kreise"]
             stg_sq["stg_schuldnerquote_kreise"]
         end
         subgraph marts["Marts (Tables)"]
-            mart_arb["mart_arbeitslosenzahlen"]
+            mart_arb["mart_agenturbezirk_\nsociodata"]
             mart_lau["lau_integrated"]
             mart_dq["lau_data_quality"]
         end
@@ -83,12 +84,21 @@ flowchart LR
     t_bev --> stg_bev
     t_sq --> stg_sq
 
-    stg_arb & t_meta --> mart_arb
+    stg_arb & stg_ageo --> mart_arb
     stg_geo & stg_pop --> mart_lau
     mart_lau --> mart_dq
 
     mart_arb & mart_lau & mart_dq --> api
 ```
+
+`load_arbeitslosenzahlen_afa.py` is the one dlt script whose "source data"
+is not a file at all: it fetches directly from a live, public REST API on
+every pipeline run (see [pipeline/dlt.md](pipeline/dlt.md)), which is why
+this dataset stays current automatically while the file-based ones need a
+new export dropped into `data-exchange/` to refresh. Its Agenturbezirk
+geometry counterpart (`load_agenturbezirke_geodata.py` /
+`stg_agenturbezirk_geometry`) is omitted above for brevity - same shape as
+the LAU/NUTS geometry lane.
 
 Details on each step:
 

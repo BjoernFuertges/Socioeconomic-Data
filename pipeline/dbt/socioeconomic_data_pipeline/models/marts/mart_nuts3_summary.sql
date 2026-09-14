@@ -13,7 +13,6 @@
   da die zeitliche Abdeckung variiert.
 
   Nur Datensätze mit has_valid_value = true werden einbezogen.
-  Das mart_arbeitslosenzahlen enthält bereits ausschließlich jahresbezogene Datensätze.
 */
 
 with bevoelkerung as (
@@ -36,16 +35,6 @@ schuldnerquote as (
         schuldnerquote_prozent
     from {{ ref('stg_schuldnerquote_kreise') }}
     where has_valid_value = true
-),
-
-arbeitslos as (
-    select
-        geodata_id,
-        geodata_name,
-        year,
-        arbeitslose,
-        yoy_change_percent
-    from {{ ref('mart_arbeitslosenzahlen') }}
 ),
 
 arbeitslose_kreise as (
@@ -141,8 +130,6 @@ select
     n.geodata_id_ars,
     n.bevoelkerung,
     n.schuldnerquote_prozent,
-    a.arbeitslose,
-    a.yoy_change_percent,
     ak.arbeitslose_kreise,
     av.arbeitsvolumen,
     bv.bruttoverdienst,
@@ -152,9 +139,6 @@ select
     bq.beschaeftigungsquote_prozent,
     bq.beschaeftigungsquote_median
 from nuts_base n
-left join arbeitslos a
-    on  a.geodata_id = n.nuts_id
-    and a.year       = n.year
 left join arbeitslose_kreise ak
     on  ak.geodata_id_nuts = n.nuts_id
     and ak.year            = n.year
