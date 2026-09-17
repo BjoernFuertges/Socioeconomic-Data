@@ -3,11 +3,13 @@ import { computed } from "vue";
 import type { GenericDatasetRow, TimeseriesPoint } from "../types/api";
 import { formatCell, formatNumber } from "../format";
 
-// Entweder `points` (Zeitreihen-Tabelle mit fixen Spalten inkl. Interpolations-
-// Status) oder `rows` (generische Fallback-Tabelle für Datensätze ohne
-// /timeseries-Unterstützung) übergeben.
+// Entweder `points` (Jahreszeitreihe mit Interpolationsstatus, NUTS/LAU),
+// `periodRows` (Monats-/Periodenreihe ohne Interpolation, z.B.
+// Agenturbezirke) oder `rows` (generische Fallback-Tabelle für Datensätze
+// ohne /timeseries-Unterstützung) übergeben.
 const props = defineProps<{
   points?: TimeseriesPoint[];
+  periodRows?: { label: string; arbeitslose: number | null; unterbeschaeftigung: number | null }[];
   rows?: GenericDatasetRow[];
 }>();
 
@@ -48,6 +50,23 @@ const columns = computed(() => {
                 : "–"
             }}
           </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table v-else-if="periodRows" class="data-table">
+      <thead>
+        <tr>
+          <th>Periode</th>
+          <th>Arbeitslose</th>
+          <th>Unterbeschäftigung</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="row in periodRows" :key="row.label">
+          <td>{{ row.label }}</td>
+          <td>{{ row.arbeitslose !== null ? formatNumber(row.arbeitslose) : "–" }}</td>
+          <td>{{ row.unterbeschaeftigung !== null ? formatNumber(row.unterbeschaeftigung) : "–" }}</td>
         </tr>
       </tbody>
     </table>

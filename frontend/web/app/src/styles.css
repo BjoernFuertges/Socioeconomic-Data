@@ -150,6 +150,14 @@ body {
   display: none;
 }
 
+.region-type-switch {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.9rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.6rem;
+}
+
 .browser-layout {
   display: grid;
   grid-template-columns: minmax(220px, 320px) 1fr;

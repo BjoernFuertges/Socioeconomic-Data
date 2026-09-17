@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { apiGet, API_BASE } from "./api/client";
-import NutsBrowser from "./components/NutsBrowser.vue";
-import LauBrowser from "./components/LauBrowser.vue";
+import RegionBrowser from "./components/RegionBrowser.vue";
 import MapView from "./components/MapView.vue";
 
 const docsUrl = import.meta.env.VITE_DOCS_URL ?? "";
 
-type ViewKey = "nuts" | "lau" | "karte";
-const activeView = ref<ViewKey>("nuts");
+type ViewKey = "regionen" | "karte";
+const activeView = ref<ViewKey>("regionen");
 
 const apiStatus = ref<{ message: string; isError: boolean } | null>(null);
 
@@ -32,22 +31,12 @@ onMounted(async () => {
         <button
           type="button"
           class="nav-tab"
-          :class="{ 'is-active': activeView === 'nuts' }"
+          :class="{ 'is-active': activeView === 'regionen' }"
           role="tab"
-          :aria-selected="activeView === 'nuts'"
-          @click="activeView = 'nuts'"
+          :aria-selected="activeView === 'regionen'"
+          @click="activeView = 'regionen'"
         >
-          NUTS-3 Regionen
-        </button>
-        <button
-          type="button"
-          class="nav-tab"
-          :class="{ 'is-active': activeView === 'lau' }"
-          role="tab"
-          :aria-selected="activeView === 'lau'"
-          @click="activeView = 'lau'"
-        >
-          Gemeinden (LAU)
+          Regionen
         </button>
         <button
           type="button"
@@ -69,12 +58,8 @@ onMounted(async () => {
       {{ apiStatus.message }}
     </p>
 
-    <section v-show="activeView === 'nuts'" class="view" :class="{ 'is-active': activeView === 'nuts' }">
-      <NutsBrowser />
-    </section>
-
-    <section v-show="activeView === 'lau'" class="view" :class="{ 'is-active': activeView === 'lau' }">
-      <LauBrowser />
+    <section v-show="activeView === 'regionen'" class="view" :class="{ 'is-active': activeView === 'regionen' }">
+      <RegionBrowser />
     </section>
 
     <section v-show="activeView === 'karte'" class="view" :class="{ 'is-active': activeView === 'karte' }">

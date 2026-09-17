@@ -10,6 +10,12 @@ export function formatDateDE(value: string): string {
   return `${day}.${month}.${year}`;
 }
 
+// "MM/YYYY" für Monatszeitreihen (z.B. Agenturbezirke), analog zur
+// Jahresdarstellung bei NUTS/LAU.
+export function formatMonthLabel(year: number, month: number): string {
+  return `${String(month).padStart(2, "0")}/${year}`;
+}
+
 export function formatNumber(value: unknown): string {
   if (typeof value !== "number") return String(value);
   return value.toLocaleString("de-DE", { maximumFractionDigits: 2 });
