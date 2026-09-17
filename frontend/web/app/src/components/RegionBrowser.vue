@@ -6,6 +6,7 @@ import type {
   AgenturbezirkSummary,
   DatasetCatalogEntry,
   DatasetCatalogResponse,
+  DatasetMetadataEntry,
   LauRegion,
   NutsRegionSummary,
 } from "../types/api";
@@ -14,6 +15,12 @@ import RegionList from "./RegionList.vue";
 import DatasetPicker from "./DatasetPicker.vue";
 import TimeseriesChart from "./TimeseriesChart.vue";
 import DataTable from "./DataTable.vue";
+import DatasetInfo from "./DatasetInfo.vue";
+
+// Slug des ergänzenden Kreis-Level-Datensatzes "Arbeitslose" (INKAR/BBSR),
+// den der "Siehe auch"-Link im Agenturbezirk-Panel im NUTS-3-Datensatz-
+// Picker vorauswählt.
+const INKAR_ARBEITSLOSE_SLUG = "arbeitslose";
 
 type RegionType = "nuts" | "lau" | "agentur";
 const regionType = ref<RegionType>("nuts");
@@ -35,6 +42,10 @@ const nutsSearch = ref("");
 const selectedNuts = ref<NutsRegionSummary | null>(null);
 const nutsDatasets = ref<DatasetCatalogEntry[] | null>(null);
 const nutsDatasetsError = ref<string | null>(null);
+// Beim Sprung aus dem Agenturbezirk-Panel zum INKAR-Datensatz vorausgewählter
+// Slug für den DatasetPicker; bei normaler Regionsauswahl aus der Liste
+// bleibt er undefined (siehe selectNuts).
+const nutsDatasetInitialSlug = ref<string | undefined>(undefined);
 
 onMounted(async () => {
   try {
@@ -56,10 +67,11 @@ const nutsListItems = computed(() =>
   nutsFiltered.value.map((r) => ({ id: r.nuts_id, name: r.region_name, code: r.nuts_id })),
 );
 
-async function selectNuts(nutsId: string) {
+async function selectNuts(nutsId: string, initialSlug?: string) {
   const region = nutsRegions.value.find((r) => r.nuts_id === nutsId);
   if (!region) return;
   selectedNuts.value = region;
+  nutsDatasetInitialSlug.value = initialSlug;
   nutsDatasets.value = null;
   nutsDatasetsError.value = null;
   try {
@@ -166,6 +178,28 @@ const agenturPoints = ref<AgenturbezirkArbeitslosigkeitPoint[] | null>(null);
 const agenturPointsError = ref<string | null>(null);
 let agenturLoaded = false;
 
+// Herkunft/Lizenz/Beschreibung des AfA-Datensatzes - wie bei NUTS/LAU über
+// DatasetPicker/DatasetInfo, hier einmalig geladen (ein Datensatz für alle
+// Agenturbezirke, kein Wechsel wie bei DatasetPicker).
+const agenturMetadata = ref<DatasetMetadataEntry | null>(null);
+let agenturMetadataLoaded = false;
+
+async function loadAgenturMetadata() {
+  if (agenturMetadataLoaded) return;
+  agenturMetadataLoaded = true;
+  try {
+    const body = await apiGet<DatasetMetadataEntry>("/datasets/arbeitslosenzahlen-afa-agenturbezirke");
+    agenturMetadata.value = body.data ?? null;
+  } catch {
+    // Kein Katalogeintrag - Anzeige bleibt beim statischen Hinweistext.
+  }
+}
+
+// Checkboxen über dem Chart: beide Metriken standardmäßig sichtbar, die
+// Tabelle zeigt unabhängig davon immer beide Spalten.
+const showArbeitslose = ref(true);
+const showUnterbeschaeftigung = ref(true);
+
 async function loadAgenturbezirke() {
   if (agenturLoaded) return;
   agenturLoaded = true;
@@ -175,6 +209,7 @@ async function loadAgenturbezirke() {
   } catch (err) {
     agenturLoadError.value = err instanceof Error ? err.message : String(err);
   }
+  loadAgenturMetadata();
 }
 
 watch(
@@ -210,14 +245,32 @@ async function selectAgentur(baSchl: string) {
   }
 }
 
-// arbeitslose ist die Leitmetrik im Chart (analog zum einwertigen
-// Chart-Prop anderer Datensätze); die Tabelle zeigt zusätzlich
-// Unterbeschäftigung.
-const agenturChartPoints = computed(() => {
+// Chart zeigt beide Metriken als eigene Serie, je nach Checkbox-Status
+// ein-/ausblendbar; die Tabelle zeigt unabhängig davon immer beide Spalten.
+const agenturChartSeries = computed(() => {
   if (!agenturPoints.value) return [];
-  return agenturPoints.value
-    .map((p) => ({ label: formatMonthLabel(p.year, p.month), value: unwrapNull(p.arbeitslose) }))
-    .filter((p): p is { label: string; value: number } => p.value !== null);
+  const series: { key: string; label: string; points: { label: string; value: number | null }[] }[] = [];
+  if (showArbeitslose.value) {
+    series.push({
+      key: "arbeitslose",
+      label: "Arbeitslose",
+      points: agenturPoints.value.map((p) => ({
+        label: formatMonthLabel(p.year, p.month),
+        value: unwrapNull(p.arbeitslose),
+      })),
+    });
+  }
+  if (showUnterbeschaeftigung.value) {
+    series.push({
+      key: "unterbeschaeftigung",
+      label: "Unterbeschäftigung",
+      points: agenturPoints.value.map((p) => ({
+        label: formatMonthLabel(p.year, p.month),
+        value: unwrapNull(p.unterbeschaeftigung),
+      })),
+    });
+  }
+  return series;
 });
 const agenturTableRows = computed(() => {
   if (!agenturPoints.value) return [];
@@ -231,6 +284,23 @@ const agenturLatest = computed(() => {
   if (!agenturPoints.value || !agenturPoints.value.length) return null;
   return agenturPoints.value[agenturPoints.value.length - 1];
 });
+
+// nuts3_id ist eine räumliche Schätzung (siehe int_agentur_nuts3_spatial_link
+// im dbt-Projekt), keine amtliche Zuordnung - Regionsname kommt aus der
+// beim Mount bereits geladenen NUTS-3-Liste (kein Zusatz-Request nötig, da
+// deren onMounted-Fetch unabhängig vom aktiven Gebietstyp läuft).
+const agenturNuts3Region = computed(() => {
+  const nuts3Id = selectedAgentur.value ? unwrapNull(selectedAgentur.value.nuts3_id) : null;
+  if (!nuts3Id) return null;
+  return nutsRegions.value.find((r) => r.nuts_id === nuts3Id) ?? null;
+});
+
+function jumpToInkarArbeitslose() {
+  const nuts3Id = agenturNuts3Region.value?.nuts_id;
+  if (!nuts3Id) return;
+  switchRegionType("nuts");
+  selectNuts(nuts3Id, INKAR_ARBEITSLOSE_SLUG);
+}
 </script>
 
 <template>
@@ -283,7 +353,13 @@ const agenturLatest = computed(() => {
           <p v-else-if="!nutsDatasets.length" class="hint">
             Für diese Region sind keine sozioökonomischen Datensätze verfügbar.
           </p>
-          <DatasetPicker v-else :key="selectedNuts.nuts_id" :datasets="nutsDatasets" :nuts-code="selectedNuts.nuts_id" />
+          <DatasetPicker
+            v-else
+            :key="selectedNuts.nuts_id"
+            :datasets="nutsDatasets"
+            :nuts-code="selectedNuts.nuts_id"
+            :initial-slug="nutsDatasetInitialSlug"
+          />
         </template>
       </div>
     </div>
@@ -375,6 +451,16 @@ const agenturLatest = computed(() => {
             Monatliche Arbeitslosen-/Unterbeschäftigungszahlen der Bundesagentur für Arbeit (Agenturbezirke sind
             eine eigenständige Gebietsgliederung, nicht deckungsgleich mit NUTS-3/LAU).
           </p>
+          <p v-if="agenturNuts3Region" class="hint">
+            Auf Kreisebene gibt es zusätzlich die INKAR-Arbeitslosenzahlen für
+            <button type="button" class="link-button" @click="jumpToInkarArbeitslose">
+              {{ agenturNuts3Region.region_name }} ({{ agenturNuts3Region.nuts_id }})
+            </button>
+            – räumlich am nächsten liegende NUTS-3-Region, nicht deckungsgleich mit diesem Agenturbezirk.
+          </p>
+
+          <DatasetInfo v-if="agenturMetadata" :metadata="agenturMetadata" />
+
           <p v-if="agenturPointsError" class="error-text">Fehler: {{ agenturPointsError }}</p>
           <p v-else-if="agenturPoints === null" class="hint">Lade Zeitreihe…</p>
           <p v-else-if="!agenturPoints.length" class="hint">Keine Werte für diesen Agenturbezirk vorhanden.</p>
@@ -382,7 +468,12 @@ const agenturLatest = computed(() => {
             <p v-if="agenturLatest" class="hint">
               Neuester Berichtsmonat: {{ formatMonthLabel(agenturLatest.year, agenturLatest.month) }}
             </p>
-            <TimeseriesChart :period-points="agenturChartPoints" />
+            <fieldset class="metric-toggle">
+              <legend class="visually-hidden">Anzuzeigende Metriken</legend>
+              <label><input v-model="showArbeitslose" type="checkbox" /> Arbeitslose</label>
+              <label><input v-model="showUnterbeschaeftigung" type="checkbox" /> Unterbeschäftigung</label>
+            </fieldset>
+            <TimeseriesChart :period-series="agenturChartSeries" />
             <DataTable :period-rows="agenturTableRows" />
           </template>
         </template>

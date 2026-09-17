@@ -63,9 +63,27 @@ export interface AgenturbezirkSummary {
   has_valid_geometry?: boolean;
   valid_from?: string | null;
   valid_to?: string | null;
+  // Räumliche Schätzung (größte Schnittfläche), keine amtliche Zuordnung -
+  // siehe int_agentur_nuts3_spatial_link.sql.
+  nuts3_id?: string | null;
 }
 
 export interface AgenturbezirkArbeitslosigkeitPoint {
+  year: number;
+  month: number;
+  observation_date: string;
+  arbeitslose?: Nullable<number>;
+  unterbeschaeftigung?: Nullable<number>;
+}
+
+// Ein Agenturbezirk mit Geometrie und dem jeweils neuesten Berichtsmonat -
+// für die Kartendarstellung (GET /agenturbezirke/latest).
+export interface AgenturbezirkLatestValue {
+  ba_schl: string;
+  name: string;
+  geometry_wgs84?: GeoJSON.Geometry | null;
+  has_valid_geometry?: boolean;
+  nuts3_id?: string | null;
   year: number;
   month: number;
   observation_date: string;

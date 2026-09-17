@@ -15,9 +15,15 @@ import DatasetInfo from "./DatasetInfo.vue";
 const props = defineProps<{
   datasets: DatasetCatalogEntry[];
   nutsCode: string;
+  // Slug, der beim ersten Anzeigen vorausgewählt sein soll (z.B. beim Sprung
+  // aus dem Agenturbezirk-Panel zum passenden INKAR-Datensatz), statt des
+  // sonst üblichen ersten Eintrags. Ignoriert, falls kein Datensatz mit
+  // diesem Slug verfügbar ist.
+  initialSlug?: string;
 }>();
 
-const selectedSlug = ref(props.datasets[0]?.route_slug ?? "");
+const initialDataset = props.datasets.find((ds) => ds.route_slug === props.initialSlug);
+const selectedSlug = ref(initialDataset?.route_slug ?? props.datasets[0]?.route_slug ?? "");
 const loading = ref(false);
 const error = ref<string | null>(null);
 const result = ref<{ kind: "timeseries"; points: NutsTimeseriesPoint[] } | { kind: "raw"; rows: GenericDatasetRow[] } | null>(

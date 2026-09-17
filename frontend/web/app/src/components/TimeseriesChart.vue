@@ -3,13 +3,25 @@ import { onMounted, ref, watch } from "vue";
 import type { TimeseriesPoint } from "../types/api";
 import { formatNumber } from "../format";
 
+type PeriodSeries = {
+  key: string;
+  label: string;
+  points: { label: string; value: number | null }[];
+};
+
 // Entweder `points` (Jahreszeitreihe mit Interpolationsstatus, NUTS/LAU)
-// oder `periodPoints` (einfache Monats-/Periodenreihe ohne Interpolation,
-// z.B. Agenturbezirke) übergeben.
+// oder `periodSeries` (eine oder mehrere Monats-/Periodenreihen ohne
+// Interpolation, z.B. Agenturbezirk Arbeitslose/Unterbeschäftigung)
+// übergeben. Alle Serien in `periodSeries` müssen dieselbe Periodenraster-
+// Länge/-Reihenfolge teilen (Werte dürfen `null` sein, wo eine Serie an
+// dieser Periode keinen Wert hat) - die x-Achse wird über den Index
+// positioniert, nicht über das Label.
 const props = defineProps<{
   points?: TimeseriesPoint[];
-  periodPoints?: { label: string; value: number }[];
+  periodSeries?: PeriodSeries[];
 }>();
+
+const SERIES_COLORS = ["var(--series-1)", "var(--series-2)"];
 
 const svgRef = ref<SVGSVGElement | null>(null);
 const tooltip = ref<{ visible: boolean; x: number; y: number; rows: [string, string | number][] }>({
@@ -45,22 +57,25 @@ function hideTooltip() {
   tooltip.value.visible = false;
 }
 
-function showPeriodTooltip(evt: MouseEvent, point: { label: string; value: number }) {
-  tooltip.value = {
-    visible: true,
-    x: evt.clientX + 12,
-    y: evt.clientY + 12,
-    rows: [
-      ["Periode", point.label],
-      ["Wert", formatNumber(point.value)],
-    ],
-  };
+// Tooltip zeigt die Werte ALLER sichtbaren Serien an der gehoverten
+// Periode (nicht nur der Serie, deren Marker gehovert wurde) - so bleiben
+// z.B. Arbeitslose/Unterbeschäftigung an derselben Periode vergleichbar.
+function showPeriodTooltip(evt: MouseEvent, idx: number, series: PeriodSeries[]) {
+  const label = series[0]?.points[idx]?.label ?? "";
+  const rows: [string, string | number][] = [["Periode", label]];
+  for (const s of series) {
+    const value = s.points[idx]?.value;
+    rows.push([s.label, value !== null && value !== undefined ? formatNumber(value) : "–"]);
+  }
+  tooltip.value = { visible: true, x: evt.clientX + 12, y: evt.clientY + 12, rows };
 }
 
-// Einfache, indexbasierte Linienchart-Variante für Perioden-Reihen (z.B.
-// Agenturbezirk-Monatswerte) ohne Interpolationsstatus.
-function drawPeriodChart(svg: SVGSVGElement, points: { label: string; value: number }[]) {
-  if (!points.length) return;
+// Einfache, indexbasierte Linienchart-Variante für eine oder mehrere
+// Perioden-Reihen (z.B. Agenturbezirk-Monatswerte) ohne Interpolationsstatus.
+function drawPeriodChart(svg: SVGSVGElement, series: PeriodSeries[]) {
+  const visible = series.filter((s) => s.points.length);
+  if (!visible.length) return;
+  const periodCount = visible[0].points.length;
 
   const padding = { top: 16, right: 16, bottom: 28, left: 72 };
   const width = 640;
@@ -68,9 +83,10 @@ function drawPeriodChart(svg: SVGSVGElement, points: { label: string; value: num
   const plotW = width - padding.left - padding.right;
   const plotH = height - padding.top - padding.bottom;
 
-  const values = points.map((p) => p.value);
-  let minValue = Math.min(...values);
-  let maxValue = Math.max(...values);
+  const allValues = visible.flatMap((s) => s.points.map((p) => p.value).filter((v): v is number => v !== null));
+  if (!allValues.length) return;
+  let minValue = Math.min(...allValues);
+  let maxValue = Math.max(...allValues);
   if (minValue === maxValue) {
     minValue -= 1;
     maxValue += 1;
@@ -80,8 +96,8 @@ function drawPeriodChart(svg: SVGSVGElement, points: { label: string; value: num
   maxValue += valuePad;
 
   function xFor(idx: number) {
-    if (points.length <= 1) return padding.left + plotW / 2;
-    return padding.left + (idx / (points.length - 1)) * plotW;
+    if (periodCount <= 1) return padding.left + plotW / 2;
+    return padding.left + (idx / (periodCount - 1)) * plotW;
   }
   function yFor(value: number) {
     return padding.top + plotH - ((value - minValue) / (maxValue - minValue)) * plotH;
@@ -119,48 +135,62 @@ function drawPeriodChart(svg: SVGSVGElement, points: { label: string; value: num
   baseline.setAttribute("stroke-width", "1");
   svg.appendChild(baseline);
 
-  [0, Math.floor(points.length / 2), points.length - 1].forEach((idx) => {
-    if (idx < 0 || idx >= points.length) return;
+  [0, Math.floor(periodCount / 2), periodCount - 1].forEach((idx) => {
+    if (idx < 0 || idx >= periodCount) return;
     const text = document.createElementNS(svgNS, "text");
     text.setAttribute("x", String(xFor(idx)));
     text.setAttribute("y", String(height - padding.bottom + 18));
     text.setAttribute("text-anchor", "middle");
     text.setAttribute("font-size", "10");
     text.setAttribute("fill", "var(--text-muted)");
-    text.textContent = points[idx].label;
+    text.textContent = visible[0].points[idx].label;
     svg.appendChild(text);
   });
 
-  const pathData = points.map((p, i) => `${i === 0 ? "M" : "L"}${xFor(i)} ${yFor(p.value)}`).join(" ");
-  const path = document.createElementNS(svgNS, "path");
-  path.setAttribute("d", pathData);
-  path.setAttribute("fill", "none");
-  path.setAttribute("stroke", "var(--series-1)");
-  path.setAttribute("stroke-width", "2");
-  path.setAttribute("stroke-linecap", "round");
-  path.setAttribute("stroke-linejoin", "round");
-  svg.appendChild(path);
+  visible.forEach((s, seriesIdx) => {
+    const color = SERIES_COLORS[seriesIdx % SERIES_COLORS.length];
 
-  points.forEach((p, i) => {
-    const cx = xFor(i);
-    const cy = yFor(p.value);
-    const circle = document.createElementNS(svgNS, "circle");
-    circle.setAttribute("cx", String(cx));
-    circle.setAttribute("cy", String(cy));
-    circle.setAttribute("r", "3");
-    circle.setAttribute("fill", "var(--series-1)");
-    svg.appendChild(circle);
+    // Pfad überspringt null-Werte (Lücke in der Linie statt falscher
+    // Interpolation über eine fehlende Periode hinweg).
+    let pathData = "";
+    s.points.forEach((p, i) => {
+      if (p.value === null) return;
+      const startsSegment = i === 0 || s.points[i - 1].value === null;
+      pathData += `${startsSegment ? "M" : "L"}${xFor(i)} ${yFor(p.value)} `;
+    });
+    if (pathData) {
+      const path = document.createElementNS(svgNS, "path");
+      path.setAttribute("d", pathData.trim());
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", color);
+      path.setAttribute("stroke-width", "2");
+      path.setAttribute("stroke-linecap", "round");
+      path.setAttribute("stroke-linejoin", "round");
+      svg.appendChild(path);
+    }
 
-    const hitTarget = document.createElementNS(svgNS, "circle");
-    hitTarget.setAttribute("cx", String(cx));
-    hitTarget.setAttribute("cy", String(cy));
-    hitTarget.setAttribute("r", "8");
-    hitTarget.setAttribute("fill", "transparent");
-    hitTarget.style.cursor = "pointer";
-    hitTarget.addEventListener("mouseenter", (evt) => showPeriodTooltip(evt, p));
-    hitTarget.addEventListener("mousemove", (evt) => showPeriodTooltip(evt, p));
-    hitTarget.addEventListener("mouseleave", hideTooltip);
-    svg.appendChild(hitTarget);
+    s.points.forEach((p, i) => {
+      if (p.value === null) return;
+      const cx = xFor(i);
+      const cy = yFor(p.value);
+      const circle = document.createElementNS(svgNS, "circle");
+      circle.setAttribute("cx", String(cx));
+      circle.setAttribute("cy", String(cy));
+      circle.setAttribute("r", "3");
+      circle.setAttribute("fill", color);
+      svg.appendChild(circle);
+
+      const hitTarget = document.createElementNS(svgNS, "circle");
+      hitTarget.setAttribute("cx", String(cx));
+      hitTarget.setAttribute("cy", String(cy));
+      hitTarget.setAttribute("r", "8");
+      hitTarget.setAttribute("fill", "transparent");
+      hitTarget.style.cursor = "pointer";
+      hitTarget.addEventListener("mouseenter", (evt) => showPeriodTooltip(evt, i, visible));
+      hitTarget.addEventListener("mousemove", (evt) => showPeriodTooltip(evt, i, visible));
+      hitTarget.addEventListener("mouseleave", hideTooltip);
+      svg.appendChild(hitTarget);
+    });
   });
 }
 
@@ -169,8 +199,8 @@ function drawChart() {
   if (!svg) return;
   while (svg.firstChild) svg.removeChild(svg.firstChild);
 
-  if (props.periodPoints) {
-    drawPeriodChart(svg, props.periodPoints);
+  if (props.periodSeries) {
+    drawPeriodChart(svg, props.periodSeries);
     return;
   }
 
@@ -295,16 +325,21 @@ function drawChart() {
 }
 
 onMounted(drawChart);
-watch(() => [props.points, props.periodPoints], drawChart, { deep: true });
+watch(() => [props.points, props.periodSeries], drawChart, { deep: true });
 </script>
 
 <template>
   <div class="chart-wrap">
     <svg ref="svgRef" viewBox="0 0 640 260" preserveAspectRatio="none"></svg>
   </div>
-  <p v-if="!periodPoints" class="chart-caption">
+  <p v-if="!periodSeries" class="chart-caption">
     <span><span class="marker marker-observed"></span>beobachtet</span>
     <span><span class="marker marker-interpolated"></span>interpoliert</span>
+  </p>
+  <p v-else-if="periodSeries.length" class="chart-caption">
+    <span v-for="(s, i) in periodSeries" :key="s.key">
+      <span class="marker" :style="{ backgroundColor: SERIES_COLORS[i % SERIES_COLORS.length] }"></span>{{ s.label }}
+    </span>
   </p>
   <div v-if="tooltip.visible" class="chart-tooltip" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">
     <dl>
