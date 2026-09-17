@@ -424,6 +424,8 @@ models:
         description: "Gültig-ab-Datum der Grenzen laut Shapefile"
       - name: valid_to
         description: "Gültig-bis-Datum der Grenzen laut Shapefile"
+      - name: nuts3_id
+        description: "NUTS-3-Region mit der größten geometrischen Schnittfläche eine räumliche Schätzung, keine amtliche Zuordnung. Verweist auf den ergänzenden Kreis-Level-Datensatz 'Arbeitslose'."
       - name: year
         description: "Jahr des Berichtsmonats (null, falls für diesen Bezirk keine Werte geladen werden konnten)"
       - name: month
@@ -434,3 +436,36 @@ models:
         description: "Anzahl Arbeitsloser im Berichtsmonat, null wenn statistisch gesperrt"
       - name: unterbeschaeftigung
         description: "Unterbeschäftigung (ohne Kurzarbeit) im Berichtsmonat, null wenn statistisch gesperrt"
+
+  - name: mart_agenturbezirk_latest
+    description: "Eine Zeile je Agenturbezirk mit dem jeweils neuesten Berichtsmonat (arbeitslose/unterbeschaeftigung) - für die Kartendarstellung, da es (anders als für NUTS/LAU) noch keine Zeitreihen-/Interpolations-Mart für Agenturbezirke gibt."
+    columns:
+      - name: ba_schl
+        description: "Amtlicher BA-Schlüssel des Agenturbezirks"
+        tests:
+          - not_null
+          - unique
+      - name: name
+        description: "Name des Agenturbezirks"
+      - name: geometry_wgs84
+        description: "GeoJSON-Geometrie in WGS84 (EPSG:4326)"
+      - name: has_valid_geometry
+        description: "true, wenn eine nicht-leere Geometrie vorhanden ist"
+      - name: valid_from
+        description: "Gültig-ab-Datum der Grenzen laut Shapefile"
+      - name: valid_to
+        description: "Gültig-bis-Datum der Grenzen laut Shapefile"
+      - name: nuts3_id
+        description: "NUTS-3-Region mit der größten geometrischen Schnittfläche - räumliche Schätzung"
+      - name: year
+        description: "Jahr des neuesten Berichtsmonats"
+        tests:
+          - not_null
+      - name: month
+        description: "Monat des neuesten Berichtsmonats (1-12)"
+      - name: observation_date
+        description: "Beobachtungsdatum (01. des neuesten Berichtsmonats)"
+      - name: arbeitslose
+        description: "Anzahl Arbeitsloser im neuesten Berichtsmonat, null wenn statistisch gesperrt"
+      - name: unterbeschaeftigung
+        description: "Unterbeschäftigung (ohne Kurzarbeit) im neuesten Berichtsmonat, null wenn statistisch gesperrt"

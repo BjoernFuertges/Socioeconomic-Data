@@ -24,9 +24,11 @@
     bewusst KEINE neue künstliche Zufalls-/Sequence-ID. Sie ändert sich nur,
     wenn der Slug selbst umbenannt wird.
 
-  Datensätze ohne meta.yaml-Eintrag (aktuell: die AfA-Arbeitslosenzahlen,
-  die einen eigenen, älteren Metadaten-Mechanismus haben) sind hier bewusst NICHT
-  enthalten
+  Enthält jeden Datensatz, dessen Loader eine loaded_data.dataset_metadata-
+  Zeile upserted - das schließt neben den meta.yaml-basierten Kreis-/
+  Gemeinden-Datensätzen (load_soziodata_generic.py) auch
+  arbeitslosenzahlen-afa-agenturbezirke ein (eigener Upsert in
+  load_arbeitslosenzahlen_afa.py, gleicher Mechanismus, siehe stg_dataset_metadata.sql).
 */
 
 with metadata as (

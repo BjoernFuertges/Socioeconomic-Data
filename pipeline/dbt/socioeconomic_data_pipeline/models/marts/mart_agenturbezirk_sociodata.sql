@@ -17,6 +17,11 @@
   NUTS/LAU) kein Versions-Crosswalk nötig - einfacher Join von Geometrie
   und Werten über ba_schl. Dient sowohl der Agenturbezirk-Liste (distinct
   ba_schl/name/geometry) als auch der Monatszeitreihe pro Bezirk.
+
+  nuts3_id kommt aus int_agentur_nuts3_spatial_link (größte Schnittfläche) -
+  eine räumliche Schätzung, keine amtliche Zuordnung, dient als Verweis auf
+  den ergänzenden Kreis-Level-Datensatz "Arbeitslose" (INKAR/BBSR,
+  arbeitslose_kreise in mart_nuts3_summary).
 */
 
 with geometry as (
@@ -27,6 +32,10 @@ sociodata as (
     select * from {{ ref('stg_arbeitslosenzahlen_afa_agenturbezirke') }}
 ),
 
+nuts3_link as (
+    select * from {{ ref('int_agentur_nuts3_spatial_link') }}
+),
+
 final as (
     select
         g.ba_schl,
@@ -35,6 +44,7 @@ final as (
         g.has_valid_geometry,
         g.valid_from,
         g.valid_to,
+        x.nuts_id as nuts3_id,
         s.year,
         s.month,
         s.observation_date,
@@ -42,6 +52,7 @@ final as (
         s.unterbeschaeftigung
     from geometry g
     left join sociodata s on s.geodata_id_agentur = g.ba_schl
+    left join nuts3_link x on x.ba_schl = g.ba_schl
 )
 
 select * from final
