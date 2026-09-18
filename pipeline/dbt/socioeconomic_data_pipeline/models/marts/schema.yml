@@ -424,8 +424,6 @@ models:
         description: "Gültig-ab-Datum der Grenzen laut Shapefile"
       - name: valid_to
         description: "Gültig-bis-Datum der Grenzen laut Shapefile"
-      - name: nuts3_id
-        description: "NUTS-3-Region mit der größten geometrischen Schnittfläche eine räumliche Schätzung, keine amtliche Zuordnung. Verweist auf den ergänzenden Kreis-Level-Datensatz 'Arbeitslose'."
       - name: year
         description: "Jahr des Berichtsmonats (null, falls für diesen Bezirk keine Werte geladen werden konnten)"
       - name: month
@@ -455,8 +453,6 @@ models:
         description: "Gültig-ab-Datum der Grenzen laut Shapefile"
       - name: valid_to
         description: "Gültig-bis-Datum der Grenzen laut Shapefile"
-      - name: nuts3_id
-        description: "NUTS-3-Region mit der größten geometrischen Schnittfläche - räumliche Schätzung"
       - name: year
         description: "Jahr des neuesten Berichtsmonats"
         tests:
@@ -469,3 +465,27 @@ models:
         description: "Anzahl Arbeitsloser im neuesten Berichtsmonat, null wenn statistisch gesperrt"
       - name: unterbeschaeftigung
         description: "Unterbeschäftigung (ohne Kurzarbeit) im neuesten Berichtsmonat, null wenn statistisch gesperrt"
+
+  - name: mart_agentur_nuts3_crosswalk
+    description: "n:m-Zuordnung Agenturbezirk <-> NUTS-3-Region mit Flächenanteil in beide Richtungen (Agenturbezirke bestehen i.d.R. aus einem oder mehreren ganzen Kreisen, Ausnahme Berlin: 3 Agenturbezirke teilen sich einen Kreis). Räumliche Schätzung, keine amtliche Zuordnung. Es wird nur nach Fläche und nicht nach Bevölkerung zugeordnet. Verweist auf den ergänzenden Kreis-Level-Datensatz 'Arbeitslose'."
+    columns:
+      - name: ba_schl
+        description: "Amtlicher BA-Schlüssel des Agenturbezirks"
+        tests:
+          - not_null
+      - name: nuts_id
+        description: "NUTS-3-Code der überlappenden Region"
+        tests:
+          - not_null
+      - name: region_name
+        description: "Name der NUTS-3-Region"
+      - name: intersection_area_m2
+        description: "Geometrische Schnittfläche zwischen Agenturbezirk und NUTS-3-Region in m² (EPSG:3035)"
+      - name: agentur_area_m2
+        description: "Gesamtfläche des Agenturbezirks in m²"
+      - name: nuts3_area_m2
+        description: "Gesamtfläche der NUTS-3-Region in m²"
+      - name: area_share_of_agentur
+        description: "Anteil der Agenturbezirksfläche, der auf diese NUTS-3-Region entfällt (Zeilen eines Agenturbezirks summieren sich näherungsweise auf 1.0)"
+      - name: area_share_of_nuts3
+        description: "Anteil der NUTS-3-Fläche, der auf diesen Agenturbezirk entfällt (Zeilen einer NUTS-3-Region summieren sich näherungsweise auf 1.0)"

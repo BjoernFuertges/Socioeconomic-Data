@@ -36,7 +36,6 @@ select
     has_valid_geometry,
     valid_from,
     valid_to,
-    nuts3_id,
     year,
     month,
     observation_date,

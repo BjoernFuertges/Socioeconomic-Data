@@ -21,7 +21,7 @@ import (
 func (h *Handler) GetAgenturbezirke(c *gin.Context) {
 	query := `SELECT DISTINCT ON (ba_schl)
 		ba_schl, name, geometry_wgs84, has_valid_geometry,
-		valid_from::text as valid_from, valid_to::text as valid_to, nuts3_id
+		valid_from::text as valid_from, valid_to::text as valid_to
 		FROM transformed_data.mart_agenturbezirk_sociodata
 		ORDER BY ba_schl`
 
@@ -56,7 +56,7 @@ func (h *Handler) GetAgenturbezirkByID(c *gin.Context) {
 
 	query := `SELECT DISTINCT ON (ba_schl)
 		ba_schl, name, geometry_wgs84, has_valid_geometry,
-		valid_from::text as valid_from, valid_to::text as valid_to, nuts3_id
+		valid_from::text as valid_from, valid_to::text as valid_to
 		FROM transformed_data.mart_agenturbezirk_sociodata
 		WHERE ba_schl = $1`
 
@@ -130,7 +130,7 @@ func (h *Handler) GetAgenturbezirkArbeitslosigkeit(c *gin.Context) {
 // @Router /agenturbezirke/latest [get]
 func (h *Handler) GetAgenturbezirkeLatest(c *gin.Context) {
 	query := `SELECT
-		ba_schl, name, geometry_wgs84, has_valid_geometry, nuts3_id,
+		ba_schl, name, geometry_wgs84, has_valid_geometry,
 		year, month, observation_date::text as observation_date,
 		arbeitslose, unterbeschaeftigung
 		FROM transformed_data.mart_agenturbezirk_latest
@@ -147,6 +147,54 @@ func (h *Handler) GetAgenturbezirkeLatest(c *gin.Context) {
 		Data:    latest,
 		Meta: &models.MetaInfo{
 			Total: len(latest),
+		},
+	})
+}
+
+// GetAgenturbezirkNuts3 gibt die n:m-Zuordnung eines Agenturbezirks zu
+// überlappenden NUTS-3-Regionen zurück, mit Flächenanteil in beide
+// Richtungen - verweist auf den ergänzenden Kreis-Level-Datensatz
+// "Arbeitslose" (INKAR/BBSR).
+// @Summary NUTS-3-Zuordnung eines Agenturbezirks (Flächenanteile)
+// @Description Gibt die überlappenden NUTS-3-Regionen eines Agenturbezirks zurück, mit Flächenanteil in beide Richtungen. Agenturbezirke bestehen i.d.R. aus einem oder mehreren ganzen Kreisen (Ausnahme Berlin: 3 Agenturbezirke teilen sich einen Kreis) - eine räumliche Schätzung, keine amtliche Zuordnung.
+// @Tags Agenturbezirke
+// @Accept json
+// @Produce json
+// @Param ba_schl path string true "Amtlicher BA-Schlüssel des Agenturbezirks" example(962)
+// @Success 200 {object} models.APIResponse{data=[]models.AgenturNuts3Share}
+// @Failure 404 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /agenturbezirke/{ba_schl}/nuts3 [get]
+func (h *Handler) GetAgenturbezirkNuts3(c *gin.Context) {
+	baSchl := strings.TrimSpace(c.Param("ba_schl"))
+
+	var exists bool
+	if err := h.DB.Get(&exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_sociodata WHERE ba_schl = $1)`, baSchl); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+	if !exists {
+		respondNotFound(c, "Agenturbezirk nicht gefunden")
+		return
+	}
+
+	query := `SELECT
+		nuts_id, region_name, area_share_of_agentur, area_share_of_nuts3
+		FROM transformed_data.mart_agentur_nuts3_crosswalk
+		WHERE ba_schl = $1
+		ORDER BY area_share_of_agentur DESC`
+
+	shares := []models.AgenturNuts3Share{}
+	if err := h.DB.Select(&shares, query, baSchl); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    shares,
+		Meta: &models.MetaInfo{
+			Total: len(shares),
 		},
 	})
 }
