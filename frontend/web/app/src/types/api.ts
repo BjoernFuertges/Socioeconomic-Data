@@ -87,6 +87,16 @@ export interface AgenturbezirkLatestValue {
   unterbeschaeftigung?: Nullable<number>;
 }
 
+// Eine verfügbare (Jahr, Monat)-Kombination, für die Agenturbezirk-
+// Arbeitslosenzahlen vorliegen (GET /agenturbezirke/periods) - für die
+// Jahr/Monat-Auswahl in der Karte, analog zur Jahres-/Versionsauswahl bei
+// NUTS/LAU.
+export interface AgenturbezirkPeriod {
+  year: number;
+  month: number;
+  observation_date: string;
+}
+
 // n:m-Zuordnung Agenturbezirk <-> NUTS-3-Region mit Flächen-/
 // Bevölkerungsanteil in beide Richtungen (GET /agenturbezirke/{ba_schl}/nuts3).
 // Räumliche Schätzung, keine amtliche Zuordnung - Agenturbezirke bestehen

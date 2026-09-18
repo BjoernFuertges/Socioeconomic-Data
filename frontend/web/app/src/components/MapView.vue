@@ -5,13 +5,14 @@ import "leaflet/dist/leaflet.css";
 import { apiGet, unwrapNull } from "../api/client";
 import type {
   AgenturbezirkLatestValue,
+  AgenturbezirkPeriod,
   GeoRegionSummary,
   InventoryEntry,
   LauTimeseriesPoint,
   NutsTimeseriesPoint,
   TimeseriesPoint,
 } from "../types/api";
-import { formatDatasetLabel, formatNumber } from "../format";
+import { formatDatasetLabel, formatMonthLabel, formatNumber } from "../format";
 import {
   MAP_ONLY_FILL_DARK,
   MAP_ONLY_FILL_LIGHT,
@@ -41,19 +42,65 @@ const LAU_VERSIONS = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020
 type GeoType = "nuts" | "lau" | "agentur";
 
 // Agenturbezirke haben (anders als NUTS/LAU) keine Zeitreihen-/Interpolations-
-// Mart und keinen Datensatz-Slug - statt Datensatz+Jahr wählt man hier direkt
-// zwischen den zwei verfügbaren Metriken, immer für den jeweils neuesten
-// Berichtsmonat je Bezirk (siehe mart_agenturbezirk_latest.sql).
+// Mart, keinen Datensatz-Slug und keine Geometrie-Versionen (nur eine
+// aktuelle Grenzen-Vintage) - statt Datensatz+Version wählt man hier direkt
+// zwischen den zwei verfügbaren Metriken sowie Jahr+Monat (monatliche
+// Berichtsdaten, siehe mart_agenturbezirk_sociodata.sql).
 type AgenturMetric = "arbeitslose" | "unterbeschaeftigung";
 const AGENTUR_METRIC_LABELS: Record<AgenturMetric, string> = {
   arbeitslose: "Arbeitslose",
   unterbeschaeftigung: "Unterbeschäftigung",
 };
 const selectedAgenturMetric = ref<AgenturMetric>("arbeitslose");
-// Rohdaten von /agenturbezirke/latest (Geometrie + beide Metriken) - beim
-// Metrik-Wechsel wird daraus nur valuesByRegion neu abgeleitet, kein
-// erneuter Request nötig.
+// Rohdaten von /agenturbezirke/period (Geometrie + beide Metriken für den
+// gewählten Berichtsmonat) - beim Metrik-Wechsel wird daraus nur
+// valuesByRegion neu abgeleitet, kein erneuter Request nötig.
 const agenturLatestRaw = ref<AgenturbezirkLatestValue[]>([]);
+
+// Verfügbare Berichtsmonate (von /agenturbezirke/periods, neueste zuerst) -
+// füllt die Jahr/Monat-Auswahl für Agenturbezirke, analog zur Jahres-
+// /Versionsauswahl bei NUTS/LAU. Agenturbezirke führen nur eine aktuelle
+// Grenzen-Vintage (siehe mart_agenturbezirk_sociodata.sql), deshalb gibt es
+// hier - anders als NUTS-/LAU-Version - keine Versionsauswahl.
+const agenturPeriodsError = ref<string | null>(null);
+const agenturPeriods = ref<AgenturbezirkPeriod[]>([]);
+const selectedAgenturYear = ref<number | null>(null);
+const selectedAgenturMonth = ref<number | null>(null);
+let agenturPeriodsLoaded = false;
+// Verhindert, dass die Erstbefüllung von selectedAgenturYear/-Month (unten)
+// den watch([selectedAgenturYear, selectedAgenturMonth])-Handler zusätzlich
+// zum ohnehin laufenden loadGeometries()-Aufruf auslöst (der diese Werte
+// gerade erst über loadAgenturPeriods() gesetzt hat) - sonst liefe der
+// Period-Request beim ersten Wechsel auf "agentur" doppelt.
+let suppressAgenturPeriodWatch = false;
+
+const agenturYearOptions = computed(() =>
+  Array.from(new Set(agenturPeriods.value.map((p) => p.year))).sort((a, b) => b - a),
+);
+const agenturMonthOptions = computed(() =>
+  agenturPeriods.value
+    .filter((p) => p.year === selectedAgenturYear.value)
+    .map((p) => p.month)
+    .sort((a, b) => a - b),
+);
+
+async function loadAgenturPeriods() {
+  if (agenturPeriodsLoaded) return;
+  agenturPeriodsLoaded = true;
+  agenturPeriodsError.value = null;
+  try {
+    const body = await apiGet<AgenturbezirkPeriod[]>("/agenturbezirke/periods");
+    agenturPeriods.value = (body.data ?? []).slice().sort((a, b) => b.year - a.year || b.month - a.month);
+    const latest = agenturPeriods.value[0];
+    if (latest) {
+      suppressAgenturPeriodWatch = true;
+      selectedAgenturYear.value = latest.year;
+      selectedAgenturMonth.value = latest.month;
+    }
+  } catch (err) {
+    agenturPeriodsError.value = err instanceof Error ? err.message : String(err);
+  }
+}
 
 // Minimale Teilmenge von GeoRegionSummary, die buildLayer()/styleForFeature()
 // tatsächlich brauchen - GeoRegionSummary[] (NUTS/LAU, aus /geo) ist
@@ -246,10 +293,23 @@ async function loadGeometries() {
   geoError.value = null;
   try {
     if (selectedGeoType.value === "agentur") {
-      // Ein Request liefert Geometrie UND neuesten Berichtsmonat in einem
-      // Schritt (anders als der getrennte /geo + /{dataset}/timeseries-Pfad
-      // bei NUTS/LAU) - siehe mart_agenturbezirk_latest.sql.
-      const body = await apiGet<AgenturbezirkLatestValue[]>("/agenturbezirke/latest");
+      // Jahr/Monat-Auswahl erst nach dem ersten Laden der verfügbaren
+      // Berichtsmonate möglich (siehe loadAgenturPeriods) - deshalb hier
+      // abwarten, bevor der gewählte (oder default: neueste) Zeitpunkt
+      // abgefragt wird.
+      await loadAgenturPeriods();
+      if (selectedAgenturYear.value === null || selectedAgenturMonth.value === null) {
+        agenturLatestRaw.value = [];
+        regions.value = [];
+        return;
+      }
+      // Ein Request liefert Geometrie UND den Wert des gewählten
+      // Berichtsmonats in einem Schritt (anders als der getrennte /geo +
+      // /{dataset}/timeseries-Pfad bei NUTS/LAU).
+      const body = await apiGet<AgenturbezirkLatestValue[]>("/agenturbezirke/period", {
+        year: selectedAgenturYear.value,
+        month: selectedAgenturMonth.value,
+      });
       agenturLatestRaw.value = (body.data ?? []).filter((a) => a.geometry_wgs84);
       regions.value = agenturLatestRaw.value.map((a) => ({
         geo_id: a.ba_schl,
@@ -474,6 +534,27 @@ watch([selectedDataset, selectedYear], loadValues);
 watch(selectedAgenturMetric, () => {
   if (selectedGeoType.value === "agentur") applyAgenturValues();
 });
+// Wenn der gewählte Monat im neuen Jahr nicht existiert (unterschiedliche
+// Jahre können unterschiedliche Berichtsmonate abgedeckt haben), auf den
+// neuesten verfügbaren Monat des neuen Jahres springen.
+watch(selectedAgenturYear, () => {
+  const months = agenturMonthOptions.value;
+  if (selectedAgenturMonth.value !== null && !months.includes(selectedAgenturMonth.value)) {
+    selectedAgenturMonth.value = months[months.length - 1] ?? null;
+  }
+});
+// Beim Wechsel des Berichtsmonats: neue Geometrie+Werte für diesen
+// Zeitpunkt laden (analog zum Versionswechsel bei NUTS/LAU).
+watch([selectedAgenturYear, selectedAgenturMonth], async () => {
+  if (suppressAgenturPeriodWatch) {
+    suppressAgenturPeriodWatch = false;
+    return;
+  }
+  if (selectedGeoType.value !== "agentur") return;
+  await loadGeometries();
+  buildLayer();
+  await loadValues();
+});
 watch(isDark, () => {
   restyleLayer();
   restyleBoundaryLayer();
@@ -519,6 +600,7 @@ watch(selectedGeoType, async () => {
     <p v-if="geoError" class="error-text">Geometrien konnten nicht geladen werden: {{ geoError }}</p>
     <p v-if="boundaryError" class="error-text">Staats-/Bundeslandgrenzen konnten nicht geladen werden: {{ boundaryError }}</p>
     <p v-if="inventoryError" class="error-text">Datensatz-Übersicht konnte nicht geladen werden: {{ inventoryError }}</p>
+    <p v-if="agenturPeriodsError" class="error-text">Berichtsmonate der Agenturbezirke konnten nicht geladen werden: {{ agenturPeriodsError }}</p>
 
     <div class="dataset-picker">
       <label for="map-geo-type-select">Ebene</label>
@@ -533,6 +615,16 @@ watch(selectedGeoType, async () => {
         <select id="map-agentur-metric-select" v-model="selectedAgenturMetric">
           <option value="arbeitslose">Arbeitslose</option>
           <option value="unterbeschaeftigung">Unterbeschäftigung</option>
+        </select>
+
+        <label for="map-agentur-year-select">Jahr</label>
+        <select id="map-agentur-year-select" v-model.number="selectedAgenturYear">
+          <option v-for="year in agenturYearOptions" :key="year" :value="year">{{ year }}</option>
+        </select>
+
+        <label for="map-agentur-month-select">Monat</label>
+        <select id="map-agentur-month-select" v-model.number="selectedAgenturMonth">
+          <option v-for="month in agenturMonthOptions" :key="month" :value="month">{{ String(month).padStart(2, "0") }}</option>
         </select>
       </template>
       <template v-else>
@@ -571,7 +663,10 @@ watch(selectedGeoType, async () => {
       <div ref="mapContainer" class="map-container"></div>
       <div class="map-legend">
         <template v-if="selectedGeoType === 'agentur'">
-          <p class="map-legend-title">{{ AGENTUR_METRIC_LABELS[selectedAgenturMetric] }} · neuester Berichtsmonat je Bezirk</p>
+          <p class="map-legend-title">
+            {{ AGENTUR_METRIC_LABELS[selectedAgenturMetric] }}
+            <template v-if="selectedAgenturYear && selectedAgenturMonth"> · {{ formatMonthLabel(selectedAgenturYear, selectedAgenturMonth) }}</template>
+          </p>
           <div class="map-legend-scale">
             <span v-for="step in sequentialSteps(isDark)" :key="step" class="map-legend-swatch" :style="{ background: step }"></span>
           </div>
