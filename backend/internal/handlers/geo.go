@@ -792,7 +792,7 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 				`SELECT nuts3_id FROM transformed_data.lau_integrated WHERE gisco_id = $1 AND nuts3_id IS NOT NULL AND lau_name IS NOT NULL LIMIT 1`,
 				data[i].GeoID,
 			); err == nil && nuts3Code != "" {
-				if datasets, dsErr := h.regionNutsDatasets(nuts3Code); dsErr == nil {
+				if datasets, dsErr := h.regionNutsDatasets(nuts3Code, 3); dsErr == nil {
 					data[i].Datasets = datasets
 				}
 			}
@@ -942,7 +942,7 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 	if filter.IncludeDatasets {
 		for i := range data {
 			if data[i].NutsLevel != nil && *data[i].NutsLevel == 3 {
-				if datasets, dsErr := h.regionNutsDatasets(data[i].GeoID); dsErr == nil {
+				if datasets, dsErr := h.regionNutsDatasets(data[i].GeoID, 3); dsErr == nil {
 					data[i].Datasets = datasets
 				}
 			}

@@ -202,7 +202,7 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 	// nuts3_id ist die kanonische Verlinkung (deklariert oder räumlich
 	// ermittelt) - siehe Kommentar auf models.LAURegion.NUTS3ID.
 	if includeDatasets && region.NUTS3ID.Valid {
-		datasets, dsErr := h.regionNutsDatasets(region.NUTS3ID.String)
+		datasets, dsErr := h.regionNutsDatasets(region.NUTS3ID.String, 3)
 		if dsErr == nil {
 			region.Datasets = datasets
 		}

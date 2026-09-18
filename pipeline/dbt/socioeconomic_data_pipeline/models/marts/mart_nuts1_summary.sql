@@ -12,7 +12,9 @@
   Die Schuldnerquote wird bevölkerungsgewichtet gemittelt (nur Zeilen, bei denen
   beide Werte vorhanden sind; andernfalls einfaches Mittel).
   Die YoY-Veränderung wird aus den aggregierten Arbeitslosenzahlen neu berechnet.
-  Als region_name wird mangels übergeordneter Namen der NUTS-1-Code selbst verwendet.
+  region_name kommt aus mart_nuts_geometry_historized (Eurostat NUTS_NAME/
+  NAME_LATN, siehe stg_nuts_geometry) - Fallback auf den Code selbst, falls dort
+  kein Name vorliegt.
 
   Hinweis: Arbeitslosenzahlen (arbeitslose_kreise) können unvollständig sein, da
   stg_arbeitslose_kreise nicht jedes Jahr für jeden Kreis abdeckt (vgl. mart_nuts3_summary).
@@ -22,10 +24,21 @@ with nuts3 as (
     select * from {{ ref('mart_nuts3_summary') }}
 ),
 
+nuts1_names as (
+    select distinct on (nuts_id) nuts_id, region_name
+    from {{ ref('mart_nuts_geometry_historized') }}
+    where levl_code = 1
+    order by nuts_id, valid_from desc
+),
+
 aggregated as (
     select
-        left(nuts_id, 3)    as nuts_id,
-        left(nuts_id, 3)    as region_name,
+        left(nuts3.nuts_id, 3) as nuts_id,
+        -- min() statt group by: der Name ist pro nuts1-Code konstant (dank
+        -- distinct on in nuts1_names), min() ist hier nur ein zulässiger
+        -- Weg, ihn trotz des Joins innerhalb der group by-Aggregation
+        -- durchzureichen.
+        coalesce(min(nuts1_names.region_name), left(nuts3.nuts_id, 3)) as region_name,
         year,
         sum(bevoelkerung)   as bevoelkerung,
         case
@@ -60,7 +73,9 @@ aggregated as (
         end                 as schuldnerquote_prozent,
         sum(arbeitslose_kreise)::numeric as arbeitslose_raw
     from nuts3
-    group by left(nuts_id, 3), year
+    left join nuts1_names
+        on nuts1_names.nuts_id = left(nuts3.nuts_id, 3)
+    group by left(nuts3.nuts_id, 3), year
 ),
 
 with_yoy as (
@@ -68,6 +83,11 @@ with_yoy as (
         nuts_id,
         region_name,
         year,
+        -- geodata_id_ars gibt es nur auf Kreisebene (mart_nuts3_summary) -
+        -- als NULL mitgeführt, damit GetNutsRegionData (backend/internal/
+        -- handlers/nuts.go) dieselbe selectCols-Spaltenliste über alle vier
+        -- NUTS-Ebenen hinweg verwenden kann.
+        null::text as geodata_id_ars,
         bevoelkerung,
         schuldnerquote_prozent,
         arbeitslose_raw                                                  as arbeitslose,

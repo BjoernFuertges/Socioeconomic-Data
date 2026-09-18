@@ -209,7 +209,7 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 
 // GetNutsRegionData gibt alle Indikatoren für eine NUTS-Region zurück (Level 0–3)
 // @Summary Alle Indikatoren für eine NUTS-Region (Level 0–3)
-// @Description Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen Daten. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code selbst.
+// @Description Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen Daten.
 // @Tags NUTS
 // @Accept json
 // @Produce json
@@ -325,7 +325,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		}
 
 		if includeDatasets {
-			if datasets, dsErr := h.regionNutsDatasets(levelDetails.NormalizedID); dsErr == nil {
+			if datasets, dsErr := h.regionNutsDatasets(levelDetails.NormalizedID, levelDetails.Number); dsErr == nil {
 				response.Datasets = datasets
 			}
 		}
@@ -387,7 +387,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	}
 
 	if includeDatasets {
-		if datasets, dsErr := h.regionNutsDatasets(levelDetails.NormalizedID); dsErr == nil {
+		if datasets, dsErr := h.regionNutsDatasets(levelDetails.NormalizedID, levelDetails.Number); dsErr == nil {
 			response.Datasets = datasets
 		}
 	}
@@ -463,4 +463,106 @@ func (h *Handler) GetNutsRegionVersions(c *gin.Context) {
 			Periods:       periods,
 		},
 	})
+}
+
+// GetNutsLauAggregate gibt die auf NUTS-3-Ebene hochaggregierten LAU-Werte (Gemeinden) einer Kreis-Region zurück
+// @Summary Auf NUTS-3-Ebene aggregierte LAU-Werte (Gemeinden)
+// @Description Gibt eine Zeitreihe der auf diesen Kreis hochaggregierten Gemeinde-Werte zurück (Bevölkerungssumme, Anzahl zugeordneter Gemeinden, bevölkerungsgewichtete Beschäftigungsquote) - als Ergänzung/Cross-Check zu den nativen Kreis-Werten aus GET /nuts/{nuts_id}. Nur für NUTS-3-IDs (5 Zeichen) gültig.
+// @Tags NUTS
+// @Accept json
+// @Produce json
+// @Param nuts_id path string true "NUTS-3-Code des Kreises" example(DE300)
+// @Success 200 {object} models.APIResponse{data=models.NutsLauAggregateResponse}
+// @Failure 400 {object} models.APIResponse
+// @Failure 404 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /nuts/{nuts_id}/lau-aggregate [get]
+func (h *Handler) GetNutsLauAggregate(c *gin.Context) {
+	nutsID := c.Param("nuts_id")
+	if strings.TrimSpace(nutsID) == "" {
+		respondBadRequest(c, "nuts_id darf nicht leer sein")
+		return
+	}
+
+	levelDetails, err := nutsLevelDetailsFromID(nutsID)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	if levelDetails.Number != 3 {
+		respondBadRequest(c, "lau-aggregate ist nur für NUTS-3-Regionen (Kreise) verfügbar")
+		return
+	}
+
+	series := []models.NutsLauAggregatePoint{}
+	query := `SELECT year, lau_population_sum, lau_region_count, lau_region_count_with_population, lau_beschaeftigungsquote_weighted_avg
+		FROM transformed_data.mart_nuts3_lau_aggregate
+		WHERE nuts3_id = $1
+		ORDER BY year DESC`
+	if err := h.DB.Select(&series, query, levelDetails.NormalizedID); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	if len(series) == 0 {
+		respondNotFound(c, "Keine LAU-Aggregatdaten für diese NUTS-3-Region gefunden")
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data: models.NutsLauAggregateResponse{
+			NutsID: levelDetails.NormalizedID,
+			Series: series,
+		},
+	})
+}
+
+// GetNutsDatasetAggregateTimeseries gibt eine auf NUTS-0/1/2-Ebene hochaggregierte Zeitreihe eines Kreis-grain-Datensatzes zurück
+// @Summary Auf NUTS-0/1/2-Ebene aggregierte Datensatz-Zeitreihe
+// @Description Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) auf Land-/Bundesland-/Regierungsbezirksebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_nuts012_dataset_aggregate). Pendant zu GET /{slug}/timeseries für NUTS-3, das für Level 0-2 keine Kreis-Zeilen findet. Nur für NUTS-0/1/2-IDs (2-4 Zeichen) gültig; für Kreise (NUTS-3) GET /{slug}/timeseries verwenden.
+// @Tags NUTS
+// @Accept json
+// @Produce json
+// @Param nuts_id path string true "NUTS-0/1/2-Code der Region" example(DE1)
+// @Param slug path string true "Route-Slug des Datensatzes (siehe GET /nuts/{nuts_id}/datasets)" example(bevoelkerung)
+// @Success 200 {object} models.APIResponse{data=[]models.NutsDatasetAggregatePoint}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /nuts/{nuts_id}/dataset-aggregate/{slug} [get]
+func (h *Handler) GetNutsDatasetAggregateTimeseries(c *gin.Context) {
+	nutsID := c.Param("nuts_id")
+	if strings.TrimSpace(nutsID) == "" {
+		respondBadRequest(c, "nuts_id darf nicht leer sein")
+		return
+	}
+
+	levelDetails, err := nutsLevelDetailsFromID(nutsID)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	if levelDetails.Number == 3 {
+		respondBadRequest(c, "dataset-aggregate ist nur für NUTS-0/1/2-Regionen verfügbar - für Kreise (NUTS-3) GET /{slug}/timeseries verwenden")
+		return
+	}
+
+	slug := strings.ToLower(strings.TrimSpace(c.Param("slug")))
+	cfg, ok := models.DatasetConfigBySlug(slug)
+	if !ok || !cfg.IsHarmonized {
+		respondBadRequest(c, fmt.Sprintf("unbekannter oder nicht aggregierbarer Datensatz-Slug %q", slug))
+		return
+	}
+
+	points := []models.NutsDatasetAggregatePoint{}
+	query := `SELECT nuts_id, dataset_slug, year, value, source_region_count, true AS is_computed
+		FROM transformed_data.mart_nuts012_dataset_aggregate
+		WHERE nuts_id = $1 AND dataset_slug = $2
+		ORDER BY year DESC`
+	if err := h.DB.Select(&points, query, levelDetails.NormalizedID, cfg.RouteSlug); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: points})
 }

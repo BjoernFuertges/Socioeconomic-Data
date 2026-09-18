@@ -59,6 +59,162 @@
                 }
             }
         },
+        "/agenturbezirke/latest": {
+            "get": {
+                "description": "Gibt jeden Agenturbezirk mit Geometrie und dem jeweils neuesten verfügbaren Monatswert (Arbeitslose, Unterbeschäftigung) zurück.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Agenturbezirke mit neuestem Berichtsmonat (für die Karte)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturbezirkLatestValue"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/period": {
+            "get": {
+                "description": "Gibt jeden Agenturbezirk mit Geometrie und dem Monatswert (Arbeitslose, Unterbeschäftigung) für das angegebene Jahr/Monat zurück.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Agenturbezirke zu einem gewählten Berichtsmonat (für die Karte)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 2026,
+                        "description": "Jahr",
+                        "name": "year",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 8,
+                        "description": "Monat (1-12)",
+                        "name": "month",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturbezirkLatestValue"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/periods": {
+            "get": {
+                "description": "Gibt alle distinkten (Jahr, Monat)-Kombinationen zurück, für die Arbeitslosenzahlen vorliegen (neueste zuerst).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Verfügbare Berichtsmonate der Agenturbezirke",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturbezirkPeriod"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/agenturbezirke/{ba_schl}": {
             "get": {
                 "description": "Gibt Details eines Agenturbezirks mit Geometrie zurück",
@@ -154,6 +310,66 @@
                                             "type": "array",
                                             "items": {
                                                 "$ref": "#/definitions/models.AgenturbezirkArbeitslosigkeitPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/{ba_schl}/nuts3": {
+            "get": {
+                "description": "Gibt die überlappenden NUTS-3-Regionen eines Agenturbezirks zurück, mit Flächenanteil in beide Richtungen. Agenturbezirke bestehen i.d.R. aus einem oder mehreren ganzen Kreisen (Ausnahme Berlin: 3 Agenturbezirke teilen sich einen Kreis) - eine räumliche Schätzung, keine amtliche Zuordnung.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "NUTS-3-Zuordnung eines Agenturbezirks (Flächenanteile)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "962",
+                        "description": "Amtlicher BA-Schlüssel des Agenturbezirks",
+                        "name": "ba_schl",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturNuts3Share"
                                             }
                                         }
                                     }
@@ -3963,7 +4179,7 @@
         },
         "/nuts/{nuts_id}": {
             "get": {
-                "description": "Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen Daten. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code selbst.",
+                "description": "Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen Daten.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4075,6 +4291,74 @@
                 }
             }
         },
+        "/nuts/{nuts_id}/dataset-aggregate/{slug}": {
+            "get": {
+                "description": "Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) auf Land-/Bundesland-/Regierungsbezirksebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_nuts012_dataset_aggregate). Pendant zu GET /{slug}/timeseries für NUTS-3, das für Level 0-2 keine Kreis-Zeilen findet. Nur für NUTS-0/1/2-IDs (2-4 Zeichen) gültig; für Kreise (NUTS-3) GET /{slug}/timeseries verwenden.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NUTS"
+                ],
+                "summary": "Auf NUTS-0/1/2-Ebene aggregierte Datensatz-Zeitreihe",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-0/1/2-Code der Region",
+                        "name": "nuts_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "bevoelkerung",
+                        "description": "Route-Slug des Datensatzes (siehe GET /nuts/{nuts_id}/datasets)",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsDatasetAggregatePoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/nuts/{nuts_id}/datasets": {
             "get": {
                 "description": "Gibt alle Soziodata-Datensätze zurück, für die Daten zu dieser NUTS-Region vorhanden sind",
@@ -4119,6 +4403,69 @@
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/nuts/{nuts_id}/lau-aggregate": {
+            "get": {
+                "description": "Gibt eine Zeitreihe der auf diesen Kreis hochaggregierten Gemeinde-Werte zurück (Bevölkerungssumme, Anzahl zugeordneter Gemeinden, bevölkerungsgewichtete Beschäftigungsquote) - als Ergänzung/Cross-Check zu den nativen Kreis-Werten aus GET /nuts/{nuts_id}. Nur für NUTS-3-IDs (5 Zeichen) gültig.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NUTS"
+                ],
+                "summary": "Auf NUTS-3-Ebene aggregierte LAU-Werte (Gemeinden)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE300",
+                        "description": "NUTS-3-Code des Kreises",
+                        "name": "nuts_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.NutsLauAggregateResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -5255,6 +5602,27 @@
                 }
             }
         },
+        "models.AgenturNuts3Share": {
+            "type": "object",
+            "properties": {
+                "area_share_of_agentur": {
+                    "type": "number",
+                    "example": 0.42
+                },
+                "area_share_of_nuts3": {
+                    "type": "number",
+                    "example": 1
+                },
+                "nuts3_id": {
+                    "type": "string",
+                    "example": "DE300"
+                },
+                "region_name": {
+                    "type": "string",
+                    "example": "Berlin"
+                }
+            }
+        },
         "models.AgenturbezirkArbeitslosigkeitPoint": {
             "type": "object",
             "properties": {
@@ -5271,6 +5639,60 @@
                 },
                 "unterbeschaeftigung": {
                     "type": "number"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2026
+                }
+            }
+        },
+        "models.AgenturbezirkLatestValue": {
+            "type": "object",
+            "properties": {
+                "arbeitslose": {
+                    "type": "number"
+                },
+                "ba_schl": {
+                    "type": "string",
+                    "example": "962"
+                },
+                "geometry_wgs84": {
+                    "type": "object"
+                },
+                "has_valid_geometry": {
+                    "type": "boolean"
+                },
+                "month": {
+                    "type": "integer",
+                    "example": 8
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Berlin Mitte"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2026-08-01"
+                },
+                "unterbeschaeftigung": {
+                    "type": "number"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2026
+                }
+            }
+        },
+        "models.AgenturbezirkPeriod": {
+            "type": "object",
+            "properties": {
+                "month": {
+                    "type": "integer",
+                    "example": 8
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2026-08-01"
                 },
                 "year": {
                     "type": "integer",
@@ -6759,6 +7181,86 @@
                 "total": {
                     "type": "integer",
                     "example": 140400
+                }
+            }
+        },
+        "models.NutsDatasetAggregatePoint": {
+            "type": "object",
+            "properties": {
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                },
+                "is_computed": {
+                    "description": "Immer true (siehe SELECT true AS is_computed in GetNutsDatasetAggregateTimeseries):\njeder Punkt ist eine Aggregation über mehrere Kreise, keine an einer\neinzelnen Quelle abgelesene Einzelbeobachtung. Lässt TimeseriesChart.vue/\nDataTable.vue dafür den dritten Status \"berechnet\" anzeigen (statt\nfälschlich \"beobachtet\", was einen direkt abgelesenen Einzelwert suggerieren würde).",
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_interpolated": {
+                    "description": "Immer false - siehe Typkommentar oben (keine gap-gefüllte Version wird hier aggregiert).\nNicht aus der DB gescannt (kein db-Tag), damit TimeseriesChart.vue/DataTable.vue\ndieselbe Interpolationsstatus-Spalte wie bei NutsTimeseriesPoint anzeigen können.",
+                    "type": "boolean",
+                    "example": false
+                },
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE1"
+                },
+                "source_region_count": {
+                    "description": "Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert beigetragen haben.",
+                    "type": "integer",
+                    "example": 44
+                },
+                "value": {
+                    "type": "number",
+                    "example": 12876243
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
+                }
+            }
+        },
+        "models.NutsLauAggregatePoint": {
+            "type": "object",
+            "properties": {
+                "lau_beschaeftigungsquote_weighted_avg": {
+                    "description": "Bevölkerungsgewichteter Durchschnitt der Gemeinde-Beschäftigungsquote; null ohne Datenabdeckung.",
+                    "type": "number",
+                    "example": 64.2
+                },
+                "lau_population_sum": {
+                    "description": "Kann null sein, wenn für keine zugeordnete Gemeinde ein Bevölkerungswert vorliegt.",
+                    "type": "number",
+                    "example": 634830
+                },
+                "lau_region_count": {
+                    "description": "Anzahl der diesem Kreis zugeordneten Gemeinden.",
+                    "type": "integer",
+                    "example": 23
+                },
+                "lau_region_count_with_population": {
+                    "description": "Davon mit einem tatsächlichen Bevölkerungswert (\u003c=lau_region_count).",
+                    "type": "integer",
+                    "example": 21
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
+                }
+            }
+        },
+        "models.NutsLauAggregateResponse": {
+            "type": "object",
+            "properties": {
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE300"
+                },
+                "series": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.NutsLauAggregatePoint"
+                    }
                 }
             }
         },

@@ -10,18 +10,25 @@ import (
 )
 
 // regionNutsDatasets gibt die verfügbaren Soziodata-Datensätze für eine NUTS-ID zurück.
-// Nutzt mart_region_datasets für einen einzelnen indizierten DB-Zugriff statt N Einzelabfragen.
-func (h *Handler) regionNutsDatasets(nutsID string) ([]models.RegionDataset, error) {
+// Für Kreise (level 3) aus mart_region_datasets (Kreis-grain, ein einzelner
+// indizierter DB-Zugriff statt N Einzelabfragen); für Land/Bundesland/
+// Regierungsbezirk (level 0-2) aus mart_nuts012_dataset_aggregate, das
+// dieselben Kreis-grain-Datensätze bereits auf diese Ebenen hochaggregiert
+// (siehe dortigen Modellkommentar) - beide liefern dieselbe (dataset_slug,
+// year)-Zeilenform, weshalb die Gruppierung unten für beide Ebenen gilt.
+func (h *Handler) regionNutsDatasets(nutsID string, level int) ([]models.RegionDataset, error) {
 	type row struct {
 		DatasetSlug string `db:"dataset_slug"`
 		Year        int    `db:"year"`
 	}
+	query := `SELECT dataset_slug, year FROM transformed_data.mart_region_datasets
+		 WHERE geodata_id_nuts = $1 ORDER BY dataset_slug, year`
+	if level != 3 {
+		query = `SELECT dataset_slug, year FROM transformed_data.mart_nuts012_dataset_aggregate
+		 WHERE nuts_id = $1 ORDER BY dataset_slug, year`
+	}
 	var rows []row
-	if err := h.DB.Select(&rows,
-		`SELECT dataset_slug, year FROM transformed_data.mart_region_datasets
-		 WHERE geodata_id_nuts = $1 ORDER BY dataset_slug, year`,
-		nutsID,
-	); err != nil {
+	if err := h.DB.Select(&rows, query, nutsID); err != nil {
 		return nil, err
 	}
 
@@ -66,7 +73,7 @@ func (h *Handler) GetNutsDatasets(c *gin.Context) {
 		return
 	}
 
-	datasets, err := h.regionNutsDatasets(levelDetails.NormalizedID)
+	datasets, err := h.regionNutsDatasets(levelDetails.NormalizedID, levelDetails.Number)
 	if err != nil {
 		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
 		return
@@ -115,7 +122,7 @@ func (h *Handler) GetLAUDatasets(c *gin.Context) {
 		return
 	}
 
-	datasets, err := h.regionNutsDatasets(nuts3Code)
+	datasets, err := h.regionNutsDatasets(nuts3Code, 3)
 	if err != nil {
 		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
 		return

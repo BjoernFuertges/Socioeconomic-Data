@@ -74,6 +74,10 @@ models:
         description: "Schuldnerquote in Prozent (null wenn keine Daten für dieses Jahr)"
       - name: arbeitslose_kreise
         description: "Zahl der Arbeitslosen je Kreis (INKAR/BBSR, Jahresdurchschnitt). Für Agenturbezirk-Arbeitslosenzahlen (AfA, monatlich) siehe stattdessen mart_agenturbezirk_sociodata - andere, nicht deckungsgleiche Gebietsgliederung."
+      - name: arbeitslose
+        description: "Alias von arbeitslose_kreise unter dem Spaltennamen, weil er einheitlich über alle vier NUTS-Ebenen hinweg erwartet wird. Also kein eigenständiger Wert."
+      - name: yoy_change_percent
+        description: "Prozentuale Veränderung von arbeitslose gegenüber dem Vorjahr derselben Region (null ohne Vorjahreswert)."
 
   - name: mart_nuts_geometry
     description: "NUTS-Geometrien mit GeoJSON-Ausgabe und Geometrie-Metadaten für verfügbare Referenzjahre"

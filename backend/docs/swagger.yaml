@@ -15,6 +15,21 @@ definitions:
         example: true
         type: boolean
     type: object
+  models.AgenturNuts3Share:
+    properties:
+      area_share_of_agentur:
+        example: 0.42
+        type: number
+      area_share_of_nuts3:
+        example: 1
+        type: number
+      nuts3_id:
+        example: DE300
+        type: string
+      region_name:
+        example: Berlin
+        type: string
+    type: object
   models.AgenturbezirkArbeitslosigkeitPoint:
     properties:
       arbeitslose:
@@ -27,6 +42,44 @@ definitions:
         type: string
       unterbeschaeftigung:
         type: number
+      year:
+        example: 2026
+        type: integer
+    type: object
+  models.AgenturbezirkLatestValue:
+    properties:
+      arbeitslose:
+        type: number
+      ba_schl:
+        example: "962"
+        type: string
+      geometry_wgs84:
+        type: object
+      has_valid_geometry:
+        type: boolean
+      month:
+        example: 8
+        type: integer
+      name:
+        example: Berlin Mitte
+        type: string
+      observation_date:
+        example: "2026-08-01"
+        type: string
+      unterbeschaeftigung:
+        type: number
+      year:
+        example: 2026
+        type: integer
+    type: object
+  models.AgenturbezirkPeriod:
+    properties:
+      month:
+        example: 8
+        type: integer
+      observation_date:
+        example: "2026-08-01"
+        type: string
       year:
         example: 2026
         type: integer
@@ -1224,6 +1277,76 @@ definitions:
         example: 140400
         type: integer
     type: object
+  models.NutsDatasetAggregatePoint:
+    properties:
+      dataset_slug:
+        example: bevoelkerung
+        type: string
+      is_computed:
+        description: |-
+          Immer true (siehe SELECT true AS is_computed in GetNutsDatasetAggregateTimeseries):
+          jeder Punkt ist eine Aggregation über mehrere Kreise, keine an einer
+          einzelnen Quelle abgelesene Einzelbeobachtung. Lässt TimeseriesChart.vue/
+          DataTable.vue dafür den dritten Status "berechnet" anzeigen (statt
+          fälschlich "beobachtet", was einen direkt abgelesenen Einzelwert suggerieren würde).
+        example: true
+        type: boolean
+      is_interpolated:
+        description: |-
+          Immer false - siehe Typkommentar oben (keine gap-gefüllte Version wird hier aggregiert).
+          Nicht aus der DB gescannt (kein db-Tag), damit TimeseriesChart.vue/DataTable.vue
+          dieselbe Interpolationsstatus-Spalte wie bei NutsTimeseriesPoint anzeigen können.
+        example: false
+        type: boolean
+      nuts_id:
+        example: DE1
+        type: string
+      source_region_count:
+        description: Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert
+          beigetragen haben.
+        example: 44
+        type: integer
+      value:
+        example: 12876243
+        type: number
+      year:
+        example: 2022
+        type: integer
+    type: object
+  models.NutsLauAggregatePoint:
+    properties:
+      lau_beschaeftigungsquote_weighted_avg:
+        description: Bevölkerungsgewichteter Durchschnitt der Gemeinde-Beschäftigungsquote;
+          null ohne Datenabdeckung.
+        example: 64.2
+        type: number
+      lau_population_sum:
+        description: Kann null sein, wenn für keine zugeordnete Gemeinde ein Bevölkerungswert
+          vorliegt.
+        example: 634830
+        type: number
+      lau_region_count:
+        description: Anzahl der diesem Kreis zugeordneten Gemeinden.
+        example: 23
+        type: integer
+      lau_region_count_with_population:
+        description: Davon mit einem tatsächlichen Bevölkerungswert (<=lau_region_count).
+        example: 21
+        type: integer
+      year:
+        example: 2022
+        type: integer
+    type: object
+  models.NutsLauAggregateResponse:
+    properties:
+      nuts_id:
+        example: DE300
+        type: string
+      series:
+        items:
+          $ref: '#/definitions/models.NutsLauAggregatePoint'
+        type: array
+    type: object
   models.NutsRegionMetadata:
     properties:
       ars:
@@ -1817,6 +1940,144 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Monatliche Arbeitslosenzahlen eines Agenturbezirks
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/{ba_schl}/nuts3:
+    get:
+      consumes:
+      - application/json
+      description: 'Gibt die überlappenden NUTS-3-Regionen eines Agenturbezirks zurück,
+        mit Flächenanteil in beide Richtungen. Agenturbezirke bestehen i.d.R. aus
+        einem oder mehreren ganzen Kreisen (Ausnahme Berlin: 3 Agenturbezirke teilen
+        sich einen Kreis) - eine räumliche Schätzung, keine amtliche Zuordnung.'
+      parameters:
+      - description: Amtlicher BA-Schlüssel des Agenturbezirks
+        example: "962"
+        in: path
+        name: ba_schl
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturNuts3Share'
+                  type: array
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: NUTS-3-Zuordnung eines Agenturbezirks (Flächenanteile)
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/latest:
+    get:
+      consumes:
+      - application/json
+      description: Gibt jeden Agenturbezirk mit Geometrie und dem jeweils neuesten
+        verfügbaren Monatswert (Arbeitslose, Unterbeschäftigung) zurück.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturbezirkLatestValue'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Agenturbezirke mit neuestem Berichtsmonat (für die Karte)
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/period:
+    get:
+      consumes:
+      - application/json
+      description: Gibt jeden Agenturbezirk mit Geometrie und dem Monatswert (Arbeitslose,
+        Unterbeschäftigung) für das angegebene Jahr/Monat zurück.
+      parameters:
+      - description: Jahr
+        example: 2026
+        in: query
+        name: year
+        required: true
+        type: integer
+      - description: Monat (1-12)
+        example: 8
+        in: query
+        name: month
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturbezirkLatestValue'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Agenturbezirke zu einem gewählten Berichtsmonat (für die Karte)
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/periods:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle distinkten (Jahr, Monat)-Kombinationen zurück, für die
+        Arbeitslosenzahlen vorliegen (neueste zuerst).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturbezirkPeriod'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Verfügbare Berichtsmonate der Agenturbezirke
       tags:
       - Agenturbezirke
   /arbeitslose:
@@ -4443,8 +4704,7 @@ paths:
         5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe
         aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur
         Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen
-        Daten. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code
-        selbst.'
+        Daten.'
       parameters:
       - description: NUTS-Code der Region (Level 0–3)
         example: DE111
@@ -4516,6 +4776,54 @@ paths:
       summary: Alle Indikatoren für eine NUTS-Region (Level 0–3)
       tags:
       - NUTS
+  /nuts/{nuts_id}/dataset-aggregate/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets)
+        auf Land-/Bundesland-/Regierungsbezirksebene hoch (Summe bzw. bevölkerungsgewichteter
+        Durchschnitt je nach Datensatz, siehe mart_nuts012_dataset_aggregate). Pendant
+        zu GET /{slug}/timeseries für NUTS-3, das für Level 0-2 keine Kreis-Zeilen
+        findet. Nur für NUTS-0/1/2-IDs (2-4 Zeichen) gültig; für Kreise (NUTS-3) GET
+        /{slug}/timeseries verwenden.
+      parameters:
+      - description: NUTS-0/1/2-Code der Region
+        example: DE1
+        in: path
+        name: nuts_id
+        required: true
+        type: string
+      - description: Route-Slug des Datensatzes (siehe GET /nuts/{nuts_id}/datasets)
+        example: bevoelkerung
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsDatasetAggregatePoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Auf NUTS-0/1/2-Ebene aggregierte Datensatz-Zeitreihe
+      tags:
+      - NUTS
   /nuts/{nuts_id}/datasets:
     get:
       consumes:
@@ -4550,6 +4858,48 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Verfügbare Datensätze für eine NUTS-Region
+      tags:
+      - NUTS
+  /nuts/{nuts_id}/lau-aggregate:
+    get:
+      consumes:
+      - application/json
+      description: Gibt eine Zeitreihe der auf diesen Kreis hochaggregierten Gemeinde-Werte
+        zurück (Bevölkerungssumme, Anzahl zugeordneter Gemeinden, bevölkerungsgewichtete
+        Beschäftigungsquote) - als Ergänzung/Cross-Check zu den nativen Kreis-Werten
+        aus GET /nuts/{nuts_id}. Nur für NUTS-3-IDs (5 Zeichen) gültig.
+      parameters:
+      - description: NUTS-3-Code des Kreises
+        example: DE300
+        in: path
+        name: nuts_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.NutsLauAggregateResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Auf NUTS-3-Ebene aggregierte LAU-Werte (Gemeinden)
       tags:
       - NUTS
   /nuts/{nuts_id}/versions:

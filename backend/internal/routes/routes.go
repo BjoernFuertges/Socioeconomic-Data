@@ -43,6 +43,8 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			nutsGroup.GET("", handler.GetAllNutsRegions)
 			nutsGroup.GET("/:nuts_id/versions", handler.GetNutsRegionVersions)
 			nutsGroup.GET("/:nuts_id/datasets", handler.GetNutsDatasets)
+			nutsGroup.GET("/:nuts_id/lau-aggregate", handler.GetNutsLauAggregate)
+			nutsGroup.GET("/:nuts_id/dataset-aggregate/:slug", handler.GetNutsDatasetAggregateTimeseries)
 			nutsGroup.GET("/:nuts_id", handler.GetNutsRegionData)
 		}
 

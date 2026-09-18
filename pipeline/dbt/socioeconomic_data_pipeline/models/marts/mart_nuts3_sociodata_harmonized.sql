@@ -70,11 +70,14 @@
 
 with all_source_data as (
 
-    -- Alle Kreis-Rohdatensätze vereinen (Sources werden mit
-    -- write_disposition=replace geladen, daher keine Duplikate je
-    -- (geodata_id_nuts, year) zu erwarten)
+    -- Alle Kreis-Rohdatensätze vereinen. Sources werden mit
+    -- write_disposition=replace geladen (siehe dlt/load_soziodata_generic.py),
+    -- daher keine Duplikate je (geodata_id_nuts, year) zu erwarten - DISTINCT
+    -- ist trotzdem defensiv gesetzt: sum()-Measure-Types (siehe measure_type
+    -- unten) würden jede versehentlich erneut geladene Dopplung stillschweigend
+    -- mitaufsummieren, ohne dass das an falsch hohen Werten offensichtlich wäre.
     {% for ds in source_datasets %}
-    select
+    select distinct
         '{{ ds.slug }}'       as dataset_slug,
         geodata_id_nuts,
         geodata_year::integer as geodata_year,
