@@ -10,8 +10,19 @@ import { formatCell, formatNumber } from "../format";
 const props = defineProps<{
   points?: TimeseriesPoint[];
   periodRows?: { label: string; arbeitslose: number | null; unterbeschaeftigung: number | null }[];
+  // Welche periodRows-Spalten angezeigt werden - z.B. nur "Unterbeschäftigung",
+  // wenn im RegionBrowser-Agenturpanel nur diese Metrik ausgewählt ist. Ohne
+  // Angabe (andere periodRows-Konsumenten, falls es sie künftig gibt) werden
+  // beide Spalten gezeigt.
+  periodColumns?: { key: "arbeitslose" | "unterbeschaeftigung"; label: string }[];
   rows?: GenericDatasetRow[];
 }>();
+
+const DEFAULT_PERIOD_COLUMNS: { key: "arbeitslose" | "unterbeschaeftigung"; label: string }[] = [
+  { key: "arbeitslose", label: "Arbeitslose" },
+  { key: "unterbeschaeftigung", label: "Unterbeschäftigung" },
+];
+const effectivePeriodColumns = computed(() => props.periodColumns ?? DEFAULT_PERIOD_COLUMNS);
 
 const sortedPoints = computed(() =>
   (props.points ?? []).slice().sort((a, b) => a.year - b.year),
@@ -58,15 +69,15 @@ const columns = computed(() => {
       <thead>
         <tr>
           <th>Periode</th>
-          <th>Arbeitslose</th>
-          <th>Unterbeschäftigung</th>
+          <th v-for="col in effectivePeriodColumns" :key="col.key">{{ col.label }}</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="row in periodRows" :key="row.label">
           <td>{{ row.label }}</td>
-          <td>{{ row.arbeitslose !== null ? formatNumber(row.arbeitslose) : "–" }}</td>
-          <td>{{ row.unterbeschaeftigung !== null ? formatNumber(row.unterbeschaeftigung) : "–" }}</td>
+          <td v-for="col in effectivePeriodColumns" :key="col.key">
+            {{ row[col.key] !== null ? formatNumber(row[col.key]) : "–" }}
+          </td>
         </tr>
       </tbody>
     </table>

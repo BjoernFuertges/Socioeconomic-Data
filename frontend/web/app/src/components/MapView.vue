@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onActivated, onMounted, onUnmounted, ref, watch } from "vue";
+import type { RouteLocationRaw } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { apiGet, unwrapNull } from "../api/client";
@@ -13,6 +15,7 @@ import type {
   TimeseriesPoint,
 } from "../types/api";
 import { formatDatasetLabel, formatMonthLabel, formatNumber } from "../format";
+import { AGENTUR_DATASET_SLUG } from "../constants";
 import {
   MAP_ONLY_FILL_DARK,
   MAP_ONLY_FILL_LIGHT,
@@ -21,6 +24,9 @@ import {
   sequentialColor,
   sequentialSteps,
 } from "../mapColor";
+
+const route = useRoute();
+const router = useRouter();
 
 // Kein externer Tile-Anbieter: statt Kacheln aus API, Bundeslandgrenzen aus der eigenen, historisierten NUTS-Geometrie gezeichnet
 // (NUTS-0 = Staatsgrenze, NUTS-1 = Bundesländer in Deutschland), keine Ortsnamen oder andere Kartenbeschriftungen
@@ -157,10 +163,28 @@ function colorForValue(value: number): string {
   return sequentialColor(t, isDark.value);
 }
 
+// Cross-Link "Regionen -> Karte" (RegionBrowser.vue: viewOnMap()): Region-ID
+// aus ?region=, um sie beim Ankommen anzufahren (siehe focusOnRegion()) und -
+// solange nichts gehovert/angeklickt ist - in der Seitenbox zu zeigen (siehe
+// sidebarRegionId).
+const highlightedRegionId = computed(() => (route.query.region as string | undefined) || null);
+const HIGHLIGHT_COLOR = "#e8a33d";
+
+// Statt eines Leaflet-Hover-Tooltips (siehe Kommentar an buildLayer()) zeigt
+// eine Seitenbox die Daten der "aktiven" Region: live beim Hovern, sonst die
+// zuletzt angeklickte ("angepinnte") Region, sonst - direkt nach einem
+// Cross-Link-Sprung von Regionen -> Karte - die per ?region= angefahrene
+// Region. So bleibt die Box beim genauen Lesen/Verlinken stabil, statt beim
+// Wegbewegen der Maus sofort zu verschwinden.
+const hoveredRegionId = ref<string | null>(null);
+const pinnedRegionId = ref<string | null>(null);
+const sidebarRegionId = computed(() => hoveredRegionId.value ?? pinnedRegionId.value ?? highlightedRegionId.value);
+
 function styleForFeature(feature?: GeoJSON.Feature): L.PathOptions {
   const geoId = feature?.properties?.geo_id as string | undefined;
   const point = geoId ? valuesByRegion.value.get(geoId) : undefined;
   const borderColor = isDark.value ? "#0d0d0d" : "#ffffff";
+  const isHighlighted = geoId !== undefined && geoId === sidebarRegionId.value;
 
   if (selectedGeoType.value !== "agentur" && !selectedDataset.value) {
     // "Kein Datensatz (nur Karte)" bzw. LAU-Ansicht: eigener, kontrastreicher
@@ -174,8 +198,8 @@ function styleForFeature(feature?: GeoJSON.Feature): L.PathOptions {
     return {
       fillColor: isDark.value ? MAP_ONLY_FILL_DARK : MAP_ONLY_FILL_LIGHT,
       fillOpacity: 0.75,
-      color: borderColor,
-      weight: 1,
+      color: isHighlighted ? HIGHLIGHT_COLOR : borderColor,
+      weight: isHighlighted ? 3 : 1,
       dashArray: undefined,
     };
   }
@@ -184,44 +208,89 @@ function styleForFeature(feature?: GeoJSON.Feature): L.PathOptions {
     return {
       fillColor: isDark.value ? NO_DATA_FILL_DARK : NO_DATA_FILL_LIGHT,
       fillOpacity: 0.6,
-      color: borderColor,
-      weight: 1,
+      color: isHighlighted ? HIGHLIGHT_COLOR : borderColor,
+      weight: isHighlighted ? 3 : 1,
       dashArray: undefined,
     };
   }
   return {
     fillColor: colorForValue(point.value),
     fillOpacity: 0.85,
-    color: borderColor,
-    weight: point.is_interpolated ? 1 : 1.5,
+    color: isHighlighted ? HIGHLIGHT_COLOR : borderColor,
+    weight: isHighlighted ? 3 : point.is_interpolated ? 1 : 1.5,
     dashArray: point.is_interpolated ? "3 2" : undefined,
   };
-}
-
-function tooltipForFeature(feature?: GeoJSON.Feature): string {
-  const geoId = feature?.properties?.geo_id as string | undefined;
-  const name = (feature?.properties?.region_name as string | undefined) ?? geoId ?? "";
-  const point = geoId ? valuesByRegion.value.get(geoId) : undefined;
-  const isAgentur = selectedGeoType.value === "agentur";
-  const valueLabel = isAgentur ? AGENTUR_METRIC_LABELS[selectedAgenturMetric.value] : "Wert";
-  const rows: string[] = [`<dt>Region</dt><dd>${name}</dd>`];
-  if (!point) {
-    rows.push(`<dt>${valueLabel}</dt><dd>keine Daten</dd>`);
-  } else {
-    rows.push(`<dt>Jahr</dt><dd>${point.year}</dd>`);
-    rows.push(`<dt>${valueLabel}</dt><dd>${formatNumber(point.value)}</dd>`);
-    if (!isAgentur) rows.push(`<dt>Status</dt><dd>${point.is_interpolated ? "interpoliert" : "beobachtet"}</dd>`);
-  }
-  return `<dl class="map-tooltip-dl">${rows.join("")}</dl>`;
 }
 
 function restyleLayer() {
   geoJsonLayer?.eachLayer((layer) => {
     const l = layer as L.Path & { feature?: GeoJSON.Feature };
     l.setStyle(styleForFeature(l.feature));
-    l.setTooltipContent(tooltipForFeature(l.feature));
   });
 }
+
+// "3D"-Hebe-Effekt für die aktive Region (siehe sidebarRegionId): zwei
+// gestapelte drop-shadows (eng+dunkel, weit+weich) lassen die Fläche wie eine
+// angehobene Karte wirken - veranschaulicht sowohl die Hover-Vorschau als
+// auch den Sprung über einen Cross-Link. L.PathOptions kennt kein
+// CSS-Filter, deshalb direkter Zugriff auf das von Leaflets SVG-Renderer
+// erzeugte <path>-Element (_path ist intern, aber wie an anderen
+// Leaflet-Interna in dieser Datei - siehe _tryAnimatedZoom-Kommentare - der
+// einzige Weg dafür).
+const LIFT_SHADOW_LIGHT = "drop-shadow(0 4px 4px rgba(0,0,0,0.3)) drop-shadow(0 10px 14px rgba(0,0,0,0.2))";
+const LIFT_SHADOW_DARK = "drop-shadow(0 4px 4px rgba(0,0,0,0.6)) drop-shadow(0 10px 14px rgba(0,0,0,0.4))";
+
+function applyLiftEffect() {
+  const activeId = sidebarRegionId.value;
+  geoJsonLayer?.eachLayer((layer) => {
+    const l = layer as L.Path & { feature?: GeoJSON.Feature; _path?: SVGPathElement };
+    const isActive = activeId !== null && l.feature?.properties?.geo_id === activeId;
+    if (l._path) l._path.style.filter = isActive ? (isDark.value ? LIFT_SHADOW_DARK : LIFT_SHADOW_LIGHT) : "";
+    if (isActive) l.bringToFront();
+  });
+  boundaryLayer?.bringToFront();
+}
+
+// Daten für die Seitenbox - dieselbe valuesByRegion-Map wie für die
+// Einfärbung, deshalb identisch für NUTS/LAU (gewählter Datensatz) und
+// Agentur (gewählte Metrik).
+const sidebarRegion = computed(() => {
+  const id = sidebarRegionId.value;
+  if (!id) return null;
+  const region = regions.value.find((r) => r.geo_id === id);
+  if (!region) return null;
+  return { id, name: region.region_name, point: valuesByRegion.value.get(id) ?? null };
+});
+
+const sidebarValueLabel = computed(() =>
+  selectedGeoType.value === "agentur" ? AGENTUR_METRIC_LABELS[selectedAgenturMetric.value] : "Wert",
+);
+
+// Cross-Link "Karte -> Regionen" (Umkehrung von RegionBrowser.vue: viewOnMap()) -
+// springt zur Detailansicht der in der Seitenbox gezeigten Region, mit dem
+// gerade auf der Karte gewählten Datensatz vorausgewählt (siehe
+// RegionBrowser.vue: nutsSelectedSlugs/lauSelectedSlugs via ?dataset=).
+// Agenturbezirke haben keinen Datensatz-Picker (siehe dort).
+const sidebarLinkTarget = computed<RouteLocationRaw | null>(() => {
+  const id = sidebarRegionId.value;
+  if (!id) return null;
+  if (selectedGeoType.value === "agentur") {
+    // Analog zu unten (dataset=) - übernimmt die auf der Karte gerade
+    // gewählte Metrik, damit RegionBrowser.vue (agenturSelectedMetrics)
+    // dieselbe Ansicht zeigt statt auf die dortige Standardauswahl
+    // (beide Metriken) zurückzufallen.
+    return {
+      name: "regionen",
+      params: { regionType: "agentur", regionId: id },
+      query: { metrics: selectedAgenturMetric.value },
+    };
+  }
+  return {
+    name: "regionen",
+    params: { regionType: selectedGeoType.value, regionId: id },
+    query: selectedDataset.value ? { dataset: selectedDataset.value } : {},
+  };
+});
 
 function styleForBoundary(feature?: GeoJSON.Feature): L.PathOptions {
   const level = feature?.properties?.nuts_level as number | undefined;
@@ -467,10 +536,26 @@ function buildLayer() {
 
   geoJsonLayer = L.geoJSON(featureCollection, {
     style: (feature) => styleForFeature(feature),
+    // Statt eines Leaflet-Tooltips (siehe sidebarRegionId-Kommentar oben)
+    // steuern Hover/Klick nur noch die Seitenbox; ein Klick "pinnt" die
+    // Region, damit die Box beim Lesen/Verlinken stabil bleibt, statt beim
+    // Verlassen der Fläche sofort zu verschwinden.
     onEachFeature: (feature, layer) => {
-      layer.bindTooltip(tooltipForFeature(feature), { sticky: true, className: "map-tooltip" });
+      const geoId = feature.properties?.geo_id as string | undefined;
+      layer.on({
+        mouseover: () => {
+          hoveredRegionId.value = geoId ?? null;
+        },
+        mouseout: () => {
+          hoveredRegionId.value = null;
+        },
+        click: () => {
+          pinnedRegionId.value = geoId ?? null;
+        },
+      });
     },
   }).addTo(map);
+  applyLiftEffect();
 
   const bounds = geoJsonLayer.getBounds();
   if (bounds.isValid()) {
@@ -483,7 +568,13 @@ function buildLayer() {
     // sichtbar wird.
     const size = map.getSize();
     if (size.x > 0 && size.y > 0) {
-      map.fitBounds(bounds, { padding: [8, 8] });
+      // animate: false - siehe Kommentar in focusOnRegion(): läuft hier noch
+      // eine animierte Zoom-Transition von einem vorherigen fitBounds() (z.B.
+      // Ebenen-/Versionswechsel kurz hintereinander), würde Leaflet
+      // (_tryAnimatedZoom: `if (this._animatingZoom) return true`) diesen
+      // Aufruf sonst stillschweigend verwerfen, ohne die neue Ansicht je
+      // anzuwenden.
+      map.fitBounds(bounds, { padding: [8, 8], animate: false });
     }
   }
   boundaryLayer?.bringToFront();
@@ -501,7 +592,126 @@ function handleDarkModeChange(evt: MediaQueryListEvent) {
 // Ausmaße bekommt (z.B. beim ersten Wechsel auf den Karte-Tab).
 let resizeObserver: ResizeObserver | null = null;
 
+// Übernimmt Ebene/Datensatz/Jahr/Version/Metrik aus der Route in die lokalen
+// Refs, wenn ein Query-Parameter vorhanden ist (sonst bleibt der aktuelle
+// Wert unangetastet) - für den initialen Deep-Link (onMounted) UND für einen
+// erneuten Cross-Link-Sprung auf die bereits (via KeepAlive in App.vue)
+// gemountete Karte (onActivated). Die eigentlichen Reload-Reaktionen laufen
+// über die bestehenden watch(selected...)-Handler unten, sobald sich ein Ref
+// dadurch tatsächlich ändert.
+function initFromRoute() {
+  const q = route.query;
+  const geo = q.geo as GeoType | undefined;
+  if (geo === "nuts" || geo === "lau" || geo === "agentur") selectedGeoType.value = geo;
+
+  if (selectedGeoType.value === "agentur") {
+    const metric = q.metric as AgenturMetric | undefined;
+    if (metric === "arbeitslose" || metric === "unterbeschaeftigung") selectedAgenturMetric.value = metric;
+    if (q.year) {
+      const y = Number(q.year);
+      if (!Number.isNaN(y)) selectedAgenturYear.value = y;
+    }
+    if (q.month) {
+      const m = Number(q.month);
+      if (!Number.isNaN(m)) selectedAgenturMonth.value = m;
+    }
+  } else {
+    if (typeof q.dataset === "string") selectedDataset.value = q.dataset;
+    if (q.year) {
+      const y = Number(q.year);
+      if (!Number.isNaN(y)) selectedYear.value = y;
+    }
+  }
+  if (q.nutsVersion) {
+    const v = Number(q.nutsVersion);
+    if ((NUTS_VERSIONS as readonly number[]).includes(v)) selectedNutsVersion.value = v;
+  }
+  if (q.lauVersion) {
+    const v = Number(q.lauVersion);
+    if ((LAU_VERSIONS as readonly number[]).includes(v)) selectedLauVersion.value = v;
+  }
+}
+
+// Zentriert die Karte auf eine per ?region= angesprungene Region (Cross-Link
+// "Regionen -> Karte") und öffnet deren Tooltip - die Hervorhebung selbst
+// übernimmt styleForFeature()/highlightedRegionId weiter oben.
+function focusOnRegion(id: string) {
+  if (!map || !geoJsonLayer) return;
+  // Container ggf. noch unsichtbar/größe 0x0 (z.B. beim allerersten
+  // KeepAlive-activated direkt nach dem Mount, bevor Vue das Layout gemalt
+  // hat) - ein fitBounds() darauf würde Leaflets interne Projektion dauerhaft
+  // korrumpieren (siehe buildLayer()). Der ResizeObserver holt den Fokus
+  // nach, sobald der Container eine echte Größe hat.
+  const size = map.getSize();
+  if (size.x === 0 || size.y === 0) return;
+  geoJsonLayer.eachLayer((layer) => {
+    const l = layer as L.Polygon & { feature?: GeoJSON.Feature };
+    if (l.feature?.properties?.geo_id !== id) return;
+    const bounds = l.getBounds?.();
+    if (bounds && bounds.isValid()) {
+      // lastBounds auch hier aktualisieren, sonst würde der ResizeObserver
+      // oben (der bei einer späteren Größenänderung auf lastBounds re-fitted)
+      // den Fokus auf diese Region wieder auf die volle Kartenausdehnung
+      // zurücksetzen.
+      lastBounds = bounds;
+      // animate: false - bei einem großen Zoomsprung (z.B. von der
+      // Deutschlandübersicht auf einen einzelnen Kreis) bleibt Leaflets
+      // animierter Zoom (_tryAnimatedZoom) hier gelegentlich hängen (Zoom/
+      // Center werden nie final gesetzt); ein sofortiger, unanimierter Sprung
+      // ist für diese programmatische Fokussierung ohnehin passender als eine
+      // Animation.
+      map!.fitBounds(bounds, { padding: [40, 40], maxZoom: 10, animate: false });
+    }
+  });
+}
+
+watch(highlightedRegionId, (id) => {
+  if (id) focusOnRegion(id);
+});
+
+// Hover/Pin/Cross-Link-Fokus ändern, welche Region als "aktiv" gilt (siehe
+// sidebarRegionId) - Rand-Hervorhebung und 3D-Hebe-Effekt neu anwenden, ohne
+// (anders als focusOnRegion() oben) den Kartenausschnitt zu verändern - ein
+// bloßes Hovern soll nicht wegzoomen.
+watch(sidebarRegionId, () => {
+  restyleLayer();
+  applyLiftEffect();
+});
+
+// Spiegelt den aktuellen Auswahlzustand in die Route zurück (router.replace,
+// damit reine Auswahländerungen keine Chronik-Einträge erzeugen) - macht die
+// Karten-Ansicht deep-linkbar/teilbar, siehe F12.1.
+const currentQuery = computed<Record<string, string>>(() => {
+  const q: Record<string, string> = { geo: selectedGeoType.value };
+  if (selectedGeoType.value === "agentur") {
+    q.metric = selectedAgenturMetric.value;
+    if (selectedAgenturYear.value !== null) q.year = String(selectedAgenturYear.value);
+    if (selectedAgenturMonth.value !== null) q.month = String(selectedAgenturMonth.value);
+  } else {
+    if (selectedDataset.value) q.dataset = selectedDataset.value;
+    if (selectedYear.value !== null) q.year = String(selectedYear.value);
+    if (selectedGeoType.value === "nuts") q.nutsVersion = String(selectedNutsVersion.value);
+    if (selectedGeoType.value === "lau") q.lauVersion = String(selectedLauVersion.value);
+  }
+  if (highlightedRegionId.value) q.region = highlightedRegionId.value;
+  return q;
+});
+
+watch(currentQuery, (q) => {
+  // App.vue hält MapView über <KeepAlive> auch außerhalb der "karte"-Route
+  // aktiv, dieser Watcher läuft also z.B. auch weiter, während der Nutzer
+  // auf "regionen"/"katalog" ist. route (useRoute()) ist das global aktuelle
+  // Route-Objekt, nicht "die Route, mit der diese Komponente zuletzt aktiv
+  // war" - ohne diese Prüfung würde ein Query-Key, der zufällig mit einer
+  // anderen Ansicht kollidiert, hierher zurücknavigieren (siehe derselbe Bug
+  // in RegionBrowser.vue: applyRouteSelection()).
+  if (route.name !== "karte") return;
+  router.replace({ name: "karte", query: q });
+});
+
 onMounted(async () => {
+  initFromRoute();
+
   if (mapContainer.value) {
     map = L.map(mapContainer.value, { center: [51.2, 10.4], zoom: 6, scrollWheelZoom: false });
 
@@ -509,7 +719,8 @@ onMounted(async () => {
       const { width, height } = entries[0].contentRect;
       if (width > 0 && height > 0) {
         map?.invalidateSize();
-        if (lastBounds) map?.fitBounds(lastBounds, { padding: [8, 8] });
+        if (highlightedRegionId.value) focusOnRegion(highlightedRegionId.value);
+        else if (lastBounds) map?.fitBounds(lastBounds, { padding: [8, 8], animate: false });
       }
     });
     resizeObserver.observe(mapContainer.value);
@@ -522,12 +733,33 @@ onMounted(async () => {
   buildLayer();
   buildBoundaryLayer();
   await loadInventory();
+  if (highlightedRegionId.value) focusOnRegion(highlightedRegionId.value);
 });
 
 onUnmounted(() => {
   darkModeQuery?.removeEventListener("change", handleDarkModeChange);
   resizeObserver?.disconnect();
   map?.remove();
+});
+
+// App.vue hält die Karten-Ansicht per <KeepAlive> gemountet - ein erneuter
+// Sprung hierher (z.B. per Cross-Link aus Regionen) remountet die Komponente
+// also nicht, sondern reaktiviert sie nur. initFromRoute() übernimmt dabei
+// neue Query-Parameter aus dem Cross-Link; danach die Karte per
+// invalidateSize() neu vermessen (Container hatte während der Deaktivierung
+// ggf. Größe 0) und auf eine mitgegebene Region fokussieren.
+onActivated(() => {
+  initFromRoute();
+  // Bei der allerersten Aktivierung (direkt beim initialen Mount, noch vor
+  // dem ersten Layout) hat der Container ggf. noch Größe 0x0 - dann hier
+  // nichts tun und den ResizeObserver (s.o.) übernehmen lassen, statt mit
+  // invalidateSize()/fitBounds() auf einer 0x0-Größe Leaflets interne
+  // Projektion dauerhaft zu korrumpieren (siehe buildLayer()-Kommentar).
+  const size = map?.getSize();
+  if (!map || !size || size.x === 0 || size.y === 0) return;
+  map.invalidateSize();
+  if (highlightedRegionId.value) focusOnRegion(highlightedRegionId.value);
+  else if (lastBounds) map.fitBounds(lastBounds, { padding: [8, 8], animate: false });
 });
 
 watch([selectedDataset, selectedYear], loadValues);
@@ -558,6 +790,7 @@ watch([selectedAgenturYear, selectedAgenturMonth], async () => {
 watch(isDark, () => {
   restyleLayer();
   restyleBoundaryLayer();
+  applyLiftEffect();
 });
 // Beim Wechsel der NUTS-Version müssen sowohl der Grenzverlauf (andere
 // Vintage-Periode, ggf. andere Kreis-IDs) als auch die Werte (andere
@@ -626,6 +859,10 @@ watch(selectedGeoType, async () => {
         <select id="map-agentur-month-select" v-model.number="selectedAgenturMonth">
           <option v-for="month in agenturMonthOptions" :key="month" :value="month">{{ String(month).padStart(2, "0") }}</option>
         </select>
+
+        <RouterLink :to="{ name: 'katalog', params: { slug: AGENTUR_DATASET_SLUG } }" class="link-button">
+          Datensatz im Katalog ansehen ↗
+        </RouterLink>
       </template>
       <template v-else>
         <label for="map-dataset-select">Datensatz</label>
@@ -639,6 +876,10 @@ watch(selectedGeoType, async () => {
           <select id="map-year-select" v-model.number="selectedYear">
             <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
           </select>
+
+          <RouterLink :to="{ name: 'katalog', params: { slug: selectedDataset } }" class="link-button">
+            Datensatz im Katalog ansehen ↗
+          </RouterLink>
         </template>
       </template>
 
@@ -659,55 +900,96 @@ watch(selectedGeoType, async () => {
       <span v-if="valuesError" class="error-text">Fehler: {{ valuesError }}</span>
     </div>
 
-    <div class="map-wrap">
-      <div ref="mapContainer" class="map-container"></div>
-      <div class="map-legend">
-        <template v-if="selectedGeoType === 'agentur'">
-          <p class="map-legend-title">
-            {{ AGENTUR_METRIC_LABELS[selectedAgenturMetric] }}
-            <template v-if="selectedAgenturYear && selectedAgenturMonth"> · {{ formatMonthLabel(selectedAgenturYear, selectedAgenturMonth) }}</template>
+    <div class="map-layout">
+      <div class="map-wrap">
+        <div ref="mapContainer" class="map-container"></div>
+        <div class="map-legend">
+          <template v-if="selectedGeoType === 'agentur'">
+            <p class="map-legend-title">
+              {{ AGENTUR_METRIC_LABELS[selectedAgenturMetric] }}
+              <template v-if="selectedAgenturYear && selectedAgenturMonth">
+                · {{ formatMonthLabel(selectedAgenturYear, selectedAgenturMonth) }}
+              </template>
+            </p>
+            <div class="map-legend-scale">
+              <span v-for="step in sequentialSteps(isDark)" :key="step" class="map-legend-swatch" :style="{ background: step }"></span>
+            </div>
+            <div class="map-legend-labels">
+              <span>{{ valueDomain ? formatNumber(valueDomain[0]) : "–" }}</span>
+              <span>{{ valueDomain ? formatNumber(valueDomain[1]) : "–" }}</span>
+            </div>
+            <p class="map-legend-note">
+              <span class="map-legend-swatch map-legend-swatch--nodata"></span>keine Daten
+            </p>
+          </template>
+          <template v-else-if="selectedDataset">
+            <p class="map-legend-title">{{ formatDatasetLabel(selectedDataset) }}<template v-if="selectedYear"> · {{ selectedYear }}</template></p>
+            <div class="map-legend-scale">
+              <span v-for="step in sequentialSteps(isDark)" :key="step" class="map-legend-swatch" :style="{ background: step }"></span>
+            </div>
+            <div class="map-legend-labels">
+              <span>{{ valueDomain ? formatNumber(valueDomain[0]) : "–" }}</span>
+              <span>{{ valueDomain ? formatNumber(valueDomain[1]) : "–" }}</span>
+            </div>
+            <p class="map-legend-note">
+              <span class="map-legend-swatch map-legend-swatch--nodata"></span>keine Daten
+              <span class="map-legend-swatch map-legend-swatch--interpolated"></span>interpoliert (gestrichelter Rand)
+            </p>
+          </template>
+          <p v-else class="map-legend-title">
+            <span
+              class="map-legend-swatch"
+              :style="{
+                background: isDark ? MAP_ONLY_FILL_DARK : MAP_ONLY_FILL_LIGHT,
+                display: 'inline-block',
+                width: '10px',
+                height: '10px',
+                borderRadius: '2px',
+                marginRight: '0.3rem',
+                verticalAlign: 'middle',
+              }"
+            ></span>
+            {{ selectedGeoType === "lau" ? "LAU-Gemeinden" : "Kein Datensatz ausgewählt" }}
           </p>
-          <div class="map-legend-scale">
-            <span v-for="step in sequentialSteps(isDark)" :key="step" class="map-legend-swatch" :style="{ background: step }"></span>
-          </div>
-          <div class="map-legend-labels">
-            <span>{{ valueDomain ? formatNumber(valueDomain[0]) : "–" }}</span>
-            <span>{{ valueDomain ? formatNumber(valueDomain[1]) : "–" }}</span>
-          </div>
-          <p class="map-legend-note">
-            <span class="map-legend-swatch map-legend-swatch--nodata"></span>keine Daten
-          </p>
-        </template>
-        <template v-else-if="selectedDataset">
-          <p class="map-legend-title">{{ formatDatasetLabel(selectedDataset) }}<template v-if="selectedYear"> · {{ selectedYear }}</template></p>
-          <div class="map-legend-scale">
-            <span v-for="step in sequentialSteps(isDark)" :key="step" class="map-legend-swatch" :style="{ background: step }"></span>
-          </div>
-          <div class="map-legend-labels">
-            <span>{{ valueDomain ? formatNumber(valueDomain[0]) : "–" }}</span>
-            <span>{{ valueDomain ? formatNumber(valueDomain[1]) : "–" }}</span>
-          </div>
-          <p class="map-legend-note">
-            <span class="map-legend-swatch map-legend-swatch--nodata"></span>keine Daten
-            <span class="map-legend-swatch map-legend-swatch--interpolated"></span>interpoliert (gestrichelter Rand)
-          </p>
-        </template>
-        <p v-else class="map-legend-title">
-          <span
-            class="map-legend-swatch"
-            :style="{
-              background: isDark ? MAP_ONLY_FILL_DARK : MAP_ONLY_FILL_LIGHT,
-              display: 'inline-block',
-              width: '10px',
-              height: '10px',
-              borderRadius: '2px',
-              marginRight: '0.3rem',
-              verticalAlign: 'middle',
-            }"
-          ></span>
-          {{ selectedGeoType === "lau" ? "LAU-Gemeinden" : "Kein Datensatz ausgewählt" }}
-        </p>
+        </div>
       </div>
+
+      <aside class="map-sidebar">
+        <template v-if="sidebarRegion">
+          <div class="map-sidebar-header">
+            <h3>{{ sidebarRegion.name }}</h3>
+            <span class="region-code">{{ sidebarRegion.id }}</span>
+          </div>
+          <dl class="map-sidebar-data">
+            <template v-if="!sidebarRegion.point">
+              <dt>{{ sidebarValueLabel }}</dt>
+              <dd>keine Daten</dd>
+            </template>
+            <template v-else>
+              <dt>Jahr</dt>
+              <dd>{{ sidebarRegion.point.year }}</dd>
+              <dt>{{ sidebarValueLabel }}</dt>
+              <dd>{{ formatNumber(sidebarRegion.point.value) }}</dd>
+              <template v-if="selectedGeoType !== 'agentur'">
+                <dt>Status</dt>
+                <dd>{{ sidebarRegion.point.is_interpolated ? "interpoliert" : "beobachtet" }}</dd>
+              </template>
+            </template>
+          </dl>
+          <RouterLink v-if="sidebarLinkTarget" :to="sidebarLinkTarget" class="link-button">
+            Datensatz für diese Region ansehen ↗
+          </RouterLink>
+          <button
+            v-if="pinnedRegionId && !hoveredRegionId"
+            type="button"
+            class="link-button map-sidebar-clear"
+            @click="pinnedRegionId = null"
+          >
+            Auswahl aufheben
+          </button>
+        </template>
+        <p v-else class="hint">Über eine Region auf der Karte fahren oder klicken, um Details zu sehen.</p>
+      </aside>
     </div>
   </div>
 </template>

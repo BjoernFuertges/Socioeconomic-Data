@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onActivated, onMounted, ref, watch } from "vue";
+import type { RouteLocationRaw } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { apiGet, API_BASE } from "../api/client";
-import type { DatasetMetadataEntry } from "../types/api";
+import type { DatasetMetadataEntry, GenericDatasetRow } from "../types/api";
 import { formatDateDE, formatNumber } from "../format";
+import { AGENTUR_DATASET_SLUG } from "../constants";
+import DataTable from "./DataTable.vue";
 
-// Der Rohdaten-Endpunkt für Agenturbezirke heißt anders als der Katalog-Slug
-// (kein generischer /{slug}-Route wie bei den übrigen, meta.yaml-basierten
-// Kreis-/Gemeinden-Datensätzen, siehe load_arbeitslosenzahlen_afa.py /
-// RegisterSoziodataRoutes) - deshalb hier einmalig hart verdrahtet statt
-// generisch aus dem Slug abgeleitet.
-const AGENTUR_SLUG = "arbeitslosenzahlen-afa-agenturbezirke";
 const AGENTUR_DATA_PATH = "/agenturbezirke";
 
 const GEODATA_LEVEL_LABELS: Record<string, string> = {
@@ -28,17 +26,98 @@ function geodataLevelLabel(level: string | null | undefined): string {
 const DATA_LINK_LIMIT = 100;
 
 function dataHref(e: DatasetMetadataEntry): string {
-  const path = e.dataset_slug === AGENTUR_SLUG ? AGENTUR_DATA_PATH : `/${e.dataset_slug}?limit=${DATA_LINK_LIMIT}`;
+  const path = e.dataset_slug === AGENTUR_DATASET_SLUG ? AGENTUR_DATA_PATH : `/${e.dataset_slug}?limit=${DATA_LINK_LIMIT}`;
   return API_BASE + path;
 }
+
+// Statt den Link direkt auf die rohe JSON-API zeigen zu lassen (unformatiert,
+// neuer Tab), zeigt eine aufklappbare Vorschau dieselben Zeilen als Tabelle
+// im Katalog selbst - der reine JSON-Link bleibt als kleiner, sekundärer
+// "API-Antwort"-Link erhalten (siehe Footer im Template) für alle, die
+// tatsächlich die Rohantwort brauchen.
+type PreviewState =
+  | { kind: "loading" }
+  | { kind: "loaded"; rows: GenericDatasetRow[] }
+  | { kind: "error"; message: string };
+const previews = ref<Map<string, PreviewState>>(new Map());
+
+async function loadPreview(e: DatasetMetadataEntry) {
+  if (previews.value.has(e.dataset_slug)) return;
+  previews.value.set(e.dataset_slug, { kind: "loading" });
+  try {
+    const isAgentur = e.dataset_slug === AGENTUR_DATASET_SLUG;
+    const body = await apiGet<GenericDatasetRow[]>(
+      isAgentur ? AGENTUR_DATA_PATH : `/${e.dataset_slug}`,
+      isAgentur ? undefined : { limit: DATA_LINK_LIMIT },
+    );
+    previews.value.set(e.dataset_slug, { kind: "loaded", rows: body.data ?? [] });
+  } catch (err) {
+    previews.value.set(e.dataset_slug, {
+      kind: "error",
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+function onPreviewToggle(e: DatasetMetadataEntry, evt: Event) {
+  if ((evt.target as HTMLDetailsElement).open) loadPreview(e);
+}
+
+// Cross-Link "Datenkatalog -> Regionen": springt in die passende Gebietsebene
+// und (für die slug-basierten Kreis-/Gemeinden-Datensätze) wählt den
+// Datensatz vor, sobald dort eine Region gewählt wird (siehe
+// RegionBrowser.vue: nutsDatasetInitialSlug/lauDatasetInitialSlug via
+// ?dataset=). Agenturbezirke haben keinen Datensatz-Picker - dort reicht der
+// Sprung in den Gebietstyp.
+function regionsLinkFor(e: DatasetMetadataEntry): RouteLocationRaw | null {
+  if (e.geodata_level === "NUTS_3") return { name: "regionen", params: { regionType: "nuts" }, query: { dataset: e.dataset_slug } };
+  if (e.geodata_level === "LAU") return { name: "regionen", params: { regionType: "lau" }, query: { dataset: e.dataset_slug } };
+  if (e.geodata_level === "AGENTURBEZIRK") return { name: "regionen", params: { regionType: "agentur" } };
+  return null;
+}
+
+const route = useRoute();
+const router = useRouter();
 
 const entries = ref<DatasetMetadataEntry[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
-const search = ref("");
-const geodataLevelFilter = ref("");
-const licenseFilter = ref("");
+// Aus der Route vorbefüllt (Deep-Link/geteilter Link), danach per Debounce
+// synchron zur Route gehalten (router.replace statt push, damit Tippen keine
+// Chronik-Einträge erzeugt) - macht Suche/Filter teilbar/bookmarkbar.
+const search = ref((route.query.q as string) ?? "");
+const geodataLevelFilter = ref((route.query.level as string) ?? "");
+const licenseFilter = ref((route.query.license as string) ?? "");
+
+let queryTimer: ReturnType<typeof setTimeout> | null = null;
+watch([search, geodataLevelFilter, licenseFilter], () => {
+  if (queryTimer) clearTimeout(queryTimer);
+  queryTimer = setTimeout(() => {
+    router.replace({
+      name: "katalog",
+      params: route.params,
+      query: {
+        q: search.value || undefined,
+        level: geodataLevelFilter.value || undefined,
+        license: licenseFilter.value || undefined,
+      },
+    });
+  }, 300);
+});
+
+// Slug aus /katalog/:slug (Deep-Link, z.B. von der Karte oder von außen) -
+// scrollt zum passenden Katalogeintrag und hebt ihn hervor.
+const highlightedSlug = computed(() => (route.params.slug as string | undefined) || null);
+
+async function scrollToHighlighted() {
+  if (!highlightedSlug.value) return;
+  await nextTick();
+  document.getElementById(`catalog-${highlightedSlug.value}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+watch(highlightedSlug, scrollToHighlighted);
+onActivated(scrollToHighlighted);
 
 onMounted(async () => {
   loading.value = true;
@@ -51,6 +130,7 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+  await scrollToHighlighted();
 });
 
 const geodataLevels = computed(() => {
@@ -173,7 +253,13 @@ function exportCsv() {
     <p v-else-if="!filtered.length" class="hint">Keine Treffer.</p>
 
     <ul v-else class="catalog-list">
-      <li v-for="e in filtered" :key="e.dataset_slug" class="catalog-card">
+      <li
+        v-for="e in filtered"
+        :id="`catalog-${e.dataset_slug}`"
+        :key="e.dataset_slug"
+        class="catalog-card"
+        :class="{ 'catalog-card--highlighted': e.dataset_slug === highlightedSlug }"
+      >
         <div class="catalog-card-header">
           <h3>{{ e.name ?? e.dataset_slug }}</h3>
           <span class="badge">{{ geodataLevelLabel(e.geodata_level) }}</span>
@@ -212,8 +298,23 @@ function exportCsv() {
           <p>{{ e.description_long }}</p>
         </details>
 
+        <details class="catalog-details" @toggle="onPreviewToggle(e, $event)">
+          <summary>Datenvorschau</summary>
+          <p v-if="previews.get(e.dataset_slug)?.kind === 'loading'" class="hint">Lade…</p>
+          <p v-else-if="previews.get(e.dataset_slug)?.kind === 'error'" class="error-text">
+            Vorschau konnte nicht geladen werden: {{ (previews.get(e.dataset_slug) as { message: string }).message }}
+          </p>
+          <template v-else-if="previews.get(e.dataset_slug)?.kind === 'loaded'">
+            <p v-if="!(previews.get(e.dataset_slug) as { rows: GenericDatasetRow[] }).rows.length" class="hint">
+              Keine Zeilen vorhanden.
+            </p>
+            <DataTable v-else :rows="(previews.get(e.dataset_slug) as { rows: GenericDatasetRow[] }).rows" />
+          </template>
+        </details>
+
         <div class="catalog-card-footer">
-          <a :href="dataHref(e)" target="_blank" rel="noopener noreferrer">Rohdaten (JSON) ↗</a>
+          <RouterLink v-if="regionsLinkFor(e)" :to="regionsLinkFor(e)!" class="link-button">In Regionen anzeigen →</RouterLink>
+          <a :href="dataHref(e)" target="_blank" rel="noopener noreferrer" class="catalog-api-link">API-Antwort (JSON) ↗</a>
           <code>{{ e.dataset_uri }}</code>
         </div>
       </li>
