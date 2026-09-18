@@ -168,6 +168,13 @@ body {
   padding-bottom: 0.6rem;
 }
 
+.nuts-level-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.6rem;
+}
+
 .browser-layout {
   display: grid;
   grid-template-columns: minmax(220px, 320px) 1fr;
@@ -307,6 +314,27 @@ table.nuts3-share-table th {
 }
 
 /* Detail panel */
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.breadcrumb-sep {
+  color: var(--text-muted);
+}
+
+.child-region-list {
+  list-style: none;
+  margin: 0.4rem 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: 0.2rem;
+}
 
 .detail-header h2 {
   margin: 0 0 0.25rem;
@@ -456,6 +484,11 @@ table.nuts3-share-table th {
   border: 2px solid var(--series-1);
 }
 
+.marker-computed {
+  background: var(--series-1);
+  border-radius: 2px;
+}
+
 .dataset-info .marker {
   display: inline-block;
   width: 9px;
@@ -533,6 +566,10 @@ table.data-table th {
 
 table.data-table tr.is-interpolated td {
   color: var(--text-secondary);
+}
+
+table.data-table tr.is-computed td {
+  font-style: italic;
 }
 
 /* Dataset catalog */

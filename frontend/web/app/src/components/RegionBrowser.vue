@@ -10,10 +10,12 @@ import type {
   DatasetCatalogResponse,
   DatasetMetadataEntry,
   LauRegion,
+  NutsLauAggregatePoint,
+  NutsLauAggregateResponse,
   NutsRegionSummary,
 } from "../types/api";
 import { formatDatasetLabel, formatMonthLabel, formatNumber, formatPercent } from "../format";
-import { AGENTUR_DATASET_SLUG } from "../constants";
+import { AGENTUR_DATASET_SLUG, BUNDESLAND_ALIASES } from "../constants";
 import RegionList from "./RegionList.vue";
 import DatasetPicker from "./DatasetPicker.vue";
 import TimeseriesChart from "./TimeseriesChart.vue";
@@ -27,6 +29,23 @@ const INKAR_ARBEITSLOSE_SLUG = "arbeitslose";
 
 type RegionType = "nuts" | "lau" | "agentur";
 type DatasetViewMode = "separate" | "combined";
+
+// NUTS-Hierarchie: 0=Land, 1=Bundesland, 2=Regierungsbezirk, 3=Kreis.
+// Innerhalb des "nuts"-Tabs zusätzlich zum regionType wählbar (siehe
+// nutsBrowseLevel unten) - der Code selbst ist präfixhierarchisch
+// (DE -> DE3 -> DE30 -> DE300), Breadcrumb/Kinderlisten kommen daher ohne
+// eigenen Backend-Endpunkt aus, siehe nutsBreadcrumb()/nutsChildren().
+type NutsLevel = 0 | 1 | 2 | 3;
+const NUTS_LEVEL_LABELS: Record<NutsLevel, string> = {
+  0: "Land",
+  1: "Bundesland",
+  2: "Regierungsbezirk",
+  3: "Kreis",
+};
+function parseNutsLevelParam(value: unknown): NutsLevel {
+  const n = typeof value === "string" ? Number(value) : NaN;
+  return n === 0 || n === 1 || n === 2 || n === 3 ? (n as NutsLevel) : 3;
+}
 
 // "dataset=slug1,slug2" in der Route <-> string[] im Komponentenzustand.
 function parseSlugsParam(value: unknown): string[] {
@@ -71,7 +90,7 @@ const router = useRouter();
 const regionType = computed<RegionType>(() => (route.params.regionType as RegionType) || "nuts");
 
 const REGION_TYPE_LABELS: Record<RegionType, string> = {
-  nuts: "NUTS-3",
+  nuts: "NUTS (Land–Kreis)",
   lau: "Gemeinden (LAU)",
   agentur: "Agenturbezirke",
 };
@@ -80,13 +99,22 @@ function switchRegionType(type: RegionType) {
   router.push({ name: "regionen", params: { regionType: type } });
 }
 
-// --- NUTS-3 ---
+// --- NUTS (Land/Bundesland/Regierungsbezirk/Kreis) ---
 const nutsRegions = ref<NutsRegionSummary[]>([]);
 const nutsLoadError = ref<string | null>(null);
 const nutsSearch = ref("");
+// Ebene innerhalb des "nuts"-Tabs (siehe NutsLevel oben); Default 3 (Kreise)
+// entspricht dem bisherigen, alleinigen Verhalten dieser Ansicht.
+const nutsBrowseLevel = ref<NutsLevel>(3);
 const selectedNuts = ref<NutsRegionSummary | null>(null);
 const nutsDatasets = ref<DatasetCatalogEntry[] | null>(null);
 const nutsDatasetsError = ref<string | null>(null);
+// Gemeinden eines Kreises (nur Ebene 3) + auf Kreisebene hochaggregierte
+// LAU-Werte (Bevölkerungssumme etc., siehe mart_nuts3_lau_aggregate) - beide
+// unabhängig von der Datensatz-Auswahl unten.
+const nutsChildLau = ref<LauRegion[] | null>(null);
+const nutsChildLauError = ref<string | null>(null);
+const nutsLauAggregate = ref<NutsLauAggregatePoint[] | null>(null);
 // Mehrfachauswahl an Datensätzen für die aktuelle Region + Anzeigemodus
 // (getrennt/kombiniert) - bleibt beim Regionswechsel innerhalb NUTS-3
 // bestehen (reconcileNutsSelection() kürzt sie ggf. auf das, was in der
@@ -98,19 +126,69 @@ const nutsViewMode = ref<DatasetViewMode>("separate");
 
 onMounted(async () => {
   try {
-    const body = await apiGet<NutsRegionSummary[]>("/nuts", { level: 3, limit: "null" });
+    // Ohne level-Filter liefert /nuts alle vier Ebenen in einer Antwort
+    // (siehe GetAllNutsRegions) - daraus lässt sich die komplette
+    // Eltern-/Kind-Beziehung rein clientseitig über den NUTS-Code-Präfix
+    // ableiten (siehe nutsById/nutsBreadcrumb/nutsChildren unten), ohne
+    // eigene Backend-Endpunkte für Breadcrumb/Kinderlisten.
+    const body = await apiGet<NutsRegionSummary[]>("/nuts", { limit: "null" });
     nutsRegions.value = body.data ?? [];
   } catch (err) {
     nutsLoadError.value = err instanceof Error ? err.message : String(err);
   }
 });
 
+const nutsById = computed(() => {
+  const map = new Map<string, NutsRegionSummary>();
+  for (const r of nutsRegions.value) map.set(r.nuts_id, r);
+  return map;
+});
+
+// NUTS-Codes sind präfixhierarchisch (DE -> DE3 -> DE30 -> DE300): der
+// Parent-Code ist derselbe Code, um ein Zeichen gekürzt. NUTS-0 (2 Zeichen)
+// hat keinen Parent mehr.
+function nutsParentId(id: string): string | null {
+  return id.length > 2 ? id.slice(0, id.length - 1) : null;
+}
+
+function nutsBreadcrumb(id: string | null): NutsRegionSummary[] {
+  const chain: NutsRegionSummary[] = [];
+  let current = id ? nutsParentId(id) : null;
+  while (current) {
+    const region = nutsById.value.get(current);
+    if (region) chain.unshift(region);
+    current = nutsParentId(current);
+  }
+  return chain;
+}
+
+function nutsChildren(id: string, level: number): NutsRegionSummary[] {
+  return nutsRegions.value
+    .filter((r) => r.nuts_level === level + 1 && r.nuts_id.startsWith(id))
+    .sort((a, b) => a.region_name.localeCompare(b.region_name));
+}
+
+function switchNutsLevel(level: NutsLevel) {
+  nutsBrowseLevel.value = level;
+}
+
+// formatPercent() aus format.ts erwartet einen Anteil (0..1) und multipliziert
+// mit 100 - schuldnerquote_prozent/beschaeftigungsquote sind aber bereits in
+// Prozent (z.B. 9.8 = 9.8%), deshalb hier ein eigener, einfacher Formatter.
+function formatPercentValue(value: number | null): string {
+  return value !== null ? `${formatNumber(value)} %` : "–";
+}
+
 const nutsFiltered = computed(() => {
   const needle = nutsSearch.value.trim().toLowerCase();
-  if (!needle) return nutsRegions.value;
-  return nutsRegions.value.filter(
-    (r) => r.region_name.toLowerCase().includes(needle) || r.nuts_id.toLowerCase().includes(needle),
-  );
+  const inLevel = nutsRegions.value.filter((r) => r.nuts_level === nutsBrowseLevel.value);
+  if (!needle) return inLevel;
+  return inLevel.filter((r) => {
+    if (r.region_name.toLowerCase().includes(needle) || r.nuts_id.toLowerCase().includes(needle)) return true;
+    // Bundesland-Abkürzungen (z.B. "NRW") matchen zusätzlich gegen die
+    // Alias-Liste, da der amtliche region_name selbst keine Abkürzung ist.
+    return (BUNDESLAND_ALIASES[r.region_name] ?? []).some((alias) => alias.toLowerCase().includes(needle));
+  });
 });
 const nutsListItems = computed(() =>
   nutsFiltered.value.map((r) => ({ id: r.nuts_id, name: r.region_name, code: r.nuts_id })),
@@ -142,12 +220,23 @@ async function selectNuts(nutsId: string, wantedSlugs?: string[], navigate = tru
   const region = nutsRegions.value.find((r) => r.nuts_id === nutsId);
   if (!region) return;
   selectedNuts.value = region;
+  nutsBrowseLevel.value = region.nuts_level as NutsLevel;
   const wanted = wantedSlugs ?? nutsSelectedSlugs.value;
   nutsDatasets.value = null;
   nutsDatasetsError.value = null;
+  nutsChildLau.value = null;
+  nutsChildLauError.value = null;
+  nutsLauAggregate.value = null;
   if (navigate) {
     router.push({ name: "regionen", params: { regionType: "nuts", regionId: nutsId } });
   }
+
+  // GET /nuts/{id}/datasets deckt inzwischen alle Ebenen ab: für Kreise
+  // (Ebene 3) aus mart_region_datasets (Kreis-grain), für Land/Bundesland/
+  // Regierungsbezirk (Ebene 0-2) aus mart_nuts012_dataset_aggregate, das
+  // dieselben Kreis-grain-Datensätze bereits auf diese Ebenen hochaggregiert
+  // (siehe DatasetPicker.vue nutsLevel-Prop für die dazu passende
+  // Zeitreihen-Abfrage).
   try {
     const body = await apiGet<DatasetCatalogResponse>(`/nuts/${region.nuts_id}/datasets`);
     nutsDatasets.value = body.data?.datasets ?? [];
@@ -156,16 +245,41 @@ async function selectNuts(nutsId: string, wantedSlugs?: string[], navigate = tru
     return;
   }
   reconcileNutsSelection(wanted);
+
+  if (region.nuts_level !== 3) return;
+
+  // Gemeinden dieses Kreises + auf Kreisebene aggregierte LAU-Werte - beide
+  // unabhängig von der Datensatz-Auswahl oben (nur Ebene 3, siehe früher
+  // Return oben).
+  try {
+    // /lau?nuts_parent_id= liefert eine Zeile je (gisco_id, Jahr) - wie bei
+    // runLauSearch() unten auf den jeweils neuesten Jahrgang je Gemeinde
+    // dedupen (siehe dedupeByGiscoId).
+    const body = await apiGet<LauRegion[]>("/lau", { nuts_parent_id: region.nuts_id, limit: "null" });
+    nutsChildLau.value = dedupeByGiscoId(body.data ?? []);
+  } catch (err) {
+    nutsChildLauError.value = err instanceof Error ? err.message : String(err);
+  }
+  try {
+    const body = await apiGet<NutsLauAggregateResponse>(`/nuts/${region.nuts_id}/lau-aggregate`);
+    nutsLauAggregate.value = body.data?.series ?? [];
+  } catch {
+    // 404 ist der Normalfall, solange lokal keine LAU-Populationsdaten mit
+    // gisco_id geladen sind (siehe mart_nuts3_lau_aggregate-Kommentar) -
+    // kein Fehlertext, der Abschnitt bleibt dann einfach leer.
+    nutsLauAggregate.value = [];
+  }
 }
 
-// Spiegelt die aktuelle Datensatz-Auswahl/-Ansicht in die Route zurück
+// Spiegelt die aktuelle Datensatz-Auswahl/-Ansicht/Ebene in die Route zurück
 // (router.replace, damit reine Auswahländerungen keine Chronik-Einträge
-// erzeugen), sobald eine NUTS-3-Region gewählt ist - analog zu MapView.vue's
+// erzeugen), sobald eine NUTS-Region gewählt ist - analog zu MapView.vue's
 // currentQuery/watch-Muster. Macht Requirement 1 robust: ?dataset= ist ab dem
 // Moment gesetzt, in dem eine Region gewählt ist, und bleibt synchron mit
 // jeder späteren Auswahl-/Ansichtsänderung.
 const nutsDatasetQuery = computed<Record<string, string>>(() => {
   const q: Record<string, string> = {};
+  if (nutsBrowseLevel.value !== 3) q.level = String(nutsBrowseLevel.value);
   if (nutsSelectedSlugs.value.length) q.dataset = nutsSelectedSlugs.value.join(",");
   if (nutsSelectedSlugs.value.length > 1) q.view = nutsViewMode.value;
   return q;
@@ -515,6 +629,10 @@ function applyRouteSelection() {
   const slugsFromRoute = parseSlugsParam(route.query.dataset);
   const viewFromRoute = parseViewModeParam(route.query.view);
 
+  if (type === "nuts" && route.query.level !== undefined) {
+    nutsBrowseLevel.value = parseNutsLevelParam(route.query.level);
+  }
+
   if (!id) {
     // Kein Regionswechsel, aber Datensatz-Slugs ohne Region: aus dem
     // Datenkatalog "vorausgewählt", bis eine Region gewählt wird (siehe
@@ -570,6 +688,7 @@ watch(
     () => route.query.dataset,
     () => route.query.metrics,
     () => route.query.view,
+    () => route.query.level,
     nutsRegions,
     agenturbezirke,
   ],
@@ -597,12 +716,26 @@ watch(
 
     <div v-if="regionType === 'nuts'" class="browser-layout">
       <div class="panel list-panel">
-        <label class="visually-hidden" for="nuts-search">NUTS-3-Region suchen</label>
+        <div class="nuts-level-switch" role="tablist" aria-label="NUTS-Ebene wählen">
+          <button
+            v-for="level in ([0, 1, 2, 3] as NutsLevel[])"
+            :key="level"
+            type="button"
+            class="nav-tab"
+            :class="{ 'is-active': nutsBrowseLevel === level }"
+            role="tab"
+            :aria-selected="nutsBrowseLevel === level"
+            @click="switchNutsLevel(level)"
+          >
+            {{ NUTS_LEVEL_LABELS[level] }}
+          </button>
+        </div>
+        <label class="visually-hidden" for="nuts-search">{{ NUTS_LEVEL_LABELS[nutsBrowseLevel] }} suchen</label>
         <input
           id="nuts-search"
           v-model="nutsSearch"
           type="search"
-          placeholder="Region suchen (Name oder NUTS-Code)…"
+          :placeholder="`${NUTS_LEVEL_LABELS[nutsBrowseLevel]} suchen (Name oder NUTS-Code)…`"
           autocomplete="off"
         />
         <p v-if="nutsLoadError" class="error-text">Regionen konnten nicht geladen werden: {{ nutsLoadError }}</p>
@@ -621,15 +754,30 @@ watch(
         </p>
         <p v-else-if="!selectedNuts" class="hint">Links eine Region auswählen, um Details zu sehen.</p>
         <template v-else>
+          <nav v-if="nutsBreadcrumb(selectedNuts.nuts_id).length" class="breadcrumb" aria-label="Übergeordnete Regionen">
+            <template v-for="ancestor in nutsBreadcrumb(selectedNuts.nuts_id)" :key="ancestor.nuts_id">
+              <button type="button" class="link-button" @click="selectNuts(ancestor.nuts_id)">
+                {{ ancestor.region_name }}
+              </button>
+              <span class="breadcrumb-sep">›</span>
+            </template>
+          </nav>
           <div class="detail-header">
             <h2>{{ selectedNuts.region_name }}</h2>
             <span class="region-code">
-              {{ selectedNuts.nuts_id }}<template v-if="selectedNuts.ars"> · ARS {{ selectedNuts.ars }}</template>
+              {{ selectedNuts.nuts_id }} · {{ selectedNuts.nuts_level_code }}
+              <template v-if="selectedNuts.ars"> · ARS {{ selectedNuts.ars }}</template>
             </span>
-            <button type="button" class="link-button" @click="viewOnMap('nuts', selectedNuts.nuts_id)">
+            <button
+              v-if="selectedNuts.nuts_level === 3"
+              type="button"
+              class="link-button"
+              @click="viewOnMap('nuts', selectedNuts.nuts_id)"
+            >
               Auf der Karte anzeigen ↗
             </button>
           </div>
+
           <p v-if="nutsDatasetsError" class="error-text">Fehler: {{ nutsDatasetsError }}</p>
           <p v-else-if="nutsDatasets === null" class="hint">Lade verfügbare Datensätze…</p>
           <p v-else-if="!nutsDatasets.length" class="hint">
@@ -640,11 +788,64 @@ watch(
             :key="selectedNuts.nuts_id"
             :datasets="nutsDatasets"
             :nuts-code="selectedNuts.nuts_id"
+            :nuts-level="selectedNuts.nuts_level"
             :selected-slugs="nutsSelectedSlugs"
             :view-mode="nutsViewMode"
             @update:selected-slugs="(s) => (nutsSelectedSlugs = s)"
             @update:view-mode="(m) => (nutsViewMode = m)"
           />
+
+          <template v-if="selectedNuts.nuts_level !== 3">
+            <template v-if="nutsChildren(selectedNuts.nuts_id, selectedNuts.nuts_level).length">
+              <h3>Untergeordnete Regionen</h3>
+              <ul class="child-region-list">
+                <li v-for="child in nutsChildren(selectedNuts.nuts_id, selectedNuts.nuts_level)" :key="child.nuts_id">
+                  <button type="button" class="link-button" @click="selectNuts(child.nuts_id)">
+                    {{ child.region_name }} <span class="region-code">{{ child.nuts_id }}</span>
+                  </button>
+                </li>
+              </ul>
+            </template>
+          </template>
+
+          <template v-else>
+            <h3>Auf Kreisebene aggregierte LAU-Werte</h3>
+            <p v-if="nutsLauAggregate === null" class="hint">Lade Gemeinde-Aggregate…</p>
+            <p v-else-if="!nutsLauAggregate.length" class="hint">
+              Keine aggregierten Gemeinde-Werte für diesen Kreis verfügbar.
+            </p>
+            <dl v-else class="meta-grid">
+              <dt>Jahr</dt>
+              <dd>{{ nutsLauAggregate[0].year }}</dd>
+              <dt>Bevölkerung (Summe der Gemeinden)</dt>
+              <dd>
+                {{
+                  unwrapNull(nutsLauAggregate[0].lau_population_sum) !== null
+                    ? formatNumber(unwrapNull(nutsLauAggregate[0].lau_population_sum)!)
+                    : "–"
+                }}
+                <span
+                  class="hint"
+                  title="Cross-Check gegen die native Kreis-Bevölkerung oben - kann durch fehlende Gemeinde-Werte abweichen."
+                  >(Cross-Check)</span
+                >
+              </dd>
+              <dt>Beschäftigungsquote (bevölkerungsgewichtet)</dt>
+              <dd>{{ formatPercentValue(unwrapNull(nutsLauAggregate[0].lau_beschaeftigungsquote_weighted_avg)) }}</dd>
+            </dl>
+
+            <h3>Gemeinden in diesem Kreis</h3>
+            <p v-if="nutsChildLauError" class="error-text">Fehler: {{ nutsChildLauError }}</p>
+            <p v-else-if="nutsChildLau === null" class="hint">Lade Gemeinden…</p>
+            <p v-else-if="!nutsChildLau.length" class="hint">Keine Gemeinden für diesen Kreis gefunden.</p>
+            <ul v-else class="child-region-list">
+              <li v-for="lau in nutsChildLau" :key="lau.gisco_id">
+                <button type="button" class="link-button" @click="selectLau(lau.gisco_id)">
+                  {{ lau.lau_name }} <span class="region-code">{{ lau.gisco_id }}</span>
+                </button>
+              </li>
+            </ul>
+          </template>
         </template>
       </div>
     </div>
@@ -677,6 +878,17 @@ watch(
         <p v-else-if="lauDetailError" class="error-text">Fehler: {{ lauDetailError }}</p>
         <p v-else-if="!selectedLau" class="hint">Lade Details…</p>
         <template v-else>
+          <nav v-if="lauNuts3Code && nutsById.get(lauNuts3Code)" class="breadcrumb" aria-label="Übergeordnete Regionen">
+            <template v-for="ancestor in nutsBreadcrumb(lauNuts3Code)" :key="ancestor.nuts_id">
+              <button type="button" class="link-button" @click="selectNuts(ancestor.nuts_id)">
+                {{ ancestor.region_name }}
+              </button>
+              <span class="breadcrumb-sep">›</span>
+            </template>
+            <button type="button" class="link-button" @click="selectNuts(lauNuts3Code)">
+              {{ nutsById.get(lauNuts3Code)?.region_name }}
+            </button>
+          </nav>
           <div class="detail-header">
             <h2>{{ selectedLau.lau_name }}</h2>
             <span class="region-code">{{ selectedLau.gisco_id }}</span>

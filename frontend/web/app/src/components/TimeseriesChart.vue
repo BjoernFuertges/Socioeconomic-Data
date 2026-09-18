@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import type { TimeseriesPoint } from "../types/api";
 import { formatNumber } from "../format";
 
@@ -52,11 +52,38 @@ const tooltip = ref<{ visible: boolean; x: number; y: number; rows: [string, str
 
 const svgNS = "http://www.w3.org/2000/svg";
 
+// Dritter Status neben beobachtet/interpoliert - siehe is_computed-Kommentar
+// auf TimeseriesPoint (types/api.ts): hochaggregierte NUTS-0/1/2-Werte sind
+// weder eine Einzelbeobachtung noch eine Lückenfüllung, sondern eine Summe/
+// ein gewichteter Durchschnitt über mehrere Kreise.
+function statusLabel(point: TimeseriesPoint): string {
+  if (point.is_computed) return "berechnet";
+  return point.is_interpolated ? "interpoliert" : "beobachtet";
+}
+
+// Legende zeigt nur die Status, die in `points` tatsächlich vorkommen - eine
+// Aggregat-Zeitreihe (NUTS-0/1/2) besteht z.B. ausschließlich aus "berechnet"-
+// Punkten, "beobachtet"/"interpoliert" wären dort irreführend.
+const legendItems = computed(() => {
+  const pts = props.points ?? [];
+  const items: { key: string; markerClass: string; label: string }[] = [];
+  if (pts.some((p) => !p.is_computed && !p.is_interpolated)) {
+    items.push({ key: "observed", markerClass: "marker-observed", label: "beobachtet" });
+  }
+  if (pts.some((p) => !p.is_computed && p.is_interpolated)) {
+    items.push({ key: "interpolated", markerClass: "marker-interpolated", label: "interpoliert" });
+  }
+  if (pts.some((p) => p.is_computed)) {
+    items.push({ key: "computed", markerClass: "marker-computed", label: "berechnet" });
+  }
+  return items;
+});
+
 function showTooltip(evt: MouseEvent, point: TimeseriesPoint) {
   const rows: [string, string | number][] = [
     ["Jahr", point.year],
     ["Wert", formatNumber(point.value)],
-    ["Status", point.is_interpolated ? "interpoliert" : "beobachtet"],
+    ["Status", statusLabel(point)],
   ];
   if (point.is_interpolated) {
     if (point.value_linear !== undefined && point.value_linear !== null) {
@@ -219,7 +246,7 @@ function showIndexedTooltip(evt: MouseEvent, seriesLabel: string, point: Timeser
     ["Jahr", point.year],
     ["Wert", formatNumber(point.value)],
     ["Index (Basisjahr=100)", index.toLocaleString("de-DE", { maximumFractionDigits: 1 })],
-    ["Status", point.is_interpolated ? "interpoliert" : "beobachtet"],
+    ["Status", statusLabel(point)],
   ];
   tooltip.value = { visible: true, x: evt.clientX + 12, y: evt.clientY + 12, rows };
 }
@@ -345,18 +372,30 @@ function drawIndexedChart(svg: SVGSVGElement, series: IndexedSeries[]) {
     s.points.forEach(({ year, index, point }) => {
       const cx = xFor(year);
       const cy = yFor(index);
-      const circle = document.createElementNS(svgNS, "circle");
-      circle.setAttribute("cx", String(cx));
-      circle.setAttribute("cy", String(cy));
-      circle.setAttribute("r", "3");
-      if (point.is_interpolated) {
-        circle.setAttribute("fill", "var(--surface-1)");
-        circle.setAttribute("stroke", color);
-        circle.setAttribute("stroke-width", "2");
+      if (point.is_computed) {
+        const size = 6;
+        const rect = document.createElementNS(svgNS, "rect");
+        rect.setAttribute("x", String(cx - size / 2));
+        rect.setAttribute("y", String(cy - size / 2));
+        rect.setAttribute("width", String(size));
+        rect.setAttribute("height", String(size));
+        rect.setAttribute("rx", "1");
+        rect.setAttribute("fill", color);
+        svg.appendChild(rect);
       } else {
-        circle.setAttribute("fill", color);
+        const circle = document.createElementNS(svgNS, "circle");
+        circle.setAttribute("cx", String(cx));
+        circle.setAttribute("cy", String(cy));
+        circle.setAttribute("r", "3");
+        if (point.is_interpolated) {
+          circle.setAttribute("fill", "var(--surface-1)");
+          circle.setAttribute("stroke", color);
+          circle.setAttribute("stroke-width", "2");
+        } else {
+          circle.setAttribute("fill", color);
+        }
+        svg.appendChild(circle);
       }
-      svg.appendChild(circle);
 
       const hitTarget = document.createElementNS(svgNS, "circle");
       hitTarget.setAttribute("cx", String(cx));
@@ -481,18 +520,30 @@ function drawChart() {
   points.forEach((p) => {
     const cx = xFor(p.year);
     const cy = yFor(p.value);
-    const circle = document.createElementNS(svgNS, "circle");
-    circle.setAttribute("cx", String(cx));
-    circle.setAttribute("cy", String(cy));
-    circle.setAttribute("r", "4");
-    if (p.is_interpolated) {
-      circle.setAttribute("fill", "var(--surface-1)");
-      circle.setAttribute("stroke", "var(--series-1)");
-      circle.setAttribute("stroke-width", "2");
+    if (p.is_computed) {
+      const size = 8;
+      const rect = document.createElementNS(svgNS, "rect");
+      rect.setAttribute("x", String(cx - size / 2));
+      rect.setAttribute("y", String(cy - size / 2));
+      rect.setAttribute("width", String(size));
+      rect.setAttribute("height", String(size));
+      rect.setAttribute("rx", "1.5");
+      rect.setAttribute("fill", "var(--series-1)");
+      svg.appendChild(rect);
     } else {
-      circle.setAttribute("fill", "var(--series-1)");
+      const circle = document.createElementNS(svgNS, "circle");
+      circle.setAttribute("cx", String(cx));
+      circle.setAttribute("cy", String(cy));
+      circle.setAttribute("r", "4");
+      if (p.is_interpolated) {
+        circle.setAttribute("fill", "var(--surface-1)");
+        circle.setAttribute("stroke", "var(--series-1)");
+        circle.setAttribute("stroke-width", "2");
+      } else {
+        circle.setAttribute("fill", "var(--series-1)");
+      }
+      svg.appendChild(circle);
     }
-    svg.appendChild(circle);
 
     const hitTarget = document.createElementNS(svgNS, "circle");
     hitTarget.setAttribute("cx", String(cx));
@@ -521,11 +572,10 @@ watch(() => [props.points, props.periodSeries, props.indexedSeries], drawChart, 
     </span>
     <span class="hint">Indexiert, Basisjahr = 100 (Wert im ersten verfügbaren Jahr je Datensatz)</span>
   </p>
-  <p v-else-if="!periodSeries" class="chart-caption">
-    <span><span class="marker marker-observed"></span>beobachtet</span>
-    <span><span class="marker marker-interpolated"></span>interpoliert</span>
+  <p v-else-if="!periodSeries && legendItems.length" class="chart-caption">
+    <span v-for="item in legendItems" :key="item.key"><span class="marker" :class="item.markerClass"></span>{{ item.label }}</span>
   </p>
-  <p v-else-if="periodSeries.length" class="chart-caption">
+  <p v-else-if="periodSeries && periodSeries.length" class="chart-caption">
     <span v-for="(s, i) in periodSeries" :key="s.key">
       <span class="marker" :style="{ backgroundColor: SERIES_COLORS[i % SERIES_COLORS.length] }"></span>{{ s.label }}
     </span>

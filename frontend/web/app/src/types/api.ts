@@ -112,6 +112,37 @@ export interface AgenturNuts3Share {
   area_share_of_nuts3: number;
 }
 
+// Ein Jahr der aggregierten sozioökonomischen Indikatoren einer NUTS-Region
+// (alle Level 0-3, siehe mart_nuts0/1/2/3_summary) - GET /nuts/{nuts_id}?all=true.
+export interface NutsSocioeconomicPoint {
+  year: number;
+  bevoelkerung?: Nullable<number>;
+  schuldnerquote_prozent?: Nullable<number>;
+  arbeitslose?: Nullable<number>;
+  yoy_change_percent?: Nullable<number>;
+}
+
+export interface NutsRegionTimeSeries {
+  metadata?: NutsRegionMetadata;
+  socioeconomic?: NutsSocioeconomicPoint[];
+}
+
+// Ein Jahr der auf NUTS-3-Ebene hochaggregierten LAU-Werte (Gemeinden) -
+// Ergänzung/Cross-Check zu NutsSocioeconomicPoint.bevoelkerung, siehe
+// mart_nuts3_lau_aggregate. GET /nuts/{nuts_id}/lau-aggregate (nur NUTS-3).
+export interface NutsLauAggregatePoint {
+  year: number;
+  lau_population_sum?: Nullable<number>;
+  lau_region_count: number;
+  lau_region_count_with_population: number;
+  lau_beschaeftigungsquote_weighted_avg?: Nullable<number>;
+}
+
+export interface NutsLauAggregateResponse {
+  nuts_id: string;
+  series: NutsLauAggregatePoint[];
+}
+
 export interface GeoRegionSummary {
   geo_id: string;
   geo_type: "nuts" | "lau";
@@ -140,6 +171,13 @@ export interface TimeseriesPoint {
   year: number;
   value: number;
   is_interpolated: boolean;
+  // true = Wert ist eine Aggregation über mehrere Regionen (siehe
+  // NutsDatasetAggregatePoint), keine an einer einzelnen Quelle abgelesene
+  // Einzelbeobachtung - TimeseriesChart.vue/DataTable.vue zeigen dafür den
+  // dritten Status "berechnet" statt "beobachtet"/"interpoliert". Fehlt bei
+  // allen anderen Zeitreihenpunkten (NUTS-3/LAU-Kreis-grain), dort gilt die
+  // bisherige Zweiteilung.
+  is_computed?: boolean;
   value_linear?: number | null;
   value_peer_trend?: number | null;
   n_peer_regions?: number | null;
@@ -149,6 +187,16 @@ export interface NutsTimeseriesPoint extends TimeseriesPoint {
   nuts_id: string;
   dataset_slug: string;
   nuts_version: number;
+}
+
+// Zeitreihenpunkt von GET /nuts/{nuts_id}/dataset-aggregate/{slug} - das
+// Pendant zu NutsTimeseriesPoint für NUTS-0/1/2 (siehe dortigen
+// Backend-Kommentar): is_interpolated ist hier immer false, dafür gibt es
+// source_region_count (Anzahl der Kreise, die zu diesem Jahr beigetragen haben).
+export interface NutsDatasetAggregatePoint extends TimeseriesPoint {
+  nuts_id: string;
+  dataset_slug: string;
+  source_region_count: number;
 }
 
 // Metadaten-Katalogeintrag von GET /datasets (backend models.DatasetCatalogEintrag) -

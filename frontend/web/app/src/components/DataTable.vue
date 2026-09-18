@@ -28,6 +28,13 @@ const sortedPoints = computed(() =>
   (props.points ?? []).slice().sort((a, b) => a.year - b.year),
 );
 
+// Dritter Status neben beobachtet/interpoliert - siehe is_computed-Kommentar
+// auf TimeseriesPoint (types/api.ts).
+function statusLabel(point: TimeseriesPoint): string {
+  if (point.is_computed) return "berechnet";
+  return point.is_interpolated ? "interpoliert" : "beobachtet";
+}
+
 const skipKeys = new Set(["mapper"]);
 const columns = computed(() => {
   const rows = props.rows ?? [];
@@ -49,10 +56,14 @@ const columns = computed(() => {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="p in sortedPoints" :key="p.year" :class="{ 'is-interpolated': p.is_interpolated }">
+        <tr
+          v-for="p in sortedPoints"
+          :key="p.year"
+          :class="{ 'is-interpolated': p.is_interpolated && !p.is_computed, 'is-computed': p.is_computed }"
+        >
           <td>{{ p.year }}</td>
           <td>{{ formatNumber(p.value) }}</td>
-          <td>{{ p.is_interpolated ? "interpoliert" : "beobachtet" }}</td>
+          <td>{{ statusLabel(p) }}</td>
           <td>{{ p.value_linear !== undefined && p.value_linear !== null ? formatNumber(p.value_linear) : "–" }}</td>
           <td>
             {{

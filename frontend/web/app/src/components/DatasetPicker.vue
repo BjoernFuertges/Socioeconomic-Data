@@ -5,7 +5,8 @@ import type {
   DatasetCatalogEntry,
   DatasetMetadataEntry,
   GenericDatasetRow,
-  NutsTimeseriesPoint,
+  NutsDatasetAggregatePoint,
+  TimeseriesPoint,
 } from "../types/api";
 import { formatDatasetLabel } from "../format";
 import TimeseriesChart from "./TimeseriesChart.vue";
@@ -20,7 +21,7 @@ const MAX_SELECTED = 4;
 type ViewMode = "separate" | "combined";
 type LoadResult =
   | { kind: "loading" }
-  | { kind: "timeseries"; points: NutsTimeseriesPoint[] }
+  | { kind: "timeseries"; points: TimeseriesPoint[] }
   | { kind: "raw"; rows: GenericDatasetRow[] }
   | { kind: "error"; message: string };
 
@@ -29,6 +30,12 @@ const props = defineProps<{
   nutsCode: string;
   selectedSlugs: string[];
   viewMode: ViewMode;
+  // NUTS-Ebene der aktuellen Region (0-3). Default 3 (Kreis) - bisheriges
+  // Verhalten. Bei 0-2 (Land/Bundesland/Regierungsbezirk) gibt es keine
+  // Kreis-grain-Zeilen unter diesem Code, deshalb lädt loadSlug() dann über
+  // den auf diese Ebene hochaggregierten Endpoint statt /{slug}/timeseries
+  // (siehe RegionBrowser.vue, mart_nuts012_dataset_aggregate).
+  nutsLevel?: number;
 }>();
 
 const emit = defineEmits<{
@@ -70,12 +77,27 @@ async function loadSlug(slug: string) {
   } catch {
     metadataBySlug.value.set(slug, null);
   }
+  if ((props.nutsLevel ?? 3) !== 3) {
+    // NUTS-0/1/2: /{slug}/timeseries kennt nur Kreis-grain-Codes (siehe
+    // Kommentar oben) - stattdessen die auf diese Ebene hochaggregierte
+    // Zeitreihe laden. Alle für diese Ebene gelisteten Datensätze sind
+    // Kreis-grain/harmonisiert (siehe mart_nuts012_dataset_aggregate), ein
+    // Rohdaten-Fallback ist hier also nicht nötig.
+    try {
+      const body = await apiGet<NutsDatasetAggregatePoint[]>(`/nuts/${props.nutsCode}/dataset-aggregate/${slug}`);
+      results.value.set(slug, { kind: "timeseries", points: body.data ?? [] });
+    } catch (err) {
+      results.value.set(slug, { kind: "error", message: err instanceof Error ? err.message : String(err) });
+    }
+    return;
+  }
+
   // Probiert zuerst den lückenlosen /{slug}/timeseries-Endpoint (einheitliches
   // Schema, Interpolationsmetadaten inklusive); fällt für die wenigen
   // Datensätze ohne Timeseries-Unterstützung (z.B. beschaeftigungsquote-
   // gemeinden) auf die rohe Datensatz-Route zurück.
   try {
-    const body = await apiGet<NutsTimeseriesPoint[]>(`/${slug}/timeseries`, {
+    const body = await apiGet<TimeseriesPoint[]>(`/${slug}/timeseries`, {
       geodata_id_nuts: props.nutsCode,
       limit: "null",
     });
@@ -216,10 +238,10 @@ watch(
           Fehler beim Laden: {{ (results.get(ds.route_slug) as { message: string }).message }}
         </p>
         <template v-else-if="results.get(ds.route_slug)?.kind === 'timeseries'">
-          <p v-if="!(results.get(ds.route_slug) as { points: NutsTimeseriesPoint[] }).points.length" class="hint">
+          <p v-if="!(results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points.length" class="hint">
             Keine Werte für diesen Datensatz und diese Region vorhanden.
           </p>
-          <DataTable v-else :points="(results.get(ds.route_slug) as { points: NutsTimeseriesPoint[] }).points" />
+          <DataTable v-else :points="(results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points" />
         </template>
         <template v-else-if="results.get(ds.route_slug)?.kind === 'raw'">
           <p v-if="!(results.get(ds.route_slug) as { rows: GenericDatasetRow[] }).rows.length" class="hint">
@@ -240,12 +262,12 @@ watch(
         Fehler beim Laden: {{ (results.get(ds.route_slug) as { message: string }).message }}
       </p>
       <template v-else-if="results.get(ds.route_slug)?.kind === 'timeseries'">
-        <p v-if="!(results.get(ds.route_slug) as { points: NutsTimeseriesPoint[] }).points.length" class="hint">
+        <p v-if="!(results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points.length" class="hint">
           Keine Werte für diesen Datensatz und diese Region vorhanden.
         </p>
         <template v-else>
-          <TimeseriesChart :points="(results.get(ds.route_slug) as { points: NutsTimeseriesPoint[] }).points" />
-          <DataTable :points="(results.get(ds.route_slug) as { points: NutsTimeseriesPoint[] }).points" />
+          <TimeseriesChart :points="(results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points" />
+          <DataTable :points="(results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points" />
         </template>
       </template>
       <template v-else-if="results.get(ds.route_slug)?.kind === 'raw'">
