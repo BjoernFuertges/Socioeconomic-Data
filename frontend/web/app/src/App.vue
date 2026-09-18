@@ -3,10 +3,11 @@ import { onMounted, ref } from "vue";
 import { apiGet, API_BASE } from "./api/client";
 import RegionBrowser from "./components/RegionBrowser.vue";
 import MapView from "./components/MapView.vue";
+import DatasetCatalog from "./components/DatasetCatalog.vue";
 
 const docsUrl = import.meta.env.VITE_DOCS_URL ?? "";
 
-type ViewKey = "regionen" | "karte";
+type ViewKey = "regionen" | "karte" | "katalog";
 const activeView = ref<ViewKey>("regionen");
 
 const apiStatus = ref<{ message: string; isError: boolean } | null>(null);
@@ -48,6 +49,16 @@ onMounted(async () => {
         >
           Karte
         </button>
+        <button
+          type="button"
+          class="nav-tab"
+          :class="{ 'is-active': activeView === 'katalog' }"
+          role="tab"
+          :aria-selected="activeView === 'katalog'"
+          @click="activeView = 'katalog'"
+        >
+          Datenkatalog
+        </button>
       </nav>
       <a v-if="docsUrl" class="docs-link" :href="docsUrl" target="_blank" rel="noopener">Dokumentation ↗</a>
     </div>
@@ -64,6 +75,10 @@ onMounted(async () => {
 
     <section v-show="activeView === 'karte'" class="view" :class="{ 'is-active': activeView === 'karte' }">
       <MapView />
+    </section>
+
+    <section v-show="activeView === 'katalog'" class="view" :class="{ 'is-active': activeView === 'katalog' }">
+      <DatasetCatalog />
     </section>
   </main>
 

@@ -253,6 +253,12 @@ body {
   color: var(--text-primary);
 }
 
+.link-button:disabled {
+  color: var(--text-muted);
+  cursor: default;
+  text-decoration: none;
+}
+
 .metric-toggle {
   display: flex;
   gap: 1rem;
@@ -533,6 +539,135 @@ table.data-table th {
 
 table.data-table tr.is-interpolated td {
   color: var(--text-secondary);
+}
+
+/* Dataset catalog */
+
+.catalog-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.catalog-filters input[type="search"] {
+  flex: 1;
+  min-width: 260px;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--page-plane);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.catalog-filters select {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--page-plane);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.catalog-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.catalog-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+}
+
+.catalog-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.catalog-card-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.badge {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--series-1-soft);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.catalog-description {
+  margin: 0.4rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.catalog-meta {
+  margin: 0.6rem 0 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.3rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.catalog-meta dt {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.catalog-meta dd {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.catalog-meta .hint {
+  display: block;
+  font-size: 0.8rem;
+}
+
+.catalog-details {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.catalog-details summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.catalog-details p {
+  margin: 0.5rem 0 0;
+  color: var(--text-secondary);
+  white-space: pre-line;
+}
+
+.catalog-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--gridline);
+  font-size: 0.8rem;
+}
+
+.catalog-card-footer code {
+  color: var(--text-muted);
 }
 
 /* Map */
