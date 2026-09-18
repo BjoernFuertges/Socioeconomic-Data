@@ -21,6 +21,13 @@ export function formatNumber(value: unknown): string {
   return value.toLocaleString("de-DE", { maximumFractionDigits: 2 });
 }
 
+// Erwartet einen Anteil als Bruch (0..1, z.B. aus mart_agentur_nuts3_crosswalk)
+// -> "42 %". null/undefined ergeben ein Fallback-Zeichen statt "NaN %".
+export function formatPercent(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "–";
+  return `${(value * 100).toLocaleString("de-DE", { maximumFractionDigits: 0 })} %`;
+}
+
 // Spalten mit Kalenderjahren/IDs sollen keine Tausendertrennzeichen bekommen.
 const UNGROUPED_NUMBER_COLUMNS = new Set(["year", "geodata_year"]);
 

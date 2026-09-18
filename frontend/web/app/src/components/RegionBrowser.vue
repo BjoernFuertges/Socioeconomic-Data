@@ -4,13 +4,14 @@ import { apiGet, unwrapNull } from "../api/client";
 import type {
   AgenturbezirkArbeitslosigkeitPoint,
   AgenturbezirkSummary,
+  AgenturNuts3Share,
   DatasetCatalogEntry,
   DatasetCatalogResponse,
   DatasetMetadataEntry,
   LauRegion,
   NutsRegionSummary,
 } from "../types/api";
-import { formatMonthLabel, formatNumber } from "../format";
+import { formatMonthLabel, formatNumber, formatPercent } from "../format";
 import RegionList from "./RegionList.vue";
 import DatasetPicker from "./DatasetPicker.vue";
 import TimeseriesChart from "./TimeseriesChart.vue";
@@ -176,6 +177,11 @@ const agenturSearch = ref("");
 const selectedAgentur = ref<AgenturbezirkSummary | null>(null);
 const agenturPoints = ref<AgenturbezirkArbeitslosigkeitPoint[] | null>(null);
 const agenturPointsError = ref<string | null>(null);
+// n:m-Zuordnung zu überlappenden NUTS-3-Regionen (Flächen-/Bevölkerungsanteile),
+// siehe mart_agentur_nuts3_crosswalk im dbt-Projekt - eine räumliche
+// Schätzung, keine amtliche Zuordnung.
+const agenturNuts3Shares = ref<AgenturNuts3Share[] | null>(null);
+const agenturNuts3SharesError = ref<string | null>(null);
 let agenturLoaded = false;
 
 // Herkunft/Lizenz/Beschreibung des AfA-Datensatzes - wie bei NUTS/LAU über
@@ -237,11 +243,19 @@ async function selectAgentur(baSchl: string) {
   selectedAgentur.value = agentur;
   agenturPoints.value = null;
   agenturPointsError.value = null;
+  agenturNuts3Shares.value = null;
+  agenturNuts3SharesError.value = null;
   try {
     const body = await apiGet<AgenturbezirkArbeitslosigkeitPoint[]>(`/agenturbezirke/${baSchl}/arbeitslosigkeit`);
     agenturPoints.value = body.data ?? [];
   } catch (err) {
     agenturPointsError.value = err instanceof Error ? err.message : String(err);
+  }
+  try {
+    const body = await apiGet<AgenturNuts3Share[]>(`/agenturbezirke/${baSchl}/nuts3`);
+    agenturNuts3Shares.value = body.data ?? [];
+  } catch (err) {
+    agenturNuts3SharesError.value = err instanceof Error ? err.message : String(err);
   }
 }
 
@@ -285,19 +299,7 @@ const agenturLatest = computed(() => {
   return agenturPoints.value[agenturPoints.value.length - 1];
 });
 
-// nuts3_id ist eine räumliche Schätzung (siehe int_agentur_nuts3_spatial_link
-// im dbt-Projekt), keine amtliche Zuordnung - Regionsname kommt aus der
-// beim Mount bereits geladenen NUTS-3-Liste (kein Zusatz-Request nötig, da
-// deren onMounted-Fetch unabhängig vom aktiven Gebietstyp läuft).
-const agenturNuts3Region = computed(() => {
-  const nuts3Id = selectedAgentur.value ? unwrapNull(selectedAgentur.value.nuts3_id) : null;
-  if (!nuts3Id) return null;
-  return nutsRegions.value.find((r) => r.nuts_id === nuts3Id) ?? null;
-});
-
-function jumpToInkarArbeitslose() {
-  const nuts3Id = agenturNuts3Region.value?.nuts_id;
-  if (!nuts3Id) return;
+function jumpToInkarArbeitslose(nuts3Id: string) {
   switchRegionType("nuts");
   selectNuts(nuts3Id, INKAR_ARBEITSLOSE_SLUG);
 }
@@ -451,13 +453,51 @@ function jumpToInkarArbeitslose() {
             Monatliche Arbeitslosen-/Unterbeschäftigungszahlen der Bundesagentur für Arbeit (Agenturbezirke sind
             eine eigenständige Gebietsgliederung, nicht deckungsgleich mit NUTS-3/LAU).
           </p>
-          <p v-if="agenturNuts3Region" class="hint">
-            Auf Kreisebene gibt es zusätzlich die INKAR-Arbeitslosenzahlen für
-            <button type="button" class="link-button" @click="jumpToInkarArbeitslose">
-              {{ agenturNuts3Region.region_name }} ({{ agenturNuts3Region.nuts_id }})
-            </button>
-            – räumlich am nächsten liegende NUTS-3-Region, nicht deckungsgleich mit diesem Agenturbezirk.
-          </p>
+          <div v-if="agenturNuts3SharesError" class="error-text">
+            NUTS-3-Zuordnung konnte nicht geladen werden: {{ agenturNuts3SharesError }}
+          </div>
+          <div v-else-if="agenturNuts3Shares && agenturNuts3Shares.length" class="nuts3-composition">
+            <p class="hint">
+              Dieser Agenturbezirk setzt sich aus folgenden Kreisen zusammen (räumlich ermittelt, keine amtliche
+              Zuordnung). Auf Kreisebene gibt es dort zusätzlich die INKAR-Arbeitslosenzahlen:
+            </p>
+            <table class="nuts3-share-table">
+              <thead>
+                <tr>
+                  <th scope="col">Kreis</th>
+                  <th scope="col">
+                    Anteil des Kreises an diesem Agenturbezirk (Fläche)
+                    <span
+                      class="info-icon"
+                      tabindex="0"
+                      title="Beispiel: Wie viel % der Fläche dieses Agenturbezirks macht dieser Kreis aus?"
+                      >ⓘ</span
+                    >
+                  </th>
+                  <th scope="col">
+                    Anteil des Agenturbezirks an diesem Kreis (Fläche)
+                    <span
+                      class="info-icon"
+                      tabindex="0"
+                      title="Beispiel: Wie viel % der Fläche dieses Kreises liegt in diesem Agenturbezirk?"
+                      >ⓘ</span
+                    >
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="share in agenturNuts3Shares" :key="share.nuts3_id">
+                  <td>
+                    <button type="button" class="link-button" @click="jumpToInkarArbeitslose(share.nuts3_id)">
+                      {{ share.region_name ?? share.nuts3_id }} ({{ share.nuts3_id }})
+                    </button>
+                  </td>
+                  <td>{{ formatPercent(share.area_share_of_agentur) }}</td>
+                  <td>{{ formatPercent(share.area_share_of_nuts3) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <DatasetInfo v-if="agenturMetadata" :metadata="agenturMetadata" />
 

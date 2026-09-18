@@ -63,9 +63,6 @@ export interface AgenturbezirkSummary {
   has_valid_geometry?: boolean;
   valid_from?: string | null;
   valid_to?: string | null;
-  // Räumliche Schätzung (größte Schnittfläche), keine amtliche Zuordnung -
-  // siehe int_agentur_nuts3_spatial_link.sql.
-  nuts3_id?: string | null;
 }
 
 export interface AgenturbezirkArbeitslosigkeitPoint {
@@ -83,12 +80,26 @@ export interface AgenturbezirkLatestValue {
   name: string;
   geometry_wgs84?: GeoJSON.Geometry | null;
   has_valid_geometry?: boolean;
-  nuts3_id?: string | null;
   year: number;
   month: number;
   observation_date: string;
   arbeitslose?: Nullable<number>;
   unterbeschaeftigung?: Nullable<number>;
+}
+
+// n:m-Zuordnung Agenturbezirk <-> NUTS-3-Region mit Flächen-/
+// Bevölkerungsanteil in beide Richtungen (GET /agenturbezirke/{ba_schl}/nuts3).
+// Räumliche Schätzung, keine amtliche Zuordnung - Agenturbezirke bestehen
+// i.d.R. aus einem oder mehreren ganzen Kreisen
+export interface AgenturNuts3Share {
+  nuts3_id: string;
+  region_name?: string | null;
+  // Anteil der Agenturbezirksfläche, der auf diese NUTS-3-Region entfällt
+  // (Zeilen eines Agenturbezirks summieren sich näherungsweise auf 1.0).
+  area_share_of_agentur: number;
+  // Anteil der NUTS-3-Fläche, der auf diesen Agenturbezirk entfällt (Zeilen
+  // einer NUTS-3-Region summieren sich näherungsweise auf 1.0).
+  area_share_of_nuts3: number;
 }
 
 export interface GeoRegionSummary {
