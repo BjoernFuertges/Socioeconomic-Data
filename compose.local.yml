@@ -60,6 +60,13 @@ services:
       LAU_GEODATA_PATH: /app/geo-mapper/geo_mapper/geodata_raw/lau
       NUTS_GEODATA_PATH: /app/geo-mapper/geo_mapper/geodata_raw/nuts
       LAU_POPULATION_PATH: /app/geo-importer/src/geodata/LAU
+      # Von dlt/fetch_lau_population.py befuellt (Eurostat LAU-NUTS-
+      # Korrespondenztabellen) - ohne echte lau_population_*.csv hier faellt
+      # load_geodata_to_postgis.py auf LAU_POPULATION_PATH zurueck, das nur
+      # ID/Name ohne gisco_id/nuts_3_code/population liefert (siehe dortigen
+      # Kommentar) und z.B. die LAU->NUTS-3-Aufloesung fuer
+      # beschaeftigungsquote-gemeinden lahmlegt.
+      GEODATA_BASE_PATH: /app/data-exchange/eurostat_lau_population
       DB_HOST: postgis
       DB_PORT: 5432
       DB_USER: sozio_data_compose_user

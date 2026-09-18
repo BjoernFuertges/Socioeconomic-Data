@@ -35,6 +35,43 @@ with metadata as (
     select * from {{ ref('stg_dataset_metadata') }}
 ),
 
+-- beschaeftigungsquote-nuts3 hat (anders als alle anderen Datensätze hier)
+-- keinen eigenen Loader/keine eigene meta.yaml - es ist ein reiner
+-- dbt-Aggregations-Wrapper über beschaeftigungsquote-gemeinden (siehe
+-- stg_beschaeftigungsquote_nuts3.sql -> mart_beschaeftigungsquote_nuts3.sql)
+-- und bekäme daher nie eine eigene loaded_data.dataset_metadata-Zeile.
+-- Ohne diesen synthetischen Eintrag bliebe der Slug für GET /datasets (und
+-- damit den Datenkatalog im Frontend) dauerhaft unsichtbar, obwohl er über
+-- die dbt-Graph-Discovery in mart_region_datasets.sql/
+-- mart_socioeconomic_inventory.sql längst als eigener dataset_slug
+-- existiert und dort Daten hat. Übernimmt Provenance/Lizenz 1:1 vom
+-- Gemeinden-Quelldatensatz (dieselbe Quelle, nur auf NUTS-3 aggregiert).
+synthetic_nuts3_metadata as (
+    select
+        'beschaeftigungsquote-nuts3'::text as dataset_slug,
+        'mart_beschaeftigungsquote_nuts3'::text as table_name,
+        name || ' (NUTS-3)' as name,
+        description || ' Auf NUTS-3-Ebene populationsgewichtet aus den Gemeindewerten aggregiert.' as description,
+        description_long,
+        unit,
+        source,
+        license,
+        license_url,
+        algorithm,
+        number_type,
+        'NUTS_3'::text as geodata_level,
+        geodata_year,
+        updated_at
+    from metadata
+    where dataset_slug = 'beschaeftigungsquote-gemeinden'
+),
+
+metadata_with_synthetic as (
+    select * from metadata
+    union all
+    select * from synthetic_nuts3_metadata
+),
+
 coverage as (
     select
         dataset as dataset_slug,
@@ -82,7 +119,7 @@ final as (
             and c.min_year < extract(year from lt.license_tracked_since)::int,
             false
         ) as license_backfilled
-    from metadata m
+    from metadata_with_synthetic m
     left join coverage c on c.dataset_slug = m.dataset_slug
     left join license_tracking lt on lt.dataset_slug = m.dataset_slug
 )
