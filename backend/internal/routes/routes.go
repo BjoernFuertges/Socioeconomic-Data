@@ -61,6 +61,8 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 		{
 			agenturbezirkeGroup.GET("", handler.GetAgenturbezirke)
 			agenturbezirkeGroup.GET("/latest", handler.GetAgenturbezirkeLatest)
+			agenturbezirkeGroup.GET("/periods", handler.GetAgenturbezirkePeriods)
+			agenturbezirkeGroup.GET("/period", handler.GetAgenturbezirkeByPeriod)
 			agenturbezirkeGroup.GET("/:ba_schl", handler.GetAgenturbezirkByID)
 			agenturbezirkeGroup.GET("/:ba_schl/arbeitslosigkeit", handler.GetAgenturbezirkArbeitslosigkeit)
 			agenturbezirkeGroup.GET("/:ba_schl/nuts3", handler.GetAgenturbezirkNuts3)

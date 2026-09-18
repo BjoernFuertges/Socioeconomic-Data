@@ -151,6 +151,86 @@ func (h *Handler) GetAgenturbezirkeLatest(c *gin.Context) {
 	})
 }
 
+// GetAgenturbezirkePeriods gibt alle Berichtsmonate zurück, für die
+// Agenturbezirk-Arbeitslosenzahlen vorliegen - für die Jahr/Monat-Auswahl in
+// der Karte (analog zur Jahres-/Versionsauswahl bei NUTS/LAU).
+// @Summary Verfügbare Berichtsmonate der Agenturbezirke
+// @Description Gibt alle distinkten (Jahr, Monat)-Kombinationen zurück, für die Arbeitslosenzahlen vorliegen (neueste zuerst).
+// @Tags Agenturbezirke
+// @Accept json
+// @Produce json
+// @Success 200 {object} models.APIResponse{data=[]models.AgenturbezirkPeriod}
+// @Failure 500 {object} models.APIResponse
+// @Router /agenturbezirke/periods [get]
+func (h *Handler) GetAgenturbezirkePeriods(c *gin.Context) {
+	query := `SELECT DISTINCT year, month, observation_date::text as observation_date
+		FROM transformed_data.mart_agenturbezirk_sociodata
+		WHERE year IS NOT NULL
+		ORDER BY year DESC, month DESC`
+
+	periods := []models.AgenturbezirkPeriod{}
+	if err := h.DB.Select(&periods, query); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    periods,
+		Meta: &models.MetaInfo{
+			Total: len(periods),
+		},
+	})
+}
+
+// GetAgenturbezirkeByPeriod gibt alle Agenturbezirke mit Geometrie und dem
+// Wert eines bestimmten Berichtsmonats zurück - für die Kartendarstellung
+// mit wählbarem Zeitpunkt (analog zur Jahresauswahl bei NUTS/LAU). Bezirke
+// ohne Wert für diesen Monat fehlen in der Antwort.
+// @Summary Agenturbezirke zu einem gewählten Berichtsmonat (für die Karte)
+// @Description Gibt jeden Agenturbezirk mit Geometrie und dem Monatswert (Arbeitslose, Unterbeschäftigung) für das angegebene Jahr/Monat zurück.
+// @Tags Agenturbezirke
+// @Accept json
+// @Produce json
+// @Param year query int true "Jahr" example(2026)
+// @Param month query int true "Monat (1-12)" example(8)
+// @Success 200 {object} models.APIResponse{data=[]models.AgenturbezirkLatestValue}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /agenturbezirke/period [get]
+func (h *Handler) GetAgenturbezirkeByPeriod(c *gin.Context) {
+	var filter struct {
+		Year  int `form:"year" binding:"required"`
+		Month int `form:"month" binding:"required,min=1,max=12"`
+	}
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		respondBadRequest(c, fmt.Sprintf("Ungültige Query-Parameter: %v", err))
+		return
+	}
+
+	query := `SELECT
+		ba_schl, name, geometry_wgs84, has_valid_geometry,
+		year, month, observation_date::text as observation_date,
+		arbeitslose, unterbeschaeftigung
+		FROM transformed_data.mart_agenturbezirk_sociodata
+		WHERE year = $1 AND month = $2
+		ORDER BY ba_schl`
+
+	values := []models.AgenturbezirkLatestValue{}
+	if err := h.DB.Select(&values, query, filter.Year, filter.Month); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    values,
+		Meta: &models.MetaInfo{
+			Total: len(values),
+		},
+	})
+}
+
 // GetAgenturbezirkNuts3 gibt die n:m-Zuordnung eines Agenturbezirks zu
 // überlappenden NUTS-3-Regionen zurück, mit Flächenanteil in beide
 // Richtungen - verweist auf den ergänzenden Kreis-Level-Datensatz

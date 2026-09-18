@@ -44,6 +44,15 @@ type AgenturbezirkLatestValue struct {
 	Unterbeschaeftigung sql.NullFloat64 `json:"unterbeschaeftigung" db:"unterbeschaeftigung" swaggertype:"number"`
 }
 
+// AgenturbezirkPeriod ist eine verfügbare (Jahr, Monat)-Kombination, für die
+// Agenturbezirk-Arbeitslosenzahlen vorliegen - für die Jahr/Monat-Auswahl in
+// der Karte (analog zur Jahres-/Versionsauswahl bei NUTS/LAU).
+type AgenturbezirkPeriod struct {
+	Year            int    `json:"year" db:"year" example:"2026"`
+	Month           int    `json:"month" db:"month" example:"8"`
+	ObservationDate string `json:"observation_date" db:"observation_date" example:"2026-08-01"`
+}
+
 // AgenturNuts3Share ist eine n:m-Zuordnungszeile Agenturbezirk <-> NUTS-3-
 // Region mit Flächenanteil in beide Richtungen (siehe
 // mart_agentur_nuts3_crosswalk.sql). Agenturbezirke bestehen in aller
