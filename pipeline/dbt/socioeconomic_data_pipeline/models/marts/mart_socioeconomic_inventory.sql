@@ -13,6 +13,7 @@
 -- depends_on: {{ ref('stg_sgb_ii_quote_kreise') }}
 -- depends_on: {{ ref('stg_studierende_kreise') }}
 -- depends_on: {{ ref('stg_wohngeldhaushalte_kreise') }}
+-- depends_on: {{ ref('stg_arbeitslosenzahlen_afa_agenturbezirke') }}
 {{
     config(
         materialized='table',
@@ -40,22 +41,36 @@
             | replace('_nuts3', '-nuts3')
             | replace('_lau', '-lau') %}
 
-        {% do datasets.append({"slug": slug, "model": node.name}) %}
+        {% do datasets.append({"slug": slug, "model": node.name, "geodata_level": none}) %}
     {% endif %}
 {% endfor %}
+
+{#
+  stg_arbeitslosenzahlen_afa_agenturbezirke ist Agenturbezirk-Grain (eigene
+  geodata_id_agentur-Spalte, kein geodata_level, kein geodata_id_nuts/lau/ars)
+  und passt deshalb auf keines der obigen Namens-Suffixe. Ohne diesen Eintrag
+  bleibt der Datensatz in mart_dataset_catalog ohne min_year/max_year/
+  total_records (siehe Kommentar dort). geodata_level wird hier als Literal
+  gesetzt, weil die Quelle keine solche Spalte führt.
+#}
+{% do datasets.append({
+    "slug": "arbeitslosenzahlen-afa-agenturbezirke",
+    "model": "stg_arbeitslosenzahlen_afa_agenturbezirke",
+    "geodata_level": "AGENTUR"
+}) %}
 
 with inventory as (
     {% for ds in datasets %}
     select
         '{{ ds.slug }}'::text as dataset,
         year,
-        geodata_level,
+        {% if ds.geodata_level %}'{{ ds.geodata_level }}'::text{% else %}geodata_level{% endif %} as geodata_level,
         count(*)::int as records,
         count(distinct nullif(to_jsonb(s)->>'geodata_id_nuts', ''))::int as distinct_geodata_nuts,
         count(distinct nullif(to_jsonb(s)->>'geodata_id_lau', ''))::int as distinct_geodata_lau,
         count(distinct nullif(to_jsonb(s)->>'geodata_id_ars', ''))::int as distinct_geodata_ars
     from {{ ref(ds.model) }} s
-    group by year, geodata_level
+    group by year{% if not ds.geodata_level %}, geodata_level{% endif %}
     {% if not loop.last %}
     union all
     {% endif %}
