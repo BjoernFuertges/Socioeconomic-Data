@@ -195,7 +195,7 @@ def make_resource(dataset_dir: Path, dataset_name: str, meta: Dict[str, Any]):
     geodata_level: str = meta.get("geodata_level", "")
     geodata_year: int | None = meta.get("geodata_year")
 
-    @dlt.resource(name=dataset_name, write_disposition="append")
+    @dlt.resource(name=dataset_name, write_disposition="replace")
     def _resource() -> Iterator[Dict[str, Any]]:
         csv_path = dataset_dir / "mapped_pairs.csv"
         if not csv_path.exists():
