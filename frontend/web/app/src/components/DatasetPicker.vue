@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue";
 import { apiGet } from "../api/client";
 import type {
+  AgenturDatasetAggregatePoint,
   DatasetCatalogEntry,
   DatasetMetadataEntry,
   GenericDatasetRow,
@@ -27,6 +28,10 @@ type LoadResult =
 
 const props = defineProps<{
   datasets: DatasetCatalogEntry[];
+  // Trotz des Namens bei kind="agentur" der ba_schl der Region, nicht ein
+  // NUTS-Code (siehe kind unten) - Prop-Name aus Kompatibilitätsgründen
+  // unverändert gelassen, um den Diff zu den bestehenden NUTS/LAU-Aufrufen
+  // klein zu halten.
   nutsCode: string;
   selectedSlugs: string[];
   viewMode: ViewMode;
@@ -34,8 +39,15 @@ const props = defineProps<{
   // Verhalten. Bei 0-2 (Land/Bundesland/Regierungsbezirk) gibt es keine
   // Kreis-grain-Zeilen unter diesem Code, deshalb lädt loadSlug() dann über
   // den auf diese Ebene hochaggregierten Endpoint statt /{slug}/timeseries
-  // (siehe RegionBrowser.vue, mart_nuts012_dataset_aggregate).
+  // (siehe RegionBrowser.vue, mart_nuts012_dataset_aggregate). Ignoriert,
+  // wenn kind="agentur".
   nutsLevel?: number;
+  // "nuts" (Standard) lädt wie bisher über /{slug}/timeseries bzw.
+  // /nuts/{code}/dataset-aggregate/{slug}. "agentur" lädt stattdessen immer
+  // über /agenturbezirke/{ba_schl}/dataset-aggregate/{slug} (flächenanteils-
+  // statt bevölkerungsgewichtet, siehe mart_agentur_dataset_aggregate) - es
+  // gibt für Agenturbezirke keine Kreis-grain-Rohdaten, nur die Aggregation.
+  kind?: "nuts" | "agentur";
 }>();
 
 const emit = defineEmits<{
@@ -76,6 +88,15 @@ async function loadSlug(slug: string) {
     metadataBySlug.value.set(slug, body.data ?? null);
   } catch {
     metadataBySlug.value.set(slug, null);
+  }
+  if (props.kind === "agentur") {
+    try {
+      const body = await apiGet<AgenturDatasetAggregatePoint[]>(`/agenturbezirke/${props.nutsCode}/dataset-aggregate/${slug}`);
+      results.value.set(slug, { kind: "timeseries", points: body.data ?? [] });
+    } catch (err) {
+      results.value.set(slug, { kind: "error", message: err instanceof Error ? err.message : String(err) });
+    }
+    return;
   }
   if ((props.nutsLevel ?? 3) !== 3) {
     // NUTS-0/1/2: /{slug}/timeseries kennt nur Kreis-grain-Codes (siehe

@@ -145,7 +145,7 @@ export interface NutsLauAggregateResponse {
 
 export interface GeoRegionSummary {
   geo_id: string;
-  geo_type: "nuts" | "lau";
+  geo_type: "nuts" | "lau" | "agentur";
   region_name: string;
   nuts_level?: number;
   vintage_year?: number;
@@ -195,6 +195,15 @@ export interface NutsTimeseriesPoint extends TimeseriesPoint {
 // source_region_count (Anzahl der Kreise, die zu diesem Jahr beigetragen haben).
 export interface NutsDatasetAggregatePoint extends TimeseriesPoint {
   nuts_id: string;
+  dataset_slug: string;
+  source_region_count: number;
+}
+
+// Zeitreihenpunkt von GET /agenturbezirke/{ba_schl}/dataset-aggregate/{slug} -
+// das Agentur-Pendant zu NutsDatasetAggregatePoint, aber flächenanteils-
+// statt bevölkerungsgewichtet (siehe mart_agentur_dataset_aggregate).
+export interface AgenturDatasetAggregatePoint extends TimeseriesPoint {
+  ba_schl: string;
   dataset_slug: string;
   source_region_count: number;
 }

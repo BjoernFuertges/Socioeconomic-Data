@@ -239,6 +239,22 @@ body {
   margin-left: 0.4rem;
 }
 
+.region-item .region-badge {
+  float: right;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.05rem 0.4rem;
+}
+
+.region-type-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.6rem;
+}
+
 .hint {
   color: var(--text-muted);
   font-size: 0.9rem;

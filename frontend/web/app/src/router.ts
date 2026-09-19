@@ -1,12 +1,14 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 
-// Pfade orientieren sich an den Backend-Routen (siehe backend/internal/routes/routes.go),
-// damit z.B. /regionen/nuts/DE300 und die API-Route /nuts/DE300 leicht vergleichbar
-// bleiben (FAIR-Findability: teilbare/bookmarkbare Deep-Links pro Ansicht).
+// regionId ist über alle Gebietstypen hinweg eindeutig (NUTS-Codes, LAU
+// gisco_ids und Agentur ba_schl haben disjunkte Formate), der Typ selbst
+// steht explizit in ?type= statt als Pfadsegment - RegionBrowser.vue zeigt
+// alle drei Gebietstypen in einer kombinierten, per ?types= filterbaren
+// Liste, keine Typ-Tabs mehr.
 const routes: RouteRecordRaw[] = [
   { path: "/", redirect: "/regionen" },
   {
-    path: "/regionen/:regionType(nuts|lau|agentur)?/:regionId?",
+    path: "/regionen/:regionId?",
     name: "regionen",
     component: () => import("./components/RegionBrowser.vue"),
   },

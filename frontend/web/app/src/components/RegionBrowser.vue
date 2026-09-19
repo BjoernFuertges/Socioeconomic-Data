@@ -62,7 +62,7 @@ function parseViewModeParam(value: unknown): DatasetViewMode {
 // als Checkboxen (keine "leere Auswahl"-Sonderfälle, jede Kombination ist
 // ein einzelner Klick). Die Auswahl bleibt trotzdem als string[] im Zustand/
 // in der Route (?metrics=), damit sie mit demselben Muster wie
-// nutsSelectedSlugs/lauSelectedSlugs funktioniert (siehe agenturMetricsQuery).
+// nutsSelectedSlugs/lauSelectedSlugs funktioniert (siehe currentQuery).
 type AgenturMetric = "arbeitslose" | "unterbeschaeftigung";
 const AGENTUR_METRIC_LABELS: Record<AgenturMetric, string> = {
   arbeitslose: "Arbeitslose",
@@ -85,9 +85,13 @@ function parseMetricsParam(value: unknown): AgenturMetric[] {
 const route = useRoute();
 const router = useRouter();
 
-// Gebietstyp + ausgewählte Region leben in der Route (/regionen/:regionType/:regionId),
-// nicht mehr in lokalen Refs - macht die Auswahl deep-linkbar/teilbar (siehe applyRouteSelection).
-const regionType = computed<RegionType>(() => (route.params.regionType as RegionType) || "nuts");
+// Alle drei Gebietstypen leben jetzt in einer kombinierten Liste (siehe
+// combinedListItems unten), per activeTypes-Filter unterscheidbar statt
+// über Tabs. regionType ist trotzdem als eigener Ref nötig: er steuert,
+// welcher der drei Detail-Blöcke unten angezeigt wird - abgeleitet aus dem
+// Typ der zuletzt gewählten Region (gesetzt von selectNuts/selectLau/
+// selectAgentur), nicht mehr aus einem Routen-Pfadsegment.
+const regionType = ref<RegionType>("nuts");
 
 const REGION_TYPE_LABELS: Record<RegionType, string> = {
   nuts: "NUTS (Land–Kreis)",
@@ -95,16 +99,50 @@ const REGION_TYPE_LABELS: Record<RegionType, string> = {
   agentur: "Agenturbezirke",
 };
 
-function switchRegionType(type: RegionType) {
-  router.push({ name: "regionen", params: { regionType: type } });
+// Filter für die kombinierte Liste (siehe combinedListItems) - unabhängig
+// von regionType (der Detail-Ansicht): mehrere Typen können gleichzeitig
+// aktiv sein, mindestens einer muss es bleiben.
+const ALL_REGION_TYPES: RegionType[] = ["nuts", "lau", "agentur"];
+const activeTypes = ref<RegionType[]>([...ALL_REGION_TYPES]);
+function toggleTypeFilter(type: RegionType) {
+  if (activeTypes.value.includes(type)) {
+    if (activeTypes.value.length === 1) return;
+    activeTypes.value = activeTypes.value.filter((t) => t !== type);
+  } else {
+    activeTypes.value = [...activeTypes.value, type];
+  }
 }
+function parseTypesParam(value: unknown): RegionType[] {
+  if (typeof value !== "string" || !value) return [...ALL_REGION_TYPES];
+  const parsed = value
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s): s is RegionType => s === "nuts" || s === "lau" || s === "agentur");
+  return parsed.length ? parsed : [...ALL_REGION_TYPES];
+}
+
+// Grobe, rein clientseitige Typ-Erkennung für Deep-Links ohne ?type=
+// (z.B. von Hand eingetippte/alte URLs) - ba_schl ist rein numerisch,
+// NUTS-Codes sind 2-5 Zeichen mit 2-Buchstaben-Länderpräfix, LAU gisco_ids
+// enthalten immer einen Unterstrich ("DE_12345678") und fallen damit durch.
+// Interne Navigation (select*()) setzt ?type= immer explizit - das hier ist
+// nur ein Fallback für den Erstaufruf.
+function inferRegionType(id: string): RegionType {
+  if (/^\d+$/.test(id)) return "agentur";
+  if (/^[A-Za-z]{2}[0-9A-Za-z]{0,3}$/.test(id)) return "nuts";
+  return "lau";
+}
+
+// Gemeinsame Suche über alle aktiven Gebietstypen (siehe combinedListItems) -
+// ersetzt die früher pro Typ getrennten nutsSearch/lauSearch/agenturSearch.
+const combinedSearch = ref("");
 
 // --- NUTS (Land/Bundesland/Regierungsbezirk/Kreis) ---
 const nutsRegions = ref<NutsRegionSummary[]>([]);
 const nutsLoadError = ref<string | null>(null);
-const nutsSearch = ref("");
-// Ebene innerhalb des "nuts"-Tabs (siehe NutsLevel oben); Default 3 (Kreise)
-// entspricht dem bisherigen, alleinigen Verhalten dieser Ansicht.
+// Ebene innerhalb der NUTS-Treffer der kombinierten Liste (siehe NutsLevel
+// oben); Default 3 (Kreise) entspricht dem bisherigen, alleinigen Verhalten
+// dieser Ansicht. Nur relevant/sichtbar, solange "nuts" in activeTypes ist.
 const nutsBrowseLevel = ref<NutsLevel>(3);
 const selectedNuts = ref<NutsRegionSummary | null>(null);
 const nutsDatasets = ref<DatasetCatalogEntry[] | null>(null);
@@ -180,7 +218,7 @@ function formatPercentValue(value: number | null): string {
 }
 
 const nutsFiltered = computed(() => {
-  const needle = nutsSearch.value.trim().toLowerCase();
+  const needle = combinedSearch.value.trim().toLowerCase();
   const inLevel = nutsRegions.value.filter((r) => r.nuts_level === nutsBrowseLevel.value);
   if (!needle) return inLevel;
   return inLevel.filter((r) => {
@@ -219,6 +257,7 @@ function reconcileNutsSelection(wanted: string[]) {
 async function selectNuts(nutsId: string, wantedSlugs?: string[], navigate = true) {
   const region = nutsRegions.value.find((r) => r.nuts_id === nutsId);
   if (!region) return;
+  regionType.value = "nuts";
   selectedNuts.value = region;
   nutsBrowseLevel.value = region.nuts_level as NutsLevel;
   const wanted = wantedSlugs ?? nutsSelectedSlugs.value;
@@ -228,7 +267,7 @@ async function selectNuts(nutsId: string, wantedSlugs?: string[], navigate = tru
   nutsChildLauError.value = null;
   nutsLauAggregate.value = null;
   if (navigate) {
-    router.push({ name: "regionen", params: { regionType: "nuts", regionId: nutsId } });
+    router.push({ name: "regionen", params: { regionId: nutsId }, query: { type: "nuts" } });
   }
 
   // GET /nuts/{id}/datasets deckt inzwischen alle Ebenen ab: für Kreise
@@ -271,29 +310,7 @@ async function selectNuts(nutsId: string, wantedSlugs?: string[], navigate = tru
   }
 }
 
-// Spiegelt die aktuelle Datensatz-Auswahl/-Ansicht/Ebene in die Route zurück
-// (router.replace, damit reine Auswahländerungen keine Chronik-Einträge
-// erzeugen), sobald eine NUTS-Region gewählt ist - analog zu MapView.vue's
-// currentQuery/watch-Muster. Macht Requirement 1 robust: ?dataset= ist ab dem
-// Moment gesetzt, in dem eine Region gewählt ist, und bleibt synchron mit
-// jeder späteren Auswahl-/Ansichtsänderung.
-const nutsDatasetQuery = computed<Record<string, string>>(() => {
-  const q: Record<string, string> = {};
-  if (nutsBrowseLevel.value !== 3) q.level = String(nutsBrowseLevel.value);
-  if (nutsSelectedSlugs.value.length) q.dataset = nutsSelectedSlugs.value.join(",");
-  if (nutsSelectedSlugs.value.length > 1) q.view = nutsViewMode.value;
-  return q;
-});
-watch(nutsDatasetQuery, (query) => {
-  // route.name-Check siehe Kommentar in applyRouteSelection() - wegen
-  // <KeepAlive> läuft dieser Watcher auch außerhalb der "regionen"-Route
-  // weiter, darf dann aber nicht dorthin zurücknavigieren.
-  if (route.name !== "regionen" || regionType.value !== "nuts" || !selectedNuts.value) return;
-  router.replace({ name: "regionen", params: { regionType: "nuts", regionId: selectedNuts.value.nuts_id }, query });
-});
-
 // --- LAU (Gemeinden) ---
-const lauSearch = ref("");
 const lauSearching = ref(false);
 const lauSearchError = ref<string | null>(null);
 const lauResults = ref<LauRegion[]>([]);
@@ -316,7 +333,7 @@ function dedupeByGiscoId(rows: LauRegion[]): LauRegion[] {
 }
 
 let lauSearchTimer: ReturnType<typeof setTimeout> | null = null;
-watch(lauSearch, (query) => {
+watch(combinedSearch, (query) => {
   if (lauSearchTimer) clearTimeout(lauSearchTimer);
   const trimmed = query.trim();
   if (trimmed.length < 2) {
@@ -324,7 +341,18 @@ watch(lauSearch, (query) => {
     lauSearchError.value = null;
     return;
   }
+  if (!activeTypes.value.includes("lau")) return;
   lauSearchTimer = setTimeout(() => runLauSearch(trimmed), 350);
+});
+// Suche über die kombinierte Liste kann LAU nachträglich per Filter dazuschalten,
+// während schon ein Suchbegriff steht (z.B. erst NUTS/Agentur, dann LAU
+// aktivieren) - ohne diesen zweiten Watcher bliebe lauResults dann leer, bis
+// der Suchbegriff erneut geändert wird.
+watch(activeTypes, (types) => {
+  const trimmed = combinedSearch.value.trim();
+  if (types.includes("lau") && trimmed.length >= 2 && !lauResults.value.length && !lauSearching.value) {
+    runLauSearch(trimmed);
+  }
 });
 
 async function runLauSearch(query: string) {
@@ -343,11 +371,6 @@ async function runLauSearch(query: string) {
 const lauListItems = computed(() =>
   lauResults.value.map((r) => ({ id: r.gisco_id, name: r.lau_name, code: r.gisco_id })),
 );
-const lauEmptyHint = computed(() => {
-  if (lauSearch.value.trim().length < 2) return "Gemeindenamen eingeben, um zu suchen.";
-  if (lauSearching.value) return "Suche…";
-  return "Keine Treffer.";
-});
 
 function reconcileLauSelection(wanted: string[]) {
   const available = new Set((lauDatasets.value ?? []).map((d) => d.route_slug));
@@ -360,6 +383,7 @@ function reconcileLauSelection(wanted: string[]) {
 }
 
 async function selectLau(giscoId: string, wantedSlugs?: string[], navigate = true) {
+  regionType.value = "lau";
   selectedGiscoId.value = giscoId;
   selectedLau.value = null;
   lauDetailError.value = null;
@@ -367,7 +391,7 @@ async function selectLau(giscoId: string, wantedSlugs?: string[], navigate = tru
   lauDatasetsError.value = null;
   const wanted = wantedSlugs ?? lauSelectedSlugs.value;
   if (navigate) {
-    router.push({ name: "regionen", params: { regionType: "lau", regionId: giscoId } });
+    router.push({ name: "regionen", params: { regionId: giscoId }, query: { type: "lau" } });
   }
   try {
     const body = await apiGet<LauRegion>(`/lau/${giscoId}`);
@@ -389,18 +413,6 @@ async function selectLau(giscoId: string, wantedSlugs?: string[], navigate = tru
   reconcileLauSelection(wanted);
 }
 
-// Analog zu nutsDatasetQuery.
-const lauDatasetQuery = computed<Record<string, string>>(() => {
-  const q: Record<string, string> = {};
-  if (lauSelectedSlugs.value.length) q.dataset = lauSelectedSlugs.value.join(",");
-  if (lauSelectedSlugs.value.length > 1) q.view = lauViewMode.value;
-  return q;
-});
-watch(lauDatasetQuery, (query) => {
-  if (route.name !== "regionen" || regionType.value !== "lau" || !selectedGiscoId.value) return;
-  router.replace({ name: "regionen", params: { regionType: "lau", regionId: selectedGiscoId.value }, query });
-});
-
 const lauPopulation = computed(() => (selectedLau.value ? unwrapNull(selectedLau.value.population_count) : null));
 const lauCountry = computed(() =>
   selectedLau.value ? unwrapNull(selectedLau.value.country) || selectedLau.value.country_code : null,
@@ -413,7 +425,6 @@ const lauNuts3IsEstimate = computed(
 // --- Agenturbezirke ---
 const agenturbezirke = ref<AgenturbezirkSummary[]>([]);
 const agenturLoadError = ref<string | null>(null);
-const agenturSearch = ref("");
 const selectedAgentur = ref<AgenturbezirkSummary | null>(null);
 const agenturPoints = ref<AgenturbezirkArbeitslosigkeitPoint[] | null>(null);
 const agenturPointsError = ref<string | null>(null);
@@ -444,7 +455,7 @@ async function loadAgenturMetadata() {
 // Tabs über dem Chart: beide Metriken standardmäßig sichtbar, die Tabelle
 // zeigt nur die Spalten der gewählten Metrik(en) (siehe agenturTableColumns).
 // Wie nutsSelectedSlugs/lauSelectedSlugs bleibt die Auswahl beim
-// Regionswechsel bestehen und wird per agenturMetricsQuery-Watcher (unten)
+// Regionswechsel bestehen und wird per currentQuery-Watcher (unten)
 // immer in die Route gespiegelt.
 const agenturSelectedMetrics = ref<AgenturMetric[]>(["arbeitslose", "unterbeschaeftigung"]);
 
@@ -472,16 +483,19 @@ async function loadAgenturbezirke() {
   loadAgenturMetadata();
 }
 
+// Agentur wird (wie NUTS) eager geladen, sobald "agentur" zu den aktiven
+// Listen-Filtern gehört - standardmäßig sind alle drei Typen aktiv, die
+// kombinierte Liste braucht die Daten also i.d.R. sofort beim Mount.
 watch(
-  regionType,
-  (type) => {
-    if (type === "agentur") loadAgenturbezirke();
+  activeTypes,
+  (types) => {
+    if (types.includes("agentur")) loadAgenturbezirke();
   },
   { immediate: true },
 );
 
 const agenturFiltered = computed(() => {
-  const needle = agenturSearch.value.trim().toLowerCase();
+  const needle = combinedSearch.value.trim().toLowerCase();
   if (!needle) return agenturbezirke.value;
   return agenturbezirke.value.filter(
     (a) => a.name.toLowerCase().includes(needle) || a.ba_schl.includes(needle),
@@ -494,6 +508,7 @@ const agenturListItems = computed(() =>
 async function selectAgentur(baSchl: string, navigate = true, wantedMetrics?: AgenturMetric[]) {
   const agentur = agenturbezirke.value.find((a) => a.ba_schl === baSchl);
   if (!agentur) return;
+  regionType.value = "agentur";
   selectedAgentur.value = agentur;
   agenturPoints.value = null;
   agenturPointsError.value = null;
@@ -505,7 +520,7 @@ async function selectAgentur(baSchl: string, navigate = true, wantedMetrics?: Ag
   // also direkt übernommen werden.
   if (wantedMetrics?.length) agenturSelectedMetrics.value = wantedMetrics;
   if (navigate) {
-    router.push({ name: "regionen", params: { regionType: "agentur", regionId: baSchl } });
+    router.push({ name: "regionen", params: { regionId: baSchl }, query: { type: "agentur" } });
   }
   try {
     const body = await apiGet<AgenturbezirkArbeitslosigkeitPoint[]>(`/agenturbezirke/${baSchl}/arbeitslosigkeit`);
@@ -521,17 +536,43 @@ async function selectAgentur(baSchl: string, navigate = true, wantedMetrics?: Ag
   }
 }
 
-// Analog zu nutsDatasetQuery/lauDatasetQuery - spiegelt die Metrik-Auswahl
-// immer in die Route, sobald ein Agenturbezirk gewählt ist.
-const agenturMetricsQuery = computed<Record<string, string>>(() => {
-  const q: Record<string, string> = {};
-  if (agenturSelectedMetrics.value.length) q.metrics = agenturSelectedMetrics.value.join(",");
-  return q;
+// Aggregierte Kreis-Daten für diesen Agenturbezirk (siehe
+// GET /agenturbezirke/{ba_schl}/dataset-aggregate/{slug}, flächenanteils-
+// gewichtet über mart_agentur_nuts3_crosswalk) - "Jeweils aggregierte
+// Daten anbieten" für Agentur, analog zum NUTS-0/1/2-dataset-aggregate und
+// zum LAU-Kreis-Datensatzkatalog. Die Kandidaten-Slugs kommen vom größten
+// überlappenden Kreis (agenturNuts3Shares ist bereits nach area_share_of_
+// agentur absteigend sortiert, siehe Backend) - eigener Katalog-Endpunkt
+// für Agentur existiert nicht, Kreis-grain-Datensätze sind aber praktisch
+// deckungsgleich mit dem, was pro Kreis unter /nuts/{id}/datasets steht.
+const agenturAggregateDatasets = ref<DatasetCatalogEntry[] | null>(null);
+const agenturAggregateDatasetsError = ref<string | null>(null);
+const agenturAggregateSelectedSlugs = ref<string[]>([]);
+const agenturAggregateViewMode = ref<DatasetViewMode>("separate");
+
+watch(agenturNuts3Shares, async (shares) => {
+  agenturAggregateDatasets.value = null;
+  agenturAggregateDatasetsError.value = null;
+  const primaryNuts3 = shares?.[0]?.nuts3_id;
+  if (!primaryNuts3) return;
+  try {
+    const body = await apiGet<DatasetCatalogResponse>(`/nuts/${primaryNuts3}/datasets`);
+    agenturAggregateDatasets.value = body.data?.datasets ?? [];
+    reconcileAgenturAggregateSelection(agenturAggregateSelectedSlugs.value);
+  } catch (err) {
+    agenturAggregateDatasetsError.value = err instanceof Error ? err.message : String(err);
+  }
 });
-watch(agenturMetricsQuery, (query) => {
-  if (route.name !== "regionen" || regionType.value !== "agentur" || !selectedAgentur.value) return;
-  router.replace({ name: "regionen", params: { regionType: "agentur", regionId: selectedAgentur.value.ba_schl }, query });
-});
+
+function reconcileAgenturAggregateSelection(wanted: string[]) {
+  const available = new Set((agenturAggregateDatasets.value ?? []).map((d) => d.route_slug));
+  let next = wanted.filter((s) => available.has(s));
+  if (!next.length) {
+    const first = agenturAggregateDatasets.value?.[0]?.route_slug;
+    next = first ? [first] : [];
+  }
+  agenturAggregateSelectedSlugs.value = next;
+}
 
 // "Unterbeschäftigung" wird von der BA erst seit 2009 erhoben, "Arbeitslose"
 // schon länger - Perioden, in denen KEINE der gerade gewählten Metriken
@@ -597,9 +638,6 @@ const agenturLatest = computed(() => {
 });
 
 function jumpToInkarArbeitslose(nuts3Id: string) {
-  // selectNuts() navigiert bereits nach regionType "nuts" (siehe dort) - ein
-  // zusätzlicher switchRegionType()-Aufruf würde nur eine zweite,
-  // überflüssige Route-Navigation davor schieben.
   selectNuts(nuts3Id, [INKAR_ARBEITSLOSE_SLUG]);
 }
 
@@ -609,7 +647,80 @@ function viewOnMap(geoType: RegionType, geoId: string) {
   router.push({ name: "karte", query: { geo: geoType, region: geoId } });
 }
 
-// Übernimmt regionType/regionId/dataset aus der aktuellen Route in den
+// Kombinierte Liste über alle aktiven Gebietstypen (siehe activeTypes) -
+// ersetzt die früher pro Typ getrennten Listen-Panels. NUTS-Treffer folgen
+// der aktuellen nutsBrowseLevel-Ebene, Agentur ist immer vollständig
+// geladen, LAU nur ab 2 Zeichen Suchbegriff (siehe combinedSearch-Watcher).
+type CombinedRegionItem = { id: string; name: string; code: string; type: RegionType; badge: string };
+const combinedListItems = computed<CombinedRegionItem[]>(() => {
+  const items: CombinedRegionItem[] = [];
+  if (activeTypes.value.includes("nuts")) {
+    for (const it of nutsListItems.value) items.push({ ...it, type: "nuts", badge: NUTS_LEVEL_LABELS[nutsBrowseLevel.value] });
+  }
+  if (activeTypes.value.includes("agentur")) {
+    for (const it of agenturListItems.value) items.push({ ...it, type: "agentur", badge: "Agentur" });
+  }
+  if (activeTypes.value.includes("lau")) {
+    for (const it of lauListItems.value) items.push({ ...it, type: "lau", badge: "LAU" });
+  }
+  return items;
+});
+const combinedSelectedId = computed<string | null>(() => {
+  if (regionType.value === "nuts") return selectedNuts.value?.nuts_id ?? null;
+  if (regionType.value === "lau") return selectedGiscoId.value;
+  return selectedAgentur.value?.ba_schl ?? null;
+});
+const combinedEmptyHint = computed(() => {
+  const onlyLau = activeTypes.value.length === 1 && activeTypes.value[0] === "lau";
+  if (onlyLau && combinedSearch.value.trim().length < 2) return "Gemeindenamen eingeben, um zu suchen.";
+  if (lauSearching.value && activeTypes.value.includes("lau")) return "Suche…";
+  return "Keine Treffer.";
+});
+function selectCombinedItem(item: CombinedRegionItem) {
+  if (item.type === "nuts") selectNuts(item.id);
+  else if (item.type === "lau") selectLau(item.id);
+  else selectAgentur(item.id);
+}
+
+// Spiegelt Typ-Filter + die aktuell gewählte Region samt ihrer
+// Datensatz-/Ansichts-/Metrik-Auswahl in die Route zurück (router.replace,
+// damit reine Auswahländerungen keine Chronik-Einträge erzeugen) - ersetzt
+// die früher pro Typ getrennten nutsDatasetQuery-/lauDatasetQuery-/
+// agenturMetricsQuery-Watcher durch einen einzigen, analog zu MapView.vue's
+// currentQuery-Muster.
+const currentQuery = computed<Record<string, string>>(() => {
+  const q: Record<string, string> = {};
+  if (activeTypes.value.length !== ALL_REGION_TYPES.length) q.types = activeTypes.value.join(",");
+  if (regionType.value === "nuts" && selectedNuts.value) {
+    q.type = "nuts";
+    if (nutsBrowseLevel.value !== 3) q.level = String(nutsBrowseLevel.value);
+    if (nutsSelectedSlugs.value.length) q.dataset = nutsSelectedSlugs.value.join(",");
+    if (nutsSelectedSlugs.value.length > 1) q.view = nutsViewMode.value;
+  } else if (regionType.value === "lau" && selectedGiscoId.value) {
+    q.type = "lau";
+    if (lauSelectedSlugs.value.length) q.dataset = lauSelectedSlugs.value.join(",");
+    if (lauSelectedSlugs.value.length > 1) q.view = lauViewMode.value;
+  } else if (regionType.value === "agentur" && selectedAgentur.value) {
+    q.type = "agentur";
+    if (agenturSelectedMetrics.value.length) q.metrics = agenturSelectedMetrics.value.join(",");
+  }
+  return q;
+});
+const currentRegionId = computed<string | undefined>(() => {
+  if (regionType.value === "nuts") return selectedNuts.value?.nuts_id;
+  if (regionType.value === "lau") return selectedGiscoId.value ?? undefined;
+  if (regionType.value === "agentur") return selectedAgentur.value?.ba_schl;
+  return undefined;
+});
+watch([currentQuery, currentRegionId], ([query, id]) => {
+  // route.name-Check siehe Kommentar in applyRouteSelection() - wegen
+  // <KeepAlive> läuft dieser Watcher auch außerhalb der "regionen"-Route
+  // weiter, darf dann aber nicht dorthin zurücknavigieren.
+  if (route.name !== "regionen") return;
+  router.replace({ name: "regionen", params: { regionId: id }, query });
+});
+
+// Übernimmt Typ-Filter/regionId/Typ/Datensatz aus der aktuellen Route in den
 // Komponentenzustand - für Deep-Links, Browser-Zurück/Vor und externe
 // Cross-Links (z.B. aus dem Datenkatalog). navigate=false verhindert, dass
 // die select*()-Funktionen die Route (auf sich selbst) erneut pushen.
@@ -620,14 +731,15 @@ function applyRouteSelection() {
   // aktuelle Route-Objekt, nicht "die Route, mit der diese Komponente
   // zuletzt aktiv war" - ohne diese Prüfung würde z.B. Kartes eigenes
   // ?dataset= (gleicher Query-Key!) hier als NUTS-3-Datensatzauswahl
-  // fehlinterpretiert (regionType fällt ohne :regionType-Param auf "nuts"
-  // zurück) und über den nutsDatasetQuery-Watcher unten sogar zurück auf
-  // /regionen navigiert werden.
+  // fehlinterpretiert und über den currentQuery-Watcher oben sogar zurück
+  // auf /regionen navigiert werden.
   if (route.name !== "regionen") return;
-  const type = regionType.value;
+  activeTypes.value = parseTypesParam(route.query.types);
+
   const id = route.params.regionId as string | undefined;
   const slugsFromRoute = parseSlugsParam(route.query.dataset);
   const viewFromRoute = parseViewModeParam(route.query.view);
+  const type = (route.query.type as RegionType | undefined) ?? (id ? inferRegionType(id) : regionType.value);
 
   if (type === "nuts" && route.query.level !== undefined) {
     nutsBrowseLevel.value = parseNutsLevelParam(route.query.level);
@@ -649,6 +761,7 @@ function applyRouteSelection() {
   }
 
   if (type === "nuts") {
+    regionType.value = "nuts";
     if (!nutsRegions.value.length) return;
     if (viewFromRoute) nutsViewMode.value = viewFromRoute;
     if (selectedNuts.value?.nuts_id === id) {
@@ -662,6 +775,7 @@ function applyRouteSelection() {
     }
     selectNuts(id, slugsFromRoute.length ? slugsFromRoute : undefined, false);
   } else if (type === "lau") {
+    regionType.value = "lau";
     if (viewFromRoute) lauViewMode.value = viewFromRoute;
     if (selectedGiscoId.value === id) {
       if (slugsFromRoute.length) reconcileLauSelection(slugsFromRoute);
@@ -669,6 +783,7 @@ function applyRouteSelection() {
     }
     selectLau(id, slugsFromRoute.length ? slugsFromRoute : undefined, false);
   } else if (type === "agentur") {
+    regionType.value = "agentur";
     if (!agenturbezirke.value.length) return;
     const metricsFromRoute = parseMetricsParam(route.query.metrics);
     if (selectedAgentur.value?.ba_schl === id) {
@@ -683,8 +798,9 @@ function applyRouteSelection() {
 
 watch(
   [
-    () => route.params.regionType,
     () => route.params.regionId,
+    () => route.query.type,
+    () => route.query.types,
     () => route.query.dataset,
     () => route.query.metrics,
     () => route.query.view,
@@ -699,24 +815,23 @@ watch(
 
 <template>
   <div class="region-browser">
-    <div class="region-type-switch" role="tablist" aria-label="Gebietstyp wählen">
+    <div class="region-type-filter" role="group" aria-label="Gebietstyp filtern">
       <button
-        v-for="type in (['nuts', 'lau', 'agentur'] as RegionType[])"
+        v-for="type in ALL_REGION_TYPES"
         :key="type"
         type="button"
         class="nav-tab"
-        :class="{ 'is-active': regionType === type }"
-        role="tab"
-        :aria-selected="regionType === type"
-        @click="switchRegionType(type)"
+        :class="{ 'is-active': activeTypes.includes(type) }"
+        :aria-pressed="activeTypes.includes(type)"
+        @click="toggleTypeFilter(type)"
       >
         {{ REGION_TYPE_LABELS[type] }}
       </button>
     </div>
 
-    <div v-if="regionType === 'nuts'" class="browser-layout">
+    <div class="browser-layout">
       <div class="panel list-panel">
-        <div class="nuts-level-switch" role="tablist" aria-label="NUTS-Ebene wählen">
+        <div v-if="activeTypes.includes('nuts')" class="nuts-level-switch" role="tablist" aria-label="NUTS-Ebene wählen">
           <button
             v-for="level in ([0, 1, 2, 3] as NutsLevel[])"
             :key="level"
@@ -730,30 +845,33 @@ watch(
             {{ NUTS_LEVEL_LABELS[level] }}
           </button>
         </div>
-        <label class="visually-hidden" for="nuts-search">{{ NUTS_LEVEL_LABELS[nutsBrowseLevel] }} suchen</label>
+        <label class="visually-hidden" for="combined-search">Region suchen</label>
         <input
-          id="nuts-search"
-          v-model="nutsSearch"
+          id="combined-search"
+          v-model="combinedSearch"
           type="search"
-          :placeholder="`${NUTS_LEVEL_LABELS[nutsBrowseLevel]} suchen (Name oder NUTS-Code)…`"
+          placeholder="Region suchen (Name, NUTS-Code, Gemeinde oder BA-Schlüssel)…"
           autocomplete="off"
         />
-        <p v-if="nutsLoadError" class="error-text">Regionen konnten nicht geladen werden: {{ nutsLoadError }}</p>
+        <p v-if="nutsLoadError" class="error-text">NUTS-Regionen konnten nicht geladen werden: {{ nutsLoadError }}</p>
+        <p v-if="agenturLoadError" class="error-text">Agenturbezirke konnten nicht geladen werden: {{ agenturLoadError }}</p>
+        <p v-if="lauSearchError" class="error-text">Gemeinde-Suche fehlgeschlagen: {{ lauSearchError }}</p>
         <RegionList
-          v-else
-          :items="nutsListItems"
-          :selected-id="selectedNuts?.nuts_id ?? null"
-          empty-hint="Keine Treffer."
-          @select="(id: string) => selectNuts(id)"
+          :items="combinedListItems"
+          :selected-id="combinedSelectedId"
+          :empty-hint="combinedEmptyHint"
+          :max-shown="600"
+          @select="(item) => selectCombinedItem(item as CombinedRegionItem)"
         />
       </div>
       <div class="panel detail-panel">
-        <p v-if="!selectedNuts && nutsSelectedSlugs.length" class="hint">
-          Datensatz „{{ nutsSelectedSlugs.map(formatDatasetLabel).join(", ") }}“ vorausgewählt – links eine Region
-          wählen.
-        </p>
-        <p v-else-if="!selectedNuts" class="hint">Links eine Region auswählen, um Details zu sehen.</p>
-        <template v-else>
+        <template v-if="regionType === 'nuts'">
+          <p v-if="!selectedNuts && nutsSelectedSlugs.length" class="hint">
+            Datensatz „{{ nutsSelectedSlugs.map(formatDatasetLabel).join(", ") }}“ vorausgewählt – links eine Region
+            wählen.
+          </p>
+          <p v-else-if="!selectedNuts" class="hint">Links eine Region auswählen, um Details zu sehen.</p>
+          <template v-else>
           <nav v-if="nutsBreadcrumb(selectedNuts.nuts_id).length" class="breadcrumb" aria-label="Übergeordnete Regionen">
             <template v-for="ancestor in nutsBreadcrumb(selectedNuts.nuts_id)" :key="ancestor.nuts_id">
               <button type="button" class="link-button" @click="selectNuts(ancestor.nuts_id)">
@@ -847,29 +965,9 @@ watch(
             </ul>
           </template>
         </template>
-      </div>
-    </div>
+        </template>
 
-    <div v-else-if="regionType === 'lau'" class="browser-layout">
-      <div class="panel list-panel">
-        <label class="visually-hidden" for="lau-search">Gemeinde suchen</label>
-        <input
-          id="lau-search"
-          v-model="lauSearch"
-          type="search"
-          placeholder="Gemeinde suchen (mind. 2 Zeichen)…"
-          autocomplete="off"
-        />
-        <p v-if="lauSearchError" class="error-text">Suche fehlgeschlagen: {{ lauSearchError }}</p>
-        <RegionList
-          v-else
-          :items="lauListItems"
-          :selected-id="selectedGiscoId"
-          :empty-hint="lauEmptyHint"
-          @select="(id: string) => selectLau(id)"
-        />
-      </div>
-      <div class="panel detail-panel">
+        <template v-else-if="regionType === 'lau'">
         <p v-if="!selectedGiscoId && lauSelectedSlugs.length" class="hint">
           Datensatz „{{ lauSelectedSlugs.map(formatDatasetLabel).join(", ") }}“ vorausgewählt – links eine Gemeinde
           suchen.
@@ -937,31 +1035,11 @@ watch(
             />
           </template>
         </template>
-      </div>
-    </div>
+        </template>
 
-    <div v-else class="browser-layout">
-      <div class="panel list-panel">
-        <label class="visually-hidden" for="agentur-search">Agenturbezirk suchen</label>
-        <input
-          id="agentur-search"
-          v-model="agenturSearch"
-          type="search"
-          placeholder="Agenturbezirk suchen (Name oder BA-Schlüssel)…"
-          autocomplete="off"
-        />
-        <p v-if="agenturLoadError" class="error-text">Agenturbezirke konnten nicht geladen werden: {{ agenturLoadError }}</p>
-        <RegionList
-          v-else
-          :items="agenturListItems"
-          :selected-id="selectedAgentur?.ba_schl ?? null"
-          empty-hint="Keine Treffer."
-          @select="selectAgentur"
-        />
-      </div>
-      <div class="panel detail-panel">
-        <p v-if="!selectedAgentur" class="hint">Links einen Agenturbezirk auswählen, um Details zu sehen.</p>
         <template v-else>
+          <p v-if="!selectedAgentur" class="hint">Links einen Agenturbezirk auswählen, um Details zu sehen.</p>
+          <template v-else>
           <div class="detail-header">
             <h2>{{ selectedAgentur.name }}</h2>
             <span class="region-code">BA {{ selectedAgentur.ba_schl }}</span>
@@ -1052,6 +1130,34 @@ watch(
               <DataTable :period-rows="agenturTableRows" :period-columns="agenturTableColumns" />
             </template>
           </template>
+
+          <h3>Aggregierte Kreis-Daten</h3>
+          <p class="hint">
+            Kreis-grain-Datensätze (INKAR/BBSR), flächenanteilsgewichtet über die Kreise oben auf diesen
+            Agenturbezirk aggregiert (räumliche Schätzung, keine amtliche Zuordnung).
+          </p>
+          <p v-if="agenturAggregateDatasetsError" class="error-text">Fehler: {{ agenturAggregateDatasetsError }}</p>
+          <p v-else-if="agenturNuts3SharesError" class="hint">
+            Keine Kreis-Zuordnung verfügbar – keine aggregierten Daten möglich.
+          </p>
+          <p v-else-if="!agenturNuts3Shares || agenturAggregateDatasets === null" class="hint">
+            Lade verfügbare Datensätze…
+          </p>
+          <p v-else-if="!agenturAggregateDatasets.length" class="hint">
+            Für die Kreise dieses Agenturbezirks sind keine sozioökonomischen Datensätze verfügbar.
+          </p>
+          <DatasetPicker
+            v-else
+            :key="selectedAgentur.ba_schl"
+            kind="agentur"
+            :datasets="agenturAggregateDatasets"
+            :nuts-code="selectedAgentur.ba_schl"
+            :selected-slugs="agenturAggregateSelectedSlugs"
+            :view-mode="agenturAggregateViewMode"
+            @update:selected-slugs="(s) => (agenturAggregateSelectedSlugs = s)"
+            @update:view-mode="(m) => (agenturAggregateViewMode = m)"
+          />
+        </template>
         </template>
       </div>
     </div>
