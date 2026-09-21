@@ -325,3 +325,66 @@ func (h *Handler) GetAgenturbezirkDatasetAggregateTimeseries(c *gin.Context) {
 
 	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: points})
 }
+
+// GetAgenturbezirkDatasetAggregateYears listet die auf Agenturbezirk-Ebene aggregierten Datensätze mit ihren Jahren
+// @Summary Verfügbare aggregierte Datensätze/Jahre (Agenturbezirke)
+// @Description Gibt alle (Datensatz-Slug, Jahr)-Kombinationen zurück, für die mart_agentur_dataset_aggregate Werte enthält - Grundlage der Datensatz-/Jahresauswahl in der Karte.
+// @Tags Agenturbezirke
+// @Accept json
+// @Produce json
+// @Success 200 {object} models.APIResponse{data=[]models.AgenturDatasetAggregateYear}
+// @Failure 500 {object} models.APIResponse
+// @Router /agenturbezirke/dataset-aggregate [get]
+func (h *Handler) GetAgenturbezirkDatasetAggregateYears(c *gin.Context) {
+	rows := []models.AgenturDatasetAggregateYear{}
+	query := `SELECT DISTINCT dataset_slug, year
+		FROM transformed_data.mart_agentur_dataset_aggregate
+		ORDER BY dataset_slug, year DESC`
+	if err := h.DB.Select(&rows, query); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: rows, Meta: &models.MetaInfo{Total: len(rows)}})
+}
+
+// GetAgenturbezirkeDatasetAggregateByYear gibt für ein Jahr die aggregierten Werte aller Agenturbezirke zurück
+// @Summary Aggregierter Datensatz für alle Agenturbezirke (ein Jahr)
+// @Description Liefert für einen Kreis-grain-Datensatz und ein Jahr den auf Agenturbezirk-Ebene flächenanteilsgewichtet aggregierten Wert je Agenturbezirk (siehe mart_agentur_dataset_aggregate) - für die Kartendarstellung. Geometrien kommen weiterhin aus GET /agenturbezirke/period.
+// @Tags Agenturbezirke
+// @Accept json
+// @Produce json
+// @Param slug path string true "Route-Slug des Datensatzes" example(bevoelkerung)
+// @Param year query int true "Jahr" example(2022)
+// @Success 200 {object} models.APIResponse{data=[]models.AgenturDatasetAggregatePoint}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /agenturbezirke/dataset-aggregate/{slug} [get]
+func (h *Handler) GetAgenturbezirkeDatasetAggregateByYear(c *gin.Context) {
+	var filter struct {
+		Year int `form:"year" binding:"required"`
+	}
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		respondBadRequest(c, fmt.Sprintf("Ungültige Query-Parameter: %v", err))
+		return
+	}
+
+	slug := strings.ToLower(strings.TrimSpace(c.Param("slug")))
+	cfg, ok := models.DatasetConfigBySlug(slug)
+	if !ok || !cfg.IsHarmonized {
+		respondBadRequest(c, fmt.Sprintf("unbekannter oder nicht aggregierbarer Datensatz-Slug %q", slug))
+		return
+	}
+
+	points := []models.AgenturDatasetAggregatePoint{}
+	query := `SELECT ba_schl, dataset_slug, year, value, source_region_count, true AS is_computed
+		FROM transformed_data.mart_agentur_dataset_aggregate
+		WHERE dataset_slug = $1 AND year = $2
+		ORDER BY ba_schl`
+	if err := h.DB.Select(&points, query, cfg.RouteSlug, filter.Year); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: points, Meta: &models.MetaInfo{Total: len(points)}})
+}

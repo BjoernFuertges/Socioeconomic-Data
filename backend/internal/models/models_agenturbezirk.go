@@ -91,3 +91,11 @@ type AgenturDatasetAggregatePoint struct {
 	// Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert beigetragen haben.
 	SourceRegionCount int `db:"source_region_count" json:"source_region_count" example:"3"`
 }
+
+// AgenturDatasetAggregateYear ist eine verfügbare (Datensatz, Jahr)-Kombination
+// in mart_agentur_dataset_aggregate - für die Datensatz-/Jahresauswahl der
+// Karte (Agenturbezirke).
+type AgenturDatasetAggregateYear struct {
+	DatasetSlug string `db:"dataset_slug" json:"dataset_slug" example:"bevoelkerung"`
+	Year        int    `db:"year"         json:"year"         example:"2022"`
+}
