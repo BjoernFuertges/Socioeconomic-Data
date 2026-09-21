@@ -1110,8 +1110,6 @@ watch(
             </table>
           </div>
 
-          <DatasetInfo v-if="agenturMetadata" :metadata="agenturMetadata" />
-
           <p v-if="agenturPointsError" class="error-text">Fehler: {{ agenturPointsError }}</p>
           <p v-else-if="agenturPoints === null" class="hint">Lade Zeitreihe…</p>
           <p v-else-if="!agenturPoints.length" class="hint">Keine Werte für diesen Agenturbezirk vorhanden.</p>
@@ -1166,10 +1164,21 @@ watch(
             :monthly-series="agenturMonthlySeries"
             @update:selected-slugs="(s) => (agenturAggregateSelectedSlugs = s)"
           >
+            <!-- Kein Kreis-Datensatz gewählt: reine BA-Ansicht (echte Werte) -->
+            <DatasetInfo v-if="agenturMetadata" :metadata="agenturMetadata" />
             <TimeseriesChart v-if="agenturChartReady" :period-series="agenturChartSeries" />
+            <DataTable v-if="agenturChartReady" :period-rows="agenturTableRows" :period-columns="agenturTableColumns" />
+            <!-- Kombinierte Ansicht: BA-Monatswerte als erster Tab neben den Kreis-Datensätzen -->
+            <template #ba-tab>
+              <DatasetInfo v-if="agenturMetadata" :metadata="agenturMetadata" />
+              <DataTable v-if="agenturChartReady" :period-rows="agenturTableRows" :period-columns="agenturTableColumns" />
+            </template>
           </DatasetPicker>
-          <TimeseriesChart v-else-if="agenturChartReady" :period-series="agenturChartSeries" />
-          <DataTable v-if="agenturChartReady" :period-rows="agenturTableRows" :period-columns="agenturTableColumns" />
+          <template v-else>
+            <DatasetInfo v-if="agenturMetadata" :metadata="agenturMetadata" />
+            <TimeseriesChart v-if="agenturChartReady" :period-series="agenturChartSeries" />
+            <DataTable v-if="agenturChartReady" :period-rows="agenturTableRows" :period-columns="agenturTableColumns" />
+          </template>
         </template>
         </template>
       </div>

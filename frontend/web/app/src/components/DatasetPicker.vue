@@ -196,13 +196,18 @@ const nonCombinableSlugs = computed(() =>
     }),
 );
 
+// Agentur: die BA-Monatswerte (Tabelle/Info kommen per Slot "ba-tab" vom
+// Aufrufer) sind ein regulärer Tab neben den Kreis-Datensätzen und
+// standardmäßig der erste/aktive.
+const BA_TAB = "__ba";
+const hasBaTab = computed(() => props.kind === "agentur" && monthlyCount.value > 0);
+
 const activeTabSlug = ref<string | null>(null);
 watch(
-  selectedDatasets,
-  (list) => {
-    if (!list.some((ds) => ds.route_slug === activeTabSlug.value)) {
-      activeTabSlug.value = list[0]?.route_slug ?? null;
-    }
+  [selectedDatasets, hasBaTab],
+  ([list, baTab]) => {
+    const valid = (baTab && activeTabSlug.value === BA_TAB) || list.some((ds) => ds.route_slug === activeTabSlug.value);
+    if (!valid) activeTabSlug.value = baTab ? BA_TAB : (list[0]?.route_slug ?? null);
   },
   { immediate: true },
 );
@@ -242,6 +247,17 @@ watch(
 
     <div class="dataset-tabs" role="tablist" aria-label="Datensatz für Tabelle/Info">
       <button
+        v-if="hasBaTab"
+        type="button"
+        class="nav-tab"
+        role="tab"
+        :class="{ 'is-active': activeTabSlug === BA_TAB }"
+        :aria-selected="activeTabSlug === BA_TAB"
+        @click="activeTabSlug = BA_TAB"
+      >
+        BA-Monatswerte
+      </button>
+      <button
         v-for="ds in selectedDatasets"
         :key="ds.route_slug"
         type="button"
@@ -253,6 +269,9 @@ watch(
       >
         {{ formatDatasetLabel(ds.route_slug) }}
       </button>
+    </div>
+    <div v-if="hasBaTab && activeTabSlug === BA_TAB">
+      <slot name="ba-tab" />
     </div>
     <template v-for="ds in selectedDatasets" :key="ds.route_slug">
       <div v-if="activeTabSlug === ds.route_slug">
