@@ -543,6 +543,14 @@ const agenturAggregateDatasets = ref<DatasetCatalogEntry[] | null>(null);
 const agenturAggregateDatasetsError = ref<string | null>(null);
 const agenturAggregateSelectedSlugs = ref<string[]>([]);
 
+let agenturAggregatableSlugs: Set<string> | null = null;
+async function loadAgenturAggregatableSlugs(): Promise<Set<string>> {
+  if (agenturAggregatableSlugs) return agenturAggregatableSlugs;
+  const body = await apiGet<{ dataset_slug: string }[]>("/agenturbezirke/dataset-aggregate");
+  agenturAggregatableSlugs = new Set((body.data ?? []).map((r) => r.dataset_slug));
+  return agenturAggregatableSlugs;
+}
+
 watch(agenturNuts3Shares, async (shares) => {
   agenturAggregateDatasets.value = null;
   agenturAggregateDatasetsError.value = null;
@@ -550,7 +558,11 @@ watch(agenturNuts3Shares, async (shares) => {
   if (!primaryNuts3) return;
   try {
     const body = await apiGet<DatasetCatalogResponse>(`/nuts/${primaryNuts3}/datasets`);
-    agenturAggregateDatasets.value = body.data?.datasets ?? [];
+    // /nuts/{id}/datasets listet auch Datensätze, die nicht auf Agenturbezirke
+    // aggregierbar sind (z.B. beschaeftigungsquote-gemeinden, Gemeinde-grain) -
+    // nur was in mart_agentur_dataset_aggregate vorkommt, ist wählbar.
+    const aggregatable = await loadAgenturAggregatableSlugs();
+    agenturAggregateDatasets.value = (body.data?.datasets ?? []).filter((d) => aggregatable.has(d.route_slug));
     reconcileAgenturAggregateSelection(agenturAggregateSelectedSlugs.value);
   } catch (err) {
     agenturAggregateDatasetsError.value = err instanceof Error ? err.message : String(err);
