@@ -58,11 +58,36 @@ type AgenturbezirkPeriod struct {
 // mart_agentur_nuts3_crosswalk.sql). Agenturbezirke bestehen in aller
 // Regel aus einem oder mehreren ganzen Kreisen (Ausnahme Berlin: 3
 // Agenturbezirke teilen sich einen Kreis) - eine räumliche Schätzung,
-// keine amtliche Zuordnung. Kein Bevölkerungsanteil (lokal keine validen
-// LAU-Bevölkerungsdaten geladen, siehe mart_agentur_nuts3_crosswalk.sql).
+// keine amtliche Zuordnung. Kein Bevölkerungsanteil - an dieser
+// Join-Granularität sind nicht ausreichend Bevölkerungsdaten vorhanden,
+// siehe mart_agentur_nuts3_crosswalk.sql.
 type AgenturNuts3Share struct {
 	Nuts3ID            string  `json:"nuts3_id" db:"nuts_id" example:"DE300"`
 	RegionName         *string `json:"region_name,omitempty" db:"region_name" example:"Berlin"`
 	AreaShareOfAgentur float64 `json:"area_share_of_agentur" db:"area_share_of_agentur" example:"0.42"`
 	AreaShareOfNuts3   float64 `json:"area_share_of_nuts3" db:"area_share_of_nuts3" example:"1.0"`
+}
+
+// AgenturDatasetAggregatePoint enthält einen auf Agenturbezirk-Ebene
+// flächenanteilsgewichtet hochaggregierten Zeitreihenpunkt eines
+// Kreis-grain-Soziodata-Datensatzes - siehe mart_agentur_dataset_aggregate.
+// Das Agentur-Pendant zu NutsDatasetAggregatePoint (NUTS-0/1/2), gewichtet
+// aber über den n:m-Flächenanteils-Crosswalk (mart_agentur_nuts3_crosswalk)
+// statt über eine NUTS-Code-Präfixbeziehung.
+type AgenturDatasetAggregatePoint struct {
+	BASchl      string  `db:"ba_schl"      json:"ba_schl"      example:"962"`
+	DatasetSlug string  `db:"dataset_slug" json:"dataset_slug" example:"bevoelkerung"`
+	Year        int     `db:"year"         json:"year"         example:"2022"`
+	Value       float64 `db:"value"        json:"value"        example:"340123"`
+	// Immer false - keine gap-gefüllte Version wird hier aggregiert. Nicht
+	// aus der DB gescannt, damit TimeseriesChart.vue/DataTable.vue dieselbe
+	// Interpolationsstatus-Spalte wie bei den anderen Aggregat-Endpunkten
+	// anzeigen können.
+	IsInterpolated bool `json:"is_interpolated" example:"false"`
+	// Immer true: jeder Punkt ist eine flächengewichtete Aggregation über
+	// mehrere Kreise, keine an einer einzelnen Quelle abgelesene
+	// Einzelbeobachtung.
+	IsComputed bool `db:"is_computed" json:"is_computed" example:"true"`
+	// Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert beigetragen haben.
+	SourceRegionCount int `db:"source_region_count" json:"source_region_count" example:"3"`
 }

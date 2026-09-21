@@ -278,3 +278,50 @@ func (h *Handler) GetAgenturbezirkNuts3(c *gin.Context) {
 		},
 	})
 }
+
+// GetAgenturbezirkDatasetAggregateTimeseries gibt eine auf Agenturbezirk-Ebene
+// flächenanteilsgewichtet hochaggregierte Zeitreihe eines Kreis-grain-Datensatzes zurück
+// @Summary Auf Agenturbezirk-Ebene aggregierte Datensatz-Zeitreihe
+// @Description Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) über den Agentur<->NUTS-3-Flächenanteils-Crosswalk auf Agenturbezirk-Ebene hoch (Summe bzw. flächengewichteter Durchschnitt je nach Datensatz, siehe mart_agentur_dataset_aggregate). Analog zu GET /nuts/{nuts_id}/dataset-aggregate/{slug} für NUTS-0/1/2, aber flächen- statt bevölkerungsgewichtet.
+// @Tags Agenturbezirke
+// @Accept json
+// @Produce json
+// @Param ba_schl path string true "Amtlicher BA-Schlüssel des Agenturbezirks" example(962)
+// @Param slug path string true "Route-Slug des Datensatzes" example(bevoelkerung)
+// @Success 200 {object} models.APIResponse{data=[]models.AgenturDatasetAggregatePoint}
+// @Failure 400 {object} models.APIResponse
+// @Failure 404 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /agenturbezirke/{ba_schl}/dataset-aggregate/{slug} [get]
+func (h *Handler) GetAgenturbezirkDatasetAggregateTimeseries(c *gin.Context) {
+	baSchl := strings.TrimSpace(c.Param("ba_schl"))
+
+	var exists bool
+	if err := h.DB.Get(&exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_sociodata WHERE ba_schl = $1)`, baSchl); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+	if !exists {
+		respondNotFound(c, "Agenturbezirk nicht gefunden")
+		return
+	}
+
+	slug := strings.ToLower(strings.TrimSpace(c.Param("slug")))
+	cfg, ok := models.DatasetConfigBySlug(slug)
+	if !ok || !cfg.IsHarmonized {
+		respondBadRequest(c, fmt.Sprintf("unbekannter oder nicht aggregierbarer Datensatz-Slug %q", slug))
+		return
+	}
+
+	points := []models.AgenturDatasetAggregatePoint{}
+	query := `SELECT ba_schl, dataset_slug, year, value, source_region_count, true AS is_computed
+		FROM transformed_data.mart_agentur_dataset_aggregate
+		WHERE ba_schl = $1 AND dataset_slug = $2
+		ORDER BY year DESC`
+	if err := h.DB.Select(&points, query, baSchl, cfg.RouteSlug); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: points})
+}

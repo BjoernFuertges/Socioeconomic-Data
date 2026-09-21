@@ -49,7 +49,9 @@ type LAURegionFilter struct {
 	Offset              int    `form:"offset" binding:"omitempty,min=0" example:"0"`
 }
 
-// GeoRegionSummary ist ein einheitlicher Listen-Eintrag für NUTS- und LAU-Regionen.
+// GeoRegionSummary ist ein einheitlicher Listen-Eintrag für NUTS-, LAU- und
+// Agentur-Regionen (GeoType: "NUTS", "LAU" oder "Agentur"). NutsLevel/
+// NutsLevelCode/CountryCode sind nur für NUTS bzw. LAU gesetzt.
 type GeoRegionSummary struct {
 	GeoID            string          `json:"geo_id" example:"DE111"`
 	GeoType          string          `json:"geo_type" example:"NUTS"`

@@ -3,6 +3,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+echo "=== dlt: Eurostat LAU-Bevölkerung (Korrespondenztabellen) ==="
+python fetch_lau_population.py
+
 echo "=== dlt: Geodaten ==="
 python load_geodata_to_postgis.py
 python load_agenturbezirke_geodata.py

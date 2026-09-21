@@ -68,6 +68,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			agenturbezirkeGroup.GET("/:ba_schl", handler.GetAgenturbezirkByID)
 			agenturbezirkeGroup.GET("/:ba_schl/arbeitslosigkeit", handler.GetAgenturbezirkArbeitslosigkeit)
 			agenturbezirkeGroup.GET("/:ba_schl/nuts3", handler.GetAgenturbezirkNuts3)
+			agenturbezirkeGroup.GET("/:ba_schl/dataset-aggregate/:slug", handler.GetAgenturbezirkDatasetAggregateTimeseries)
 		}
 
 		socioeconomic := v1.Group("/socioeconomic")

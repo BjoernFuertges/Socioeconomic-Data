@@ -22,10 +22,10 @@
   mart_agentur_nuts3_crosswalk.sql), gewichtet mit der Gemeinde-Bevölkerung im
   selben Jahrgang aus lau_integrated.
 
-  Hinweis: stg_lau_population führt in den lokalen Testfixtures kaum
-  gisco_id-Werte (siehe Kommentar in mart_lau_sociodata_harmonized.sql) -
-  dieser Mart baut, liefert lokal aber überwiegend NULL/0. Kein Blocker für
-  die Infrastruktur, siehe dortigen Kommentar.
+  Hinweis: setzt wie mart_lau_sociodata_harmonized.sql voraus, dass
+  loaded_data.lau_population über fetch_lau_population.py befüllt wurde -
+  fehlt das, führt stg_lau_population keine gisco_id-Werte und dieser
+  Mart baut, liefert aber überwiegend NULL/0 (siehe dortigen Kommentar).
 */
 
 with lau_population as (

@@ -33,13 +33,11 @@
   auf gisco_id erfolgt hier über stg_lau_population.lau_nat_code (dieselbe
   Verknüpfung, die stg_beschaeftigungsquote_gemeinden.sql bereits nutzt, um
   umgekehrt geodata_id_nuts/geodata_id_ars aus der Populationsquelle zu
-  befüllen). Mit den aktuell lokal geladenen Testdaten ist diese Auflösung
-  durchgehend leer - nicht weil stg_beschaeftigungsquote_gemeinden die
-  amtlichen IDs vermissen ließe (geodata_id_ars/geodata_id_lau sind dort
-  befüllt), sondern weil stg_lau_population lokal keine gisco_id-Werte
-  führt (loaded_data.lau_population ist in der lokalen Testfixtur nahezu
-  leer). Der Mart baut, bleibt aber leer, bis echte Populationsdaten mit
-  gisco_id geladen sind. Kein Blocker für die Infrastruktur.
+  befüllen). Setzt voraus, dass loaded_data.lau_population tatsächlich
+  gisco_id führt - dafür muss fetch_lau_population.py gelaufen sein
+  (Teil von run_all_pipelines.sh), sonst fällt load_geodata_to_postgis.py
+  auf einen Fallback ohne gisco_id/Bevölkerung zurück und dieser Mart
+  bleibt leer, obwohl er baut (siehe dlt/CLAUDE.md).
 */
 
 {% set target_versions = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024] %}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -29,13 +30,26 @@ func normalizeGeoType(raw string) (string, error) {
 		return "nuts", nil
 	case "lau":
 		return "lau", nil
+	case "agentur":
+		return "agentur", nil
 	default:
-		return "", fmt.Errorf("ungültiger geo_type: erlaubt sind auto, nuts oder lau")
+		return "", fmt.Errorf("ungültiger geo_type: erlaubt sind auto, nuts, lau oder agentur")
 	}
 }
 
+var baSchlPattern = regexp.MustCompile(`^\d+$`)
+
 func detectGeoType(geoID string) string {
 	trimmed := strings.TrimSpace(geoID)
+	// ba_schl-Werte sind rein numerisch (z. B. "962") - das unterscheidet sie
+	// eindeutig von NUTS-Codes (immer mit 2-stelligem Ländercode-Präfix,
+	// z. B. "DE111"). LAU gisco_ids haben zwar auch ein <Ländercode>_-Präfix,
+	// sind aber nicht auf DE beschränkt und der Teil nach dem "_" ist nicht
+	// immer rein numerisch (z. B. "CH_CH6194", "BG_VRC32") - deshalb bleibt
+	// "lau" hier der Default-Fall statt einem eigenen Pattern-Check.
+	if baSchlPattern.MatchString(trimmed) {
+		return "agentur"
+	}
 	if _, err := nutsLevelDetailsFromID(trimmed); err == nil {
 		return "nuts"
 	}
@@ -117,13 +131,13 @@ func spatialPredicateSQL(operation string, geomColumn string, geoJSONParam int) 
 	return fmt.Sprintf("ST_Intersects(%s, ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($%d), 4326), 3035))", geomColumn, geoJSONParam)
 }
 
-// GetGeoRegions gibt eine einheitliche Liste von NUTS- oder LAU-Regionen zurück
+// GetGeoRegions gibt eine einheitliche Liste von NUTS-, LAU- oder Agentur-Regionen zurück
 // @Summary Liste allgemeiner Geo-Regionen
-// @Description Gibt eine einheitliche Liste für NUTS- oder LAU-Regionen zurück. Standard ist NUTS. Mit geo_type=lau werden LAU-Regionen geliefert.
+// @Description Gibt eine einheitliche Liste für NUTS-, LAU- oder Agenturbezirk-Regionen zurück. Standard ist NUTS. Mit geo_type=lau bzw. geo_type=agentur werden LAU- bzw. Agenturbezirk-Regionen geliefert.
 // @Tags Geo
 // @Accept json
 // @Produce json
-// @Param geo_type query string false "Regionstyp: nuts oder lau" Enums(nuts,lau) default(nuts)
+// @Param geo_type query string false "Regionstyp: nuts, lau oder agentur" Enums(nuts,lau,agentur) default(nuts)
 // @Param level query int false "NUTS-Level (nur für geo_type=nuts, 0-3)" Enums(0,1,2,3) example(3)
 // @Param country_code query string false "Ländercode (nur für geo_type=lau)" example(DE)
 // @Param nuts_parent_id query string false "NUTS-Präfix-Filter (z.B. DE1)" example(DE1)
@@ -176,8 +190,96 @@ func (h *Handler) GetGeoRegions(c *gin.Context) {
 		h.getGeoRegionsLAU(c, filter, limitNull)
 		return
 	}
+	if geoType == "agentur" {
+		h.getGeoRegionsAgentur(c, filter, limitNull)
+		return
+	}
 
 	h.getGeoRegionsNUTS(c, filter, limitNull)
+}
+
+func (h *Handler) getGeoRegionsAgentur(c *gin.Context, filter models.GeoRegionFilter, limitNull bool) {
+	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	if filter.IncludeGeometry {
+		geometrySelect = `geometry_wgs84, has_valid_geometry`
+	}
+
+	query := `SELECT DISTINCT ON (ba_schl)
+		ba_schl AS geo_id,
+		'Agentur' AS geo_type,
+		name AS region_name,
+		` + geometrySelect + `,
+		extract(year from valid_from)::int AS year
+	FROM transformed_data.mart_agenturbezirk_sociodata
+	WHERE name IS NOT NULL`
+
+	args := []interface{}{}
+	argPos := 1
+
+	if filter.GeodataNameContains != "" {
+		query += fmt.Sprintf(" AND name ILIKE $%d", argPos)
+		args = append(args, "%"+strings.TrimSpace(filter.GeodataNameContains)+"%")
+		argPos++
+	}
+
+	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
+	var total int
+	if err := h.DB.Get(&total, countQuery, args...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+		return
+	}
+
+	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
+		c,
+		query,
+		args,
+		argPos,
+		"ba_schl",
+		100,
+		filter.Limit,
+		filter.Offset,
+		limitNull,
+	)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+
+	type row struct {
+		GeoID            string          `db:"geo_id"`
+		GeoType          string          `db:"geo_type"`
+		RegionName       string          `db:"region_name"`
+		GeometryWGS84    json.RawMessage `db:"geometry_wgs84"`
+		HasValidGeometry *bool           `db:"has_valid_geometry"`
+		Year             int             `db:"year"`
+	}
+
+	rows := make([]row, 0)
+	if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	data := make([]models.GeoRegionSummary, 0, len(rows))
+	for _, r := range rows {
+		data = append(data, models.GeoRegionSummary{
+			GeoID:            r.GeoID,
+			GeoType:          r.GeoType,
+			RegionName:       r.RegionName,
+			GeometryWGS84:    r.GeometryWGS84,
+			HasValidGeometry: r.HasValidGeometry,
+			Year:             r.Year,
+		})
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    data,
+		Meta: &models.MetaInfo{
+			Total:  total,
+			Offset: offset,
+		},
+	})
 }
 
 func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter, limitNull bool) {
@@ -473,12 +575,12 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 
 // GetGeoRegionByID gibt eine einzelne Geo-Region (NUTS oder LAU) zurück
 // @Summary Allgemeine Geo-Region nach ID
-// @Description Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt (NUTS: 2-5 Zeichen, sonst LAU).
+// @Description Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt (rein numerisch: Agentur; NUTS: 2-5 Zeichen; sonst LAU).
 // @Tags Geo
 // @Accept json
 // @Produce json
 // @Param geo_id path string true "Geo-ID (NUTS oder GISCO-ID)" example(DE111)
-// @Param geo_type query string false "Regionstyp: auto, nuts oder lau" Enums(auto,nuts,lau) default(auto)
+// @Param geo_type query string false "Regionstyp: auto, nuts, lau oder agentur" Enums(auto,nuts,lau,agentur) default(auto)
 // @Param year query int false "Jahr (optional)" example(2024)
 // @Param all query bool false "Nur für NUTS: alle verfügbaren Jahre zurückgeben" example(false)
 // @Param part query string false "Nur für NUTS: full, metadata oder socioeconomic" Enums(full,metadata,socioeconomic) default(full)
@@ -510,6 +612,11 @@ func (h *Handler) GetGeoRegionByID(c *gin.Context) {
 		h.GetNutsRegionData(c)
 		return
 	}
+	if geoType == "agentur" {
+		c.Params = append(c.Params, gin.Param{Key: "ba_schl", Value: geoID})
+		h.GetAgenturbezirkByID(c)
+		return
+	}
 
 	c.Params = append(c.Params, gin.Param{Key: "gisco_id", Value: geoID})
 	h.GetLAURegionByID(c)
@@ -524,7 +631,7 @@ func (h *Handler) GetGeoRegionByID(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param geo_id path string true "Geo-ID (NUTS oder GISCO-ID)" example(DE111)
-// @Param geo_type query string false "Regionstyp: auto, nuts oder lau" Enums(auto,nuts,lau) default(auto)
+// @Param geo_type query string false "Regionstyp: auto, nuts, lau oder agentur" Enums(auto,nuts,lau,agentur) default(auto)
 // @Success 200 {object} models.APIResponse{data=models.GeoRegionVersions}
 // @Failure 400 {object} models.APIResponse
 // @Failure 404 {object} models.APIResponse
@@ -577,6 +684,43 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 				NutsLevel:     &level,
 				NutsLevelCode: &levelCode,
 				Periods:       periods,
+			},
+		})
+		return
+	}
+
+	if geoType == "agentur" {
+		var period struct {
+			ValidFrom *int `db:"valid_from"`
+			ValidTo   *int `db:"valid_to"`
+		}
+		query := `SELECT extract(year from valid_from)::int AS valid_from, extract(year from valid_to)::int AS valid_to
+			FROM transformed_data.mart_agenturbezirk_sociodata
+			WHERE ba_schl = $1
+			LIMIT 1`
+		if err := h.DB.Get(&period, query, geoID); err != nil {
+			if err.Error() == "sql: no rows in result set" {
+				respondNotFound(c, "Keine Versionsdaten für diese Geo-Region gefunden")
+				return
+			}
+			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+			return
+		}
+
+		validFrom := 0
+		if period.ValidFrom != nil {
+			validFrom = *period.ValidFrom
+		}
+
+		// Agenturbezirke haben bewusst keinen Versions-Crosswalk (nur eine
+		// aktuelle Grenzen-Vintage, siehe mart_agenturbezirk_sociodata.sql) -
+		// daher immer genau eine Periode statt mehrerer wie bei NUTS/LAU.
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success: true,
+			Data: models.GeoRegionVersions{
+				GeoID:   geoID,
+				GeoType: "Agentur",
+				Periods: []models.GeoPeriod{{ValidFrom: validFrom, ValidTo: period.ValidTo}},
 			},
 		})
 		return
@@ -673,8 +817,97 @@ func (h *Handler) QueryGeoRegionsByGeometry(c *gin.Context) {
 		h.queryGeoRegionsLAU(c, filter, geometryJSON, operation)
 		return
 	}
+	if geoType == "agentur" {
+		h.queryGeoRegionsAgentur(c, filter, geometryJSON, operation)
+		return
+	}
 
 	h.queryGeoRegionsNUTS(c, filter, geometryJSON, operation)
+}
+
+func (h *Handler) queryGeoRegionsAgentur(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, operation string) {
+	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	if filter.IncludeGeometry {
+		geometrySelect = `ST_AsGeoJSON(geometry_wgs84)::json AS geometry_wgs84, has_valid_geometry`
+	}
+
+	// stg_agenturbezirk_geometry statt der bereits GeoJSON-serialisierten
+	// mart_agenturbezirk_sociodata - Agenturbezirke sind mit nur ~150
+	// Regionen klein genug, dass der fehlende Geometrie-Index (View ohne
+	// materialisierte geometry_3035-Spalte) hier nicht ins Gewicht fällt,
+	// anders als beim LAU-NUTS-3-Join (siehe int_lau_nuts3_membership.sql).
+	query := `SELECT
+		ba_schl AS geo_id,
+		'Agentur' AS geo_type,
+		name AS region_name,
+		` + geometrySelect + `,
+		extract(year from valid_from)::int AS year
+	FROM transformed_data.stg_agenturbezirk_geometry
+	WHERE has_valid_geometry
+	  AND name IS NOT NULL
+	  AND ` + spatialPredicateSQL(operation, "ST_Transform(geometry_wgs84, 3035)", 1)
+
+	args := []interface{}{geometryJSON}
+	argPos := 2
+
+	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
+	var total int
+	if err := h.DB.Get(&total, countQuery, args...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+		return
+	}
+
+	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
+		c,
+		query,
+		args,
+		argPos,
+		"ba_schl",
+		100,
+		filter.Limit,
+		filter.Offset,
+		false,
+	)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+
+	type row struct {
+		GeoID            string          `db:"geo_id"`
+		GeoType          string          `db:"geo_type"`
+		RegionName       string          `db:"region_name"`
+		GeometryWGS84    json.RawMessage `db:"geometry_wgs84"`
+		HasValidGeometry *bool           `db:"has_valid_geometry"`
+		Year             int             `db:"year"`
+	}
+
+	rows := make([]row, 0)
+	if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	data := make([]models.GeoRegionSummary, 0, len(rows))
+	for _, r := range rows {
+		data = append(data, models.GeoRegionSummary{
+			GeoID:            r.GeoID,
+			GeoType:          r.GeoType,
+			RegionName:       r.RegionName,
+			GeometryWGS84:    r.GeometryWGS84,
+			HasValidGeometry: r.HasValidGeometry,
+			Year:             r.Year,
+		})
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    data,
+		Meta: &models.MetaInfo{
+			Total:  total,
+			Offset: offset,
+		},
+	})
 }
 
 func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, operation string) {
