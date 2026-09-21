@@ -1141,9 +1141,10 @@ watch(
           </template>
 
           <p class="hint">
-            Optional Kreis-Datensätze (INKAR/BBSR) zum Vergleich hinzufügen: flächenanteilsgewichtet über die Kreise
-            oben auf diesen Agenturbezirk aggregiert (räumliche Schätzung, keine amtliche Zuordnung). Sobald ein
-            Datensatz gewählt ist, zeigt das Diagramm indexierte Werte (Monats- und Jahreswerte kombiniert).
+            Optional Kreis-Datensätze (INKAR/BBSR) zum Vergleich hinzufügen: aus den Kreisen oben auf diesen
+            Agenturbezirk aggregiert (Summen bzw. bevölkerungsgewichtete Durchschnitte; räumliche Schätzung, keine
+            amtliche Zuordnung). Sobald ein Datensatz gewählt ist, zeigt das Diagramm indexierte Werte (Monats- und
+            Jahreswerte kombiniert).
           </p>
           <p v-if="agenturAggregateDatasetsError" class="error-text">Fehler: {{ agenturAggregateDatasetsError }}</p>
           <p v-else-if="agenturNuts3SharesError" class="hint">

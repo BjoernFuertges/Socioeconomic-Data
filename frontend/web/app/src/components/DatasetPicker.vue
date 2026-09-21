@@ -13,6 +13,7 @@ import { formatDatasetLabel } from "../format";
 import TimeseriesChart from "./TimeseriesChart.vue";
 import DataTable from "./DataTable.vue";
 import DatasetInfo from "./DatasetInfo.vue";
+import AgenturAggregationNote from "./AgenturAggregationNote.vue";
 
 // Deckelt die Mehrfachauswahl auf die Anzahl validierter kategorialer
 // Farbslots (siehe SERIES_COLORS in TimeseriesChart.vue) - mehr Serien in
@@ -69,6 +70,12 @@ const minSelected = computed(() => (props.kind === "agentur" ? 0 : 1));
 // Datensatz, oder ein Datensatz neben den BA-Monatsreihen), zeigt die Ansicht
 // automatisch das kombinierte, indexierte Diagramm - sonst die Einzelansicht.
 const isCombined = computed(() => props.selectedSlugs.length > 0 && props.selectedSlugs.length + monthlyCount.value > 1);
+
+// Punkte eines geladenen Datensatzes (für AgenturAggregationNote); leer, solange nicht geladen.
+function pointsOf(slug: string): { aggregation_method?: string; value_kind?: string }[] {
+  const result = results.value.get(slug);
+  return result?.kind === "timeseries" ? (result.points as AgenturDatasetAggregatePoint[]) : [];
+}
 
 const selectedDatasets = computed(() => props.datasets.filter((ds) => props.selectedSlugs.includes(ds.route_slug)));
 const atMax = computed(() => props.selectedSlugs.length >= maxSelected.value);
@@ -250,6 +257,7 @@ watch(
     <template v-for="ds in selectedDatasets" :key="ds.route_slug">
       <div v-if="activeTabSlug === ds.route_slug">
         <DatasetInfo v-if="metadataBySlug.get(ds.route_slug)" :metadata="metadataBySlug.get(ds.route_slug)!" />
+        <AgenturAggregationNote v-if="kind === 'agentur'" :points="pointsOf(ds.route_slug)" />
         <p v-if="results.get(ds.route_slug)?.kind === 'loading'" class="hint">Lade Daten…</p>
         <p v-else-if="results.get(ds.route_slug)?.kind === 'error'" class="error-text">
           Fehler beim Laden: {{ (results.get(ds.route_slug) as { message: string }).message }}
@@ -274,6 +282,7 @@ watch(
     <section v-for="ds in selectedDatasets" :key="ds.route_slug" class="dataset-block">
       <h3 v-if="selectedDatasets.length > 1" class="dataset-block-title">{{ formatDatasetLabel(ds.route_slug) }}</h3>
       <DatasetInfo v-if="metadataBySlug.get(ds.route_slug)" :metadata="metadataBySlug.get(ds.route_slug)!" />
+      <AgenturAggregationNote v-if="kind === 'agentur'" :points="pointsOf(ds.route_slug)" />
       <p v-if="results.get(ds.route_slug)?.kind === 'loading'" class="hint">Lade Daten…</p>
       <p v-else-if="results.get(ds.route_slug)?.kind === 'error'" class="error-text">
         Fehler beim Laden: {{ (results.get(ds.route_slug) as { message: string }).message }}

@@ -200,12 +200,18 @@ export interface NutsDatasetAggregatePoint extends TimeseriesPoint {
 }
 
 // Zeitreihenpunkt von GET /agenturbezirke/{ba_schl}/dataset-aggregate/{slug} -
-// das Agentur-Pendant zu NutsDatasetAggregatePoint, aber flächenanteils-
-// statt bevölkerungsgewichtet (siehe mart_agentur_dataset_aggregate).
+// das Agentur-Pendant zu NutsDatasetAggregatePoint (Summe bzw.
+// bevölkerungsgewichteter Durchschnitt, siehe mart_agentur_dataset_aggregate).
 export interface AgenturDatasetAggregatePoint extends TimeseriesPoint {
   ba_schl: string;
   dataset_slug: string;
   source_region_count: number;
+  // "sum" = Summe der Kreis-Werte; "weighted_avg_population" =
+  // bevölkerungsgewichteter Durchschnitt (Näherung); "weighted_avg_area" =
+  // flächengewichteter Rückfall, wenn Bevölkerung fehlt (Näherung).
+  aggregation_method: "sum" | "weighted_avg_population" | "weighted_avg_area";
+  // "median" ist nur eine Schätzung (Mediane lassen sich nicht aggregieren).
+  value_kind: "count" | "rate" | "mean" | "median";
 }
 
 // Zeile von GET /agenturbezirke/dataset-aggregate - eine (Datensatz, Jahr)-

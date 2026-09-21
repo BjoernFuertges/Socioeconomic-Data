@@ -5,6 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { apiGet, unwrapNull } from "../api/client";
+import AgenturAggregationNote from "./AgenturAggregationNote.vue";
 import type {
   AgenturbezirkLatestValue,
   AgenturDatasetAggregatePoint,
@@ -160,7 +161,11 @@ const selectedGeoType = ref<GeoType>("nuts");
 const valuesLoading = ref(false);
 const valuesError = ref<string | null>(null);
 // source_region_count nur bei aggregierten Agentur-Datensätzen gesetzt.
-type MapValue = TimeseriesPoint & { source_region_count?: number };
+type MapValue = TimeseriesPoint & {
+  source_region_count?: number;
+  aggregation_method?: string;
+  value_kind?: string;
+};
 const valuesByRegion = ref<Map<string, MapValue>>(new Map());
 
 const datasetYears = computed(() => (selectedGeoType.value === "lau" ? datasetYearsLau.value : datasetYearsNuts.value));
@@ -1046,10 +1051,8 @@ watch(selectedGeoType, async () => {
             </div>
             <p class="map-legend-note">
               <span class="map-legend-swatch map-legend-swatch--nodata"></span>keine Daten
-              <template v-if="selectedAgenturDataset">
-                · flächenanteilsgewichtet aus Kreis-Daten aggregiert
-              </template>
             </p>
+            <AgenturAggregationNote v-if="selectedAgenturDataset" :points="Array.from(valuesByRegion.values())" />
           </template>
           <template v-else-if="selectedDataset">
             <p class="map-legend-title">{{ formatDatasetLabel(selectedDataset) }}<template v-if="selectedYear"> · {{ selectedYear }}</template></p>
@@ -1105,7 +1108,12 @@ watch(selectedGeoType, async () => {
               </template>
               <template v-else-if="sidebarRegion.point.source_region_count !== undefined">
                 <dt>Status</dt>
-                <dd>aggregiert aus {{ sidebarRegion.point.source_region_count }} Kreis(en)</dd>
+                <dd>
+                  aggregiert aus {{ sidebarRegion.point.source_region_count }} Kreis(en)
+                  <template v-if="sidebarRegion.point.aggregation_method === 'sum'">(Summe)</template>
+                  <template v-else-if="sidebarRegion.point.value_kind === 'median'">(Näherung, nur Schätzung)</template>
+                  <template v-else>(Näherung: gewichteter Durchschnitt)</template>
+                </dd>
               </template>
             </template>
           </dl>
