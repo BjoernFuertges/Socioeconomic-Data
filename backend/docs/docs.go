@@ -63,6 +63,118 @@ const docTemplate = `{
                 }
             }
         },
+        "/agenturbezirke/dataset-aggregate": {
+            "get": {
+                "description": "Gibt alle (Datensatz-Slug, Jahr)-Kombinationen zurück, für die mart_agentur_dataset_aggregate Werte enthält - Grundlage der Datensatz-/Jahresauswahl in der Karte.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Verfügbare aggregierte Datensätze/Jahre (Agenturbezirke)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturDatasetAggregateYear"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/dataset-aggregate/{slug}": {
+            "get": {
+                "description": "Liefert für einen Kreis-grain-Datensatz und ein Jahr den auf Agenturbezirk-Ebene aggregierten Wert je Agenturbezirk (siehe mart_agentur_dataset_aggregate) - für die Kartendarstellung. Geometrien kommen weiterhin aus GET /agenturbezirke/period. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Aggregierter Datensatz für alle Agenturbezirke (ein Jahr)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "bevoelkerung",
+                        "description": "Route-Slug des Datensatzes",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Jahr",
+                        "name": "year",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturDatasetAggregatePoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/agenturbezirke/latest": {
             "get": {
                 "description": "Gibt jeden Agenturbezirk mit Geometrie und dem jeweils neuesten verfügbaren Monatswert (Arbeitslose, Unterbeschäftigung) zurück.",
@@ -319,6 +431,80 @@ const docTemplate = `{
                                     }
                                 }
                             ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/{ba_schl}/dataset-aggregate/{slug}": {
+            "get": {
+                "description": "Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) über den Agentur\u003c-\u003eNUTS-3-Flächenanteils-Crosswalk auf Agenturbezirk-Ebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_agentur_dataset_aggregate). Analog zu GET /nuts/{nuts_id}/dataset-aggregate/{slug} für NUTS-0/1/2. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Auf Agenturbezirk-Ebene aggregierte Datensatz-Zeitreihe",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "962",
+                        "description": "Amtlicher BA-Schlüssel des Agenturbezirks",
+                        "name": "ba_schl",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "bevoelkerung",
+                        "description": "Route-Slug des Datensatzes",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturDatasetAggregatePoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
                         }
                     },
                     "404": {
@@ -2654,7 +2840,7 @@ const docTemplate = `{
         },
         "/geo": {
             "get": {
-                "description": "Gibt eine einheitliche Liste für NUTS- oder LAU-Regionen zurück. Standard ist NUTS. Mit geo_type=lau werden LAU-Regionen geliefert.",
+                "description": "Gibt eine einheitliche Liste für NUTS-, LAU- oder Agenturbezirk-Regionen zurück. Standard ist NUTS. Mit geo_type=lau bzw. geo_type=agentur werden LAU- bzw. Agenturbezirk-Regionen geliefert.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2669,11 +2855,12 @@ const docTemplate = `{
                     {
                         "enum": [
                             "nuts",
-                            "lau"
+                            "lau",
+                            "agentur"
                         ],
                         "type": "string",
                         "default": "nuts",
-                        "description": "Regionstyp: nuts oder lau",
+                        "description": "Regionstyp: nuts, lau oder agentur",
                         "name": "geo_type",
                         "in": "query"
                     },
@@ -2867,7 +3054,7 @@ const docTemplate = `{
         },
         "/geo/{geo_id}": {
             "get": {
-                "description": "Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt (NUTS: 2-5 Zeichen, sonst LAU).",
+                "description": "Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt (rein numerisch: Agentur; NUTS: 2-5 Zeichen; sonst LAU).",
                 "consumes": [
                     "application/json"
                 ],
@@ -2891,11 +3078,12 @@ const docTemplate = `{
                         "enum": [
                             "auto",
                             "nuts",
-                            "lau"
+                            "lau",
+                            "agentur"
                         ],
                         "type": "string",
                         "default": "auto",
-                        "description": "Regionstyp: auto, nuts oder lau",
+                        "description": "Regionstyp: auto, nuts, lau oder agentur",
                         "name": "geo_type",
                         "in": "query"
                     },
@@ -2998,11 +3186,12 @@ const docTemplate = `{
                         "enum": [
                             "auto",
                             "nuts",
-                            "lau"
+                            "lau",
+                            "agentur"
                         ],
                         "type": "string",
                         "default": "auto",
-                        "description": "Regionstyp: auto, nuts oder lau",
+                        "description": "Regionstyp: auto, nuts, lau oder agentur",
                         "name": "geo_type",
                         "in": "query"
                     }
@@ -5606,6 +5795,76 @@ const docTemplate = `{
                 }
             }
         },
+        "models.AgenturDatasetAggregatePoint": {
+            "type": "object",
+            "properties": {
+                "aggregation_method": {
+                    "description": "Wie der Wert entstanden ist (siehe mart_agentur_dataset_aggregate):\n\"sum\" = Summe der Kreis-Werte; \"weighted_avg_population\" =\nbevölkerungsgewichteter Durchschnitt der Kreis-Werte;\n\"weighted_avg_area\" = flächengewichteter Durchschnitt (Rückfall, wenn\nfür einen beteiligten Kreis die Bevölkerung fehlt). Die beiden\nDurchschnitte sind eine Näherung, keine exakte Neuberechnung.",
+                    "type": "string",
+                    "enum": [
+                        "sum",
+                        "weighted_avg_population",
+                        "weighted_avg_area"
+                    ],
+                    "example": "weighted_avg_population"
+                },
+                "ba_schl": {
+                    "type": "string",
+                    "example": "962"
+                },
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                },
+                "is_computed": {
+                    "description": "Immer true: jeder Punkt ist eine flächengewichtete Aggregation über\nmehrere Kreise, keine an einer einzelnen Quelle abgelesene\nEinzelbeobachtung.",
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_interpolated": {
+                    "description": "Immer false - keine gap-gefüllte Version wird hier aggregiert. Nicht\naus der DB gescannt, damit TimeseriesChart.vue/DataTable.vue dieselbe\nInterpolationsstatus-Spalte wie bei den anderen Aggregat-Endpunkten\nanzeigen können.",
+                    "type": "boolean",
+                    "example": false
+                },
+                "source_region_count": {
+                    "description": "Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert beigetragen haben.",
+                    "type": "integer",
+                    "example": 3
+                },
+                "value": {
+                    "type": "number",
+                    "example": 340123
+                },
+                "value_kind": {
+                    "description": "Art der Größe: \"count\" (Zählgröße), \"rate\" (Quote), \"mean\"\n(Durchschnitt) oder \"median\". Mediane lassen sich nicht aus Kreis-\nMedianen zusammensetzen - der Wert ist dann nur eine Schätzung.",
+                    "type": "string",
+                    "enum": [
+                        "count",
+                        "rate",
+                        "mean",
+                        "median"
+                    ],
+                    "example": "rate"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
+                }
+            }
+        },
+        "models.AgenturDatasetAggregateYear": {
+            "type": "object",
+            "properties": {
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
+                }
+            }
+        },
         "models.AgenturNuts3Share": {
             "type": "object",
             "properties": {
@@ -7196,7 +7455,7 @@ const docTemplate = `{
                     "example": "bevoelkerung"
                 },
                 "is_computed": {
-                    "description": "Immer true (siehe SELECT true AS is_computed in GetNutsDatasetAggregateTimeseries):\njeder Punkt ist eine Aggregation über mehrere Kreise, keine an einer\neinzelnen Quelle abgelesene Einzelbeobachtung. Lässt TimeseriesChart.vue/\nDataTable.vue dafür den dritten Status \"berechnet\" anzeigen (statt\nfälschlich \"beobachtet\", was einen direkt abgelesenen Einzelwert suggerieren würde).",
+                    "description": "Immer true (siehe SELECT true AS is_computed in GetNutsDatasetAggregateTimeseries):\njeder Punkt ist eine Aggregation über mehrere Kreise, keine an einer\neinzelnen Quelle abgelesene Einzelbeobachtung.",
                     "type": "boolean",
                     "example": true
                 },

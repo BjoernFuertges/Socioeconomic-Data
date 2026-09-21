@@ -73,7 +73,9 @@ type AgenturNuts3Share struct {
 // Kreis-grain-Soziodata-Datensatzes - siehe mart_agentur_dataset_aggregate.
 // Das Agentur-Pendant zu NutsDatasetAggregatePoint (NUTS-0/1/2), gewichtet
 // aber über den n:m-Flächenanteils-Crosswalk (mart_agentur_nuts3_crosswalk)
-// statt über eine NUTS-Code-Präfixbeziehung.
+// statt über eine NUTS-Code-Präfixbeziehung. Quoten/Durchschnitte sind
+// bevölkerungsgewichtete Durchschnitte der Kreis-Werte - eine Näherung
+// (siehe AggregationMethod/ValueKind), keine exakte Neuberechnung.
 type AgenturDatasetAggregatePoint struct {
 	BASchl      string  `db:"ba_schl"      json:"ba_schl"      example:"962"`
 	DatasetSlug string  `db:"dataset_slug" json:"dataset_slug" example:"bevoelkerung"`
@@ -90,6 +92,17 @@ type AgenturDatasetAggregatePoint struct {
 	IsComputed bool `db:"is_computed" json:"is_computed" example:"true"`
 	// Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert beigetragen haben.
 	SourceRegionCount int `db:"source_region_count" json:"source_region_count" example:"3"`
+	// Wie der Wert entstanden ist (siehe mart_agentur_dataset_aggregate):
+	// "sum" = Summe der Kreis-Werte; "weighted_avg_population" =
+	// bevölkerungsgewichteter Durchschnitt der Kreis-Werte;
+	// "weighted_avg_area" = flächengewichteter Durchschnitt (Rückfall, wenn
+	// für einen beteiligten Kreis die Bevölkerung fehlt). Die beiden
+	// Durchschnitte sind eine Näherung, keine exakte Neuberechnung.
+	AggregationMethod string `db:"aggregation_method" json:"aggregation_method" example:"weighted_avg_population" enums:"sum,weighted_avg_population,weighted_avg_area"`
+	// Art der Größe: "count" (Zählgröße), "rate" (Quote), "mean"
+	// (Durchschnitt) oder "median". Mediane lassen sich nicht aus Kreis-
+	// Medianen zusammensetzen - der Wert ist dann nur eine Schätzung.
+	ValueKind string `db:"value_kind" json:"value_kind" example:"rate" enums:"count,rate,mean,median"`
 }
 
 // AgenturDatasetAggregateYear ist eine verfügbare (Datensatz, Jahr)-Kombination

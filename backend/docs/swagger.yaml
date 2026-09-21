@@ -15,6 +15,76 @@ definitions:
         example: true
         type: boolean
     type: object
+  models.AgenturDatasetAggregatePoint:
+    properties:
+      aggregation_method:
+        description: |-
+          Wie der Wert entstanden ist (siehe mart_agentur_dataset_aggregate):
+          "sum" = Summe der Kreis-Werte; "weighted_avg_population" =
+          bevölkerungsgewichteter Durchschnitt der Kreis-Werte;
+          "weighted_avg_area" = flächengewichteter Durchschnitt (Rückfall, wenn
+          für einen beteiligten Kreis die Bevölkerung fehlt). Die beiden
+          Durchschnitte sind eine Näherung, keine exakte Neuberechnung.
+        enum:
+        - sum
+        - weighted_avg_population
+        - weighted_avg_area
+        example: weighted_avg_population
+        type: string
+      ba_schl:
+        example: "962"
+        type: string
+      dataset_slug:
+        example: bevoelkerung
+        type: string
+      is_computed:
+        description: |-
+          Immer true: jeder Punkt ist eine flächengewichtete Aggregation über
+          mehrere Kreise, keine an einer einzelnen Quelle abgelesene
+          Einzelbeobachtung.
+        example: true
+        type: boolean
+      is_interpolated:
+        description: |-
+          Immer false - keine gap-gefüllte Version wird hier aggregiert. Nicht
+          aus der DB gescannt, damit TimeseriesChart.vue/DataTable.vue dieselbe
+          Interpolationsstatus-Spalte wie bei den anderen Aggregat-Endpunkten
+          anzeigen können.
+        example: false
+        type: boolean
+      source_region_count:
+        description: Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert
+          beigetragen haben.
+        example: 3
+        type: integer
+      value:
+        example: 340123
+        type: number
+      value_kind:
+        description: |-
+          Art der Größe: "count" (Zählgröße), "rate" (Quote), "mean"
+          (Durchschnitt) oder "median". Mediane lassen sich nicht aus Kreis-
+          Medianen zusammensetzen - der Wert ist dann nur eine Schätzung.
+        enum:
+        - count
+        - rate
+        - mean
+        - median
+        example: rate
+        type: string
+      year:
+        example: 2022
+        type: integer
+    type: object
+  models.AgenturDatasetAggregateYear:
+    properties:
+      dataset_slug:
+        example: bevoelkerung
+        type: string
+      year:
+        example: 2022
+        type: integer
+    type: object
   models.AgenturNuts3Share:
     properties:
       area_share_of_agentur:
@@ -1286,9 +1356,7 @@ definitions:
         description: |-
           Immer true (siehe SELECT true AS is_computed in GetNutsDatasetAggregateTimeseries):
           jeder Punkt ist eine Aggregation über mehrere Kreise, keine an einer
-          einzelnen Quelle abgelesene Einzelbeobachtung. Lässt TimeseriesChart.vue/
-          DataTable.vue dafür den dritten Status "berechnet" anzeigen (statt
-          fälschlich "beobachtet", was einen direkt abgelesenen Einzelwert suggerieren würde).
+          einzelnen Quelle abgelesene Einzelbeobachtung.
         example: true
         type: boolean
       is_interpolated:
@@ -1942,6 +2010,64 @@ paths:
       summary: Monatliche Arbeitslosenzahlen eines Agenturbezirks
       tags:
       - Agenturbezirke
+  /agenturbezirke/{ba_schl}/dataset-aggregate/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: 'Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets)
+        über den Agentur<->NUTS-3-Flächenanteils-Crosswalk auf Agenturbezirk-Ebene
+        hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe
+        mart_agentur_dataset_aggregate). Analog zu GET /nuts/{nuts_id}/dataset-aggregate/{slug}
+        für NUTS-0/1/2. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte;
+        Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der
+        Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen)
+        - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen
+        und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist.
+        Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung).
+        Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig
+        aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.'
+      parameters:
+      - description: Amtlicher BA-Schlüssel des Agenturbezirks
+        example: "962"
+        in: path
+        name: ba_schl
+        required: true
+        type: string
+      - description: Route-Slug des Datensatzes
+        example: bevoelkerung
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturDatasetAggregatePoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Auf Agenturbezirk-Ebene aggregierte Datensatz-Zeitreihe
+      tags:
+      - Agenturbezirke
   /agenturbezirke/{ba_schl}/nuts3:
     get:
       consumes:
@@ -1980,6 +2106,87 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: NUTS-3-Zuordnung eines Agenturbezirks (Flächenanteile)
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/dataset-aggregate:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle (Datensatz-Slug, Jahr)-Kombinationen zurück, für die
+        mart_agentur_dataset_aggregate Werte enthält - Grundlage der Datensatz-/Jahresauswahl
+        in der Karte.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturDatasetAggregateYear'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Verfügbare aggregierte Datensätze/Jahre (Agenturbezirke)
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/dataset-aggregate/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: 'Liefert für einen Kreis-grain-Datensatz und ein Jahr den auf Agenturbezirk-Ebene
+        aggregierten Wert je Agenturbezirk (siehe mart_agentur_dataset_aggregate)
+        - für die Kartendarstellung. Geometrien kommen weiterhin aus GET /agenturbezirke/period.
+        LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und
+        Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte
+        (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung,
+        keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung
+        nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht
+        aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt
+        sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro
+        Punkt kennzeichnen aggregation_method und value_kind das Verfahren.'
+      parameters:
+      - description: Route-Slug des Datensatzes
+        example: bevoelkerung
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Jahr
+        example: 2022
+        in: query
+        name: year
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturDatasetAggregatePoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Aggregierter Datensatz für alle Agenturbezirke (ein Jahr)
       tags:
       - Agenturbezirke
   /agenturbezirke/latest:
@@ -3657,14 +3864,16 @@ paths:
     get:
       consumes:
       - application/json
-      description: Gibt eine einheitliche Liste für NUTS- oder LAU-Regionen zurück.
-        Standard ist NUTS. Mit geo_type=lau werden LAU-Regionen geliefert.
+      description: Gibt eine einheitliche Liste für NUTS-, LAU- oder Agenturbezirk-Regionen
+        zurück. Standard ist NUTS. Mit geo_type=lau bzw. geo_type=agentur werden LAU-
+        bzw. Agenturbezirk-Regionen geliefert.
       parameters:
       - default: nuts
-        description: 'Regionstyp: nuts oder lau'
+        description: 'Regionstyp: nuts, lau oder agentur'
         enum:
         - nuts
         - lau
+        - agentur
         in: query
         name: geo_type
         type: string
@@ -3763,7 +3972,8 @@ paths:
       consumes:
       - application/json
       description: 'Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird
-        der Typ aus der ID erkannt (NUTS: 2-5 Zeichen, sonst LAU).'
+        der Typ aus der ID erkannt (rein numerisch: Agentur; NUTS: 2-5 Zeichen; sonst
+        LAU).'
       parameters:
       - description: Geo-ID (NUTS oder GISCO-ID)
         example: DE111
@@ -3772,11 +3982,12 @@ paths:
         required: true
         type: string
       - default: auto
-        description: 'Regionstyp: auto, nuts oder lau'
+        description: 'Regionstyp: auto, nuts, lau oder agentur'
         enum:
         - auto
         - nuts
         - lau
+        - agentur
         in: query
         name: geo_type
         type: string
@@ -3848,11 +4059,12 @@ paths:
         required: true
         type: string
       - default: auto
-        description: 'Regionstyp: auto, nuts oder lau'
+        description: 'Regionstyp: auto, nuts, lau oder agentur'
         enum:
         - auto
         - nuts
         - lau
+        - agentur
         in: query
         name: geo_type
         type: string

@@ -280,9 +280,9 @@ func (h *Handler) GetAgenturbezirkNuts3(c *gin.Context) {
 }
 
 // GetAgenturbezirkDatasetAggregateTimeseries gibt eine auf Agenturbezirk-Ebene
-// flächenanteilsgewichtet hochaggregierte Zeitreihe eines Kreis-grain-Datensatzes zurück
+// hochaggregierte Zeitreihe eines Kreis-grain-Datensatzes zurück
 // @Summary Auf Agenturbezirk-Ebene aggregierte Datensatz-Zeitreihe
-// @Description Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) über den Agentur<->NUTS-3-Flächenanteils-Crosswalk auf Agenturbezirk-Ebene hoch (Summe bzw. flächengewichteter Durchschnitt je nach Datensatz, siehe mart_agentur_dataset_aggregate). Analog zu GET /nuts/{nuts_id}/dataset-aggregate/{slug} für NUTS-0/1/2, aber flächen- statt bevölkerungsgewichtet.
+// @Description Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) über den Agentur<->NUTS-3-Flächenanteils-Crosswalk auf Agenturbezirk-Ebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_agentur_dataset_aggregate). Analog zu GET /nuts/{nuts_id}/dataset-aggregate/{slug} für NUTS-0/1/2. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.
 // @Tags Agenturbezirke
 // @Accept json
 // @Produce json
@@ -314,7 +314,7 @@ func (h *Handler) GetAgenturbezirkDatasetAggregateTimeseries(c *gin.Context) {
 	}
 
 	points := []models.AgenturDatasetAggregatePoint{}
-	query := `SELECT ba_schl, dataset_slug, year, value, source_region_count, true AS is_computed
+	query := `SELECT ba_schl, dataset_slug, year, value, source_region_count, true AS is_computed, aggregation_method, value_kind
 		FROM transformed_data.mart_agentur_dataset_aggregate
 		WHERE ba_schl = $1 AND dataset_slug = $2
 		ORDER BY year DESC`
@@ -350,7 +350,7 @@ func (h *Handler) GetAgenturbezirkDatasetAggregateYears(c *gin.Context) {
 
 // GetAgenturbezirkeDatasetAggregateByYear gibt für ein Jahr die aggregierten Werte aller Agenturbezirke zurück
 // @Summary Aggregierter Datensatz für alle Agenturbezirke (ein Jahr)
-// @Description Liefert für einen Kreis-grain-Datensatz und ein Jahr den auf Agenturbezirk-Ebene flächenanteilsgewichtet aggregierten Wert je Agenturbezirk (siehe mart_agentur_dataset_aggregate) - für die Kartendarstellung. Geometrien kommen weiterhin aus GET /agenturbezirke/period.
+// @Description Liefert für einen Kreis-grain-Datensatz und ein Jahr den auf Agenturbezirk-Ebene aggregierten Wert je Agenturbezirk (siehe mart_agentur_dataset_aggregate) - für die Kartendarstellung. Geometrien kommen weiterhin aus GET /agenturbezirke/period. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.
 // @Tags Agenturbezirke
 // @Accept json
 // @Produce json
@@ -377,7 +377,7 @@ func (h *Handler) GetAgenturbezirkeDatasetAggregateByYear(c *gin.Context) {
 	}
 
 	points := []models.AgenturDatasetAggregatePoint{}
-	query := `SELECT ba_schl, dataset_slug, year, value, source_region_count, true AS is_computed
+	query := `SELECT ba_schl, dataset_slug, year, value, source_region_count, true AS is_computed, aggregation_method, value_kind
 		FROM transformed_data.mart_agentur_dataset_aggregate
 		WHERE dataset_slug = $1 AND year = $2
 		ORDER BY ba_schl`
