@@ -112,3 +112,29 @@ type AgenturDatasetAggregateYear struct {
 	DatasetSlug string `db:"dataset_slug" json:"dataset_slug" example:"bevoelkerung"`
 	Year        int    `db:"year"         json:"year"         example:"2022"`
 }
+
+// AgenturNutsMembership ist die Einordnung eines Agenturbezirks in eine
+// überlappende NUTS-1/2/3-Region.
+// IsFullyContained: der Agenturbezirk liegt (mit Toleranz) vollständig in der
+// Region. IsParent: kleinste NUTS-Ebene, die ihn vollständig enthält -
+// höchstens eine Zeile je Agenturbezirk, keine wenn er über
+// Bundeslandgrenzen hinausreicht. Räumliche Schätzung, keine amtliche
+// Zuordnung.
+type AgenturNutsMembership struct {
+	NutsID             string  `json:"nuts_id" db:"nuts_id" example:"DE30"`
+	NutsLevel          int     `json:"nuts_level" db:"nuts_level" example:"2"`
+	RegionName         *string `json:"region_name,omitempty" db:"region_name" example:"Berlin"`
+	AreaShareOfAgentur float64 `json:"area_share_of_agentur" db:"area_share_of_agentur" example:"1.0"`
+	IsFullyContained   bool    `json:"is_fully_contained" db:"is_fully_contained"`
+	IsParent           bool    `json:"is_parent" db:"is_parent"`
+}
+
+// NutsAgenturbezirk ist ein Agenturbezirk, der eine NUTS-Region überlappt
+// (GET /nuts/{nuts_id}/agenturbezirke). IsFullyContained unterscheidet
+// echte "Kinder" der Region von nur teilweise überlappenden Agenturbezirken.
+type NutsAgenturbezirk struct {
+	BASchl             string  `json:"ba_schl" db:"ba_schl" example:"962"`
+	Name               *string `json:"name,omitempty" db:"name" example:"Berlin Mitte"`
+	AreaShareOfAgentur float64 `json:"area_share_of_agentur" db:"area_share_of_agentur" example:"1.0"`
+	IsFullyContained   bool    `json:"is_fully_contained" db:"is_fully_contained"`
+}

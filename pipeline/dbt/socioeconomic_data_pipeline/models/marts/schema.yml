@@ -470,6 +470,32 @@ models:
       - name: unterbeschaeftigung
         description: "Unterbeschäftigung (ohne Kurzarbeit) im neuesten Berichtsmonat, null wenn statistisch gesperrt"
 
+  - name: mart_agentur_nuts_membership
+    description: "Einordnung der Agenturbezirke in die NUTS-Hierarchie: eine Zeile je (Agenturbezirk, überlappende NUTS-1/2/3-Region), abgeleitet über NUTS-Code-Präfixe. is_fully_contained (Flächenanteil >= 99 %) markiert Regionen, die den Agenturbezirk vollständig enthalten; is_parent die kleinste davon. Räumliche Schätzung, keine amtliche Zuordnung."
+    columns:
+      - name: ba_schl
+        description: "Amtlicher BA-Schlüssel des Agenturbezirks"
+        tests:
+          - not_null
+      - name: nuts_id
+        description: "NUTS-Code (Ebene 1, 2 oder 3) der überlappenden Region"
+        tests:
+          - not_null
+      - name: nuts_level
+        description: "NUTS-Ebene (1 = Bundesland, 2 = Regierungsbezirk, 3 = Kreis)"
+        tests:
+          - accepted_values:
+              values: [1, 2, 3]
+              quote: false
+      - name: region_name
+        description: "Name der NUTS-Region (Vintage 2024)"
+      - name: area_share_of_agentur
+        description: "Anteil der Agenturbezirksfläche, der in dieser Region liegt (0..1)"
+      - name: is_fully_contained
+        description: "true, wenn der Agenturbezirk (mit Toleranz) vollständig in dieser Region liegt"
+      - name: is_parent
+        description: "true für die kleinste NUTS-Ebene, die den Agenturbezirk vollständig enthält; höchstens eine Zeile je Agenturbezirk"
+
   - name: mart_agentur_nuts3_crosswalk
     description: "n:m-Zuordnung Agenturbezirk <-> NUTS-3-Region mit Flächenanteil in beide Richtungen (Agenturbezirke bestehen i.d.R. aus einem oder mehreren ganzen Kreisen, Ausnahme Berlin: 3 Agenturbezirke teilen sich einen Kreis). Räumliche Schätzung, keine amtliche Zuordnung. Es wird nur nach Fläche und nicht nach Bevölkerung zugeordnet. Verweist auf den ergänzenden Kreis-Level-Datensatz 'Arbeitslose'."
     columns:

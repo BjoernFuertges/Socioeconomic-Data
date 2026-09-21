@@ -279,6 +279,91 @@ func (h *Handler) GetAgenturbezirkNuts3(c *gin.Context) {
 	})
 }
 
+// GetAgenturbezirkNutsHierarchy gibt die Einordnung eines Agenturbezirks in
+// die NUTS-Hierarchie zurück.
+// @Summary NUTS-Hierarchie eines Agenturbezirks (Kreis/Regierungsbezirk/Bundesland)
+// @Description Gibt alle überlappenden NUTS-1/2/3-Regionen eines Agenturbezirks zurück. is_fully_contained markiert Regionen, die den Agenturbezirk vollständig enthalten (Flächenanteil >= 99 %); is_parent die kleinste davon (übergeordnete Region). Reicht ein Agenturbezirk über Bundeslandgrenzen hinaus, ist keine Zeile is_parent. Räumliche Schätzung, keine amtliche Zuordnung.
+// @Tags Agenturbezirke
+// @Accept json
+// @Produce json
+// @Param ba_schl path string true "Amtlicher BA-Schlüssel des Agenturbezirks" example(962)
+// @Success 200 {object} models.APIResponse{data=[]models.AgenturNutsMembership}
+// @Failure 404 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /agenturbezirke/{ba_schl}/nuts-hierarchy [get]
+func (h *Handler) GetAgenturbezirkNutsHierarchy(c *gin.Context) {
+	baSchl := strings.TrimSpace(c.Param("ba_schl"))
+
+	var exists bool
+	if err := h.DB.Get(&exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_latest WHERE ba_schl = $1)`, baSchl); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+	if !exists {
+		respondNotFound(c, "Agenturbezirk nicht gefunden")
+		return
+	}
+
+	query := `SELECT nuts_id, nuts_level, region_name, area_share_of_agentur, is_fully_contained, is_parent
+		FROM transformed_data.mart_agentur_nuts_membership
+		WHERE ba_schl = $1
+		ORDER BY nuts_level DESC, area_share_of_agentur DESC`
+
+	rows := []models.AgenturNutsMembership{}
+	if err := h.DB.Select(&rows, query, baSchl); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    rows,
+		Meta:    &models.MetaInfo{Total: len(rows)},
+	})
+}
+
+// GetNutsAgenturbezirke gibt die Agenturbezirke zurück, die eine NUTS-Region
+// (Ebene 1-3) überlappen.
+// @Summary Agenturbezirke einer NUTS-Region
+// @Description Gibt die Agenturbezirke zurück, die eine NUTS-1/2/3-Region überlappen. is_fully_contained=true: der Agenturbezirk liegt vollständig in der Region (untergeordneter Agenturbezirk); false: nur teilweise Überlappung. Die meisten Kreise haben keinen vollständig enthaltenen Agenturbezirk, weil sie nur Teil eines größeren Agenturbezirks sind. NUTS-0 wird nicht unterstützt. Räumliche Schätzung, keine amtliche Zuordnung.
+// @Tags NUTS
+// @Accept json
+// @Produce json
+// @Param nuts_id path string true "NUTS-Code der Region (Level 1–3)" example(DE30)
+// @Success 200 {object} models.APIResponse{data=[]models.NutsAgenturbezirk}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /nuts/{nuts_id}/agenturbezirke [get]
+func (h *Handler) GetNutsAgenturbezirke(c *gin.Context) {
+	details, err := nutsLevelDetailsFromID(c.Param("nuts_id"))
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	if details.Number < 1 {
+		respondBadRequest(c, "NUTS-0 wird nicht unterstützt: Agenturbezirke sind ab NUTS-1 zugeordnet")
+		return
+	}
+
+	query := `SELECT m.ba_schl, l.name, m.area_share_of_agentur, m.is_fully_contained
+		FROM transformed_data.mart_agentur_nuts_membership m
+		LEFT JOIN transformed_data.mart_agenturbezirk_latest l ON l.ba_schl = m.ba_schl
+		WHERE m.nuts_id = $1
+		ORDER BY m.is_fully_contained DESC, m.area_share_of_agentur DESC, l.name`
+
+	rows := []models.NutsAgenturbezirk{}
+	if err := h.DB.Select(&rows, query, details.NormalizedID); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    rows,
+		Meta:    &models.MetaInfo{Total: len(rows)},
+	})
+}
+
 // GetAgenturbezirkDatasetAggregateTimeseries gibt eine auf Agenturbezirk-Ebene
 // hochaggregierte Zeitreihe eines Kreis-grain-Datensatzes zurück
 // @Summary Auf Agenturbezirk-Ebene aggregierte Datensatz-Zeitreihe

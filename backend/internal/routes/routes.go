@@ -44,6 +44,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			nutsGroup.GET("/:nuts_id/versions", handler.GetNutsRegionVersions)
 			nutsGroup.GET("/:nuts_id/datasets", handler.GetNutsDatasets)
 			nutsGroup.GET("/:nuts_id/lau-aggregate", handler.GetNutsLauAggregate)
+			nutsGroup.GET("/:nuts_id/agenturbezirke", handler.GetNutsAgenturbezirke)
 			nutsGroup.GET("/:nuts_id/dataset-aggregate/:slug", handler.GetNutsDatasetAggregateTimeseries)
 			nutsGroup.GET("/:nuts_id", handler.GetNutsRegionData)
 		}
@@ -70,6 +71,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			agenturbezirkeGroup.GET("/:ba_schl", handler.GetAgenturbezirkByID)
 			agenturbezirkeGroup.GET("/:ba_schl/arbeitslosigkeit", handler.GetAgenturbezirkArbeitslosigkeit)
 			agenturbezirkeGroup.GET("/:ba_schl/nuts3", handler.GetAgenturbezirkNuts3)
+			agenturbezirkeGroup.GET("/:ba_schl/nuts-hierarchy", handler.GetAgenturbezirkNutsHierarchy)
 			agenturbezirkeGroup.GET("/:ba_schl/dataset-aggregate/:slug", handler.GetAgenturbezirkDatasetAggregateTimeseries)
 		}
 

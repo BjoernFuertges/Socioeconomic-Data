@@ -522,6 +522,66 @@ const docTemplate = `{
                 }
             }
         },
+        "/agenturbezirke/{ba_schl}/nuts-hierarchy": {
+            "get": {
+                "description": "Gibt alle überlappenden NUTS-1/2/3-Regionen eines Agenturbezirks zurück. is_fully_contained markiert Regionen, die den Agenturbezirk vollständig enthalten (Flächenanteil \u003e= 99 %); is_parent die kleinste davon (übergeordnete Region). Reicht ein Agenturbezirk über Bundeslandgrenzen hinaus, ist keine Zeile is_parent. Räumliche Schätzung, keine amtliche Zuordnung.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "NUTS-Hierarchie eines Agenturbezirks (Kreis/Regierungsbezirk/Bundesland)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "962",
+                        "description": "Amtlicher BA-Schlüssel des Agenturbezirks",
+                        "name": "ba_schl",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturNutsMembership"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/agenturbezirke/{ba_schl}/nuts3": {
             "get": {
                 "description": "Gibt die überlappenden NUTS-3-Regionen eines Agenturbezirks zurück, mit Flächenanteil in beide Richtungen. Agenturbezirke bestehen i.d.R. aus einem oder mehreren ganzen Kreisen (Ausnahme Berlin: 3 Agenturbezirke teilen sich einen Kreis) - eine räumliche Schätzung, keine amtliche Zuordnung.",
@@ -4484,6 +4544,66 @@ const docTemplate = `{
                 }
             }
         },
+        "/nuts/{nuts_id}/agenturbezirke": {
+            "get": {
+                "description": "Gibt die Agenturbezirke zurück, die eine NUTS-1/2/3-Region überlappen. is_fully_contained=true: der Agenturbezirk liegt vollständig in der Region (untergeordneter Agenturbezirk); false: nur teilweise Überlappung. Die meisten Kreise haben keinen vollständig enthaltenen Agenturbezirk, weil sie nur Teil eines größeren Agenturbezirks sind. NUTS-0 wird nicht unterstützt. Räumliche Schätzung, keine amtliche Zuordnung.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NUTS"
+                ],
+                "summary": "Agenturbezirke einer NUTS-Region",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE30",
+                        "description": "NUTS-Code der Region (Level 1–3)",
+                        "name": "nuts_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsAgenturbezirk"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/nuts/{nuts_id}/dataset-aggregate/{slug}": {
             "get": {
                 "description": "Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) auf Land-/Bundesland-/Regierungsbezirksebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_nuts012_dataset_aggregate). Pendant zu GET /{slug}/timeseries für NUTS-3, das für Level 0-2 keine Kreis-Zeilen findet. Nur für NUTS-0/1/2-IDs (2-4 Zeichen) gültig; für Kreise (NUTS-3) GET /{slug}/timeseries verwenden.",
@@ -5879,6 +5999,33 @@ const docTemplate = `{
                 "nuts3_id": {
                     "type": "string",
                     "example": "DE300"
+                },
+                "region_name": {
+                    "type": "string",
+                    "example": "Berlin"
+                }
+            }
+        },
+        "models.AgenturNutsMembership": {
+            "type": "object",
+            "properties": {
+                "area_share_of_agentur": {
+                    "type": "number",
+                    "example": 1
+                },
+                "is_fully_contained": {
+                    "type": "boolean"
+                },
+                "is_parent": {
+                    "type": "boolean"
+                },
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE30"
+                },
+                "nuts_level": {
+                    "type": "integer",
+                    "example": 2
                 },
                 "region_name": {
                     "type": "string",
@@ -7444,6 +7591,26 @@ const docTemplate = `{
                 "total": {
                     "type": "integer",
                     "example": 140400
+                }
+            }
+        },
+        "models.NutsAgenturbezirk": {
+            "type": "object",
+            "properties": {
+                "area_share_of_agentur": {
+                    "type": "number",
+                    "example": 1
+                },
+                "ba_schl": {
+                    "type": "string",
+                    "example": "962"
+                },
+                "is_fully_contained": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Berlin Mitte"
                 }
             }
         },

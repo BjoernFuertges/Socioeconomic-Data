@@ -51,6 +51,11 @@ the generic socioeconomic-data routes below.
 | GET | `/agenturbezirke` | List of all Agenturbezirke, with geometry |
 | GET | `/agenturbezirke/{ba_schl}` | A single Agenturbezirk |
 | GET | `/agenturbezirke/{ba_schl}/arbeitslosigkeit` | Monthly unemployment/underemployment series (since Jan 2007) |
+| GET | `/agenturbezirke/{ba_schl}/nuts-hierarchy` | Overlapping NUTS-1/2/3 regions; `is_parent` marks the smallest one that fully contains the Agenturbezirk (none if it spans several Bundesländer) |
+| GET | `/nuts/{nuts_id}/agenturbezirke` | Reverse direction (NUTS-1 to 3): Agenturbezirke in a region, `is_fully_contained` separates real children from partial overlaps |
+
+The Agenturbezirk ↔ NUTS link is a spatial estimate (area share, "fully
+contained" = ≥ 99 %), not an official assignment.
 
 ## Socioeconomic inventory
 
