@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import type { TimeseriesPoint } from "../types/api";
-import { formatNumber } from "../format";
+import { formatMonthLabel, formatNumber } from "../format";
 
 type PeriodSeries = {
   key: string;
@@ -17,10 +17,20 @@ type PeriodSeries = {
 // weil ein gemeinsamer Wert-Y-Achse bei z.B. "Durchschnittsalter" (~40) vs.
 // "Arbeitslosenquote" (~5%) sonst irreführend wäre (kein Dual-Axis-Chart,
 // siehe dataviz-Skill: zwei Skalen -> ein Chart nur indexiert auf Basis).
+//
+// Punkte mit `month` (1-12) sind Monatswerte (z.B. BA-Arbeitslose eines
+// Agenturbezirks), Punkte ohne `month` Jahreswerte. Enthält mindestens eine
+// Serie Monatswerte, läuft die x-Achse zeitlich (Jahr + Monatsanteil): Monats-
+// werte liegen in der Mitte ihres Monats, Jahreswerte in der Mitte ihres
+// Jahres, und der Index-Basiswert ist der Jahresdurchschnitt (Monatsreihe)
+// bzw. Jahreswert im ersten Jahr, in dem ALLE Serien Daten haben - ein
+// "erster Wert"-Basispunkt je Serie wäre bei unterschiedlichem Start der
+// Reihen nicht vergleichbar.
+type IndexedPoint = TimeseriesPoint & { month?: number };
 type IndexedSeries = {
   key: string;
   label: string;
-  points: TimeseriesPoint[];
+  points: IndexedPoint[];
 };
 
 // Entweder `points` (Jahreszeitreihe mit Interpolationsstatus, NUTS/LAU),
@@ -240,13 +250,21 @@ function drawPeriodChart(svg: SVGSVGElement, series: PeriodSeries[]) {
   });
 }
 
-function showIndexedTooltip(evt: MouseEvent, seriesLabel: string, point: TimeseriesPoint, index: number) {
+// Basisjahr des Index bei gemischten Monats-/Jahresserien (null sonst) - für die Bildunterschrift.
+const indexBaseYear = ref<number | null>(null);
+const hasMonthlySeries = computed(() => !!props.indexedSeries?.some((s) => s.points.some((p) => p.month !== undefined)));
+
+function showIndexedTooltip(evt: MouseEvent, seriesLabel: string, point: IndexedPoint, index: number) {
+  const isMonthly = point.month !== undefined;
   const rows: [string, string | number][] = [
     ["Datensatz", seriesLabel],
-    ["Jahr", point.year],
+    isMonthly ? ["Monat", formatMonthLabel(point.year, point.month!)] : ["Jahr", point.year],
     ["Wert", formatNumber(point.value)],
-    ["Index (Basisjahr=100)", index.toLocaleString("de-DE", { maximumFractionDigits: 1 })],
-    ["Status", statusLabel(point)],
+    [
+      indexBaseYear.value !== null ? `Index (${indexBaseYear.value}=100)` : "Index (Basisjahr=100)",
+      index.toLocaleString("de-DE", { maximumFractionDigits: 1 }),
+    ],
+    ["Status", isMonthly ? "Monatswert" : statusLabel(point)],
   ];
   tooltip.value = { visible: true, x: evt.clientX + 12, y: evt.clientY + 12, rows };
 }
@@ -265,17 +283,44 @@ function drawIndexedChart(svg: SVGSVGElement, series: IndexedSeries[]) {
   const plotW = width - padding.left - padding.right;
   const plotH = height - padding.top - padding.bottom;
 
-  const indexed = visible.map((s) => {
-    const sorted = s.points.slice().sort((a, b) => a.year - b.year);
-    const base = sorted[0]?.value;
-    const points = base ? sorted.map((p) => ({ year: p.year, index: (p.value / base) * 100, point: p })) : [];
+  const mixed = visible.some((s) => s.points.some((p) => p.month !== undefined));
+
+  // Jahres-Referenzwert je Serie und Jahr (Monatsreihe: Durchschnitt der
+  // vorhandenen Monate) - nur für die Wahl des gemeinsamen Basisjahrs.
+  const annualByYear = visible.map((s) => {
+    const acc = new Map<number, { sum: number; n: number }>();
+    for (const p of s.points) {
+      const a = acc.get(p.year) ?? { sum: 0, n: 0 };
+      a.sum += p.value;
+      a.n += 1;
+      acc.set(p.year, a);
+    }
+    return new Map(Array.from(acc, ([year, { sum, n }]) => [year, sum / n] as [number, number]));
+  });
+  let commonBaseYear: number | null = null;
+  if (mixed) {
+    const commonYears = Array.from(annualByYear[0].keys())
+      .filter((y) => annualByYear.every((m) => (m.get(y) ?? 0) !== 0))
+      .sort((a, b) => a - b);
+    commonBaseYear = commonYears[0] ?? null;
+  }
+  indexBaseYear.value = commonBaseYear;
+
+  // Zeitposition: bei rein jährlichen Serien das Jahr selbst (unverändertes
+  // Verhalten), gemischt Jahr + Anteil (Monatsmitte bzw. Jahresmitte).
+  const timeOf = (p: IndexedPoint) => (!mixed ? p.year : p.year + (p.month !== undefined ? (p.month - 0.5) / 12 : 0.5));
+
+  const indexed = visible.map((s, i) => {
+    const sorted = s.points.slice().sort((a, b) => a.year - b.year || (a.month ?? 0) - (b.month ?? 0));
+    const base = commonBaseYear !== null ? annualByYear[i].get(commonBaseYear) : sorted[0]?.value;
+    const points = base ? sorted.map((p) => ({ year: timeOf(p), index: (p.value / base) * 100, point: p })) : [];
     return { key: s.key, label: s.label, points };
   });
 
   const allYears = Array.from(new Set(indexed.flatMap((s) => s.points.map((p) => p.year)))).sort((a, b) => a - b);
   if (!allYears.length) return;
-  const minYear = allYears[0];
-  const maxYear = allYears[allYears.length - 1];
+  const minYear = mixed ? Math.floor(allYears[0]) : allYears[0];
+  const maxYear = mixed ? Math.floor(allYears[allYears.length - 1]) + 1 : allYears[allYears.length - 1];
 
   const allIndexValues = indexed.flatMap((s) => s.points.map((p) => p.index));
   if (!allIndexValues.length) return;
@@ -341,11 +386,14 @@ function drawIndexedChart(svg: SVGSVGElement, series: IndexedSeries[]) {
   baseline.setAttribute("stroke-width", "1");
   svg.appendChild(baseline);
 
-  [0, Math.floor(allYears.length / 2), allYears.length - 1].forEach((idx) => {
-    if (idx < 0 || idx >= allYears.length) return;
-    const year = allYears[idx];
+  // Gemischt: Jahres-Ticks mittig unter dem jeweiligen Jahr (dort liegen
+  // auch die Jahreswerte); sonst wie bisher erster/mittlerer/letzter Wert.
+  const tickYears = mixed
+    ? [minYear, Math.floor((minYear + maxYear - 1) / 2), maxYear - 1]
+    : [0, Math.floor(allYears.length / 2), allYears.length - 1].filter((idx) => idx >= 0 && idx < allYears.length).map((idx) => allYears[idx]);
+  tickYears.forEach((year) => {
     const text = document.createElementNS(svgNS, "text");
-    text.setAttribute("x", String(xFor(year)));
+    text.setAttribute("x", String(xFor(mixed ? year + 0.5 : year)));
     text.setAttribute("y", String(height - padding.bottom + 18));
     text.setAttribute("text-anchor", "middle");
     text.setAttribute("font-size", "10");
@@ -372,7 +420,12 @@ function drawIndexedChart(svg: SVGSVGElement, series: IndexedSeries[]) {
     s.points.forEach(({ year, index, point }) => {
       const cx = xFor(year);
       const cy = yFor(index);
-      if (point.is_computed) {
+      const isMonthly = point.month !== undefined;
+      // Monatsreihen: nur Linie, keine Marker (hunderte Punkte wären
+      // unlesbar) - Hover-Ziel bleibt.
+      if (isMonthly) {
+        // kein sichtbarer Marker
+      } else if (point.is_computed) {
         const size = 6;
         const rect = document.createElementNS(svgNS, "rect");
         rect.setAttribute("x", String(cx - size / 2));
@@ -400,7 +453,7 @@ function drawIndexedChart(svg: SVGSVGElement, series: IndexedSeries[]) {
       const hitTarget = document.createElementNS(svgNS, "circle");
       hitTarget.setAttribute("cx", String(cx));
       hitTarget.setAttribute("cy", String(cy));
-      hitTarget.setAttribute("r", "9");
+      hitTarget.setAttribute("r", isMonthly ? "4" : "9");
       hitTarget.setAttribute("fill", "transparent");
       hitTarget.style.cursor = "pointer";
       hitTarget.addEventListener("mouseenter", (evt) => showIndexedTooltip(evt, s.label, point, index));
@@ -570,7 +623,11 @@ watch(() => [props.points, props.periodSeries, props.indexedSeries], drawChart, 
     <span v-for="(s, i) in indexedSeries" :key="s.key">
       <span class="marker" :style="{ backgroundColor: SERIES_COLORS[i % SERIES_COLORS.length] }"></span>{{ s.label }}
     </span>
-    <span class="hint">Indexiert, Basisjahr = 100 (Wert im ersten verfügbaren Jahr je Datensatz)</span>
+    <span v-if="hasMonthlySeries" class="hint">
+      Indexiert{{ indexBaseYear !== null ? `, ${indexBaseYear} = 100 (Jahresdurchschnitt bzw. Jahreswert)` : "" }}.
+      Linie ohne Marker = Monatswerte, Punkte/Quadrate = Jahreswerte (Jahresmitte).
+    </span>
+    <span v-else class="hint">Indexiert, Basisjahr = 100 (Wert im ersten verfügbaren Jahr je Datensatz)</span>
   </p>
   <p v-else-if="!periodSeries && legendItems.length" class="chart-caption">
     <span v-for="item in legendItems" :key="item.key"><span class="marker" :class="item.markerClass"></span>{{ item.label }}</span>

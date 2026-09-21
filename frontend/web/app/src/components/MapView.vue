@@ -7,6 +7,8 @@ import "leaflet/dist/leaflet.css";
 import { apiGet, unwrapNull } from "../api/client";
 import type {
   AgenturbezirkLatestValue,
+  AgenturDatasetAggregatePoint,
+  AgenturDatasetAggregateYear,
   AgenturbezirkPeriod,
   GeoRegionSummary,
   InventoryEntry,
@@ -62,6 +64,20 @@ const selectedAgenturMetric = ref<AgenturMetric>("arbeitslose");
 // gewählten Berichtsmonat) - beim Metrik-Wechsel wird daraus nur
 // valuesByRegion neu abgeleitet, kein erneuter Request nötig.
 const agenturLatestRaw = ref<AgenturbezirkLatestValue[]>([]);
+
+// Alternativ zu den BA-Monatswerten (arbeitslose/unterbeschaeftigung) können
+// auch die auf Agenturbezirke aggregierten Kreis-Datensätze eingefärbt werden
+// (GET /agenturbezirke/dataset-aggregate[/{slug}], flächenanteilsgewichtet über
+// mart_agentur_dataset_aggregate). "" = BA-Monatswerte (Metrik + Jahr/Monat),
+// sonst der Slug des aggregierten Datensatzes (dann nur Jahr, kein Monat).
+// Die Geometrie stammt in beiden Fällen aus /agenturbezirke/period.
+const selectedAgenturDataset = ref<string>("");
+const selectedAgenturAggYear = ref<number | null>(null);
+// dataset-slug -> verfügbare Jahre (absteigend)
+const agenturAggYears = ref<Map<string, number[]>>(new Map());
+const agenturAggDatasetOptions = computed(() => Array.from(agenturAggYears.value.keys()).sort());
+const agenturAggError = ref<string | null>(null);
+const agenturAggYearOptions = computed(() => agenturAggYears.value.get(selectedAgenturDataset.value) ?? []);
 
 // Verfügbare Berichtsmonate (von /agenturbezirke/periods, neueste zuerst) -
 // füllt die Jahr/Monat-Auswahl für Agenturbezirke, analog zur Jahres-
@@ -143,7 +159,9 @@ const selectedGeoType = ref<GeoType>("nuts");
 
 const valuesLoading = ref(false);
 const valuesError = ref<string | null>(null);
-const valuesByRegion = ref<Map<string, TimeseriesPoint>>(new Map());
+// source_region_count nur bei aggregierten Agentur-Datensätzen gesetzt.
+type MapValue = TimeseriesPoint & { source_region_count?: number };
+const valuesByRegion = ref<Map<string, MapValue>>(new Map());
 
 const datasetYears = computed(() => (selectedGeoType.value === "lau" ? datasetYearsLau.value : datasetYearsNuts.value));
 const datasetOptions = computed(() => Array.from(datasetYears.value.keys()).sort());
@@ -262,9 +280,12 @@ const sidebarRegion = computed(() => {
   return { id, name: region.region_name, point: valuesByRegion.value.get(id) ?? null };
 });
 
-const sidebarValueLabel = computed(() =>
-  selectedGeoType.value === "agentur" ? AGENTUR_METRIC_LABELS[selectedAgenturMetric.value] : "Wert",
-);
+const sidebarValueLabel = computed(() => {
+  if (selectedGeoType.value !== "agentur") return "Wert";
+  return selectedAgenturDataset.value
+    ? formatDatasetLabel(selectedAgenturDataset.value)
+    : AGENTUR_METRIC_LABELS[selectedAgenturMetric.value];
+});
 
 // Cross-Link "Karte -> Regionen" (Umkehrung von RegionBrowser.vue: viewOnMap()) -
 // springt zur Detailansicht der in der Seitenbox gezeigten Region, mit dem
@@ -282,7 +303,7 @@ const sidebarLinkTarget = computed<RouteLocationRaw | null>(() => {
     return {
       name: "regionen",
       params: { regionType: "agentur", regionId: id },
-      query: { metrics: selectedAgenturMetric.value },
+      query: selectedAgenturDataset.value ? {} : { metrics: selectedAgenturMetric.value },
     };
   }
   return {
@@ -474,9 +495,62 @@ function applyAgenturValues() {
   restyleLayer();
 }
 
+// Verfügbare aggregierte Datensätze/Jahre für Agenturbezirke; wählt (falls
+// per Route ein Datensatz vorgegeben wurde) ein gültiges Jahr vor.
+async function loadAgenturAggInventory() {
+  const body = await apiGet<AgenturDatasetAggregateYear[]>("/agenturbezirke/dataset-aggregate");
+  const byDataset = new Map<string, number[]>();
+  for (const row of body.data ?? []) {
+    if (!byDataset.has(row.dataset_slug)) byDataset.set(row.dataset_slug, []);
+    byDataset.get(row.dataset_slug)!.push(row.year);
+  }
+  for (const years of byDataset.values()) years.sort((a, b) => b - a);
+  agenturAggYears.value = byDataset;
+  ensureAgenturAggSelection();
+}
+
+// Verwirft einen unbekannten Datensatz und ergänzt ein fehlendes/ungültiges
+// Jahr durch das neueste verfügbare.
+function ensureAgenturAggSelection() {
+  const slug = selectedAgenturDataset.value;
+  if (!slug) return;
+  const years = agenturAggYears.value.get(slug);
+  if (!years) {
+    if (agenturAggYears.value.size > 0) selectedAgenturDataset.value = "";
+    return;
+  }
+  if (selectedAgenturAggYear.value === null || !years.includes(selectedAgenturAggYear.value)) {
+    selectedAgenturAggYear.value = years[0] ?? null;
+  }
+}
+
+async function loadAgenturAggValues() {
+  const slug = selectedAgenturDataset.value;
+  const year = selectedAgenturAggYear.value;
+  if (!slug || year === null) {
+    valuesByRegion.value = new Map();
+    restyleLayer();
+    return;
+  }
+  valuesLoading.value = true;
+  valuesError.value = null;
+  try {
+    const body = await apiGet<AgenturDatasetAggregatePoint[]>(`/agenturbezirke/dataset-aggregate/${slug}`, { year });
+    // Antwort könnte durch schnelle Auswahlwechsel überholt sein.
+    if (slug !== selectedAgenturDataset.value || year !== selectedAgenturAggYear.value) return;
+    valuesByRegion.value = new Map((body.data ?? []).map((p) => [p.ba_schl, p]));
+    restyleLayer();
+  } catch (err) {
+    valuesError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    valuesLoading.value = false;
+  }
+}
+
 async function loadValues() {
   if (selectedGeoType.value === "agentur") {
-    applyAgenturValues();
+    if (selectedAgenturDataset.value) await loadAgenturAggValues();
+    else applyAgenturValues();
     return;
   }
   if (!selectedDataset.value || selectedYear.value === null) {
@@ -607,9 +681,14 @@ function initFromRoute() {
   if (selectedGeoType.value === "agentur") {
     const metric = q.metric as AgenturMetric | undefined;
     if (metric === "arbeitslose" || metric === "unterbeschaeftigung") selectedAgenturMetric.value = metric;
+    if (typeof q.dataset === "string") selectedAgenturDataset.value = q.dataset;
     if (q.year) {
       const y = Number(q.year);
-      if (!Number.isNaN(y)) selectedAgenturYear.value = y;
+      // Bei aggregiertem Datensatz bezeichnet ?year= das Datenjahr, sonst das Berichtsjahr.
+      if (!Number.isNaN(y)) {
+        if (typeof q.dataset === "string" && q.dataset) selectedAgenturAggYear.value = y;
+        else selectedAgenturYear.value = y;
+      }
     }
     if (q.month) {
       const m = Number(q.month);
@@ -684,9 +763,14 @@ watch(sidebarRegionId, () => {
 const currentQuery = computed<Record<string, string>>(() => {
   const q: Record<string, string> = { geo: selectedGeoType.value };
   if (selectedGeoType.value === "agentur") {
-    q.metric = selectedAgenturMetric.value;
-    if (selectedAgenturYear.value !== null) q.year = String(selectedAgenturYear.value);
-    if (selectedAgenturMonth.value !== null) q.month = String(selectedAgenturMonth.value);
+    if (selectedAgenturDataset.value) {
+      q.dataset = selectedAgenturDataset.value;
+      if (selectedAgenturAggYear.value !== null) q.year = String(selectedAgenturAggYear.value);
+    } else {
+      q.metric = selectedAgenturMetric.value;
+      if (selectedAgenturYear.value !== null) q.year = String(selectedAgenturYear.value);
+      if (selectedAgenturMonth.value !== null) q.month = String(selectedAgenturMonth.value);
+    }
   } else {
     if (selectedDataset.value) q.dataset = selectedDataset.value;
     if (selectedYear.value !== null) q.year = String(selectedYear.value);
@@ -733,6 +817,14 @@ onMounted(async () => {
   buildLayer();
   buildBoundaryLayer();
   await loadInventory();
+  try {
+    await loadAgenturAggInventory();
+  } catch (err) {
+    agenturAggError.value = err instanceof Error ? err.message : String(err);
+  }
+  // Direkt per Deep-Link auf einen aggregierten Agentur-Datensatz gelandet:
+  // Werte erst jetzt (nach Jahr-Validierung) laden.
+  if (selectedGeoType.value === "agentur" && selectedAgenturDataset.value) await loadValues();
   if (highlightedRegionId.value) focusOnRegion(highlightedRegionId.value);
 });
 
@@ -764,7 +856,16 @@ onActivated(() => {
 
 watch([selectedDataset, selectedYear], loadValues);
 watch(selectedAgenturMetric, () => {
-  if (selectedGeoType.value === "agentur") applyAgenturValues();
+  if (selectedGeoType.value === "agentur" && !selectedAgenturDataset.value) applyAgenturValues();
+});
+// Datensatzwechsel (BA-Monatswerte <-> aggregierter Kreis-Datensatz): gültiges
+// Jahr sicherstellen und Werte neu laden; Geometrie bleibt unverändert.
+watch(selectedAgenturDataset, () => {
+  ensureAgenturAggSelection();
+  if (selectedGeoType.value === "agentur") loadValues();
+});
+watch(selectedAgenturAggYear, () => {
+  if (selectedGeoType.value === "agentur" && selectedAgenturDataset.value) loadValues();
 });
 // Wenn der gewählte Monat im neuen Jahr nicht existiert (unterschiedliche
 // Jahre können unterschiedliche Berichtsmonate abgedeckt haben), auf den
@@ -833,6 +934,7 @@ watch(selectedGeoType, async () => {
     <p v-if="geoError" class="error-text">Geometrien konnten nicht geladen werden: {{ geoError }}</p>
     <p v-if="boundaryError" class="error-text">Staats-/Bundeslandgrenzen konnten nicht geladen werden: {{ boundaryError }}</p>
     <p v-if="inventoryError" class="error-text">Datensatz-Übersicht konnte nicht geladen werden: {{ inventoryError }}</p>
+    <p v-if="agenturAggError" class="error-text">Aggregierte Agenturbezirk-Datensätze konnten nicht geladen werden: {{ agenturAggError }}</p>
     <p v-if="agenturPeriodsError" class="error-text">Berichtsmonate der Agenturbezirke konnten nicht geladen werden: {{ agenturPeriodsError }}</p>
 
     <div class="dataset-picker">
@@ -844,25 +946,45 @@ watch(selectedGeoType, async () => {
       </select>
 
       <template v-if="selectedGeoType === 'agentur'">
-        <label for="map-agentur-metric-select">Metrik</label>
-        <select id="map-agentur-metric-select" v-model="selectedAgenturMetric">
-          <option value="arbeitslose">Arbeitslose</option>
-          <option value="unterbeschaeftigung">Unterbeschäftigung</option>
+        <label for="map-agentur-dataset-select">Datensatz</label>
+        <select id="map-agentur-dataset-select" v-model="selectedAgenturDataset">
+          <option value="">BA-Monatswerte (Arbeitslose / Unterbeschäftigung)</option>
+          <option v-for="slug in agenturAggDatasetOptions" :key="slug" :value="slug">
+            {{ formatDatasetLabel(slug) }} (Kreise aggregiert)
+          </option>
         </select>
 
-        <label for="map-agentur-year-select">Jahr</label>
-        <select id="map-agentur-year-select" v-model.number="selectedAgenturYear">
-          <option v-for="year in agenturYearOptions" :key="year" :value="year">{{ year }}</option>
-        </select>
+        <template v-if="selectedAgenturDataset">
+          <label for="map-agentur-agg-year-select">Jahr</label>
+          <select id="map-agentur-agg-year-select" v-model.number="selectedAgenturAggYear">
+            <option v-for="year in agenturAggYearOptions" :key="year" :value="year">{{ year }}</option>
+          </select>
 
-        <label for="map-agentur-month-select">Monat</label>
-        <select id="map-agentur-month-select" v-model.number="selectedAgenturMonth">
-          <option v-for="month in agenturMonthOptions" :key="month" :value="month">{{ String(month).padStart(2, "0") }}</option>
-        </select>
+          <RouterLink :to="{ name: 'katalog', params: { slug: selectedAgenturDataset } }" class="link-button">
+            Datensatz im Katalog ansehen ↗
+          </RouterLink>
+        </template>
+        <template v-else>
+          <label for="map-agentur-metric-select">Metrik</label>
+          <select id="map-agentur-metric-select" v-model="selectedAgenturMetric">
+            <option value="arbeitslose">Arbeitslose</option>
+            <option value="unterbeschaeftigung">Unterbeschäftigung</option>
+          </select>
 
-        <RouterLink :to="{ name: 'katalog', params: { slug: AGENTUR_DATASET_SLUG } }" class="link-button">
-          Datensatz im Katalog ansehen ↗
-        </RouterLink>
+          <label for="map-agentur-year-select">Jahr</label>
+          <select id="map-agentur-year-select" v-model.number="selectedAgenturYear">
+            <option v-for="year in agenturYearOptions" :key="year" :value="year">{{ year }}</option>
+          </select>
+
+          <label for="map-agentur-month-select">Monat</label>
+          <select id="map-agentur-month-select" v-model.number="selectedAgenturMonth">
+            <option v-for="month in agenturMonthOptions" :key="month" :value="month">{{ String(month).padStart(2, "0") }}</option>
+          </select>
+
+          <RouterLink :to="{ name: 'katalog', params: { slug: AGENTUR_DATASET_SLUG } }" class="link-button">
+            Datensatz im Katalog ansehen ↗
+          </RouterLink>
+        </template>
       </template>
       <template v-else>
         <label for="map-dataset-select">Datensatz</label>
@@ -905,7 +1027,11 @@ watch(selectedGeoType, async () => {
         <div ref="mapContainer" class="map-container"></div>
         <div class="map-legend">
           <template v-if="selectedGeoType === 'agentur'">
-            <p class="map-legend-title">
+            <p v-if="selectedAgenturDataset" class="map-legend-title">
+              {{ formatDatasetLabel(selectedAgenturDataset) }}
+              <template v-if="selectedAgenturAggYear"> · {{ selectedAgenturAggYear }}</template>
+            </p>
+            <p v-else class="map-legend-title">
               {{ AGENTUR_METRIC_LABELS[selectedAgenturMetric] }}
               <template v-if="selectedAgenturYear && selectedAgenturMonth">
                 · {{ formatMonthLabel(selectedAgenturYear, selectedAgenturMonth) }}
@@ -920,6 +1046,9 @@ watch(selectedGeoType, async () => {
             </div>
             <p class="map-legend-note">
               <span class="map-legend-swatch map-legend-swatch--nodata"></span>keine Daten
+              <template v-if="selectedAgenturDataset">
+                · flächenanteilsgewichtet aus Kreis-Daten aggregiert
+              </template>
             </p>
           </template>
           <template v-else-if="selectedDataset">
@@ -973,6 +1102,10 @@ watch(selectedGeoType, async () => {
               <template v-if="selectedGeoType !== 'agentur'">
                 <dt>Status</dt>
                 <dd>{{ sidebarRegion.point.is_interpolated ? "interpoliert" : "beobachtet" }}</dd>
+              </template>
+              <template v-else-if="sidebarRegion.point.source_region_count !== undefined">
+                <dt>Status</dt>
+                <dd>aggregiert aus {{ sidebarRegion.point.source_region_count }} Kreis(en)</dd>
               </template>
             </template>
           </dl>

@@ -208,6 +208,13 @@ export interface AgenturDatasetAggregatePoint extends TimeseriesPoint {
   source_region_count: number;
 }
 
+// Zeile von GET /agenturbezirke/dataset-aggregate - eine (Datensatz, Jahr)-
+// Kombination, für die aggregierte Agenturbezirk-Werte vorliegen.
+export interface AgenturDatasetAggregateYear {
+  dataset_slug: string;
+  year: number;
+}
+
 // Metadaten-Katalogeintrag von GET /datasets (backend models.DatasetCatalogEintrag) -
 // Herkunft/Lizenz/Beschreibung
 export interface DatasetMetadataEntry {

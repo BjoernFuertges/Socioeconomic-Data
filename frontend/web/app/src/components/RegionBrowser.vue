@@ -28,7 +28,6 @@ import DatasetInfo from "./DatasetInfo.vue";
 const INKAR_ARBEITSLOSE_SLUG = "arbeitslose";
 
 type RegionType = "nuts" | "lau" | "agentur";
-type DatasetViewMode = "separate" | "combined";
 
 // NUTS-Hierarchie: 0=Land, 1=Bundesland, 2=Regierungsbezirk, 3=Kreis.
 // Innerhalb des "nuts"-Tabs zusätzlich zum regionType wählbar (siehe
@@ -51,9 +50,6 @@ function parseNutsLevelParam(value: unknown): NutsLevel {
 function parseSlugsParam(value: unknown): string[] {
   if (typeof value !== "string" || !value) return [];
   return value.split(",").map((s) => s.trim()).filter(Boolean);
-}
-function parseViewModeParam(value: unknown): DatasetViewMode {
-  return value === "combined" ? "combined" : "separate";
 }
 
 // Agenturbezirke haben (anders als NUTS/LAU) keinen Datensatz-Katalog,
@@ -160,7 +156,6 @@ const nutsLauAggregate = ref<NutsLauAggregatePoint[] | null>(null);
 // (siehe unten) immer in die Route gespiegelt (F12.1: Verlinkung muss den
 // tatsächlich angezeigten Zustand abbilden).
 const nutsSelectedSlugs = ref<string[]>([]);
-const nutsViewMode = ref<DatasetViewMode>("separate");
 
 onMounted(async () => {
   try {
@@ -319,9 +314,8 @@ const selectedLau = ref<LauRegion | null>(null);
 const lauDetailError = ref<string | null>(null);
 const lauDatasets = ref<DatasetCatalogEntry[] | null>(null);
 const lauDatasetsError = ref<string | null>(null);
-// Analog zu nutsSelectedSlugs/nutsViewMode.
+// Analog zu nutsSelectedSlugs.
 const lauSelectedSlugs = ref<string[]>([]);
-const lauViewMode = ref<DatasetViewMode>("separate");
 
 function dedupeByGiscoId(rows: LauRegion[]): LauRegion[] {
   const byId = new Map<string, LauRegion>();
@@ -548,7 +542,6 @@ async function selectAgentur(baSchl: string, navigate = true, wantedMetrics?: Ag
 const agenturAggregateDatasets = ref<DatasetCatalogEntry[] | null>(null);
 const agenturAggregateDatasetsError = ref<string | null>(null);
 const agenturAggregateSelectedSlugs = ref<string[]>([]);
-const agenturAggregateViewMode = ref<DatasetViewMode>("separate");
 
 watch(agenturNuts3Shares, async (shares) => {
   agenturAggregateDatasets.value = null;
@@ -566,12 +559,9 @@ watch(agenturNuts3Shares, async (shares) => {
 
 function reconcileAgenturAggregateSelection(wanted: string[]) {
   const available = new Set((agenturAggregateDatasets.value ?? []).map((d) => d.route_slug));
-  let next = wanted.filter((s) => available.has(s));
-  if (!next.length) {
-    const first = agenturAggregateDatasets.value?.[0]?.route_slug;
-    next = first ? [first] : [];
-  }
-  agenturAggregateSelectedSlugs.value = next;
+  // Kein Fallback auf einen ersten Datensatz: Standard ist "keine Auswahl" =
+  // reine BA-Ansicht mit echten Werten (siehe DatasetPicker, kind="agentur").
+  agenturAggregateSelectedSlugs.value = wanted.filter((s) => available.has(s));
 }
 
 // "Unterbeschäftigung" wird von der BA erst seit 2009 erhoben, "Arbeitslose"
@@ -617,6 +607,29 @@ const agenturChartSeries = computed(() => {
   }
   return series;
 });
+// Monatsreihen für das kombinierte Diagramm im DatasetPicker (neben den
+// jährlichen Kreis-Aggregaten) - dieselbe Auswahl wie im Chart oben.
+const agenturMonthlySeries = computed(() =>
+  (["arbeitslose", "unterbeschaeftigung"] as AgenturMetric[])
+    .filter((m) => agenturSelectedMetrics.value.includes(m))
+    .map((m) => ({
+      key: `ba-${m}`,
+      label: `${AGENTUR_METRIC_LABELS[m]} (BA, monatlich)`,
+      points: (agenturPoints.value ?? []).flatMap((p) => {
+        const value = unwrapNull(m === "arbeitslose" ? p.arbeitslose : p.unterbeschaeftigung);
+        return value === null ? [] : [{ year: p.year, month: p.month, value, is_interpolated: false }];
+      }),
+    }))
+    .filter((s) => s.points.length),
+);
+const agenturChartReady = computed(() => !!agenturPoints.value?.length && agenturVisiblePoints.value.length > 0);
+const agenturPickerReady = computed(
+  () =>
+    !agenturAggregateDatasetsError.value &&
+    !agenturNuts3SharesError.value &&
+    !!agenturNuts3Shares.value &&
+    !!agenturAggregateDatasets.value?.length,
+);
 const agenturTableRows = computed(() =>
   agenturVisiblePoints.value.map((p) => ({
     label: formatMonthLabel(p.year, p.month),
@@ -695,11 +708,9 @@ const currentQuery = computed<Record<string, string>>(() => {
     q.type = "nuts";
     if (nutsBrowseLevel.value !== 3) q.level = String(nutsBrowseLevel.value);
     if (nutsSelectedSlugs.value.length) q.dataset = nutsSelectedSlugs.value.join(",");
-    if (nutsSelectedSlugs.value.length > 1) q.view = nutsViewMode.value;
   } else if (regionType.value === "lau" && selectedGiscoId.value) {
     q.type = "lau";
     if (lauSelectedSlugs.value.length) q.dataset = lauSelectedSlugs.value.join(",");
-    if (lauSelectedSlugs.value.length > 1) q.view = lauViewMode.value;
   } else if (regionType.value === "agentur" && selectedAgentur.value) {
     q.type = "agentur";
     if (agenturSelectedMetrics.value.length) q.metrics = agenturSelectedMetrics.value.join(",");
@@ -738,7 +749,6 @@ function applyRouteSelection() {
 
   const id = route.params.regionId as string | undefined;
   const slugsFromRoute = parseSlugsParam(route.query.dataset);
-  const viewFromRoute = parseViewModeParam(route.query.view);
   const type = (route.query.type as RegionType | undefined) ?? (id ? inferRegionType(id) : regionType.value);
 
   if (type === "nuts" && route.query.level !== undefined) {
@@ -751,11 +761,9 @@ function applyRouteSelection() {
     // Hinweistext/DatasetPicker unten im Template).
     if (slugsFromRoute.length && type === "nuts") {
       nutsSelectedSlugs.value = slugsFromRoute;
-      nutsViewMode.value = viewFromRoute;
     }
     if (slugsFromRoute.length && type === "lau") {
       lauSelectedSlugs.value = slugsFromRoute;
-      lauViewMode.value = viewFromRoute;
     }
     return;
   }
@@ -763,7 +771,6 @@ function applyRouteSelection() {
   if (type === "nuts") {
     regionType.value = "nuts";
     if (!nutsRegions.value.length) return;
-    if (viewFromRoute) nutsViewMode.value = viewFromRoute;
     if (selectedNuts.value?.nuts_id === id) {
       // Region ist schon aktiv (z.B. ein Link, der nur die Datensatz-Auswahl
       // für dieselbe Region ändert) - kein erneuter Fetch nötig, aber die
@@ -776,7 +783,6 @@ function applyRouteSelection() {
     selectNuts(id, slugsFromRoute.length ? slugsFromRoute : undefined, false);
   } else if (type === "lau") {
     regionType.value = "lau";
-    if (viewFromRoute) lauViewMode.value = viewFromRoute;
     if (selectedGiscoId.value === id) {
       if (slugsFromRoute.length) reconcileLauSelection(slugsFromRoute);
       return;
@@ -803,7 +809,6 @@ watch(
     () => route.query.types,
     () => route.query.dataset,
     () => route.query.metrics,
-    () => route.query.view,
     () => route.query.level,
     nutsRegions,
     agenturbezirke,
@@ -908,9 +913,7 @@ watch(
             :nuts-code="selectedNuts.nuts_id"
             :nuts-level="selectedNuts.nuts_level"
             :selected-slugs="nutsSelectedSlugs"
-            :view-mode="nutsViewMode"
             @update:selected-slugs="(s) => (nutsSelectedSlugs = s)"
-            @update:view-mode="(m) => (nutsViewMode = m)"
           />
 
           <template v-if="selectedNuts.nuts_level !== 3">
@@ -1029,9 +1032,7 @@ watch(
               :datasets="lauDatasets"
               :nuts-code="lauNuts3Code"
               :selected-slugs="lauSelectedSlugs"
-              :view-mode="lauViewMode"
               @update:selected-slugs="(s) => (lauSelectedSlugs = s)"
-              @update:view-mode="(m) => (lauViewMode = m)"
             />
           </template>
         </template>
@@ -1122,19 +1123,15 @@ watch(
                 AGENTUR_METRICS_TABS.find((t) => t.value === agenturMetricsTab)?.label
               }}“ liegen für diesen Agenturbezirk keine Werte vor.
             </p>
-            <template v-else>
-              <p v-if="agenturLatest" class="hint">
-                Neuester Berichtsmonat: {{ formatMonthLabel(agenturLatest.year, agenturLatest.month) }}
-              </p>
-              <TimeseriesChart :period-series="agenturChartSeries" />
-              <DataTable :period-rows="agenturTableRows" :period-columns="agenturTableColumns" />
-            </template>
+            <p v-else-if="agenturLatest" class="hint">
+              Neuester Berichtsmonat: {{ formatMonthLabel(agenturLatest.year, agenturLatest.month) }}
+            </p>
           </template>
 
-          <h3>Aggregierte Kreis-Daten</h3>
           <p class="hint">
-            Kreis-grain-Datensätze (INKAR/BBSR), flächenanteilsgewichtet über die Kreise oben auf diesen
-            Agenturbezirk aggregiert (räumliche Schätzung, keine amtliche Zuordnung).
+            Optional Kreis-Datensätze (INKAR/BBSR) zum Vergleich hinzufügen: flächenanteilsgewichtet über die Kreise
+            oben auf diesen Agenturbezirk aggregiert (räumliche Schätzung, keine amtliche Zuordnung). Sobald ein
+            Datensatz gewählt ist, zeigt das Diagramm indexierte Werte (Monats- und Jahreswerte kombiniert).
           </p>
           <p v-if="agenturAggregateDatasetsError" class="error-text">Fehler: {{ agenturAggregateDatasetsError }}</p>
           <p v-else-if="agenturNuts3SharesError" class="hint">
@@ -1147,16 +1144,19 @@ watch(
             Für die Kreise dieses Agenturbezirks sind keine sozioökonomischen Datensätze verfügbar.
           </p>
           <DatasetPicker
-            v-else
+            v-if="agenturPickerReady"
             :key="selectedAgentur.ba_schl"
             kind="agentur"
-            :datasets="agenturAggregateDatasets"
+            :datasets="agenturAggregateDatasets!"
             :nuts-code="selectedAgentur.ba_schl"
             :selected-slugs="agenturAggregateSelectedSlugs"
-            :view-mode="agenturAggregateViewMode"
+            :monthly-series="agenturMonthlySeries"
             @update:selected-slugs="(s) => (agenturAggregateSelectedSlugs = s)"
-            @update:view-mode="(m) => (agenturAggregateViewMode = m)"
-          />
+          >
+            <TimeseriesChart v-if="agenturChartReady" :period-series="agenturChartSeries" />
+          </DatasetPicker>
+          <TimeseriesChart v-else-if="agenturChartReady" :period-series="agenturChartSeries" />
+          <DataTable v-if="agenturChartReady" :period-rows="agenturTableRows" :period-columns="agenturTableColumns" />
         </template>
         </template>
       </div>

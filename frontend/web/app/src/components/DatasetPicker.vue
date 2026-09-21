@@ -19,7 +19,6 @@ import DatasetInfo from "./DatasetInfo.vue";
 // der kombinierten Ansicht würden nicht mehr sicher unterscheidbar bleiben.
 const MAX_SELECTED = 4;
 
-type ViewMode = "separate" | "combined";
 type LoadResult =
   | { kind: "loading" }
   | { kind: "timeseries"; points: TimeseriesPoint[] }
@@ -34,7 +33,6 @@ const props = defineProps<{
   // klein zu halten.
   nutsCode: string;
   selectedSlugs: string[];
-  viewMode: ViewMode;
   // NUTS-Ebene der aktuellen Region (0-3). Default 3 (Kreis) - bisheriges
   // Verhalten. Bei 0-2 (Land/Bundesland/Regierungsbezirk) gibt es keine
   // Kreis-grain-Zeilen unter diesem Code, deshalb lädt loadSlug() dann über
@@ -48,17 +46,32 @@ const props = defineProps<{
   // statt bevölkerungsgewichtet, siehe mart_agentur_dataset_aggregate) - es
   // gibt für Agenturbezirke keine Kreis-grain-Rohdaten, nur die Aggregation.
   kind?: "nuts" | "agentur";
+  // Nur kind="agentur": BA-Monatsreihen der Region (z.B. Arbeitslose), die im
+  // kombinierten Diagramm neben den jährlichen Kreis-Aggregaten erscheinen
+  // können. Punkte tragen `month` (siehe IndexedSeries in TimeseriesChart.vue).
+  monthlySeries?: { key: string; label: string; points: (TimeseriesPoint & { month: number })[] }[];
 }>();
 
 const emit = defineEmits<{
   "update:selectedSlugs": [slugs: string[]];
-  "update:viewMode": [mode: ViewMode];
 }>();
 
 // Reihenfolge der Checkboxen folgt der Reihenfolge in `datasets`, damit
 // selectedDatasets (unten) für Chart-Serien/Tabs eine stabile Reihenfolge hat.
+// BA-Monatsreihen (nur kind="agentur") laufen im kombinierten Diagramm mit und
+// belegen dort ebenfalls Farbslots - deshalb bleiben für Datensätze entsprechend weniger übrig.
+const monthlyCount = computed(() => props.monthlySeries?.length ?? 0);
+const maxSelected = computed(() => Math.max(1, MAX_SELECTED - monthlyCount.value));
+// Agentur: Standard ist "kein Datensatz" (Slot zeigt dann die reinen BA-Werte),
+// NUTS/LAU brauchen mindestens einen Datensatz.
+const minSelected = computed(() => (props.kind === "agentur" ? 0 : 1));
+// Keine manuelle Umschaltung: sobald mehr als eine Reihe im Spiel ist (zweiter
+// Datensatz, oder ein Datensatz neben den BA-Monatsreihen), zeigt die Ansicht
+// automatisch das kombinierte, indexierte Diagramm - sonst die Einzelansicht.
+const isCombined = computed(() => props.selectedSlugs.length > 0 && props.selectedSlugs.length + monthlyCount.value > 1);
+
 const selectedDatasets = computed(() => props.datasets.filter((ds) => props.selectedSlugs.includes(ds.route_slug)));
-const atMax = computed(() => props.selectedSlugs.length >= MAX_SELECTED);
+const atMax = computed(() => props.selectedSlugs.length >= maxSelected.value);
 
 function toggleSlug(slug: string, checked: boolean) {
   if (checked) {
@@ -70,7 +83,7 @@ function toggleSlug(slug: string, checked: boolean) {
     // lauSelectedSlugs) und die Route weiterhin den zuletzt gültigen Stand
     // zeigen: ein widersprüchlicher Zustand (Checkbox unchecked, aber Chart/
     // URL zeigen noch den alten Datensatz).
-    if (props.selectedSlugs.length <= 1) return;
+    if (props.selectedSlugs.length <= minSelected.value) return;
     emit(
       "update:selectedSlugs",
       props.selectedSlugs.filter((s) => s !== slug),
@@ -164,6 +177,9 @@ const combinableSeries = computed(() =>
     return [{ key: ds.route_slug, label: formatDatasetLabel(ds.route_slug), points: result.points }];
   }),
 );
+// Monatsreihen zuerst; auf die validierten Farbslots gekappt.
+const chartSeries = computed(() => [...(props.monthlySeries ?? []), ...combinableSeries.value].slice(0, MAX_SELECTED));
+const chartTruncated = computed(() => monthlyCount.value + combinableSeries.value.length > MAX_SELECTED);
 const nonCombinableSlugs = computed(() =>
   selectedDatasets.value
     .map((ds) => ds.route_slug)
@@ -194,48 +210,28 @@ watch(
           type="checkbox"
           :checked="selectedSlugs.includes(ds.route_slug)"
           :disabled="
-            (atMax && !selectedSlugs.includes(ds.route_slug)) || (selectedSlugs.length <= 1 && selectedSlugs.includes(ds.route_slug))
+            (atMax && !selectedSlugs.includes(ds.route_slug)) || (selectedSlugs.length <= minSelected && selectedSlugs.includes(ds.route_slug))
           "
           @change="toggleSlug(ds.route_slug, ($event.target as HTMLInputElement).checked)"
         />
         {{ formatDatasetLabel(ds.route_slug) }} ({{ ds.available_years.length }} Jahre)
       </label>
-      <p v-if="atMax" class="hint">Maximal {{ MAX_SELECTED }} Datensätze gleichzeitig.</p>
+      <p v-if="atMax" class="hint">Maximal {{ maxSelected }} Datensätze gleichzeitig.</p>
     </fieldset>
-
-    <div v-if="selectedSlugs.length > 1" class="view-mode-toggle" role="radiogroup" aria-label="Ansicht">
-      <button
-        type="button"
-        class="nav-tab"
-        :class="{ 'is-active': viewMode === 'separate' }"
-        role="radio"
-        :aria-checked="viewMode === 'separate'"
-        @click="emit('update:viewMode', 'separate')"
-      >
-        Getrennt
-      </button>
-      <button
-        type="button"
-        class="nav-tab"
-        :class="{ 'is-active': viewMode === 'combined' }"
-        role="radio"
-        :aria-checked="viewMode === 'combined'"
-        @click="emit('update:viewMode', 'combined')"
-      >
-        Kombiniert
-      </button>
-    </div>
   </div>
 
-  <p v-if="!selectedDatasets.length" class="hint">Mindestens einen Datensatz oben auswählen.</p>
+  <!-- Agentur ohne Datensatz: reine BA-Ansicht (echte Werte) aus dem Slot des Aufrufers. -->
+  <slot v-if="!selectedDatasets.length && kind === 'agentur'" />
+  <p v-else-if="!selectedDatasets.length" class="hint">Mindestens einen Datensatz oben auswählen.</p>
 
-  <template v-else-if="viewMode === 'combined' && selectedSlugs.length > 1">
+  <template v-else-if="isCombined">
     <p v-if="nonCombinableSlugs.length" class="hint">
       {{ nonCombinableSlugs.map(formatDatasetLabel).join(", ") }} unterstützt keine Zeitreihe und wird nur in der
       Tabelle unten gezeigt, nicht im kombinierten Chart.
     </p>
-    <p v-if="!combinableSeries.length" class="hint">Noch keine Zeitreihendaten zum Kombinieren geladen…</p>
-    <TimeseriesChart v-else :indexed-series="combinableSeries" />
+    <p v-if="chartTruncated" class="hint">Es werden höchstens {{ MAX_SELECTED }} Reihen gleichzeitig gezeigt.</p>
+    <p v-if="!chartSeries.length" class="hint">Noch keine Zeitreihendaten zum Kombinieren geladen…</p>
+    <TimeseriesChart v-else :indexed-series="chartSeries" />
 
     <div class="dataset-tabs" role="tablist" aria-label="Datensatz für Tabelle/Info">
       <button
