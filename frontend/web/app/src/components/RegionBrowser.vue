@@ -5,12 +5,14 @@ import { apiGet, unwrapNull } from "../api/client";
 import type {
   AgenturbezirkArbeitslosigkeitPoint,
   AgenturbezirkSummary,
+  AgenturNutsMembership,
   AgenturNuts3Share,
   DatasetCatalogEntry,
   DatasetCatalogResponse,
   DatasetMetadataEntry,
   LauRegion,
   NutsLauAggregatePoint,
+  NutsAgenturbezirk,
   NutsLauAggregateResponse,
   NutsRegionSummary,
 } from "../types/api";
@@ -261,9 +263,12 @@ async function selectNuts(nutsId: string, wantedSlugs?: string[], navigate = tru
   nutsChildLau.value = null;
   nutsChildLauError.value = null;
   nutsLauAggregate.value = null;
+  nutsAgenturbezirke.value = null;
   if (navigate) {
     router.push({ name: "regionen", params: { regionId: nutsId }, query: { type: "nuts" } });
   }
+  // Nicht awaiten: unabhängig von Datensatz-Katalog/Gemeinden unten.
+  if (region.nuts_level >= 1) loadNutsAgenturbezirke(region.nuts_id);
 
   // GET /nuts/{id}/datasets deckt inzwischen alle Ebenen ab: für Kreise
   // (Ebene 3) aus mart_region_datasets (Kreis-grain), für Land/Bundesland/
@@ -427,7 +432,12 @@ const agenturPointsError = ref<string | null>(null);
 // Schätzung, keine amtliche Zuordnung.
 const agenturNuts3Shares = ref<AgenturNuts3Share[] | null>(null);
 const agenturNuts3SharesError = ref<string | null>(null);
-let agenturLoaded = false;
+let agenturLoadPromise: Promise<void> | null = null;
+// Einordnung in die NUTS-Hierarchie (GET /agenturbezirke/{ba_schl}/nuts-hierarchy)
+// - Elternteil (kleinste vollständig enthaltende Ebene) samt Breadcrumb.
+const agenturHierarchy = ref<AgenturNutsMembership[] | null>(null);
+// Agenturbezirke der gewählten NUTS-Region (GET /nuts/{nuts_id}/agenturbezirke).
+const nutsAgenturbezirke = ref<NutsAgenturbezirk[] | null>(null);
 
 // Herkunft/Lizenz/Beschreibung des AfA-Datensatzes - wie bei NUTS/LAU über
 // DatasetPicker/DatasetInfo, hier einmalig geladen (ein Datensatz für alle
@@ -465,17 +475,55 @@ function selectAgenturMetricsTab(tab: AgenturMetricsTab) {
   agenturSelectedMetrics.value = AGENTUR_METRICS_TABS.find((t) => t.value === tab)!.metrics;
 }
 
-async function loadAgenturbezirke() {
-  if (agenturLoaded) return;
-  agenturLoaded = true;
-  try {
-    const body = await apiGet<AgenturbezirkSummary[]>("/agenturbezirke");
-    agenturbezirke.value = body.data ?? [];
-  } catch (err) {
-    agenturLoadError.value = err instanceof Error ? err.message : String(err);
-  }
-  loadAgenturMetadata();
+// Promise wird gemerkt, damit auch ein Klick aus dem NUTS-Panel
+// (openAgentur) auf das Ende eines bereits laufenden Ladevorgangs warten kann.
+function loadAgenturbezirke(): Promise<void> {
+  agenturLoadPromise ??= (async () => {
+    try {
+      const body = await apiGet<AgenturbezirkSummary[]>("/agenturbezirke");
+      agenturbezirke.value = body.data ?? [];
+    } catch (err) {
+      agenturLoadError.value = err instanceof Error ? err.message : String(err);
+    }
+    loadAgenturMetadata();
+  })();
+  return agenturLoadPromise;
 }
+
+// Sprung aus dem NUTS-Panel zu einem Agenturbezirk: die Liste muss dafür
+// geladen sein, auch wenn der Listenfilter "Agenturbezirke" gerade aus ist.
+async function openAgentur(baSchl: string) {
+  await loadAgenturbezirke();
+  selectAgentur(baSchl);
+}
+
+async function loadNutsAgenturbezirke(nutsId: string) {
+  try {
+    const body = await apiGet<NutsAgenturbezirk[]>(`/nuts/${nutsId}/agenturbezirke`);
+    // Nutzer könnte inzwischen eine andere Region gewählt haben.
+    if (selectedNuts.value?.nuts_id === nutsId) nutsAgenturbezirke.value = body.data ?? [];
+  } catch {
+    if (selectedNuts.value?.nuts_id === nutsId) nutsAgenturbezirke.value = [];
+  }
+}
+
+const nutsAgenturContained = computed(() => (nutsAgenturbezirke.value ?? []).filter((a) => a.is_fully_contained));
+const nutsAgenturPartial = computed(() => (nutsAgenturbezirke.value ?? []).filter((a) => !a.is_fully_contained));
+
+// Elternteil des gewählten Agenturbezirks (kleinste vollständig enthaltende
+// NUTS-Ebene) und - falls keine Ebene ihn vollständig enthält - die
+// überlappenden Bundesländer.
+const agenturParent = computed(() => agenturHierarchy.value?.find((m) => m.is_parent) ?? null);
+const agenturBreadcrumb = computed(() => {
+  const parent = agenturParent.value;
+  if (!parent) return [];
+  const chain = nutsBreadcrumb(parent.nuts_id);
+  const parentRegion = nutsById.value.get(parent.nuts_id);
+  return parentRegion ? [...chain, parentRegion] : chain;
+});
+const agenturSpanningBundeslaender = computed(() =>
+  agenturParent.value ? [] : (agenturHierarchy.value ?? []).filter((m) => m.nuts_level === 1),
+);
 
 // Agentur wird (wie NUTS) eager geladen, sobald "agentur" zu den aktiven
 // Listen-Filtern gehört - standardmäßig sind alle drei Typen aktiv, die
@@ -508,6 +556,7 @@ async function selectAgentur(baSchl: string, navigate = true, wantedMetrics?: Ag
   agenturPointsError.value = null;
   agenturNuts3Shares.value = null;
   agenturNuts3SharesError.value = null;
+  agenturHierarchy.value = null;
   // Anders als bei NUTS/LAU (siehe reconcileNutsSelection) gibt es hier keine
   // von der Region abhängige Verfügbarkeit zu prüfen - beide Metriken
   // existieren für jeden Agenturbezirk gleich, eine explizite Auswahl kann
@@ -516,6 +565,7 @@ async function selectAgentur(baSchl: string, navigate = true, wantedMetrics?: Ag
   if (navigate) {
     router.push({ name: "regionen", params: { regionId: baSchl }, query: { type: "agentur" } });
   }
+  loadAgenturHierarchy(baSchl);
   try {
     const body = await apiGet<AgenturbezirkArbeitslosigkeitPoint[]>(`/agenturbezirke/${baSchl}/arbeitslosigkeit`);
     agenturPoints.value = body.data ?? [];
@@ -527,6 +577,15 @@ async function selectAgentur(baSchl: string, navigate = true, wantedMetrics?: Ag
     agenturNuts3Shares.value = body.data ?? [];
   } catch (err) {
     agenturNuts3SharesError.value = err instanceof Error ? err.message : String(err);
+  }
+}
+
+async function loadAgenturHierarchy(baSchl: string) {
+  try {
+    const body = await apiGet<AgenturNutsMembership[]>(`/agenturbezirke/${baSchl}/nuts-hierarchy`);
+    if (selectedAgentur.value?.ba_schl === baSchl) agenturHierarchy.value = body.data ?? [];
+  } catch {
+    if (selectedAgentur.value?.ba_schl === baSchl) agenturHierarchy.value = [];
   }
 }
 
@@ -928,6 +987,38 @@ watch(
             @update:selected-slugs="(s) => (nutsSelectedSlugs = s)"
           />
 
+          <template v-if="selectedNuts.nuts_level >= 1 && nutsAgenturbezirke && nutsAgenturbezirke.length">
+            <template v-if="nutsAgenturContained.length">
+              <h3>Agenturbezirke in dieser Region</h3>
+              <p class="hint">
+                Agenturbezirke der Bundesagentur für Arbeit, die vollständig in dieser Region liegen (räumlich
+                ermittelt, keine amtliche Zuordnung).
+              </p>
+              <ul class="child-region-list">
+                <li v-for="a in nutsAgenturContained" :key="a.ba_schl">
+                  <button type="button" class="link-button" @click="openAgentur(a.ba_schl)">
+                    {{ a.name ?? a.ba_schl }} <span class="region-code">BA {{ a.ba_schl }}</span>
+                  </button>
+                </li>
+              </ul>
+            </template>
+            <template v-if="nutsAgenturPartial.length">
+              <h3>Teilweise überlappende Agenturbezirke</h3>
+              <p class="hint">
+                Diese Agenturbezirke reichen über die Region hinaus; angegeben ist, welcher Anteil ihrer Fläche hier
+                liegt.
+              </p>
+              <ul class="child-region-list">
+                <li v-for="a in nutsAgenturPartial" :key="a.ba_schl">
+                  <button type="button" class="link-button" @click="openAgentur(a.ba_schl)">
+                    {{ a.name ?? a.ba_schl }} <span class="region-code">BA {{ a.ba_schl }}</span>
+                  </button>
+                  ({{ formatPercent(a.area_share_of_agentur) }})
+                </li>
+              </ul>
+            </template>
+          </template>
+
           <template v-if="selectedNuts.nuts_level !== 3">
             <template v-if="nutsChildren(selectedNuts.nuts_id, selectedNuts.nuts_level).length">
               <h3>Untergeordnete Regionen</h3>
@@ -1053,6 +1144,24 @@ watch(
         <template v-else>
           <p v-if="!selectedAgentur" class="hint">Links einen Agenturbezirk auswählen, um Details zu sehen.</p>
           <template v-else>
+          <nav v-if="agenturBreadcrumb.length" class="breadcrumb" aria-label="Übergeordnete Regionen">
+            <template v-for="ancestor in agenturBreadcrumb" :key="ancestor.nuts_id">
+              <button type="button" class="link-button" @click="selectNuts(ancestor.nuts_id)">
+                {{ ancestor.region_name }}
+              </button>
+              <span class="breadcrumb-sep">›</span>
+            </template>
+          </nav>
+          <p v-else-if="agenturSpanningBundeslaender.length" class="hint">
+            Dieser Agenturbezirk liegt nicht vollständig in einem Bundesland, sondern verteilt sich auf:
+            <template v-for="(m, i) in agenturSpanningBundeslaender" :key="m.nuts_id">
+              <template v-if="i > 0">, </template>
+              <button type="button" class="link-button" @click="selectNuts(m.nuts_id)">
+                {{ m.region_name ?? m.nuts_id }}
+              </button>
+              ({{ formatPercent(m.area_share_of_agentur) }})
+            </template>
+          </p>
           <div class="detail-header">
             <h2>{{ selectedAgentur.name }}</h2>
             <span class="region-code">BA {{ selectedAgentur.ba_schl }}</span>

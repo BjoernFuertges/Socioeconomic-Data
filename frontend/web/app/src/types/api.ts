@@ -112,6 +112,30 @@ export interface AgenturNuts3Share {
   area_share_of_nuts3: number;
 }
 
+// Einordnung eines Agenturbezirks in eine überlappende NUTS-1/2/3-Region
+// (GET /agenturbezirke/{ba_schl}/nuts-hierarchy). is_parent: kleinste Ebene,
+// die den Agenturbezirk vollständig enthält (fehlt, wenn er über
+// Bundeslandgrenzen hinausreicht). Räumliche Schätzung, keine amtliche
+// Zuordnung.
+export interface AgenturNutsMembership {
+  nuts_id: string;
+  nuts_level: number;
+  region_name?: string | null;
+  area_share_of_agentur: number;
+  is_fully_contained: boolean;
+  is_parent: boolean;
+}
+
+// Agenturbezirk, der eine NUTS-Region überlappt
+// (GET /nuts/{nuts_id}/agenturbezirke). is_fully_contained=false: nur
+// teilweise Überlappung.
+export interface NutsAgenturbezirk {
+  ba_schl: string;
+  name?: string | null;
+  area_share_of_agentur: number;
+  is_fully_contained: boolean;
+}
+
 // Ein Jahr der aggregierten sozioökonomischen Indikatoren einer NUTS-Region
 // (alle Level 0-3, siehe mart_nuts0/1/2/3_summary) - GET /nuts/{nuts_id}?all=true.
 export interface NutsSocioeconomicPoint {
