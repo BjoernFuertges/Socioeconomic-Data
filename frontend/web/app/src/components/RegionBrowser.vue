@@ -23,6 +23,7 @@ import DatasetPicker from "./DatasetPicker.vue";
 import TimeseriesChart from "./TimeseriesChart.vue";
 import DataTable from "./DataTable.vue";
 import DatasetInfo from "./DatasetInfo.vue";
+import DownloadDialog, { type ExtraDownloadOption } from "./DownloadDialog.vue";
 
 // Slug des ergänzenden Kreis-Level-Datensatzes "Arbeitslose" (INKAR/BBSR),
 // den der "Siehe auch"-Link im Agenturbezirk-Panel im NUTS-3-Datensatz-
@@ -887,6 +888,71 @@ watch(
   applyRouteSelection,
   { immediate: true },
 );
+
+// --- Download-Dialog -------------------------------------------------------
+// Ein Dialog für alle drei Regionstypen; welche Region/Datensätze er anbietet,
+// leitet sich aus dem gerade offenen Detail-Panel ab. Die Auswahl der Region
+// ist dabei vorausgewählt (siehe preselected-slugs im Template).
+const downloadOpen = ref(false);
+
+// BA-Monatswerte (Agentur) bzw. Gemeinde-Rollups (Kreis) sind keine
+// Katalog-Datensätze, tragen im Export aber eigene Slugs (siehe region_data.go).
+const AGENTUR_RAW_OPTIONS: ExtraDownloadOption[] = [
+  { slug: "ba_arbeitslose", label: "Arbeitslose (BA, monatlich)", scope: "raw" },
+  { slug: "ba_unterbeschaeftigung", label: "Unterbeschäftigung (BA, monatlich)", scope: "raw" },
+];
+const NUTS3_LAU_AGGREGATE_OPTIONS: ExtraDownloadOption[] = [
+  { slug: "lau_population_sum", label: "Bevölkerung der Gemeinden (Summe)", scope: "aggregated" },
+  {
+    slug: "lau_beschaeftigungsquote_weighted_avg",
+    label: "Beschäftigungsquote der Gemeinden (gewichtet)",
+    scope: "aggregated",
+  },
+];
+
+// NUTS-0/1/2 haben keine eigenen Kreis-Zeilen (nur Aggregate), LAU umgekehrt
+// keine aggregierten Werte - siehe GET /regions/{type}/{id}/data.
+const downloadTarget = computed(() => {
+  if (regionType.value === "nuts" && selectedNuts.value) {
+    const isKreis = selectedNuts.value.nuts_level === 3;
+    return {
+      regionType: "nuts" as const,
+      regionId: selectedNuts.value.nuts_id,
+      regionLabel: selectedNuts.value.region_name,
+      datasets: nutsDatasets.value ?? [],
+      preselectedSlugs: nutsSelectedSlugs.value,
+      extraOptions: isKreis ? NUTS3_LAU_AGGREGATE_OPTIONS : [],
+      availableScopes: isKreis ? (["raw", "aggregated"] as const) : (["aggregated"] as const),
+    };
+  }
+  if (regionType.value === "lau" && selectedLau.value && selectedGiscoId.value) {
+    return {
+      regionType: "lau" as const,
+      regionId: selectedGiscoId.value,
+      regionLabel: selectedLau.value.lau_name ?? selectedGiscoId.value,
+      datasets: lauDatasets.value ?? [],
+      preselectedSlugs: lauSelectedSlugs.value,
+      extraOptions: [],
+      availableScopes: ["raw"] as const,
+    };
+  }
+  if (regionType.value === "agentur" && selectedAgentur.value) {
+    return {
+      regionType: "agentur" as const,
+      regionId: selectedAgentur.value.ba_schl,
+      regionLabel: selectedAgentur.value.name ?? selectedAgentur.value.ba_schl,
+      datasets: agenturAggregateDatasets.value ?? [],
+      // Die im Panel sichtbaren BA-Metriken plus die gewählten Kreis-Aggregate.
+      preselectedSlugs: [
+        ...agenturSelectedMetrics.value.map((m) => (m === "arbeitslose" ? "ba_arbeitslose" : "ba_unterbeschaeftigung")),
+        ...agenturAggregateSelectedSlugs.value,
+      ],
+      extraOptions: AGENTUR_RAW_OPTIONS,
+      availableScopes: ["raw", "aggregated"] as const,
+    };
+  }
+  return null;
+});
 </script>
 
 <template>
@@ -969,6 +1035,9 @@ watch(
               @click="viewOnMap('nuts', selectedNuts.nuts_id)"
             >
               Auf der Karte anzeigen ↗
+            </button>
+            <button type="button" class="link-button" @click="downloadOpen = true">
+              Daten herunterladen ↓
             </button>
           </div>
 
@@ -1099,6 +1168,9 @@ watch(
             <button type="button" class="link-button" @click="viewOnMap('lau', selectedLau.gisco_id)">
               Auf der Karte anzeigen ↗
             </button>
+            <button type="button" class="link-button" @click="downloadOpen = true">
+              Daten herunterladen ↓
+            </button>
           </div>
           <dl class="meta-grid">
             <dt>Land</dt>
@@ -1167,6 +1239,9 @@ watch(
             <span class="region-code">BA {{ selectedAgentur.ba_schl }}</span>
             <button type="button" class="link-button" @click="viewOnMap('agentur', selectedAgentur.ba_schl)">
               Auf der Karte anzeigen ↗
+            </button>
+            <button type="button" class="link-button" @click="downloadOpen = true">
+              Daten herunterladen ↓
             </button>
           </div>
           <p class="hint">
@@ -1292,5 +1367,18 @@ watch(
         </template>
       </div>
     </div>
+
+    <DownloadDialog
+      v-if="downloadTarget"
+      :open="downloadOpen"
+      :region-type="downloadTarget.regionType"
+      :region-id="downloadTarget.regionId"
+      :region-label="downloadTarget.regionLabel"
+      :datasets="downloadTarget.datasets"
+      :preselected-slugs="downloadTarget.preselectedSlugs"
+      :extra-options="downloadTarget.extraOptions"
+      :available-scopes="[...downloadTarget.availableScopes]"
+      @close="downloadOpen = false"
+    />
   </div>
 </template>

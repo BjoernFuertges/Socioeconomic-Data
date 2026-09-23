@@ -352,7 +352,15 @@ table.nuts3-share-table th {
   gap: 0.2rem;
 }
 
+.detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+
 .detail-header h2 {
+  flex-basis: 100%;
   margin: 0 0 0.25rem;
   font-size: 1.15rem;
 }
@@ -890,4 +898,112 @@ table.data-table tr.is-computed td {
   background: var(--gridline);
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
+}
+
+/* Download-Dialog (Regionen) und API-Snippets (Regionen + Datenkatalog) */
+
+.download-dialog {
+  max-width: min(46rem, 92vw);
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  padding: 1.25rem;
+}
+
+.download-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.download-dialog-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.download-dialog-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.download-dialog fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem 0.8rem;
+  margin: 0 0 0.75rem;
+}
+
+.download-dialog legend {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  padding: 0 0.3rem;
+}
+
+.download-option {
+  display: block;
+  font-size: 0.9rem;
+  padding: 0.15rem 0;
+  cursor: pointer;
+}
+
+.download-years {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.download-years label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.download-years input {
+  width: 7rem;
+  margin-left: 0.4rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--page-plane);
+  color: var(--text-primary);
+}
+
+.download-dialog-actions {
+  margin: 0.75rem 0;
+}
+
+.download-format-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.api-snippet {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.api-snippet-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.api-snippet-row code {
+  flex: 1 1 22rem;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: pre;
+  background: var(--gridline);
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
 }

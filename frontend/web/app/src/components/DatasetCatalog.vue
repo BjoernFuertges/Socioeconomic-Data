@@ -3,10 +3,12 @@ import { computed, nextTick, onActivated, onMounted, ref, watch } from "vue";
 import type { RouteLocationRaw } from "vue-router";
 import { useRoute, useRouter } from "vue-router";
 import { apiGet, API_BASE } from "../api/client";
+import { absoluteApiUrl, type DownloadFormat } from "../api/download";
 import type { DatasetMetadataEntry, GenericDatasetRow } from "../types/api";
 import { formatDateDE, formatNumber } from "../format";
 import { AGENTUR_DATASET_SLUG } from "../constants";
 import DataTable from "./DataTable.vue";
+import ApiSnippet from "./ApiSnippet.vue";
 
 const AGENTUR_DATA_PATH = "/agenturbezirke";
 
@@ -28,6 +30,33 @@ const DATA_LINK_LIMIT = 100;
 function dataHref(e: DatasetMetadataEntry): string {
   const path = e.dataset_slug === AGENTUR_DATASET_SLUG ? AGENTUR_DATA_PATH : `/${e.dataset_slug}?limit=${DATA_LINK_LIMIT}`;
   return API_BASE + path;
+}
+
+// Pfad des vollständigen Datensatzes - dieselbe Route wie die Vorschau,
+// aber ohne limit: limit=null hebt die Obergrenze im Backend auf (siehe
+// normalizeNullableLimitQuery in common.go). Der Agenturbezirk-Datensatz hat
+// keine generische /{slug}-Route (siehe constants.ts).
+function dataPath(e: DatasetMetadataEntry): string {
+  return e.dataset_slug === AGENTUR_DATASET_SLUG ? AGENTUR_DATA_PATH : `/${e.dataset_slug}`;
+}
+
+// Format je Karte; CSV ist für einen Download der plausiblere Default.
+const downloadFormats = ref<Map<string, DownloadFormat>>(new Map());
+function downloadFormat(slug: string): DownloadFormat {
+  return downloadFormats.value.get(slug) ?? "csv";
+}
+function setDownloadFormat(slug: string, format: DownloadFormat) {
+  downloadFormats.value = new Map(downloadFormats.value).set(slug, format);
+}
+
+// Für curl/Skripte: ohne format=, das Format kommt dort über den Accept-Header.
+function fullDataApiUrl(e: DatasetMetadataEntry): string {
+  return absoluteApiUrl(dataPath(e), { limit: "null" });
+}
+
+// Für den Browser-Download: <a href> kann keinen Accept-Header setzen.
+function fullDataDownloadUrl(e: DatasetMetadataEntry): string {
+  return absoluteApiUrl(dataPath(e), { limit: "null", format: downloadFormat(e.dataset_slug), download: 1 });
 }
 
 // Statt den Link direkt auf die rohe JSON-API zeigen zu lassen (unformatiert,
@@ -310,6 +339,43 @@ function exportCsv() {
             </p>
             <DataTable v-else :rows="(previews.get(e.dataset_slug) as { rows: GenericDatasetRow[] }).rows" />
           </template>
+        </details>
+
+        <details class="catalog-details">
+          <summary>Datensatz herunterladen (CSV/JSON)</summary>
+          <p class="hint">
+            Vollständiger Datensatz ({{ e.total_records ? formatNumber(e.total_records) + " Zeilen" : "alle Zeilen" }}),
+            nicht nur die Vorschau oben. Für einzelne Regionen mit aggregierten Werten: „In Regionen anzeigen“ unten.
+          </p>
+          <div class="download-format-choice">
+            <label>
+              <input
+                type="radio"
+                :name="`fmt-${e.dataset_slug}`"
+                :checked="downloadFormat(e.dataset_slug) === 'csv'"
+                @change="setDownloadFormat(e.dataset_slug, 'csv')"
+              />
+              CSV
+            </label>
+            <label>
+              <input
+                type="radio"
+                :name="`fmt-${e.dataset_slug}`"
+                :checked="downloadFormat(e.dataset_slug) === 'json'"
+                @change="setDownloadFormat(e.dataset_slug, 'json')"
+              />
+              JSON
+            </label>
+            <a :href="fullDataDownloadUrl(e)" class="link-button" download>
+              {{ downloadFormat(e.dataset_slug).toUpperCase() }} herunterladen ↓
+            </a>
+          </div>
+          <ApiSnippet
+            :api-url="fullDataApiUrl(e)"
+            :download-url="fullDataDownloadUrl(e)"
+            :format="downloadFormat(e.dataset_slug)"
+            :filename="e.dataset_slug"
+          />
         </details>
 
         <div class="catalog-card-footer">
