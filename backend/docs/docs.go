@@ -70,12 +70,32 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Agenturbezirke"
                 ],
                 "summary": "Verfügbare aggregierte Datensätze/Jahre (Agenturbezirke)",
+                "parameters": [
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -98,6 +118,12 @@ const docTemplate = `{
                             ]
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -114,7 +140,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Agenturbezirke"
@@ -136,6 +163,23 @@ const docTemplate = `{
                         "name": "year",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -162,6 +206,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -395,7 +445,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Agenturbezirke"
@@ -409,6 +460,23 @@ const docTemplate = `{
                         "name": "ba_schl",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -439,6 +507,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -455,7 +529,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Agenturbezirke"
@@ -477,6 +552,23 @@ const docTemplate = `{
                         "name": "slug",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -509,6 +601,12 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -649,7 +747,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Arbeitslose"
@@ -734,6 +833,23 @@ const docTemplate = `{
                         "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
                         "name": "nuts_version",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -764,6 +880,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -780,7 +902,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Arbeitslose"
@@ -844,6 +967,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -874,6 +1014,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -890,7 +1036,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Arbeitsvolumen"
@@ -975,6 +1122,23 @@ const docTemplate = `{
                         "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
                         "name": "nuts_version",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1005,6 +1169,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1021,7 +1191,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Arbeitsvolumen"
@@ -1085,6 +1256,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1115,6 +1303,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1131,7 +1325,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Auszubildende"
@@ -1216,6 +1411,23 @@ const docTemplate = `{
                         "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
                         "name": "nuts_version",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1246,6 +1458,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1262,7 +1480,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Auszubildende"
@@ -1326,6 +1545,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1356,6 +1592,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1372,7 +1614,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "BeschaeftigungsquoteGemeinden"
@@ -1457,6 +1700,23 @@ const docTemplate = `{
                         "description": "Nur zusammen mit fill_gaps=true: Ziel-LAU-Version (2011-2024, Default 2024)",
                         "name": "lau_version",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1487,6 +1747,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1503,7 +1769,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "BeschaeftigungsquoteGemeinden"
@@ -1567,6 +1834,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1597,6 +1881,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1613,7 +1903,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "BeschaeftigungsquoteNuts3"
@@ -1684,6 +1975,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1714,6 +2022,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1730,7 +2044,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "BeschaeftigungsquoteNuts3"
@@ -1794,6 +2109,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1824,6 +2156,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1840,7 +2178,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Bevoelkerung"
@@ -1925,6 +2264,23 @@ const docTemplate = `{
                         "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
                         "name": "nuts_version",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1955,6 +2311,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1971,7 +2333,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Bevoelkerung"
@@ -2035,6 +2398,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2065,6 +2445,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -2081,7 +2467,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Bruttoverdienst"
@@ -2166,6 +2553,23 @@ const docTemplate = `{
                         "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
                         "name": "nuts_version",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2196,6 +2600,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -2212,7 +2622,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Bruttoverdienst"
@@ -2276,6 +2687,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2302,6 +2730,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -2423,7 +2857,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Durchschnittsalter"
@@ -2508,6 +2943,23 @@ const docTemplate = `{
                         "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
                         "name": "nuts_version",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2538,6 +2990,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -2554,7 +3012,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Durchschnittsalter"
@@ -2618,6 +3077,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2648,6 +3124,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -2664,7 +3146,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "ErwerbstaetigePro1000Einwohner"
@@ -2749,6 +3232,23 @@ const docTemplate = `{
                         "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
                         "name": "nuts_version",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2779,6 +3279,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -2795,7 +3301,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "ErwerbstaetigePro1000Einwohner"
@@ -2859,6 +3366,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2885,6 +3409,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -3326,7 +3856,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Kinderarmut"
@@ -3411,6 +3942,23 @@ const docTemplate = `{
                         "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
                         "name": "nuts_version",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3441,6 +3989,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -3457,7 +4011,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Kinderarmut"
@@ -3521,6 +4076,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3547,6 +4119,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -3886,7 +4464,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Medianeinkommen"
@@ -3971,6 +4550,23 @@ const docTemplate = `{
                         "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
                         "name": "nuts_version",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4001,6 +4597,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -4017,7 +4619,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Medianeinkommen"
@@ -4081,6 +4684,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4107,6 +4727,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -4611,7 +5237,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "NUTS"
@@ -4633,6 +5260,23 @@ const docTemplate = `{
                         "name": "slug",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4659,6 +5303,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -4736,7 +5386,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "NUTS"
@@ -4750,6 +5401,23 @@ const docTemplate = `{
                         "name": "nuts_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4779,6 +5447,12 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -4855,6 +5529,138 @@ const docTemplate = `{
                 }
             }
         },
+        "/regions/{region_type}/{region_id}/data": {
+            "get": {
+                "description": "Stellt die gewünschten Datensätze einer Region (NUTS, LAU oder Agenturbezirk) aus den bestehenden Marts zusammen und liefert sie in einem einheitlichen Long-Format (region_type, region_id, dataset_slug, year, month, value, is_computed, is_interpolated, aggregation_method, value_kind, source_region_count). scope=raw liefert die Ursprungswerte der Region (NUTS-3: interpolierte Kreis-Zeitreihe; LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung), scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert, lau_population_sum/lau_beschaeftigungsquote_weighted_avg). NUTS-0/1/2 haben keine Rohwerte, LAU keine aggregierten Werte. Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Regionen"
+                ],
+                "summary": "Kombinierter Daten-Export einer Region (roh und/oder aggregiert)",
+                "parameters": [
+                    {
+                        "enum": [
+                            "nuts",
+                            "lau",
+                            "agentur"
+                        ],
+                        "type": "string",
+                        "description": "Regionstyp",
+                        "name": "region_type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE300",
+                        "description": "nuts_id, gisco_id bzw. ba_schl",
+                        "name": "region_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "bevoelkerung,arbeitslose",
+                        "description": "Kommagetrennte Datensatz-Slugs (leer = alle verfügbaren)",
+                        "name": "datasets",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "raw",
+                            "aggregated",
+                            "both"
+                        ],
+                        "type": "string",
+                        "default": "both",
+                        "description": "raw, aggregated oder both (kommagetrennt)",
+                        "name": "scope",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Frühestes Jahr",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Spätestes Jahr",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.RegionDataRow"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/schuldnerquote": {
             "get": {
                 "description": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
@@ -4862,7 +5668,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Schuldnerquote"
@@ -4947,6 +5754,23 @@ const docTemplate = `{
                         "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
                         "name": "nuts_version",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4977,6 +5801,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -4993,7 +5823,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Schuldnerquote"
@@ -5057,6 +5888,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5087,6 +5935,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -5103,7 +5957,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "SgbIiQuote"
@@ -5188,6 +6043,23 @@ const docTemplate = `{
                         "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
                         "name": "nuts_version",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5218,6 +6090,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -5234,7 +6112,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "SgbIiQuote"
@@ -5298,6 +6177,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5324,6 +6220,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -5417,7 +6319,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Studierende"
@@ -5502,6 +6405,23 @@ const docTemplate = `{
                         "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
                         "name": "nuts_version",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5532,6 +6452,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -5548,7 +6474,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Studierende"
@@ -5612,6 +6539,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5642,6 +6586,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -5658,7 +6608,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Wohngeldhaushalte"
@@ -5743,6 +6694,23 @@ const docTemplate = `{
                         "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
                         "name": "nuts_version",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5773,6 +6741,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -5789,7 +6763,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Wohngeldhaushalte"
@@ -5853,6 +6828,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5879,6 +6871,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -7880,6 +8878,64 @@ const docTemplate = `{
                 "year": {
                     "type": "integer",
                     "example": 2021
+                }
+            }
+        },
+        "models.RegionDataRow": {
+            "type": "object",
+            "properties": {
+                "aggregation_method": {
+                    "description": "Nur bei aggregierten Werten: sum, weighted_avg_population, weighted_avg_area.",
+                    "type": "string",
+                    "example": "weighted_avg_population"
+                },
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                },
+                "is_computed": {
+                    "description": "true = aus mehreren Quellregionen berechnet, false = Ursprungswert der Region.",
+                    "type": "boolean"
+                },
+                "is_interpolated": {
+                    "description": "true = kein Originalwert, sondern imputiert (nur NUTS-3/LAU-Rohwerte).",
+                    "type": "boolean"
+                },
+                "month": {
+                    "description": "Nur bei Monatswerten (Agenturbezirk-Rohwerte), sonst leer.",
+                    "type": "integer",
+                    "example": 8
+                },
+                "region_id": {
+                    "type": "string",
+                    "example": "DE300"
+                },
+                "region_type": {
+                    "type": "string",
+                    "enum": [
+                        "nuts",
+                        "lau",
+                        "agentur"
+                    ],
+                    "example": "nuts"
+                },
+                "source_region_count": {
+                    "description": "Anzahl der Quellregionen (Kreise/Gemeinden) hinter einem aggregierten Wert.",
+                    "type": "integer",
+                    "example": 3
+                },
+                "value": {
+                    "type": "number",
+                    "example": 340123
+                },
+                "value_kind": {
+                    "description": "Nur bei Agentur-Aggregaten: count, rate, mean, median.",
+                    "type": "string",
+                    "example": "rate"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
                 }
             }
         },

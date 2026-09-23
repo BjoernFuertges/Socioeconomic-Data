@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -241,13 +240,9 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 		return
 	}
 
-	c.JSON(http.StatusOK, models.APIResponse{
-		Success: true,
-		Data:    data,
-		Meta: &models.MetaInfo{
-			Total:  total,
-			Offset: offset,
-		},
+	respondList(c, data, &models.MetaInfo{
+		Total:  total,
+		Offset: offset,
 	})
 }
 
@@ -377,12 +372,8 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 		return
 	}
 
-	c.JSON(http.StatusOK, models.APIResponse{
-		Success: true,
-		Data:    points,
-		Meta: &models.MetaInfo{
-			Total:  total,
-			Offset: offset,
-		},
+	respondList(c, points, &models.MetaInfo{
+		Total:  total,
+		Offset: offset,
 	})
 }

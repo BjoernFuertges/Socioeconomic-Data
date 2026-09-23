@@ -75,6 +75,9 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			agenturbezirkeGroup.GET("/:ba_schl/dataset-aggregate/:slug", handler.GetAgenturbezirkDatasetAggregateTimeseries)
 		}
 
+		// Kombinierter Export einer Region (roh und/oder aggregiert, JSON/CSV)
+		v1.GET("/regions/:region_type/:region_id/data", handler.GetRegionData)
+
 		socioeconomic := v1.Group("/socioeconomic")
 		{
 			socioeconomic.GET("/inventory", handler.GetSoziooekonomischesInventar)
@@ -112,6 +115,8 @@ func corsMiddleware() gin.HandlerFunc {
 		c.Header("Access-Control-Allow-Credentials", "true")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Header("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+		// Damit Cross-Origin-fetch den Dateinamen von ?download=1-Antworten lesen kann
+		c.Header("Access-Control-Expose-Headers", "Content-Disposition")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)

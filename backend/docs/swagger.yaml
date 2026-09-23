@@ -1591,6 +1591,52 @@ definitions:
         example: 2021
         type: integer
     type: object
+  models.RegionDataRow:
+    properties:
+      aggregation_method:
+        description: 'Nur bei aggregierten Werten: sum, weighted_avg_population, weighted_avg_area.'
+        example: weighted_avg_population
+        type: string
+      dataset_slug:
+        example: bevoelkerung
+        type: string
+      is_computed:
+        description: true = aus mehreren Quellregionen berechnet, false = Ursprungswert
+          der Region.
+        type: boolean
+      is_interpolated:
+        description: true = kein Originalwert, sondern imputiert (nur NUTS-3/LAU-Rohwerte).
+        type: boolean
+      month:
+        description: Nur bei Monatswerten (Agenturbezirk-Rohwerte), sonst leer.
+        example: 8
+        type: integer
+      region_id:
+        example: DE300
+        type: string
+      region_type:
+        enum:
+        - nuts
+        - lau
+        - agentur
+        example: nuts
+        type: string
+      source_region_count:
+        description: Anzahl der Quellregionen (Kreise/Gemeinden) hinter einem aggregierten
+          Wert.
+        example: 3
+        type: integer
+      value:
+        example: 340123
+        type: number
+      value_kind:
+        description: 'Nur bei Agentur-Aggregaten: count, rate, mean, median.'
+        example: rate
+        type: string
+      year:
+        example: 2022
+        type: integer
+    type: object
   models.RegionDataset:
     properties:
       available_years:
@@ -2018,8 +2064,21 @@ paths:
         name: ba_schl
         required: true
         type: string
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2034,6 +2093,10 @@ paths:
               type: object
         "404":
           description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -2072,8 +2135,21 @@ paths:
         name: slug
         required: true
         type: string
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2092,6 +2168,10 @@ paths:
             $ref: '#/definitions/models.APIResponse'
         "404":
           description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -2189,8 +2269,22 @@ paths:
       description: Gibt alle (Datensatz-Slug, Jahr)-Kombinationen zurück, für die
         mart_agentur_dataset_aggregate Werte enthält - Grundlage der Datensatz-/Jahresauswahl
         in der Karte.
+      parameters:
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2203,6 +2297,10 @@ paths:
                     $ref: '#/definitions/models.AgenturDatasetAggregateYear'
                   type: array
               type: object
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -2238,8 +2336,21 @@ paths:
         name: year
         required: true
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2254,6 +2365,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -2427,8 +2542,21 @@ paths:
         in: query
         name: nuts_version
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2443,6 +2571,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -2504,8 +2636,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2520,6 +2665,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -2596,8 +2745,21 @@ paths:
         in: query
         name: nuts_version
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2612,6 +2774,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -2673,8 +2839,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2689,6 +2868,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -2765,8 +2948,21 @@ paths:
         in: query
         name: nuts_version
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2781,6 +2977,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -2842,8 +3042,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2858,6 +3071,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -2934,8 +3151,21 @@ paths:
         in: query
         name: lau_version
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2950,6 +3180,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -3011,8 +3245,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3027,6 +3274,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -3091,8 +3342,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3107,6 +3371,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -3168,8 +3436,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3184,6 +3465,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -3260,8 +3545,21 @@ paths:
         in: query
         name: nuts_version
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3276,6 +3574,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -3337,8 +3639,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3353,6 +3668,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -3429,8 +3748,21 @@ paths:
         in: query
         name: nuts_version
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3445,6 +3777,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -3506,8 +3842,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3522,6 +3871,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -3662,8 +4015,21 @@ paths:
         in: query
         name: nuts_version
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3678,6 +4044,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -3739,8 +4109,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3755,6 +4138,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -3831,8 +4218,21 @@ paths:
         in: query
         name: nuts_version
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3847,6 +4247,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -3908,8 +4312,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3924,6 +4341,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -4289,8 +4710,21 @@ paths:
         in: query
         name: nuts_version
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -4305,6 +4739,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -4366,8 +4804,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -4382,6 +4833,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -4666,8 +5121,21 @@ paths:
         in: query
         name: nuts_version
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -4682,6 +5150,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -4743,8 +5215,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -4759,6 +5244,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -5127,8 +5616,21 @@ paths:
         name: slug
         required: true
         type: string
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -5143,6 +5645,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -5203,8 +5709,21 @@ paths:
         name: nuts_id
         required: true
         type: string
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -5221,6 +5740,10 @@ paths:
             $ref: '#/definitions/models.APIResponse'
         "404":
           description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -5271,6 +5794,104 @@ paths:
       summary: Geometrie-Perioden einer NUTS-Region
       tags:
       - NUTS
+  /regions/{region_type}/{region_id}/data:
+    get:
+      consumes:
+      - application/json
+      description: 'Stellt die gewünschten Datensätze einer Region (NUTS, LAU oder
+        Agenturbezirk) aus den bestehenden Marts zusammen und liefert sie in einem
+        einheitlichen Long-Format (region_type, region_id, dataset_slug, year, month,
+        value, is_computed, is_interpolated, aggregation_method, value_kind, source_region_count).
+        scope=raw liefert die Ursprungswerte der Region (NUTS-3: interpolierte Kreis-Zeitreihe;
+        LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung),
+        scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus
+        Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert, lau_population_sum/lau_beschaeftigungsquote_weighted_avg).
+        NUTS-0/1/2 haben keine Rohwerte, LAU keine aggregierten Werte. Format per
+        Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1
+        setzt Content-Disposition.'
+      parameters:
+      - description: Regionstyp
+        enum:
+        - nuts
+        - lau
+        - agentur
+        in: path
+        name: region_type
+        required: true
+        type: string
+      - description: nuts_id, gisco_id bzw. ba_schl
+        example: DE300
+        in: path
+        name: region_id
+        required: true
+        type: string
+      - description: Kommagetrennte Datensatz-Slugs (leer = alle verfügbaren)
+        example: bevoelkerung,arbeitslose
+        in: query
+        name: datasets
+        type: string
+      - default: both
+        description: raw, aggregated oder both (kommagetrennt)
+        enum:
+        - raw
+        - aggregated
+        - both
+        in: query
+        name: scope
+        type: string
+      - description: Frühestes Jahr
+        in: query
+        name: from_year
+        type: integer
+      - description: Spätestes Jahr
+        in: query
+        name: to_year
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.RegionDataRow'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Kombinierter Daten-Export einer Region (roh und/oder aggregiert)
+      tags:
+      - Regionen
   /schuldnerquote:
     get:
       consumes:
@@ -5337,8 +5958,21 @@ paths:
         in: query
         name: nuts_version
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -5353,6 +5987,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -5414,8 +6052,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -5430,6 +6081,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -5506,8 +6161,21 @@ paths:
         in: query
         name: nuts_version
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -5522,6 +6190,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -5583,8 +6255,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -5599,6 +6284,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -5722,8 +6411,21 @@ paths:
         in: query
         name: nuts_version
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -5738,6 +6440,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -5799,8 +6505,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -5815,6 +6534,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -5891,8 +6614,21 @@ paths:
         in: query
         name: nuts_version
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -5907,6 +6643,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -5968,8 +6708,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -5984,6 +6737,10 @@ paths:
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":

@@ -470,11 +470,14 @@ func (h *Handler) GetNutsRegionVersions(c *gin.Context) {
 // @Description Gibt eine Zeitreihe der auf diesen Kreis hochaggregierten Gemeinde-Werte zurück (Bevölkerungssumme, Anzahl zugeordneter Gemeinden, bevölkerungsgewichtete Beschäftigungsquote) - als Ergänzung/Cross-Check zu den nativen Kreis-Werten aus GET /nuts/{nuts_id}. Nur für NUTS-3-IDs (5 Zeichen) gültig.
 // @Tags NUTS
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param nuts_id path string true "NUTS-3-Code des Kreises" example(DE300)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=models.NutsLauAggregateResponse}
 // @Failure 400 {object} models.APIResponse
 // @Failure 404 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /nuts/{nuts_id}/lau-aggregate [get]
 func (h *Handler) GetNutsLauAggregate(c *gin.Context) {
@@ -509,13 +512,10 @@ func (h *Handler) GetNutsLauAggregate(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.APIResponse{
-		Success: true,
-		Data: models.NutsLauAggregateResponse{
-			NutsID: levelDetails.NormalizedID,
-			Series: series,
-		},
-	})
+	respondNegotiated(c, models.NutsLauAggregateResponse{
+		NutsID: levelDetails.NormalizedID,
+		Series: series,
+	}, series, nil)
 }
 
 // GetNutsDatasetAggregateTimeseries gibt eine auf NUTS-0/1/2-Ebene hochaggregierte Zeitreihe eines Kreis-grain-Datensatzes zurück
@@ -523,11 +523,14 @@ func (h *Handler) GetNutsLauAggregate(c *gin.Context) {
 // @Description Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) auf Land-/Bundesland-/Regierungsbezirksebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_nuts012_dataset_aggregate). Pendant zu GET /{slug}/timeseries für NUTS-3, das für Level 0-2 keine Kreis-Zeilen findet. Nur für NUTS-0/1/2-IDs (2-4 Zeichen) gültig; für Kreise (NUTS-3) GET /{slug}/timeseries verwenden.
 // @Tags NUTS
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param nuts_id path string true "NUTS-0/1/2-Code der Region" example(DE1)
 // @Param slug path string true "Route-Slug des Datensatzes (siehe GET /nuts/{nuts_id}/datasets)" example(bevoelkerung)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsDatasetAggregatePoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /nuts/{nuts_id}/dataset-aggregate/{slug} [get]
 func (h *Handler) GetNutsDatasetAggregateTimeseries(c *gin.Context) {
@@ -564,5 +567,5 @@ func (h *Handler) GetNutsDatasetAggregateTimeseries(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: points})
+	respondList(c, points, nil)
 }

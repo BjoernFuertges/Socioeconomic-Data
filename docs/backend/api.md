@@ -6,6 +6,62 @@ OpenAPI/Swagger specification is available at `/api/docs/index.html` (see
 
 Defined in [`internal/routes/routes.go`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/backend/internal/routes/routes.go).
 
+## Response formats (JSON and CSV)
+
+All list-shaped endpoints (the generic dataset routes, `/timeseries`, the
+dataset-aggregate routes, the Agenturbezirk series and the region export
+below) serve **either JSON or CSV**, negotiated via the HTTP `Accept`
+header:
+
+```bash
+curl -H 'Accept: text/csv' '<host>/api/v1/bevoelkerung/timeseries?geodata_id_nuts=DE300'
+```
+
+- No `Accept` header (or `*/*`) yields JSON — the wrapped
+  `{success, data, meta}` envelope, unchanged from before.
+- `Accept: text/csv` yields a flat CSV whose column names are the JSON
+  field names of the same response. Nullable fields (`sql.Null*`, pointers)
+  become empty fields; an empty result is a header row on its own.
+- An `Accept` header that matches neither yields `406`.
+- `?format=csv|json` overrides the header, for browser links (`<a href>`
+  cannot send headers); `?download=1` adds `Content-Disposition:
+  attachment`. `?limit=null` lifts the row limit for a full export.
+
+Implemented once in
+[`internal/handlers/negotiate.go`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/backend/internal/handlers/negotiate.go)
+(`respondList`/`respondNegotiated`), so no endpoint carries its own CSV code.
+
+## Combined region export
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/regions/{region_type}/{region_id}/data` | Datasets of one region (`nuts`, `lau` or `agentur`) in one long-format table |
+
+Assembles the existing marts for one region instead of requiring several
+calls, and returns one uniform row shape (`region_type`, `region_id`,
+`dataset_slug`, `year`, `month`, `value`, `is_computed`,
+`is_interpolated`, `aggregation_method`, `value_kind`,
+`source_region_count`). The backend only selects and concatenates here; all
+aggregation itself still happens in dbt.
+
+- `scope=raw` returns the region's own source values (NUTS-3: the
+  interpolated Kreis series; LAU: the interpolated Gemeinde series;
+  Agentur: the monthly BA figures as `ba_arbeitslose` /
+  `ba_unterbeschaeftigung`).
+- `scope=aggregated` returns computed values (NUTS-0/1/2 and Agenturbezirke
+  aggregated from Kreise; NUTS-3 aggregated from Gemeinden, as
+  `lau_population_sum` / `lau_beschaeftigungsquote_weighted_avg`).
+- `scope=both` (the default) returns both in one file; `is_computed`
+  separates them.
+- NUTS-0/1/2 have no raw rows, LAU has no aggregated ones.
+- `datasets=a,b` restricts the dataset slugs (empty = all available),
+  `from_year`/`to_year` the period.
+
+```bash
+curl -H 'Accept: text/csv' \
+  '<host>/api/v1/regions/nuts/DE300/data?scope=both&from_year=2015'
+```
+
 ## Health
 
 | Method | Path | Purpose |

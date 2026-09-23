@@ -82,10 +82,13 @@ func (h *Handler) GetAgenturbezirkByID(c *gin.Context) {
 // @Description Gibt die monatliche Zeitreihe (Arbeitslose, Unterbeschäftigung) für einen Agenturbezirk zurück (AfA Lange Zeitreihen, ab Januar 2007)
 // @Tags Agenturbezirke
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param ba_schl path string true "Amtlicher BA-Schlüssel des Agenturbezirks" example(962)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.AgenturbezirkArbeitslosigkeitPoint}
 // @Failure 404 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /agenturbezirke/{ba_schl}/arbeitslosigkeit [get]
 func (h *Handler) GetAgenturbezirkArbeitslosigkeit(c *gin.Context) {
@@ -112,10 +115,7 @@ func (h *Handler) GetAgenturbezirkArbeitslosigkeit(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.APIResponse{
-		Success: true,
-		Data:    points,
-	})
+	respondList(c, points, nil)
 }
 
 // GetAgenturbezirkeLatest gibt alle Agenturbezirke mit Geometrie und dem
@@ -370,12 +370,15 @@ func (h *Handler) GetNutsAgenturbezirke(c *gin.Context) {
 // @Description Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) über den Agentur<->NUTS-3-Flächenanteils-Crosswalk auf Agenturbezirk-Ebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_agentur_dataset_aggregate). Analog zu GET /nuts/{nuts_id}/dataset-aggregate/{slug} für NUTS-0/1/2. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.
 // @Tags Agenturbezirke
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param ba_schl path string true "Amtlicher BA-Schlüssel des Agenturbezirks" example(962)
 // @Param slug path string true "Route-Slug des Datensatzes" example(bevoelkerung)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.AgenturDatasetAggregatePoint}
 // @Failure 400 {object} models.APIResponse
 // @Failure 404 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /agenturbezirke/{ba_schl}/dataset-aggregate/{slug} [get]
 func (h *Handler) GetAgenturbezirkDatasetAggregateTimeseries(c *gin.Context) {
@@ -408,7 +411,7 @@ func (h *Handler) GetAgenturbezirkDatasetAggregateTimeseries(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: points})
+	respondList(c, points, nil)
 }
 
 // GetAgenturbezirkDatasetAggregateYears listet die auf Agenturbezirk-Ebene aggregierten Datensätze mit ihren Jahren
@@ -416,8 +419,11 @@ func (h *Handler) GetAgenturbezirkDatasetAggregateTimeseries(c *gin.Context) {
 // @Description Gibt alle (Datensatz-Slug, Jahr)-Kombinationen zurück, für die mart_agentur_dataset_aggregate Werte enthält - Grundlage der Datensatz-/Jahresauswahl in der Karte.
 // @Tags Agenturbezirke
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.AgenturDatasetAggregateYear}
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /agenturbezirke/dataset-aggregate [get]
 func (h *Handler) GetAgenturbezirkDatasetAggregateYears(c *gin.Context) {
@@ -430,7 +436,7 @@ func (h *Handler) GetAgenturbezirkDatasetAggregateYears(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: rows, Meta: &models.MetaInfo{Total: len(rows)}})
+	respondList(c, rows, &models.MetaInfo{Total: len(rows)})
 }
 
 // GetAgenturbezirkeDatasetAggregateByYear gibt für ein Jahr die aggregierten Werte aller Agenturbezirke zurück
@@ -438,11 +444,14 @@ func (h *Handler) GetAgenturbezirkDatasetAggregateYears(c *gin.Context) {
 // @Description Liefert für einen Kreis-grain-Datensatz und ein Jahr den auf Agenturbezirk-Ebene aggregierten Wert je Agenturbezirk (siehe mart_agentur_dataset_aggregate) - für die Kartendarstellung. Geometrien kommen weiterhin aus GET /agenturbezirke/period. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.
 // @Tags Agenturbezirke
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param slug path string true "Route-Slug des Datensatzes" example(bevoelkerung)
 // @Param year query int true "Jahr" example(2022)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.AgenturDatasetAggregatePoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /agenturbezirke/dataset-aggregate/{slug} [get]
 func (h *Handler) GetAgenturbezirkeDatasetAggregateByYear(c *gin.Context) {
@@ -471,5 +480,5 @@ func (h *Handler) GetAgenturbezirkeDatasetAggregateByYear(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: points, Meta: &models.MetaInfo{Total: len(points)}})
+	respondList(c, points, &models.MetaInfo{Total: len(points)})
 }

@@ -13,7 +13,7 @@ import (
 // @Description Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Arbeitslose
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -25,8 +25,11 @@ import (
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.ArbeitsloseData}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /arbeitslose [get]
 func (h *Handler) GetArbeitsloseData(c *gin.Context) {
@@ -38,7 +41,7 @@ func (h *Handler) GetArbeitsloseData(c *gin.Context) {
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags Arbeitslose
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
@@ -47,8 +50,11 @@ func (h *Handler) GetArbeitsloseData(c *gin.Context) {
 // @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /arbeitslose/timeseries [get]
 func (h *Handler) GetArbeitsloseTimeseriesData(c *gin.Context) {
@@ -60,7 +66,7 @@ func (h *Handler) GetArbeitsloseTimeseriesData(c *gin.Context) {
 // @Description Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Arbeitsvolumen
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -72,8 +78,11 @@ func (h *Handler) GetArbeitsloseTimeseriesData(c *gin.Context) {
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.ArbeitsvolumenData}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /arbeitsvolumen [get]
 func (h *Handler) GetArbeitsvolumenData(c *gin.Context) {
@@ -85,7 +94,7 @@ func (h *Handler) GetArbeitsvolumenData(c *gin.Context) {
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags Arbeitsvolumen
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
@@ -94,8 +103,11 @@ func (h *Handler) GetArbeitsvolumenData(c *gin.Context) {
 // @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /arbeitsvolumen/timeseries [get]
 func (h *Handler) GetArbeitsvolumenTimeseriesData(c *gin.Context) {
@@ -107,7 +119,7 @@ func (h *Handler) GetArbeitsvolumenTimeseriesData(c *gin.Context) {
 // @Description Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Auszubildende
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -119,8 +131,11 @@ func (h *Handler) GetArbeitsvolumenTimeseriesData(c *gin.Context) {
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.AuszubildendeData}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /auszubildende [get]
 func (h *Handler) GetAuszubildendeData(c *gin.Context) {
@@ -132,7 +147,7 @@ func (h *Handler) GetAuszubildendeData(c *gin.Context) {
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags Auszubildende
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
@@ -141,8 +156,11 @@ func (h *Handler) GetAuszubildendeData(c *gin.Context) {
 // @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /auszubildende/timeseries [get]
 func (h *Handler) GetAuszubildendeTimeseriesData(c *gin.Context) {
@@ -154,7 +172,7 @@ func (h *Handler) GetAuszubildendeTimeseriesData(c *gin.Context) {
 // @Description Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags BeschaeftigungsquoteGemeinden
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -166,8 +184,11 @@ func (h *Handler) GetAuszubildendeTimeseriesData(c *gin.Context) {
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param lau_version query int false "Nur zusammen mit fill_gaps=true: Ziel-LAU-Version (2011-2024, Default 2024)" example(2021)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.BeschaeftigungsquoteGemeindenData}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /beschaeftigungsquote-gemeinden [get]
 func (h *Handler) GetBeschaeftigungsquoteGemeindenData(c *gin.Context) {
@@ -179,7 +200,7 @@ func (h *Handler) GetBeschaeftigungsquoteGemeindenData(c *gin.Context) {
 // @Description Liefert die harmonisierte LAU-Zeitreihe aus mart_lau_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags BeschaeftigungsquoteGemeinden
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_lau query string false "GISCO-ID der Gemeinde" example(DE_11000000)
 // @Param nuts_parent_id query string false "NUTS-3-Präfix für Hierarchieabfragen (über die kanonische LAU->NUTS-3-Verlinkung, z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
@@ -188,8 +209,11 @@ func (h *Handler) GetBeschaeftigungsquoteGemeindenData(c *gin.Context) {
 // @Param lau_version query int false "Ziel-LAU-Version (2011-2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.LauTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /beschaeftigungsquote-gemeinden/timeseries [get]
 func (h *Handler) GetBeschaeftigungsquoteGemeindenTimeseriesData(c *gin.Context) {
@@ -201,7 +225,7 @@ func (h *Handler) GetBeschaeftigungsquoteGemeindenTimeseriesData(c *gin.Context)
 // @Description Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
 // @Tags BeschaeftigungsquoteNuts3
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -211,8 +235,11 @@ func (h *Handler) GetBeschaeftigungsquoteGemeindenTimeseriesData(c *gin.Context)
 // @Param point query string false "Punktabfrage im Format lon,lat (WGS84)" example(13.404954,52.520008)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.BeschaeftigungsquoteNuts3Data}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /beschaeftigungsquote-nuts3 [get]
 func (h *Handler) GetBeschaeftigungsquoteNuts3Data(c *gin.Context) {
@@ -224,7 +251,7 @@ func (h *Handler) GetBeschaeftigungsquoteNuts3Data(c *gin.Context) {
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags BeschaeftigungsquoteNuts3
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
@@ -233,8 +260,11 @@ func (h *Handler) GetBeschaeftigungsquoteNuts3Data(c *gin.Context) {
 // @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /beschaeftigungsquote-nuts3/timeseries [get]
 func (h *Handler) GetBeschaeftigungsquoteNuts3TimeseriesData(c *gin.Context) {
@@ -246,7 +276,7 @@ func (h *Handler) GetBeschaeftigungsquoteNuts3TimeseriesData(c *gin.Context) {
 // @Description Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Bevoelkerung
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -258,8 +288,11 @@ func (h *Handler) GetBeschaeftigungsquoteNuts3TimeseriesData(c *gin.Context) {
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.BevoelkerungData}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /bevoelkerung [get]
 func (h *Handler) GetBevoelkerungData(c *gin.Context) {
@@ -271,7 +304,7 @@ func (h *Handler) GetBevoelkerungData(c *gin.Context) {
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags Bevoelkerung
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
@@ -280,8 +313,11 @@ func (h *Handler) GetBevoelkerungData(c *gin.Context) {
 // @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /bevoelkerung/timeseries [get]
 func (h *Handler) GetBevoelkerungTimeseriesData(c *gin.Context) {
@@ -293,7 +329,7 @@ func (h *Handler) GetBevoelkerungTimeseriesData(c *gin.Context) {
 // @Description Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Bruttoverdienst
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -305,8 +341,11 @@ func (h *Handler) GetBevoelkerungTimeseriesData(c *gin.Context) {
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.BruttoverdienstData}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /bruttoverdienst [get]
 func (h *Handler) GetBruttoverdienstData(c *gin.Context) {
@@ -318,7 +357,7 @@ func (h *Handler) GetBruttoverdienstData(c *gin.Context) {
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags Bruttoverdienst
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
@@ -327,8 +366,11 @@ func (h *Handler) GetBruttoverdienstData(c *gin.Context) {
 // @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /bruttoverdienst/timeseries [get]
 func (h *Handler) GetBruttoverdienstTimeseriesData(c *gin.Context) {
@@ -340,7 +382,7 @@ func (h *Handler) GetBruttoverdienstTimeseriesData(c *gin.Context) {
 // @Description Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Durchschnittsalter
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -352,8 +394,11 @@ func (h *Handler) GetBruttoverdienstTimeseriesData(c *gin.Context) {
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.DurchschnittsalterData}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /durchschnittsalter [get]
 func (h *Handler) GetDurchschnittsalterData(c *gin.Context) {
@@ -365,7 +410,7 @@ func (h *Handler) GetDurchschnittsalterData(c *gin.Context) {
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags Durchschnittsalter
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
@@ -374,8 +419,11 @@ func (h *Handler) GetDurchschnittsalterData(c *gin.Context) {
 // @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /durchschnittsalter/timeseries [get]
 func (h *Handler) GetDurchschnittsalterTimeseriesData(c *gin.Context) {
@@ -387,7 +435,7 @@ func (h *Handler) GetDurchschnittsalterTimeseriesData(c *gin.Context) {
 // @Description Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags ErwerbstaetigePro1000Einwohner
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -399,8 +447,11 @@ func (h *Handler) GetDurchschnittsalterTimeseriesData(c *gin.Context) {
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.ErwerbstaetigePro1000EinwohnerData}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /erwerbstaetige_pro_1000_einwohner [get]
 func (h *Handler) GetErwerbstaetigePro1000EinwohnerData(c *gin.Context) {
@@ -412,7 +463,7 @@ func (h *Handler) GetErwerbstaetigePro1000EinwohnerData(c *gin.Context) {
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags ErwerbstaetigePro1000Einwohner
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
@@ -421,8 +472,11 @@ func (h *Handler) GetErwerbstaetigePro1000EinwohnerData(c *gin.Context) {
 // @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /erwerbstaetige_pro_1000_einwohner/timeseries [get]
 func (h *Handler) GetErwerbstaetigePro1000EinwohnerTimeseriesData(c *gin.Context) {
@@ -434,7 +488,7 @@ func (h *Handler) GetErwerbstaetigePro1000EinwohnerTimeseriesData(c *gin.Context
 // @Description Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Kinderarmut
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -446,8 +500,11 @@ func (h *Handler) GetErwerbstaetigePro1000EinwohnerTimeseriesData(c *gin.Context
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.KinderarmutData}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /kinderarmut [get]
 func (h *Handler) GetKinderarmutData(c *gin.Context) {
@@ -459,7 +516,7 @@ func (h *Handler) GetKinderarmutData(c *gin.Context) {
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags Kinderarmut
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
@@ -468,8 +525,11 @@ func (h *Handler) GetKinderarmutData(c *gin.Context) {
 // @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /kinderarmut/timeseries [get]
 func (h *Handler) GetKinderarmutTimeseriesData(c *gin.Context) {
@@ -481,7 +541,7 @@ func (h *Handler) GetKinderarmutTimeseriesData(c *gin.Context) {
 // @Description Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Medianeinkommen
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -493,8 +553,11 @@ func (h *Handler) GetKinderarmutTimeseriesData(c *gin.Context) {
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.MedianeinkommenData}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /medianeinkommen [get]
 func (h *Handler) GetMedianeinkommenData(c *gin.Context) {
@@ -506,7 +569,7 @@ func (h *Handler) GetMedianeinkommenData(c *gin.Context) {
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags Medianeinkommen
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
@@ -515,8 +578,11 @@ func (h *Handler) GetMedianeinkommenData(c *gin.Context) {
 // @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /medianeinkommen/timeseries [get]
 func (h *Handler) GetMedianeinkommenTimeseriesData(c *gin.Context) {
@@ -528,7 +594,7 @@ func (h *Handler) GetMedianeinkommenTimeseriesData(c *gin.Context) {
 // @Description Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Schuldnerquote
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -540,8 +606,11 @@ func (h *Handler) GetMedianeinkommenTimeseriesData(c *gin.Context) {
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.SchuldnerquoteData}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /schuldnerquote [get]
 func (h *Handler) GetSchuldnerquoteData(c *gin.Context) {
@@ -553,7 +622,7 @@ func (h *Handler) GetSchuldnerquoteData(c *gin.Context) {
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags Schuldnerquote
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (2000-2030)" example(2020)
@@ -562,8 +631,11 @@ func (h *Handler) GetSchuldnerquoteData(c *gin.Context) {
 // @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /schuldnerquote/timeseries [get]
 func (h *Handler) GetSchuldnerquoteTimeseriesData(c *gin.Context) {
@@ -575,7 +647,7 @@ func (h *Handler) GetSchuldnerquoteTimeseriesData(c *gin.Context) {
 // @Description Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags SgbIiQuote
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -587,8 +659,11 @@ func (h *Handler) GetSchuldnerquoteTimeseriesData(c *gin.Context) {
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.SgbIiQuoteData}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /sgb_ii_quote [get]
 func (h *Handler) GetSgbIiQuoteData(c *gin.Context) {
@@ -600,7 +675,7 @@ func (h *Handler) GetSgbIiQuoteData(c *gin.Context) {
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags SgbIiQuote
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (2005-2030)" example(2020)
@@ -609,8 +684,11 @@ func (h *Handler) GetSgbIiQuoteData(c *gin.Context) {
 // @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /sgb_ii_quote/timeseries [get]
 func (h *Handler) GetSgbIiQuoteTimeseriesData(c *gin.Context) {
@@ -622,7 +700,7 @@ func (h *Handler) GetSgbIiQuoteTimeseriesData(c *gin.Context) {
 // @Description Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Studierende
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -634,8 +712,11 @@ func (h *Handler) GetSgbIiQuoteTimeseriesData(c *gin.Context) {
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.StudierendeData}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /studierende [get]
 func (h *Handler) GetStudierendeData(c *gin.Context) {
@@ -647,7 +728,7 @@ func (h *Handler) GetStudierendeData(c *gin.Context) {
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags Studierende
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (1990-2030)" example(2020)
@@ -656,8 +737,11 @@ func (h *Handler) GetStudierendeData(c *gin.Context) {
 // @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /studierende/timeseries [get]
 func (h *Handler) GetStudierendeTimeseriesData(c *gin.Context) {
@@ -669,7 +753,7 @@ func (h *Handler) GetStudierendeTimeseriesData(c *gin.Context) {
 // @Description Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
 // @Tags Wohngeldhaushalte
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Gebietsnamen" example(stuttgart)
@@ -681,8 +765,11 @@ func (h *Handler) GetStudierendeTimeseriesData(c *gin.Context) {
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Param fill_gaps query bool false "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen" example(false)
 // @Param nuts_version query int false "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.WohngeldhaushalteData}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /wohngeldhaushalte [get]
 func (h *Handler) GetWohngeldhaushalteData(c *gin.Context) {
@@ -694,7 +781,7 @@ func (h *Handler) GetWohngeldhaushalteData(c *gin.Context) {
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags Wohngeldhaushalte
 // @Accept json
-// @Produce json
+// @Produce json,text/csv
 // @Param geodata_id_nuts query string false "NUTS-3-Code der Region" example(DEF01)
 // @Param nuts_parent_id query string false "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)" example(DE1)
 // @Param year query int false "Jahr der Beobachtung (2010-2030)" example(2020)
@@ -703,8 +790,11 @@ func (h *Handler) GetWohngeldhaushalteData(c *gin.Context) {
 // @Param nuts_version query int false "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)" example(2021)
 // @Param limit query int false "Anzahl der Ergebnisse (1-10000)" default(1000) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
+// @Param format query string false "Überschreibt den Accept-Header" Enums(json, csv)
+// @Param download query bool false "Content-Disposition: attachment setzen" example(false)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsTimeseriesPoint}
 // @Failure 400 {object} models.APIResponse
+// @Failure 406 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
 // @Router /wohngeldhaushalte/timeseries [get]
 func (h *Handler) GetWohngeldhaushalteTimeseriesData(c *gin.Context) {
