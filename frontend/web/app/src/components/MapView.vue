@@ -11,9 +11,11 @@ import type {
   AgenturDatasetAggregatePoint,
   AgenturDatasetAggregateYear,
   AgenturbezirkPeriod,
+  DatasetCatalogEntry,
   GeoRegionSummary,
   InventoryEntry,
   LauTimeseriesPoint,
+  NutsDatasetAggregatePoint,
   NutsTimeseriesPoint,
   TimeseriesPoint,
 } from "../types/api";
@@ -49,6 +51,16 @@ const NUTS_VERSIONS = [2003, 2006, 2010, 2013, 2016, 2021, 2024] as const;
 const LAU_VERSIONS = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024] as const;
 
 type GeoType = "nuts" | "lau" | "agentur";
+
+// NUTS-Ebenen für den Ebenen-Umschalter der interaktiven Kartenebene
+type NutsLevel = 0 | 1 | 2 | 3;
+const NUTS_LEVELS: readonly NutsLevel[] = [0, 1, 2, 3];
+const NUTS_LEVEL_LABELS: Record<NutsLevel, string> = {
+  0: "Land",
+  1: "Bundesland",
+  2: "Regierungsbezirk",
+  3: "Kreis",
+};
 
 // Agenturbezirke haben (anders als NUTS/LAU) keine Zeitreihen-/Interpolations-
 // Mart, keinen Datensatz-Slug und keine Geometrie-Versionen (nur eine
@@ -96,6 +108,15 @@ let agenturPeriodsLoaded = false;
 // gerade erst über loadAgenturPeriods() gesetzt hat) - sonst liefe der
 // Period-Request beim ersten Wechsel auf "agentur" doppelt.
 let suppressAgenturPeriodWatch = false;
+// Analog zu suppressAgenturPeriodWatch: verhindert, dass initFromRoute()
+// (onMounted/onActivated) einen redundanten zweiten Reload über
+// watch(selectedGeoType)/watch(selectedNutsLevel) auslöst, wenn der jeweilige
+// Aufrufer den Reload wegen eines Cross-Link-Sprungs bereits selbst explizit
+// anstößt (siehe dort) - sonst könnte der verspätete, asynchrone Watcher-
+// Reload ein zuvor per focusOnRegion() gesetztes fitBounds() mit einem
+// buildLayer() über die volle Regionsmenge wieder überschreiben.
+let suppressGeoTypeReload = false;
+let suppressNutsLevelReload = false;
 
 const agenturYearOptions = computed(() =>
   Array.from(new Set(agenturPeriods.value.map((p) => p.year))).sort((a, b) => b - a),
@@ -151,12 +172,17 @@ const inventoryError = ref<string | null>(null);
 // lau_version).
 const datasetYearsNuts = ref<Map<string, number[]>>(new Map());
 const datasetYearsLau = ref<Map<string, number[]>>(new Map());
+// dataset-slug -> verfügbare Jahre für NUTS-0/1/2 einmalig, nicht neu geladen bei einem
+// Wechsel zwischen Land/Bundesland/Regierungsbezirk). Der Katalog kommt aus
+// der DE-Wurzel statt je Ebene/Region einzeln
+const datasetYearsNuts012 = ref<Map<string, number[]>>(new Map());
 // "" = kein Datensatz gewählt -> Karte zeigt nur den Grenzverlauf, keine Werte.
 const selectedDataset = ref<string>("");
 const selectedYear = ref<number | null>(null);
 const selectedNutsVersion = ref<number>(2024);
 const selectedLauVersion = ref<number>(2024);
 const selectedGeoType = ref<GeoType>("nuts");
+const selectedNutsLevel = ref<NutsLevel>(3);
 
 const valuesLoading = ref(false);
 const valuesError = ref<string | null>(null);
@@ -168,9 +194,21 @@ type MapValue = TimeseriesPoint & {
 };
 const valuesByRegion = ref<Map<string, MapValue>>(new Map());
 
-const datasetYears = computed(() => (selectedGeoType.value === "lau" ? datasetYearsLau.value : datasetYearsNuts.value));
+// NUTS-0/1/2 nutzen einen eigenen Katalog (datasetYearsNuts012) statt des
+// Kreis-Katalogs (datasetYearsNuts) - beide Mengen sind unterschiedlich, deshalb eigene Fallunterscheidung statt nur nuts/lau.
+const datasetYears = computed(() => {
+  if (selectedGeoType.value === "lau") return datasetYearsLau.value;
+  if (usesNutsAggregate.value) return datasetYearsNuts012.value;
+  return datasetYearsNuts.value;
+});
 const datasetOptions = computed(() => Array.from(datasetYears.value.keys()).sort());
 const yearOptions = computed(() => datasetYears.value.get(selectedDataset.value) ?? []);
+
+// NUTS-0/1/2 haben keinen Bulk-Endpunkt über eine ganze Ebene, sondern nur
+// den Einzelregion-Endpunkt GET /nuts/{nuts_id}/dataset-aggregate/{slug}
+// (siehe loadNuts012Values()) - steuert, welchen der beiden Lade-/Anzeigepfade
+// loadValues()/datasetYears oben nehmen.
+const usesNutsAggregate = computed(() => selectedGeoType.value === "nuts" && selectedNutsLevel.value !== 3);
 
 const valueDomain = computed<[number, number] | null>(() => {
   const values = Array.from(valuesByRegion.value.values()).map((p) => p.value);
@@ -291,6 +329,10 @@ const sidebarValueLabel = computed(() => {
     ? formatDatasetLabel(selectedAgenturDataset.value)
     : AGENTUR_METRIC_LABELS[selectedAgenturMetric.value];
 });
+
+// Beschriftung für die Legende, wenn mangels Datensatz-Auswahl noch keine
+// Einfärbung vorliegt.
+const mapOnlyLabel = computed(() => (selectedGeoType.value === "lau" ? "LAU-Gemeinden" : "Kein Datensatz ausgewählt"));
 
 // Cross-Link "Karte -> Regionen" (Umkehrung von RegionBrowser.vue: viewOnMap()) -
 // springt zur Detailansicht der in der Seitenbox gezeigten Region, mit dem
@@ -434,10 +476,11 @@ async function loadGeometries() {
     // grenzt nuts_parent_id (Präfix-Filter) auf Deutschland ein.
     // geometry_strategy=exact+geometry_year pinnt auf den Grenzverlauf der
     // gewählten NUTS-Version (siehe mart_nuts_geometry_historized) - damit
-    // liefert /geo genau die Kreise, die in dieser Version gültig waren.
+    // liefert /geo genau die Regionen der gewählten Ebene, die in dieser
+    // Version gültig waren (level über den Ebenen-Umschalter wählbar).
     const body = await apiGet<GeoRegionSummary[]>("/geo", {
       geo_type: "nuts",
-      level: 3,
+      level: selectedNutsLevel.value,
       nuts_parent_id: "DE",
       include_geometry: true,
       geometry_strategy: "exact",
@@ -472,11 +515,39 @@ async function loadInventoryFor(geoType: GeoType) {
 async function loadInventory() {
   try {
     await Promise.all([loadInventoryFor("nuts"), loadInventoryFor("lau")]);
-    if (!selectedDataset.value || !datasetYears.value.has(selectedDataset.value)) {
-      const firstDataset = Array.from(datasetYears.value.keys()).sort()[0];
-      selectedDataset.value = firstDataset ?? "";
-      selectedYear.value = firstDataset ? datasetYears.value.get(firstDataset)?.[0] ?? null : null;
+  } catch (err) {
+    inventoryError.value = err instanceof Error ? err.message : String(err);
+  }
+}
+
+// Nach dem Laden aller Kataloge (Kreis/LAU/NUTS-0-2): unbekannten Datensatz
+// durch den ersten verfügbaren ersetzen und ein fehlendes/ungültiges Jahr
+// (z.B. Deep-Link mit ?dataset= aber ohne ?year=) durch das neueste
+// verfügbare ersetzen - sonst bliebe die Karte trotz Datensatz ungefärbt.
+function reconcileDatasetSelection() {
+  if (selectedGeoType.value === "agentur") return;
+  if (!selectedDataset.value || !datasetYears.value.has(selectedDataset.value)) {
+    const firstDataset = datasetOptions.value[0];
+    selectedDataset.value = firstDataset ?? "";
+    selectedYear.value = firstDataset ? datasetYears.value.get(firstDataset)?.[0] ?? null : null;
+    return;
+  }
+  const years = datasetYears.value.get(selectedDataset.value) ?? [];
+  if (selectedYear.value === null || !years.includes(selectedYear.value)) {
+    selectedYear.value = years[0] ?? null;
+  }
+}
+
+// Datensatz-Katalog für NUTS-0/1/2 - siehe datasetYearsNuts012-Kommentar
+// oben (einmalig aus der DE-Wurzel, nicht je Ebene neu geladen).
+async function loadNuts012Inventory() {
+  try {
+    const body = await apiGet<{ datasets: DatasetCatalogEntry[] }>("/nuts/DE/datasets");
+    const sorted = new Map<string, number[]>();
+    for (const ds of body.data?.datasets ?? []) {
+      sorted.set(ds.route_slug, [...ds.available_years].sort((a, b) => b - a));
     }
+    datasetYearsNuts012.value = sorted;
   } catch (err) {
     inventoryError.value = err instanceof Error ? err.message : String(err);
   }
@@ -552,10 +623,57 @@ async function loadAgenturAggValues() {
   }
 }
 
+// NUTS-0/1/2: kein Bulk-Endpunkt über eine ganze Ebene (anders als /{slug}/
+// timeseries für Kreise/LAU) - stattdessen einmal pro sichtbarer Region
+// parallel abfragen (bei Land/Bundesland/Regierungsbezirk überschaubar
+// viele: 1/16/~30 Regionen). Jede Antwort enthält bereits alle Jahre dieser
+// Region (der Endpunkt kennt keinen year-Filter), ein reiner Jahreswechsel
+// fragt der Einfachheit halber trotzdem erneut ab statt die Rohdaten
+// gesondert zu cachen - bei dieser Regionenzahl vernachlässigbar.
+async function loadNuts012Values() {
+  const slug = selectedDataset.value;
+  if (!slug) {
+    valuesError.value = null;
+    if (valuesByRegion.value.size > 0) {
+      valuesByRegion.value = new Map();
+      restyleLayer();
+    }
+    return;
+  }
+  valuesLoading.value = true;
+  valuesError.value = null;
+  try {
+    const results = await Promise.all(
+      regions.value.map(async (r) => {
+        const body = await apiGet<NutsDatasetAggregatePoint[]>(`/nuts/${r.geo_id}/dataset-aggregate/${slug}`);
+        return [r.geo_id, body.data ?? []] as const;
+      }),
+    );
+    // Antwort könnte durch einen schnellen Datensatz-/Ebenenwechsel überholt sein.
+    if (slug !== selectedDataset.value) return;
+    const year = selectedYear.value;
+    valuesByRegion.value = new Map(
+      results.flatMap(([geoId, points]) => {
+        const point = year === null ? points[0] : points.find((p) => p.year === year);
+        return point ? ([[geoId, point]] as [string, MapValue][]) : [];
+      }),
+    );
+    restyleLayer();
+  } catch (err) {
+    valuesError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    valuesLoading.value = false;
+  }
+}
+
 async function loadValues() {
   if (selectedGeoType.value === "agentur") {
     if (selectedAgenturDataset.value) await loadAgenturAggValues();
     else applyAgenturValues();
+    return;
+  }
+  if (usesNutsAggregate.value) {
+    await loadNuts012Values();
     return;
   }
   if (!selectedDataset.value || selectedYear.value === null) {
@@ -710,6 +828,10 @@ function initFromRoute() {
     const v = Number(q.nutsVersion);
     if ((NUTS_VERSIONS as readonly number[]).includes(v)) selectedNutsVersion.value = v;
   }
+  if (q.nutsLevel) {
+    const l = Number(q.nutsLevel);
+    if ((NUTS_LEVELS as readonly number[]).includes(l)) selectedNutsLevel.value = l as NutsLevel;
+  }
   if (q.lauVersion) {
     const v = Number(q.lauVersion);
     if ((LAU_VERSIONS as readonly number[]).includes(v)) selectedLauVersion.value = v;
@@ -779,7 +901,10 @@ const currentQuery = computed<Record<string, string>>(() => {
   } else {
     if (selectedDataset.value) q.dataset = selectedDataset.value;
     if (selectedYear.value !== null) q.year = String(selectedYear.value);
-    if (selectedGeoType.value === "nuts") q.nutsVersion = String(selectedNutsVersion.value);
+    if (selectedGeoType.value === "nuts") {
+      q.nutsVersion = String(selectedNutsVersion.value);
+      q.nutsLevel = String(selectedNutsLevel.value);
+    }
     if (selectedGeoType.value === "lau") q.lauVersion = String(selectedLauVersion.value);
   }
   if (highlightedRegionId.value) q.region = highlightedRegionId.value;
@@ -799,7 +924,16 @@ watch(currentQuery, (q) => {
 });
 
 onMounted(async () => {
+  const prevGeoType = selectedGeoType.value;
+  const prevNutsLevel = selectedNutsLevel.value;
   initFromRoute();
+  // Ein Deep-Link (?geo=/?nutsLevel=) kann selectedGeoType/selectedNutsLevel
+  // gegenüber ihrem Default ändern - den dadurch fälligen Reload übernimmt
+  // unten der explizite Promise.all(...)/buildLayer()-Block, die
+  // entsprechenden watch(...)-Handler also einmalig überspringen (siehe
+  // suppressGeoTypeReload/suppressNutsLevelReload-Kommentar oben).
+  if (selectedGeoType.value !== prevGeoType) suppressGeoTypeReload = true;
+  if (selectedGeoType.value === "nuts" && selectedNutsLevel.value !== prevNutsLevel) suppressNutsLevelReload = true;
 
   if (mapContainer.value) {
     map = L.map(mapContainer.value, { center: [51.2, 10.4], zoom: 6, scrollWheelZoom: false });
@@ -821,15 +955,22 @@ onMounted(async () => {
   await Promise.all([loadGeometries(), loadBoundaries()]);
   buildLayer();
   buildBoundaryLayer();
-  await loadInventory();
+  await Promise.all([loadInventory(), loadNuts012Inventory()]);
+  reconcileDatasetSelection();
   try {
     await loadAgenturAggInventory();
   } catch (err) {
     agenturAggError.value = err instanceof Error ? err.message : String(err);
   }
-  // Direkt per Deep-Link auf einen aggregierten Agentur-Datensatz gelandet:
-  // Werte erst jetzt (nach Jahr-Validierung) laden.
-  if (selectedGeoType.value === "agentur" && selectedAgenturDataset.value) await loadValues();
+  // Direkt per Deep-Link auf einen aggregierten Agentur-/NUTS-0-1-2-Datensatz
+  // gelandet: Werte erst jetzt (nach Jahr-Validierung bzw. nach dem
+  // Geometrie-Load, den loadNuts012Values() für die Regionsliste braucht)
+  // laden - der reaktive watch([selectedDataset, selectedYear], loadValues)
+  // unten greift hier zu früh (bzw. bei einem reinen Datensatz-Deep-Link ganz
+  // ohne ?year= gar nicht, siehe dortigen Kommentar).
+  if ((selectedGeoType.value === "agentur" && selectedAgenturDataset.value) || usesNutsAggregate.value) {
+    await loadValues();
+  }
   if (highlightedRegionId.value) focusOnRegion(highlightedRegionId.value);
 });
 
@@ -845,7 +986,9 @@ onUnmounted(() => {
 // neue Query-Parameter aus dem Cross-Link; danach die Karte per
 // invalidateSize() neu vermessen (Container hatte während der Deaktivierung
 // ggf. Größe 0) und auf eine mitgegebene Region fokussieren.
-onActivated(() => {
+onActivated(async () => {
+  const prevGeoType = selectedGeoType.value;
+  const prevNutsLevel = selectedNutsLevel.value;
   initFromRoute();
   // Bei der allerersten Aktivierung (direkt beim initialen Mount, noch vor
   // dem ersten Layout) hat der Container ggf. noch Größe 0x0 - dann hier
@@ -855,6 +998,22 @@ onActivated(() => {
   const size = map?.getSize();
   if (!map || !size || size.x === 0 || size.y === 0) return;
   map.invalidateSize();
+  // Ein Cross-Link-Sprung (z.B. Regionen -> Karte auf ein Bundesland) kann
+  // selectedGeoType/selectedNutsLevel geändert haben - Geometrie/Werte dafür
+  // HIER erst neu laden (und die entsprechenden watch(...)-Handler dabei
+  // einmalig überspringen lassen, siehe suppressGeoTypeReload/
+  // suppressNutsLevelReload), bevor focusOnRegion() unten läuft. Sonst würde
+  // focusOnRegion() noch auf der alten (asynchron erst später neu geladenen)
+  // geoJsonLayer suchen und die Region nicht finden.
+  const typeChanged = selectedGeoType.value !== prevGeoType;
+  const levelChanged = selectedGeoType.value === "nuts" && selectedNutsLevel.value !== prevNutsLevel;
+  if (typeChanged || levelChanged) {
+    if (typeChanged) suppressGeoTypeReload = true;
+    if (levelChanged) suppressNutsLevelReload = true;
+    await loadGeometries();
+    buildLayer();
+    await loadValues();
+  }
   if (highlightedRegionId.value) focusOnRegion(highlightedRegionId.value);
   else if (lastBounds) map.fitBounds(lastBounds, { padding: [8, 8], animate: false });
 });
@@ -923,7 +1082,30 @@ watch(selectedLauVersion, async () => {
 // auf den ersten verfügbaren Datensatz der neuen Ebene umschalten (oder
 // "" ohne Datensatz-Auswahl in dieser Ebene).
 watch(selectedGeoType, async () => {
+  if (suppressGeoTypeReload) {
+    suppressGeoTypeReload = false;
+    return;
+  }
   if (selectedGeoType.value !== "agentur" && (!selectedDataset.value || !datasetYears.value.has(selectedDataset.value))) {
+    const firstDataset = datasetOptions.value[0];
+    selectedDataset.value = firstDataset ?? "";
+    selectedYear.value = firstDataset ? datasetYears.value.get(firstDataset)?.[0] ?? null : null;
+  }
+  await loadGeometries();
+  buildLayer();
+  await loadValues();
+});
+// Beim Wechsel der NUTS-Ebene (Land/Bundesland/Regierungsbezirk/Kreis): neue
+// Geometrie laden (andere Regionen je Ebene) und - analog zum Ebenenwechsel
+// oben (Kreis-Katalog vs. NUTS-0/1/2-Katalog sind unterschiedliche Mengen,
+// siehe datasetYears) - eine nicht mehr gültige Datensatz-Auswahl umschalten.
+watch(selectedNutsLevel, async () => {
+  if (suppressNutsLevelReload) {
+    suppressNutsLevelReload = false;
+    return;
+  }
+  if (selectedGeoType.value !== "nuts") return;
+  if (!selectedDataset.value || !datasetYears.value.has(selectedDataset.value)) {
     const firstDataset = datasetOptions.value[0];
     selectedDataset.value = firstDataset ?? "";
     selectedYear.value = firstDataset ? datasetYears.value.get(firstDataset)?.[0] ?? null : null;
@@ -945,10 +1127,17 @@ watch(selectedGeoType, async () => {
     <div class="dataset-picker">
       <label for="map-geo-type-select">Ebene</label>
       <select id="map-geo-type-select" v-model="selectedGeoType">
-        <option value="nuts">NUTS-3 (Kreise)</option>
+        <option value="nuts">NUTS (Land–Kreis)</option>
         <option value="lau">LAU (Gemeinden)</option>
         <option value="agentur">Agenturbezirke (BA)</option>
       </select>
+
+      <template v-if="selectedGeoType === 'nuts'">
+        <label for="map-nuts-level-select">NUTS-Ebene</label>
+        <select id="map-nuts-level-select" v-model.number="selectedNutsLevel">
+          <option v-for="level in NUTS_LEVELS" :key="level" :value="level">{{ NUTS_LEVEL_LABELS[level] }}</option>
+        </select>
+      </template>
 
       <template v-if="selectedGeoType === 'agentur'">
         <label for="map-agentur-dataset-select">Datensatz</label>
@@ -1065,7 +1254,14 @@ watch(selectedGeoType, async () => {
             </div>
             <p class="map-legend-note">
               <span class="map-legend-swatch map-legend-swatch--nodata"></span>keine Daten
-              <span class="map-legend-swatch map-legend-swatch--interpolated"></span>interpoliert (gestrichelter Rand)
+              <template v-if="!usesNutsAggregate">
+                <span class="map-legend-swatch map-legend-swatch--interpolated"></span>interpoliert (gestrichelter Rand)
+              </template>
+            </p>
+            <p v-if="usesNutsAggregate" class="hint aggregation-note">
+              <strong>Aggregation:</strong> Werte je {{ NUTS_LEVEL_LABELS[selectedNutsLevel] }} sind aus den
+              zugehörigen Kreis-Werten hochgerechnet (Summe bzw. bevölkerungsgewichteter Durchschnitt, je nach
+              Datensatz) - eine Näherung, keine eigenständige Erhebung auf dieser Ebene.
             </p>
           </template>
           <p v-else class="map-legend-title">
@@ -1081,7 +1277,7 @@ watch(selectedGeoType, async () => {
                 verticalAlign: 'middle',
               }"
             ></span>
-            {{ selectedGeoType === "lau" ? "LAU-Gemeinden" : "Kein Datensatz ausgewählt" }}
+            {{ mapOnlyLabel }}
           </p>
         </div>
       </div>
@@ -1102,18 +1298,22 @@ watch(selectedGeoType, async () => {
               <dd>{{ sidebarRegion.point.year }}</dd>
               <dt>{{ sidebarValueLabel }}</dt>
               <dd>{{ formatNumber(sidebarRegion.point.value) }}</dd>
-              <template v-if="selectedGeoType !== 'agentur'">
-                <dt>Status</dt>
-                <dd>{{ sidebarRegion.point.is_interpolated ? "interpoliert" : "beobachtet" }}</dd>
-              </template>
-              <template v-else-if="sidebarRegion.point.source_region_count !== undefined">
+              <!-- source_region_count ist nur bei aggregierten Werten gesetzt (Agentur-
+                   Kreis-Aggregat oder NUTS-0/1/2-Kreis-Aggregat, siehe MapValue oben) -
+                   für beide dieselbe "aggregiert aus..."-Zeile statt der sonstigen
+                   beobachtet/interpoliert-Unterscheidung, die für Aggregate nicht gilt. -->
+              <template v-if="sidebarRegion.point.source_region_count !== undefined">
                 <dt>Status</dt>
                 <dd>
                   aggregiert aus {{ sidebarRegion.point.source_region_count }} Kreis(en)
                   <template v-if="sidebarRegion.point.aggregation_method === 'sum'">(Summe)</template>
                   <template v-else-if="sidebarRegion.point.value_kind === 'median'">(Näherung, nur Schätzung)</template>
-                  <template v-else>(Näherung: gewichteter Durchschnitt)</template>
+                  <template v-else-if="selectedGeoType === 'agentur'">(Näherung: gewichteter Durchschnitt)</template>
                 </dd>
+              </template>
+              <template v-else-if="selectedGeoType !== 'agentur'">
+                <dt>Status</dt>
+                <dd>{{ sidebarRegion.point.is_interpolated ? "interpoliert" : "beobachtet" }}</dd>
               </template>
             </template>
           </dl>

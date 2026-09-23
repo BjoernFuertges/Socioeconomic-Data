@@ -728,8 +728,14 @@ function jumpToInkarArbeitslose(nuts3Id: string) {
 
 // Springt von der Karte oder anderen Ansichten aus direkt zu einer Region
 // (Cross-Link "Regionen -> Karte" ist die Umkehrung, siehe MapView.vue).
-function viewOnMap(geoType: RegionType, geoId: string) {
-  router.push({ name: "karte", query: { geo: geoType, region: geoId } });
+// nutsLevel wird nur für geoType="nuts" ausgewertet (MapView.vue hat seit dem
+// Ebenen-Umschalter dort einen eigenen Default von 3/Kreise - ohne diesen
+// Parameter würde ein Sprung auf z.B. ein Bundesland dort ins Leere laufen,
+// weil die interaktive Kartenebene dann noch die falsche NUTS-Ebene zeigt).
+function viewOnMap(geoType: RegionType, geoId: string, nutsLevel?: number) {
+  const query: Record<string, string> = { geo: geoType, region: geoId };
+  if (geoType === "nuts" && nutsLevel !== undefined) query.nutsLevel = String(nutsLevel);
+  router.push({ name: "karte", query });
 }
 
 // Kombinierte Liste über alle aktiven Gebietstypen (siehe activeTypes) -
@@ -1029,10 +1035,9 @@ const downloadTarget = computed(() => {
               <template v-if="selectedNuts.ars"> · ARS {{ selectedNuts.ars }}</template>
             </span>
             <button
-              v-if="selectedNuts.nuts_level === 3"
               type="button"
               class="link-button"
-              @click="viewOnMap('nuts', selectedNuts.nuts_id)"
+              @click="viewOnMap('nuts', selectedNuts.nuts_id, selectedNuts.nuts_level)"
             >
               Auf der Karte anzeigen ↗
             </button>
