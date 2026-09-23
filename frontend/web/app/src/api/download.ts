@@ -81,6 +81,50 @@ export function regionFilename(query: RegionDataQuery): string {
   return `${query.regionType}_${query.regionId}${scope}`.toLowerCase().replace(/[^a-z0-9_-]+/g, "_");
 }
 
+// URL für den gleichzeitigen Metadaten-Export (Herkunft/Lizenz/Beschreibung
+// der im Daten-Export enthaltenen Datensätze) über GET /datasets bzw.
+// GET /datasets/{slug} bei genau einem Slug (spart dort den Array-Join).
+export function datasetMetadataUrl(slugs: string[], format: DownloadFormat): string {
+  if (slugs.length === 1) {
+    return absoluteApiUrl(`/datasets/${encodeURIComponent(slugs[0])}`, { format, download: 1 });
+  }
+  return absoluteApiUrl("/datasets", { datasets: slugs.join(","), format, download: 1 });
+}
+
+// Pendant zu datasetMetadataUrl für curl/Skripte: ohne format/download, das
+// Format wird dort über den Accept-Header ausgehandelt.
+export function datasetMetadataApiUrl(slugs: string[]): string {
+  if (slugs.length === 1) {
+    return absoluteApiUrl(`/datasets/${encodeURIComponent(slugs[0])}`);
+  }
+  return absoluteApiUrl("/datasets", { datasets: slugs.join(",") });
+}
+
+export function datasetMetadataFilename(baseFilename: string): string {
+  return `${baseFilename}_metadata`;
+}
+
+// Löst für jede der übergebenen URLs einen Browser-Download aus (temporäres
+// <a download>, wie beim einzelnen Datei-Download) - damit ein Klick sowohl
+// die Daten- als auch (optional) die Metadaten-Datei anstößt, weiterhin ohne
+// Blob/Fetch, rein als Streaming-Downloads gegen die API. Chromium bricht
+// einen bereits laufenden <a download>-Klick ab, sobald im selben Tick ein
+// zweiter ausgelöst wird (beobachtet: von zwei gleichzeitig geklickten Links
+// kam nur der zweite tatsächlich als Datei an) - deshalb zwischen den Klicks
+// einen Tick warten statt sie in einer synchronen Schleife abzufeuern.
+export function triggerDownloads(urls: string[]): void {
+  urls.forEach((url, i) => {
+    setTimeout(() => {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }, i * 300);
+  });
+}
+
 // Kopiert Text in die Zwischenablage; meldet per Rückgabewert, ob es geklappt
 // hat (navigator.clipboard fehlt in unsicheren Kontexten, z.B. http:// mit
 // fremdem Host).

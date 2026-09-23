@@ -3,7 +3,14 @@ import { computed, nextTick, onActivated, onMounted, ref, watch } from "vue";
 import type { RouteLocationRaw } from "vue-router";
 import { useRoute, useRouter } from "vue-router";
 import { apiGet, API_BASE } from "../api/client";
-import { absoluteApiUrl, type DownloadFormat } from "../api/download";
+import {
+  absoluteApiUrl,
+  datasetMetadataApiUrl,
+  datasetMetadataFilename,
+  datasetMetadataUrl,
+  triggerDownloads,
+  type DownloadFormat,
+} from "../api/download";
 import type { DatasetMetadataEntry, GenericDatasetRow } from "../types/api";
 import { formatDateDE, formatNumber } from "../format";
 import { AGENTUR_DATASET_SLUG } from "../constants";
@@ -57,6 +64,28 @@ function fullDataApiUrl(e: DatasetMetadataEntry): string {
 // Für den Browser-Download: <a href> kann keinen Accept-Header setzen.
 function fullDataDownloadUrl(e: DatasetMetadataEntry): string {
   return absoluteApiUrl(dataPath(e), { limit: "null", format: downloadFormat(e.dataset_slug), download: 1 });
+}
+
+// Metadaten separat mit exportieren; Default an, je Karte umschaltbar.
+const includeMetadata = ref<Map<string, boolean>>(new Map());
+function metadataIncluded(slug: string): boolean {
+  return includeMetadata.value.get(slug) ?? true;
+}
+function toggleIncludeMetadata(slug: string) {
+  includeMetadata.value = new Map(includeMetadata.value).set(slug, !metadataIncluded(slug));
+}
+
+function metadataApiUrl(e: DatasetMetadataEntry): string {
+  return datasetMetadataApiUrl([e.dataset_slug]);
+}
+function metadataDownloadUrl(e: DatasetMetadataEntry): string {
+  return datasetMetadataUrl([e.dataset_slug], downloadFormat(e.dataset_slug));
+}
+
+function startDatasetDownload(e: DatasetMetadataEntry) {
+  const urls = [fullDataDownloadUrl(e)];
+  if (metadataIncluded(e.dataset_slug)) urls.push(metadataDownloadUrl(e));
+  triggerDownloads(urls);
 }
 
 // Statt den Link direkt auf die rohe JSON-API zeigen zu lassen (unformatiert,
@@ -366,15 +395,26 @@ function exportCsv() {
               />
               JSON
             </label>
-            <a :href="fullDataDownloadUrl(e)" class="link-button" download>
+            <button type="button" class="link-button" @click="startDatasetDownload(e)">
               {{ downloadFormat(e.dataset_slug).toUpperCase() }} herunterladen ↓
-            </a>
+            </button>
           </div>
+          <label class="download-option">
+            <input type="checkbox" :checked="metadataIncluded(e.dataset_slug)" @change="toggleIncludeMetadata(e.dataset_slug)" />
+            Metadaten mit exportieren
+          </label>
           <ApiSnippet
             :api-url="fullDataApiUrl(e)"
             :download-url="fullDataDownloadUrl(e)"
             :format="downloadFormat(e.dataset_slug)"
             :filename="e.dataset_slug"
+          />
+          <p class="hint">Metadaten zu diesem Datensatz:</p>
+          <ApiSnippet
+            :api-url="metadataApiUrl(e)"
+            :download-url="metadataDownloadUrl(e)"
+            :format="downloadFormat(e.dataset_slug)"
+            :filename="datasetMetadataFilename(e.dataset_slug)"
           />
         </details>
 

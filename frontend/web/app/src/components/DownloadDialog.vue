@@ -7,9 +7,13 @@
 import { computed, ref, watch } from "vue";
 import type { DatasetCatalogEntry } from "../types/api";
 import {
+  datasetMetadataApiUrl,
+  datasetMetadataFilename,
+  datasetMetadataUrl,
   regionApiUrl,
   regionDownloadUrl,
   regionFilename,
+  triggerDownloads,
   type DownloadFormat,
   type DownloadScope,
   type RegionType,
@@ -48,6 +52,7 @@ const scope = ref<DownloadScope>("both");
 const format = ref<DownloadFormat>("csv");
 const fromYear = ref<string>("");
 const toYear = ref<string>("");
+const includeMetadata = ref(true);
 
 // Alle wählbaren Einträge: Katalog-Datensätze plus die region-spezifischen
 // Sonderreihen (jeweils mit der Werteart, unter der sie geliefert werden).
@@ -122,6 +127,21 @@ const ignoredSelection = computed(() => {
   if (scope.value === "both" || !selectedSlugs.value.length) return [];
   return options.value.filter((o) => selectedSlugs.value.includes(o.slug) && o.scope !== scope.value);
 });
+
+// "Alle verfügbaren Datensätze" heißt serverseitig für /regions/.../data
+// "leere Auswahl", aber GET /datasets kennt diese Bedeutung nicht - deshalb
+// hier auf die konkrete Slug-Liste auflösen, bevor die Metadaten-URL gebaut wird.
+const metadataSlugs = computed(() => (allSelected.value ? options.value.map((o) => o.slug) : selectedSlugs.value));
+const metadataApiUrl = computed(() => datasetMetadataApiUrl(metadataSlugs.value));
+const metadataDownloadUrl = computed(() => datasetMetadataUrl(metadataSlugs.value, format.value));
+const metadataFilename = computed(() => datasetMetadataFilename(filename.value));
+
+// Ein Klick löst Daten- und (falls gewählt) Metadaten-Download gleichzeitig aus.
+function startDownload() {
+  const urls = [downloadUrl.value];
+  if (includeMetadata.value && metadataSlugs.value.length) urls.push(metadataDownloadUrl.value);
+  triggerDownloads(urls);
+}
 </script>
 
 <template>
@@ -163,13 +183,20 @@ const ignoredSelection = computed(() => {
       <label>bis <input v-model="toYear" type="number" min="1990" max="2100" placeholder="z.B. 2024" /></label>
     </fieldset>
 
+    <label class="download-option">
+      <input v-model="includeMetadata" type="checkbox" />
+      Metadaten (Beschreibung, Herkunft, Lizenz) separat mit exportieren
+    </label>
+
     <p v-if="ignoredSelection.length" class="hint">
       Für die gewählte Werteart liefern folgende Einträge nichts:
       {{ ignoredSelection.map((o) => o.label).join(", ") }}.
     </p>
 
     <div class="download-dialog-actions">
-      <a :href="downloadUrl" class="link-button" download>{{ format.toUpperCase() }} herunterladen ↓</a>
+      <button type="button" class="link-button" @click="startDownload">
+        {{ format.toUpperCase() }} herunterladen ↓
+      </button>
     </div>
 
     <details class="catalog-details">
@@ -179,6 +206,14 @@ const ignoredSelection = computed(() => {
         <code>format=</code> enthält, weil in dem Link für den Browser kein Header gesetzt werden kann.
       </p>
       <ApiSnippet :api-url="apiUrl" :download-url="downloadUrl" :format="format" :filename="filename" />
+      <p v-if="metadataSlugs.length" class="hint">Metadaten zu den ausgewählten Datensätzen:</p>
+      <ApiSnippet
+        v-if="metadataSlugs.length"
+        :api-url="metadataApiUrl"
+        :download-url="metadataDownloadUrl"
+        :format="format"
+        :filename="metadataFilename"
+      />
       <p class="hint">
         Feldbeschreibung und alle Parameter:
         <a href="/api/docs/index.html" target="_blank" rel="noopener noreferrer">API-Dokumentation ↗</a>
