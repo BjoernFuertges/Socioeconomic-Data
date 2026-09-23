@@ -62,6 +62,13 @@ curl -H 'Accept: text/csv' \
   '<host>/api/v1/regions/nuts/DE300/data?scope=both&from_year=2015'
 ```
 
+The frontend's `DownloadDialog.vue` fires this alongside a second request to
+`GET /datasets?datasets=<same slugs>` (see below) to export the matching
+provenance/license/description metadata as a separate file at the same
+time - CSV is a flat format and can't mix the two row shapes into one file,
+so this stays two coordinated downloads/requests rather than a single
+combined one.
+
 ## Health
 
 | Method | Path | Purpose |
@@ -125,6 +132,24 @@ contained" = ≥ 99 %), not an official assignment.
 |---|---|---|
 | GET | `/datasets` | Provenance/license/description catalog for all datasets |
 | GET | `/datasets/{slug}` | Catalog entry for a single dataset |
+
+Both serve JSON or CSV like the endpoints above (`respondList`/
+`respondNegotiated`, `?format=`/`?download=1`). `GET /datasets?datasets=a,b`
+restricts the list to those slugs (empty = all) - used to export metadata
+for exactly the datasets included in a data download, see "Combined region
+export" above.
+
+Includes four synthetic entries with no own `loaded_data.dataset_metadata`
+row: `ba_arbeitslose`/`ba_unterbeschaeftigung` (provenance/license borrowed
+from `arbeitslosenzahlen-afa-agenturbezirke`) and
+`lau_beschaeftigungsquote_weighted_avg` (borrowed from
+`beschaeftigungsquote-gemeinden`) plus `lau_population_sum` (`license`
+`"unbekannt"` - sourced from `fetch_lau_population.py`/Eurostat, not a
+`meta.yaml`-driven loader) - these only appear as `dataset_slug` values in
+the combined region export above, not as their own routes, so without these
+rows the metadata export would have nothing for them. Same synthetic
+pattern already used for `beschaeftigungsquote-nuts3`, see
+[`mart_dataset_catalog.sql`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/dbt/socioeconomic_data_pipeline/models/marts/mart_dataset_catalog.sql).
 
 Reads `transformed_data.mart_dataset_catalog` (name, description, unit,
 provenance, license/license_url, geodata level/year, year coverage, and a

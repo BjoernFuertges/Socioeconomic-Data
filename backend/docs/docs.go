@@ -2751,17 +2751,43 @@ const docTemplate = `{
         },
         "/datasets": {
             "get": {
-                "description": "Liefert pro Datensatz Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum\nsowie eine persistente URI. Lizenz ist \"unbekannt\", solange die tatsächlichen Nutzungsbedingungen der Quelle noch nicht recherchiert wurden.",
+                "description": "Liefert pro Datensatz Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum\nsowie eine persistente URI. Lizenz ist \"unbekannt\", solange die tatsächlichen Nutzungsbedingungen der Quelle noch nicht recherchiert wurden.\n?datasets= filtert auf einzelne Slugs (kommagetrennt, leer = alle) - gedacht für den\ngleichzeitigen Metadaten-Export neben einem Daten-Download (siehe DownloadDialog.vue/download.ts).\nFormat per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Datensatz-Katalog"
                 ],
                 "summary": "Datensatz-Katalog (Herkunft, Lizenz, Beschreibung)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "bevoelkerung,arbeitslose",
+                        "description": "Kommagetrennte Datensatz-Slugs (leer = alle)",
+                        "name": "datasets",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2784,6 +2810,12 @@ const docTemplate = `{
                             ]
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -2795,12 +2827,13 @@ const docTemplate = `{
         },
         "/datasets/{slug}": {
             "get": {
-                "description": "Liefert Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum für einen Datensatz-Slug.",
+                "description": "Liefert Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum für einen Datensatz-Slug.\nFormat per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Datensatz-Katalog"
@@ -2814,6 +2847,22 @@ const docTemplate = `{
                         "name": "slug",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2837,6 +2886,12 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -5531,7 +5586,7 @@ const docTemplate = `{
         },
         "/regions/{region_type}/{region_id}/data": {
             "get": {
-                "description": "Stellt die gewünschten Datensätze einer Region (NUTS, LAU oder Agenturbezirk) aus den bestehenden Marts zusammen und liefert sie in einem einheitlichen Long-Format (region_type, region_id, dataset_slug, year, month, value, is_computed, is_interpolated, aggregation_method, value_kind, source_region_count). scope=raw liefert die Ursprungswerte der Region (NUTS-3: interpolierte Kreis-Zeitreihe; LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung), scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert, lau_population_sum/lau_beschaeftigungsquote_weighted_avg). NUTS-0/1/2 haben keine Rohwerte, LAU keine aggregierten Werte. Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
+                "description": "Stellt die gewünschten Datensätze einer Region (NUTS, LAU oder Agenturbezirk) aus den bestehenden Marts zusammen und liefert sie in einem einheitlichen Long-Format (region_type, region_id, dataset_slug, year, month, value, is_computed, is_interpolated, aggregation_method, value_kind, source_region_count). scope=raw liefert die Ursprungswerte der Region (NUTS-3: interpolierte Kreis-Zeitreihe; LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung), scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert). NUTS-0/1/2 haben keine Rohwerte, LAU keine aggregierten Werte. Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
                 "consumes": [
                     "application/json"
                 ],

@@ -29,6 +29,10 @@
   Gemeinden-Datensätzen (load_soziodata_generic.py) auch
   arbeitslosenzahlen-afa-agenturbezirke ein (eigener Upsert in
   load_arbeitslosenzahlen_afa.py, gleicher Mechanismus, siehe stg_dataset_metadata.sql).
+
+  Zusätzlich vier synthetische Zeilen (analog zu beschaeftigungsquote-
+  nuts3 unten) für Slugs, die nur im kombinierten Regions-Export
+  auftauchen
 */
 
 with metadata as (
@@ -66,10 +70,84 @@ synthetic_nuts3_metadata as (
     where dataset_slug = 'beschaeftigungsquote-gemeinden'
 ),
 
+-- Vier weitere Slugs, die nur im kombinierten Regions-Export auftauchen
+-- Lizenz werden 1:1 von dort übernommen.
+synthetic_ba_metadata as (
+    select
+        s.slug::text as dataset_slug,
+        'mart_agenturbezirk_sociodata'::text as table_name,
+        s.name,
+        s.description,
+        m.description_long,
+        m.unit,
+        m.source,
+        m.license,
+        m.license_url,
+        m.algorithm,
+        m.number_type,
+        null::text as geodata_level,
+        m.geodata_year,
+        m.updated_at
+    from metadata m
+    cross join lateral (
+        values
+            ('ba_arbeitslose', 'Arbeitslose (Agenturbezirk, monatlich)', 'Monatswert der Bundesagentur für Arbeit auf Ebene der Agenturbezirke (nicht auf Kreise umgelegt).'),
+            ('ba_unterbeschaeftigung', 'Unterbeschäftigung (Agenturbezirk, monatlich)', 'Monatswert der Bundesagentur für Arbeit auf Ebene der Agenturbezirke (nicht auf Kreise umgelegt).')
+    ) as s(slug, name, description)
+    where m.dataset_slug = 'arbeitslosenzahlen-afa-agenturbezirke'
+),
+
+-- lau_beschaeftigungsquote_weighted_avg: bevölkerungsgewichteter
+-- Durchschnitt aus beschaeftigungsquote-gemeinden
+synthetic_lau_quote_metadata as (
+    select
+        'lau_beschaeftigungsquote_weighted_avg'::text as dataset_slug,
+        'mart_nuts3_lau_aggregate'::text as table_name,
+        name || ' (NUTS-3, bevölkerungsgewichteter Durchschnitt)' as name,
+        description || ' Bevölkerungsgewichteter Durchschnitt aus den Gemeindewerten auf NUTS-3-Ebene aggregiert.' as description,
+        description_long,
+        unit,
+        source,
+        license,
+        license_url,
+        algorithm,
+        number_type,
+        'NUTS_3'::text as geodata_level,
+        geodata_year,
+        updated_at
+    from metadata
+    where dataset_slug = 'beschaeftigungsquote-gemeinden'
+),
+
+-- lau_population_sum: Summe von lau_integrated.population_count je NUTS-3-Region 
+synthetic_lau_population_metadata as (
+    select
+        'lau_population_sum'::text as dataset_slug,
+        'mart_nuts3_lau_aggregate'::text as table_name,
+        'Bevölkerung (NUTS-3, aus Gemeinden aufsummiert)'::text as name,
+        'Summe der Gemeinde-Einwohnerzahlen je NUTS-3-Region, als Cross-Check zu den nativen Kreiswerten.'::text as description,
+        null::text as description_long,
+        'Einwohner'::text as unit,
+        'Eurostat LAU-NUTS-Korrespondenztabellen (fetch_lau_population.py)'::text as source,
+        'unbekannt'::text as license,
+        null::text as license_url,
+        null::text as algorithm,
+        'absolute'::text as number_type,
+        'NUTS_3'::text as geodata_level,
+        null::integer as geodata_year,
+        null::timestamp as updated_at
+),
+
 metadata_with_synthetic as (
     select * from metadata
     union all
     select * from synthetic_nuts3_metadata
+    union all
+    select * from synthetic_ba_metadata
+    union all
+    select * from synthetic_lau_quote_metadata
+    union all
+    select * from synthetic_lau_population_metadata
 ),
 
 coverage as (

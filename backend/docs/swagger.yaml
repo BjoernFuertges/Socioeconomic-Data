@@ -3892,8 +3892,29 @@ paths:
       description: |-
         Liefert pro Datensatz Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum
         sowie eine persistente URI. Lizenz ist "unbekannt", solange die tatsächlichen Nutzungsbedingungen der Quelle noch nicht recherchiert wurden.
+        ?datasets= filtert auf einzelne Slugs (kommagetrennt, leer = alle) - gedacht für den
+        gleichzeitigen Metadaten-Export neben einem Daten-Download (siehe DownloadDialog.vue/download.ts).
+        Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.
+      parameters:
+      - description: Kommagetrennte Datensatz-Slugs (leer = alle)
+        example: bevoelkerung,arbeitslose
+        in: query
+        name: datasets
+        type: string
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3906,6 +3927,10 @@ paths:
                     $ref: '#/definitions/models.DatasetCatalogEintrag'
                   type: array
               type: object
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -3917,8 +3942,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: Liefert Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum
-        für einen Datensatz-Slug.
+      description: |-
+        Liefert Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum für einen Datensatz-Slug.
+        Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.
       parameters:
       - description: Datensatz-Slug (z.B. bevoelkerung)
         example: bevoelkerung
@@ -3926,8 +3952,20 @@ paths:
         name: slug
         required: true
         type: string
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3940,6 +3978,10 @@ paths:
               type: object
         "404":
           description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -5805,10 +5847,9 @@ paths:
         scope=raw liefert die Ursprungswerte der Region (NUTS-3: interpolierte Kreis-Zeitreihe;
         LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung),
         scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus
-        Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert, lau_population_sum/lau_beschaeftigungsquote_weighted_avg).
-        NUTS-0/1/2 haben keine Rohwerte, LAU keine aggregierten Werte. Format per
-        Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1
-        setzt Content-Disposition.'
+        Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert). NUTS-0/1/2 haben keine
+        Rohwerte, LAU keine aggregierten Werte. Format per Accept-Header (application/json
+        oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.'
       parameters:
       - description: Regionstyp
         enum:
