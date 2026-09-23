@@ -1,3 +1,3 @@
-dataset,region,region_name,year,est_1_linear,est_3_peer,est_4_regression,r2_4
-wohngeldhaushalte,DE226,Kelheim,2021,8.775,8.500951924915944,9.618175512226811,0.6361811217718867
-beschaeftigungsquote_gemeinden,Neitersen,Neitersen,2020,60.495000000000005,,,
+dataset,region,region_name,year,est_1_linear,est_2_naive,est_3_peer,est_4_regression,r2_4
+wohngeldhaushalte,DE226,Kelheim,2021,8.775,8.98,8.500951924915944,9.618175512226811,0.6361811217718867
+beschaeftigungsquote_gemeinden,Neitersen,Neitersen,2020,60.495000000000005,59.49,,,

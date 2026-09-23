@@ -1,9 +1,12 @@
 """
-Vergleich und Evaluation von drei Imputationsmethoden für fehlende Werte in
+Vergleich und Evaluation von vier Imputationsmethoden für fehlende Werte in
 den Kreis-Zeitreihen (results_*_kreise, geodata_id_nuts als Regionsschlüssel):
 
   1. Lineare Interpolation zwischen Vor- und Nachjahr (gleiche Region/Dataset).
-  2. Der Wert könnte einfach fehlen oder durch die Vorjahreszahl ersetzt werden (naive Fortschreibung) - wird hier nicht evaluiert, da trivial und wenig sinnvoll.
+  2. Naive Fortschreibung: der letzte bekannte Vorjahreswert der Zielregion
+     wird unverändert übernommen (kein Trend, keine Nachbarregionen) - dient
+     als triviale Baseline, gegen die sich die aufwendigeren Methoden 3/4
+     rechtfertigen müssen.
   3. Regionale/Peer-basierte Fortschreibung: durchschnittliche relative
      Änderung der Nachbarregionen (gleiche NUTS-2-Region) von Vorjahr auf
      Zieljahr, angewandt auf den bekannten Vorjahreswert der Zielregion.
@@ -119,6 +122,23 @@ def method_1_linear(pivots: dict[str, pd.DataFrame], slug: str, region: str, gap
     y0, v0 = before.index[-1], before.iloc[-1]
     y1, v1 = after.index[0], after.iloc[0]
     return float(v0 + (v1 - v0) * (gap_year - y0) / (y1 - y0))
+
+
+# ---------------------------------------------------------------------------
+# Methode 2: Naive Fortschreibung (letzter bekannter Vorjahreswert)
+# ---------------------------------------------------------------------------
+
+
+def method_2_naive_carry_forward(pivots: dict[str, pd.DataFrame], slug: str, region: str, gap_year: int) -> float | None:
+    """Letzter bekannter Wert vor gap_year, unverändert übernommen (LOCF)."""
+    wide = pivots[slug]
+    if region not in wide.index:
+        return None
+    row = cast(pd.Series, wide.loc[region]).dropna()
+    before = row[row.index < gap_year]
+    if before.empty:
+        return None
+    return float(before.iloc[-1])
 
 
 # ---------------------------------------------------------------------------
@@ -245,17 +265,19 @@ def demo_known_gaps(conn: psycopg2.extensions.connection, pivots: dict[str, pd.D
     # Kelheim - kann komplett aus den bereits geladenen Pivots berechnet werden
     slug, region, year = "wohngeldhaushalte", "DE226", 2021
     m1 = method_1_linear(pivots, slug, region, year)
+    m2 = method_2_naive_carry_forward(pivots, slug, region, year)
     m3 = method_3_peer_trend(pivots, slug, region, year)
     cache: dict[tuple[str, int], pd.DataFrame | None] = {}
     m4, r2 = method_4_regression(cache, pivots, slug, region, year)
     print(f"\nKelheim (DE226) / {slug} / {year}:")
     print(f"  1. Lineare Interpolation:        {m1:.2f}" if m1 is not None else "  1. nicht möglich")
+    print(f"  2. Naive Fortschreibung:         {m2:.2f}" if m2 is not None else "  2. nicht möglich")
     print(f"  3. Peer-basierte Fortschreibung: {m3:.2f}" if m3 is not None else "  3. nicht möglich")
     print(f"  4. Regressionsschätzung:         {m4:.2f}  (R²={r2:.3f})" if m4 is not None else "  4. nicht möglich")
     rows.append(
         {
             "dataset": slug, "region": region, "region_name": "Kelheim", "year": year,
-            "est_1_linear": m1, "est_3_peer": m3, "est_4_regression": m4, "r2_4": r2,
+            "est_1_linear": m1, "est_2_naive": m2, "est_3_peer": m3, "est_4_regression": m4, "r2_4": r2,
         }
     )
 
@@ -269,12 +291,16 @@ def demo_known_gaps(conn: psycopg2.extensions.connection, pivots: dict[str, pd.D
     before = df[df["year"] < 2020]
     after = df[df["year"] > 2020]
     m1_neitersen = None
+    m2_neitersen = None
+    if not before.empty:
+        m2_neitersen = float(before.iloc[-1]["value"])
     if not before.empty and not after.empty:
         y0, v0 = before.iloc[-1][["year", "value"]]
         y1, v1 = after.iloc[0][["year", "value"]]
         m1_neitersen = float(v0 + (v1 - v0) * (2020 - y0) / (y1 - y0))
     print("\nNeitersen / beschaeftigungsquote_gemeinden / 2020:")
     print(f"  1. Lineare Interpolation:        {m1_neitersen:.2f}" if m1_neitersen else "  1. nicht möglich")
+    print(f"  2. Naive Fortschreibung:         {m2_neitersen:.2f}" if m2_neitersen else "  2. nicht möglich")
     print("  3. Peer-basierte Fortschreibung: nicht möglich (kein NUTS-Code im Gemeinden-Datensatz)")
     print("  4. Regressionsschätzung:         nicht möglich (kein NUTS-Code im Gemeinden-Datensatz)")
     print()
@@ -282,7 +308,8 @@ def demo_known_gaps(conn: psycopg2.extensions.connection, pivots: dict[str, pd.D
         {
             "dataset": "beschaeftigungsquote_gemeinden", "region": "Neitersen",
             "region_name": "Neitersen", "year": 2020,
-            "est_1_linear": m1_neitersen, "est_3_peer": None, "est_4_regression": None, "r2_4": None,
+            "est_1_linear": m1_neitersen, "est_2_naive": m2_neitersen,
+            "est_3_peer": None, "est_4_regression": None, "r2_4": None,
         }
     )
 
@@ -342,6 +369,7 @@ def run_evaluation(pivots: dict[str, pd.DataFrame], n_per_dataset: int = 40, see
         actual = float(record["actual"])
 
         est1 = method_1_linear(pivots, slug, region, year)
+        est2 = method_2_naive_carry_forward(pivots, slug, region, year)
         est3 = method_3_peer_trend(pivots, slug, region, year)
         est4, r2 = method_4_regression(cross_section_cache, pivots, slug, region, year)
 
@@ -352,6 +380,7 @@ def run_evaluation(pivots: dict[str, pd.DataFrame], n_per_dataset: int = 40, see
                 "year": year,
                 "actual": actual,
                 "est_1_linear": est1,
+                "est_2_naive": est2,
                 "est_3_peer": est3,
                 "est_4_regression": est4,
                 "r2_4": r2,
@@ -359,7 +388,7 @@ def run_evaluation(pivots: dict[str, pd.DataFrame], n_per_dataset: int = 40, see
         )
 
     df = pd.DataFrame(results)
-    for m in ["1_linear", "3_peer", "4_regression"]:
+    for m in ["1_linear", "2_naive", "3_peer", "4_regression"]:
         df[f"err_{m}"] = df[f"est_{m}"] - df["actual"]
         df[f"abs_err_{m}"] = df[f"err_{m}"].abs()
         with np.errstate(divide="ignore", invalid="ignore"):
@@ -370,9 +399,10 @@ def run_evaluation(pivots: dict[str, pd.DataFrame], n_per_dataset: int = 40, see
 
 
 def summarize_evaluation(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    methods = ["1_linear", "3_peer", "4_regression"]
+    methods = ["1_linear", "2_naive", "3_peer", "4_regression"]
     labels = {
         "1_linear": "1. Lineare Interpolation",
+        "2_naive": "2. Naive Fortschreibung",
         "3_peer": "3. Peer-basierte Fortschreibung",
         "4_regression": "4. Regressionsschätzung",
     }
@@ -387,23 +417,34 @@ def summarize_evaluation(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, 
     overall_rows = []
     for m in methods:
         col = df[f"abs_err_{m}"]
+        signed = df[f"err_{m}"]
         n_available = col.notna().sum()
         mae = col.mean()
-        rmse = np.sqrt((df[f"err_{m}"] ** 2).mean())
+        rmse = np.sqrt((signed**2).mean())
         mape = df[f"pct_err_{m}"].mean()
-        bias = df[f"err_{m}"].mean()
+        bias = signed.mean()
         overall_rows.append(
             {
                 "Methode": labels[m],
                 "n verfügbar": n_available,
                 "MAE": round(mae, 3),
+                "Median AE": round(col.median(), 3),
                 "RMSE": round(rmse, 3),
+                "Std (signed err)": round(signed.std(), 3),
                 "MAPE %": round(mape, 2),
+                "Median APE %": round(df[f"pct_err_{m}"].median(), 2),
                 "Bias (mean signed err)": round(bias, 3),
+                "P90 AE": round(col.quantile(0.90), 3),
+                "P95 AE": round(col.quantile(0.95), 3),
+                "Max AE": round(col.max(), 3),
             }
         )
     overall = pd.DataFrame(overall_rows).set_index("Methode")
     print(overall.to_string())
+    print(
+        "(AE = Absolute Error, APE = Absolute Percentage Error; P90/P95 zeigen"
+        " die Fehlergröße in den schlechtesten 10%/5% der Schätzungen)"
+    )
     print()
 
     print("--- Trefferquote (welche Methode hat je Stichprobe den kleinsten Fehler?) ---")
@@ -420,7 +461,7 @@ def summarize_evaluation(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, 
     win_pct = (win_counts / len(valid) * 100).round(1)
     win_table = pd.DataFrame({"Anzahl Siege": win_counts, "Anteil %": win_pct})
     print(win_table.to_string())
-    print(f"(nur Stichproben gewertet, bei denen alle 3 Methoden verfügbar waren: n={len(valid)})")
+    print(f"(nur Stichproben gewertet, bei denen alle {len(methods)} Methoden verfügbar waren: n={len(valid)})")
     print()
 
     print("--- MAE je Datensatz und Methode ---")
