@@ -22,7 +22,9 @@
              population = lau_integrated.population_count desselben Jahres.
     - agentur: monatliche BA-Zahlen (mart_agenturbezirk_sociodata), ohne
              population - Zählgrößen werden flächenanteilig verteilt.
-  month ist nur bei 'agentur' gesetzt.
+  month ist nur bei 'agentur' gesetzt. is_crosswalked: Wert wurde über eine
+  Versionsgrenze umgerechnet (sonst Direktwert) - Grundlage für die Kennzeichnung
+  "berechnet" bei exakt passenden Regionen.
 */
 
 with nuts3_population as (
@@ -41,7 +43,8 @@ nuts3 as (
         h.year,
         null::int                    as month,
         h.harmonized_value::numeric  as value,
-        p.population::numeric        as population
+        p.population::numeric        as population,
+        h.is_crosswalked
     from {{ ref('mart_nuts3_sociodata_harmonized') }} h
     left join nuts3_population p
         on  p.unit_id = h.target_nuts_id
@@ -65,7 +68,8 @@ lau as (
         h.year,
         null::int                    as month,
         h.harmonized_value::numeric  as value,
-        p.population::numeric        as population
+        p.population::numeric        as population,
+        h.is_crosswalked
     from {{ ref('mart_lau_sociodata_harmonized') }} h
     left join lau_population p
         on  p.gisco_id = h.target_gisco_id
@@ -85,7 +89,8 @@ agentur as (
             when 'arbeitslose' then arbeitslose
             when 'unterbeschaeftigung' then unterbeschaeftigung
         end::numeric                                       as value,
-        null::numeric                                      as population
+        null::numeric                                      as population,
+        false                                              as is_crosswalked
     from {{ ref('mart_agenturbezirk_sociodata') }}
     cross join (values ('arbeitslose'), ('unterbeschaeftigung')) as i(indicator)
     where year is not null

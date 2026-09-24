@@ -17,6 +17,10 @@ const (
 	customRegionMaxPoints    = 200000
 	customRegionMaxDatasets  = 30
 	customRegionDefaultShare = 0.01
+	// Ab dieser Flächenübereinstimmung (Schnitt / Vereinigung) gilt das Polygon
+	// als exakt eine bestehende Einheit. Nicht 1.0, weil Reprojektion (4326 →
+	// 3035) und Koordinatenrundung im GeoJSON minimale Abweichungen erzeugen.
+	customRegionExactMatchIoU = 0.999
 )
 
 // CustomRegionAggregateRequest beschreibt die Abfrage von Datensätzen für eine
@@ -41,6 +45,13 @@ type CustomRegionAggregateRow struct {
 	AggregationMethod string  `json:"aggregation_method" example:"weighted_avg_population"`
 	SourceRegionCount int     `json:"source_region_count" example:"3"`
 	Coverage          float64 `json:"coverage" example:"0.98"`
+	// MatchedUnit ist gesetzt, wenn das Polygon exakt einer bestehenden Einheit
+	// der genutzten Ebene entspricht (nuts_id, gisco_id bzw. ba_schl); die Werte
+	// sind dann die Werte dieser Einheit, ohne Beiträge benachbarter Einheiten.
+	MatchedUnit *string `json:"matched_unit,omitempty" example:"DE300"`
+	// IsCrosswalked: mindestens ein beteiligter Einheitenwert wurde über eine
+	// Versionsgrenze umgerechnet (kein Direktwert).
+	IsCrosswalked bool `json:"is_crosswalked" example:"false"`
 }
 
 type customRegionMeta struct {
@@ -66,6 +77,7 @@ type customRegionAggRow struct {
 	PopDen            sql.NullFloat64 `db:"pop_den"`
 	PopComplete       bool            `db:"pop_complete"`
 	Coverage          float64         `db:"coverage"`
+	IsCrosswalked     bool            `db:"is_crosswalked"`
 }
 
 // customRegionUnitsSQL liefert je Ebene die Einheiten-Geometrien (EPSG:3035,
@@ -85,11 +97,28 @@ var customRegionUnitsSQL = map[string]string{
 		WHERE has_valid_geometry`,
 }
 
-const customRegionAggregateSQL = `
-WITH poly AS (
+const customRegionPolyCTE = `poly AS (
 	SELECT ST_Multi(ST_CollectionExtract(
 		ST_UnaryUnion(ST_MakeValid(ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1), 4326), 3035))), 3)) AS g
-),
+)`
+
+// customRegionExactMatchSQL sucht die Einheit einer Ebene, deren Fläche mit dem
+// Polygon (nahezu) identisch ist: Schnittfläche / Vereinigungsfläche >= $2.
+const customRegionExactMatchSQL = `
+WITH ` + customRegionPolyCTE + `,
+units AS (%s)
+SELECT u.unit_id::text
+FROM units u
+JOIN poly p ON ST_Intersects(u.g, p.g)
+WHERE ST_Area(ST_Intersection(u.g, p.g))
+	/ NULLIF(ST_Area(u.g) + ST_Area(p.g) - ST_Area(ST_Intersection(u.g, p.g)), 0) >= $2::float8
+ORDER BY ST_Area(ST_Intersection(u.g, p.g)) DESC
+LIMIT 1`
+
+// $8 (optional): Einheit, auf die die Aggregation beschränkt wird, wenn das
+// Polygon exakt dieser Einheit entspricht (siehe customRegionExactMatchSQL).
+const customRegionAggregateSQL = `
+WITH ` + customRegionPolyCTE + `,
 units AS (%s),
 overlap AS (
 	SELECT u.unit_id,
@@ -100,10 +129,11 @@ overlap AS (
 ),
 kept AS (
 	SELECT * FROM overlap
-	WHERE share_of_unit >= $2::float8 OR share_of_poly >= $2::float8
+	WHERE ($8::text IS NOT NULL AND unit_id::text = $8::text)
+	   OR ($8::text IS NULL AND (share_of_unit >= $2::float8 OR share_of_poly >= $2::float8))
 ),
 vals AS (
-	SELECT k.share_of_unit, k.share_of_poly, v.year, v.month, v.value, v.population
+	SELECT k.share_of_unit, k.share_of_poly, v.year, v.month, v.value, v.population, v.is_crosswalked
 	FROM kept k
 	JOIN transformed_data.mart_custom_region_unit_values v
 		ON  v.level = $3 AND v.unit_id = k.unit_id
@@ -122,7 +152,8 @@ SELECT
 	sum(population * share_of_unit)                        AS pop_den,
 	(count(population) = count(*)
 		AND coalesce(sum(population * share_of_unit), 0) > 0) AS pop_complete,
-	least(1.0, sum(share_of_poly))::float8                 AS coverage
+	least(1.0, sum(share_of_poly))::float8                 AS coverage,
+	bool_or(is_crosswalked)                                AS is_crosswalked
 FROM vals
 GROUP BY year, month
 ORDER BY year, month`
@@ -213,7 +244,7 @@ func computeCustomRegionValue(measureType string, r customRegionAggRow) (value f
 	return 0, "", false
 }
 
-func customRegionRows(m customRegionMeta, agg []customRegionAggRow) []CustomRegionAggregateRow {
+func customRegionRows(m customRegionMeta, agg []customRegionAggRow, matchedUnit *string) []CustomRegionAggregateRow {
 	out := make([]CustomRegionAggregateRow, 0, len(agg))
 	for _, r := range agg {
 		value, method, ok := computeCustomRegionValue(m.MeasureType, r)
@@ -230,6 +261,8 @@ func customRegionRows(m customRegionMeta, agg []customRegionAggRow) []CustomRegi
 			AggregationMethod: method,
 			SourceRegionCount: r.SourceRegionCount,
 			Coverage:          r.Coverage,
+			MatchedUnit:       matchedUnit,
+			IsCrosswalked:     r.IsCrosswalked,
 		}
 		if r.Month.Valid {
 			month := int(r.Month.Int64)
@@ -333,19 +366,46 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 		}
 	}
 
+	// Entspricht das Polygon exakt einer Einheit einer Ebene (z. B. ein
+	// ganzer Kreis), zählen nur deren Werte - keine Randstücke der Nachbarn.
+	// Je Ebene höchstens einmal ermittelt.
+	matches := map[string]*string{}
+	matchFor := func(level string) (*string, error) {
+		if m, ok := matches[level]; ok {
+			return m, nil
+		}
+		var ids []string
+		err := h.DB.Select(&ids, fmt.Sprintf(customRegionExactMatchSQL, customRegionUnitsSQL[level]),
+			geometryJSON, customRegionExactMatchIoU)
+		if err != nil {
+			return nil, err
+		}
+		var m *string
+		if len(ids) > 0 {
+			m = &ids[0]
+		}
+		matches[level] = m
+		return m, nil
+	}
+
 	result := []CustomRegionAggregateRow{}
 	for _, slug := range datasets {
 		for _, requested := range bySlug[slug] {
 			for _, candidate := range customRegionLevelChain(requested, bySlug) {
-				var agg []customRegionAggRow
-				query := fmt.Sprintf(customRegionAggregateSQL, customRegionUnitsSQL[candidate.Level])
-				err := h.DB.Select(&agg, query, geometryJSON, minShare, candidate.Level,
-					candidate.DatasetSlug, candidate.Indicator, req.FromYear, req.ToYear)
+				matched, err := matchFor(candidate.Level)
 				if err != nil {
 					respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
 					return
 				}
-				rows := customRegionRows(candidate, agg)
+				var agg []customRegionAggRow
+				query := fmt.Sprintf(customRegionAggregateSQL, customRegionUnitsSQL[candidate.Level])
+				err = h.DB.Select(&agg, query, geometryJSON, minShare, candidate.Level,
+					candidate.DatasetSlug, candidate.Indicator, req.FromYear, req.ToYear, matched)
+				if err != nil {
+					respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+					return
+				}
+				rows := customRegionRows(candidate, agg, matched)
 				if len(rows) > 0 {
 					result = append(result, rows...)
 					break

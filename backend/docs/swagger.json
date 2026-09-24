@@ -7177,9 +7177,19 @@
                     "type": "string",
                     "example": "schuldnerquote"
                 },
+                "is_crosswalked": {
+                    "description": "IsCrosswalked: mindestens ein beteiligter Einheitenwert wurde über eine\nVersionsgrenze umgerechnet (kein Direktwert).",
+                    "type": "boolean",
+                    "example": false
+                },
                 "level_used": {
                     "type": "string",
                     "example": "nuts3"
+                },
+                "matched_unit": {
+                    "description": "MatchedUnit ist gesetzt, wenn das Polygon exakt einer bestehenden Einheit\nder genutzten Ebene entspricht (nuts_id, gisco_id bzw. ba_schl); die Werte\nsind dann die Werte dieser Einheit, ohne Beiträge benachbarter Einheiten.",
+                    "type": "string",
+                    "example": "DE300"
                 },
                 "month": {
                     "type": "integer",

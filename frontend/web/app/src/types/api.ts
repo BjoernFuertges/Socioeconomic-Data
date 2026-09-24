@@ -306,4 +306,7 @@ export interface CustomRegionAggregateRow {
   aggregation_method: string;
   source_region_count: number;
   coverage: number;
+  // Gesetzt, wenn das Polygon exakt einer bestehenden Einheit entspricht.
+  matched_unit?: string;
+  is_crosswalked?: boolean;
 }

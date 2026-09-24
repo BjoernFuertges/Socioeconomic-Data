@@ -35,8 +35,21 @@ definitions:
       indicator:
         example: schuldnerquote
         type: string
+      is_crosswalked:
+        description: |-
+          IsCrosswalked: mindestens ein beteiligter Einheitenwert wurde über eine
+          Versionsgrenze umgerechnet (kein Direktwert).
+        example: false
+        type: boolean
       level_used:
         example: nuts3
+        type: string
+      matched_unit:
+        description: |-
+          MatchedUnit ist gesetzt, wenn das Polygon exakt einer bestehenden Einheit
+          der genutzten Ebene entspricht (nuts_id, gisco_id bzw. ba_schl); die Werte
+          sind dann die Werte dieser Einheit, ohne Beiträge benachbarter Einheiten.
+        example: DE300
         type: string
       month:
         example: 6
