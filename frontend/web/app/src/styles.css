@@ -513,6 +513,20 @@ table.nuts3-share-table th {
   border-radius: 2px;
 }
 
+/* Status-Marker der kombinierten Ansicht: neutrale Farbe, nur die Form zählt. */
+.chart-caption .marker-neutral.marker-observed {
+  background: var(--text-muted);
+}
+
+.chart-caption .marker-neutral.marker-interpolated {
+  background: var(--surface-1);
+  border: 2px solid var(--text-muted);
+}
+
+.chart-caption .marker-neutral.marker-computed {
+  background: var(--text-muted);
+}
+
 .dataset-info .marker {
   display: inline-block;
   width: 9px;

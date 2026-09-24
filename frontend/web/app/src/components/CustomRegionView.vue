@@ -1,17 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { API_BASE, apiGet, apiPost } from "../api/client";
-import { parseRegionGeoJSON, type RegionGeometry } from "../customRegion";
-import { formatMonthLabel, formatNumber, formatPercent } from "../format";
-import type {
-  CustomRegionAggregateRow,
-  CustomRegionDataset,
-  DatasetMetadataEntry,
-  GeoRegionSummary,
-} from "../types/api";
-import TimeseriesChart from "./TimeseriesChart.vue";
+import { API_BASE, apiGet } from "../api/client";
+import { MAX_GEOJSON_BYTES, parseRegionGeoJSON, type RegionGeometry } from "../customRegion";
+import type { CustomRegionDataset, DatasetCatalogEntry, GeoRegionSummary } from "../types/api";
+import CombineRegionsPicker from "./CombineRegionsPicker.vue";
+import DatasetPicker from "./DatasetPicker.vue";
 
 // "Eigene Region": Nutzer fügt ein GeoJSON (Polygon/MultiPolygon) ein oder lädt
 // es hoch und bekommt die Zeitreihen der gewählten Datensätze aggregiert über
@@ -21,48 +16,51 @@ import TimeseriesChart from "./TimeseriesChart.vue";
 
 const STORAGE_KEY = "customRegion.geojson";
 
+type InputMode = "geojson" | "combine";
+const mode = ref<InputMode>("geojson");
+const geojsonGeometry = ref<RegionGeometry | null>(null);
+const combinedGeometry = ref<RegionGeometry | null>(null);
+const combinePicker = ref<InstanceType<typeof CombineRegionsPicker> | null>(null);
+
+// Beide Eingabemodi liefern dieselbe Geometrie; das Ergebnis-UI ist geteilt.
+const geometry = computed(() => (mode.value === "combine" ? combinedGeometry.value : geojsonGeometry.value));
+
 const geojsonText = ref("");
 const parseError = ref<string | null>(null);
-const geometry = ref<RegionGeometry | null>(null);
 
 const datasets = ref<CustomRegionDataset[]>([]);
-const datasetNames = ref<Record<string, string>>({});
 const selected = ref<string[]>([]);
 const loadingDatasets = ref(true);
 
-const running = ref(false);
 const requestError = ref<string | null>(null);
-const rows = ref<CustomRegionAggregateRow[]>([]);
-const hasResult = ref(false);
 
 const mapContainer = ref<HTMLElement | null>(null);
 let map: L.Map | null = null;
 let regionLayer: L.GeoJSON | null = null;
 
-const LEVEL_LABEL: Record<string, string> = { lau: "Gemeinden (LAU)", nuts3: "Kreise (NUTS-3)", agentur: "Agenturbezirke" };
-
-// Ein Eintrag je Datensatz-Slug (Agentur-Slug hat zwei Indikatoren).
-const selectableSlugs = computed(() => [...new Set(datasets.value.map((d) => d.dataset_slug))]);
-
-function labelFor(slug: string): string {
-  return datasetNames.value[slug] || slug;
-}
-
-function levelFor(slug: string): string {
-  const levels = [...new Set(datasets.value.filter((d) => d.dataset_slug === slug).map((d) => d.level))];
-  return levels.map((l) => LEVEL_LABEL[l] ?? l).join(", ");
-}
+// Für den DatasetPicker: ein Eintrag je Datensatz, bei mehreren Indikatoren
+// (Agenturbezirke) je Indikator "slug::indikator".
+const pickerDatasets = computed<DatasetCatalogEntry[]>(() => {
+  const perSlug = new Map<string, string[]>();
+  for (const d of datasets.value) (perSlug.get(d.dataset_slug) ?? perSlug.set(d.dataset_slug, []).get(d.dataset_slug)!).push(d.indicator);
+  return [...perSlug.entries()].flatMap(([slug, indicators]) =>
+    indicators.length > 1
+      ? indicators.map((i) => ({ route_slug: `${slug}::${i}`, available_years: [] }))
+      : [{ route_slug: slug, available_years: [] }],
+  );
+});
+const selectedBaseSlugs = computed(() => [...new Set(selected.value.map((s) => s.split("::")[0]))]);
 
 function applyText(text: string) {
   geojsonText.value = text;
   const parsed = parseRegionGeoJSON(text);
   if ("error" in parsed) {
-    geometry.value = null;
+    geojsonGeometry.value = null;
     parseError.value = text.trim() ? parsed.error : null;
     return;
   }
   parseError.value = null;
-  geometry.value = parsed.geometry;
+  geojsonGeometry.value = parsed.geometry;
   try {
     localStorage.setItem(STORAGE_KEY, text);
   } catch {
@@ -129,107 +127,57 @@ function drawRegion() {
   }
   if (!geometry.value) return;
   regionLayer = L.geoJSON(geometry.value as any, { style: { color: "#2a6fdb", weight: 2, fillOpacity: 0.25 } }).addTo(map);
-  map.fitBounds(regionLayer.getBounds(), { padding: [16, 16] });
+  // Bei Größe 0 (versteckter Tab) nicht fitten - Zoom würde ungültig; das
+  // Nachholen übernimmt der mode-Watcher beim Zurückwechseln.
+  const size = map.getSize();
+  if (size.x && size.y) map.fitBounds(regionLayer.getBounds(), { padding: [16, 16], animate: false });
   regionLayer.bringToFront();
 }
 
 watch(geometry, drawRegion);
-
-const canRun = computed(() => !!geometry.value && selected.value.length > 0 && !running.value);
-
-async function run() {
-  if (!geometry.value) return;
-  running.value = true;
+watch(mode, () => {
+  queryGeometry.value = null;
   requestError.value = null;
-  try {
-    const body = await apiPost<CustomRegionAggregateRow[]>("/custom-regions/dataset-aggregate", {
-      geometry: geometry.value,
-      datasets: selected.value,
-    });
-    rows.value = body.data ?? [];
-    hasResult.value = true;
-  } catch (err) {
-    rows.value = [];
-    hasResult.value = false;
-    requestError.value = err instanceof Error ? err.message : String(err);
-  } finally {
-    running.value = false;
-  }
-}
-
-// Ergebnis gruppiert nach (Datensatz, Indikator).
-const groups = computed(() => {
-  const map = new Map<string, CustomRegionAggregateRow[]>();
-  for (const r of rows.value) {
-    const key = `${r.dataset_slug}::${r.indicator}`;
-    (map.get(key) ?? map.set(key, []).get(key)!).push(r);
-  }
-  return [...map.entries()].map(([key, groupRows]) => {
-    const first = groupRows[0];
-    const monthly = groupRows.some((r) => r.month != null);
-    const title =
-      first.indicator === first.dataset_slug
-        ? labelFor(first.dataset_slug)
-        : `${labelFor(first.dataset_slug)} – ${first.indicator}`;
-    return {
-      key,
-      title,
-      rows: groupRows,
-      monthly,
-      // Diagramm nur für Jahreswerte; Monatsreihen (Agenturbezirke) nur als Tabelle.
-      points: monthly
-        ? []
-        : groupRows.map((r) => ({ year: r.year, value: r.value, is_interpolated: false, is_computed: true })),
-    };
+  nextTick(() => {
+    map?.invalidateSize();
+    drawRegion();
+    combinePicker.value?.invalidate();
   });
 });
 
-function methodNote(r: CustomRegionAggregateRow): string {
-  switch (r.aggregation_method) {
-    case "sum":
-      return "Summe (flächenanteilig)";
-    case "weighted_avg_population":
-      return "Bevölkerungsgewichtet";
-    case "weighted_avg_area":
-      return "Flächengewichtet";
-    default:
-      return r.aggregation_method;
-  }
-}
+// Die Abfrage läuft erst nach Klick (nicht bei jeder Änderung der Auswahl auf der
+// Karte); der DatasetPicker lädt dann pro gewähltem Datensatz selbst.
+const queryGeometry = ref<RegionGeometry | null>(null);
+const queryId = ref(0);
+const canRun = computed(() => !!geometry.value && pickerDatasets.value.length > 0);
 
-function notesFor(groupRows: CustomRegionAggregateRow[]): string[] {
-  const out: string[] = [];
-  const methods = new Set(groupRows.map((r) => r.aggregation_method));
-  if (methods.has("weighted_avg_population")) {
-    out.push("Quoten/Durchschnitte sind bevölkerungsgewichtete Mittel der Einheitenwerte – eine Näherung.");
+function run() {
+  if (!geometry.value) return;
+  if (new Blob([JSON.stringify(geometry.value)]).size > MAX_GEOJSON_BYTES) {
+    requestError.value = "Die Region ist zu groß (mehr als 5 MB Geometrie) – bitte weniger oder gröbere Einheiten wählen.";
+    return;
   }
-  if (methods.has("weighted_avg_area")) {
-    out.push("Teilweise flächengewichtet (für mindestens eine Einheit fehlt die Bevölkerung) – Näherung.");
-  }
-  if (groupRows.some((r) => r.value_kind === "median")) {
-    out.push("Mediane lassen sich nicht aus Einheitenwerten zusammensetzen – der Wert ist nur eine Schätzung.");
-  }
-  if (groupRows.some((r) => r.coverage < 0.95)) {
-    out.push("Für einen Teil der Fläche liegen keine Daten vor (Abdeckung < 95 %) – der Wert gilt nur für den abgedeckten Teil.");
-  }
-  return out;
+  requestError.value = null;
+  if (!selected.value.length) selected.value = [pickerDatasets.value[0].route_slug];
+  queryGeometry.value = geometry.value;
+  queryId.value++;
 }
 
 const curlSnippet = computed(() => {
-  if (!geometry.value) return "";
-  const body = JSON.stringify({ geometry: geometry.value, datasets: selected.value });
+  if (!queryGeometry.value) return "";
+  const body = JSON.stringify({ geometry: queryGeometry.value, datasets: selectedBaseSlugs.value });
   const base = API_BASE.startsWith("http") ? API_BASE : `${window.location.origin}${API_BASE}`;
   return `curl -X POST '${base}/custom-regions/dataset-aggregate?format=csv' \\\n  -H 'Content-Type: application/json' \\\n  -d '${body.replace(/'/g, "'\\''")}'`;
 });
 
 async function downloadCsv() {
-  if (!geometry.value) return;
+  if (!queryGeometry.value) return;
   requestError.value = null;
   try {
     const res = await fetch(`${API_BASE}/custom-regions/dataset-aggregate?format=csv&download=1`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ geometry: geometry.value, datasets: selected.value }),
+      body: JSON.stringify({ geometry: queryGeometry.value, datasets: selectedBaseSlugs.value }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const url = URL.createObjectURL(await res.blob());
@@ -256,14 +204,8 @@ onMounted(async () => {
   }
 
   try {
-    const [list, meta] = await Promise.all([
-      apiGet<CustomRegionDataset[]>("/custom-regions/datasets"),
-      apiGet<DatasetMetadataEntry[]>("/datasets").catch(() => null),
-    ]);
+    const list = await apiGet<CustomRegionDataset[]>("/custom-regions/datasets");
     datasets.value = list.data ?? [];
-    datasetNames.value = Object.fromEntries(
-      (meta?.data ?? []).filter((m) => m.name).map((m) => [m.dataset_slug, m.name as string]),
-    );
   } catch (err) {
     requestError.value = `Datensätze konnten nicht geladen werden: ${err instanceof Error ? err.message : String(err)}`;
   } finally {
@@ -283,6 +225,23 @@ onBeforeUnmount(() => {
   <section class="custom-region">
     <div class="panel">
       <h2>Eigene Region</h2>
+      <div class="sub-nav" role="tablist" aria-label="Eingabeart">
+        <button type="button" role="tab" :aria-selected="mode === 'geojson'" class="nav-tab" :class="{ 'is-active': mode === 'geojson' }" @click="mode = 'geojson'">
+          GeoJSON einfügen
+        </button>
+        <button
+          type="button"
+          role="tab"
+          :aria-selected="mode === 'combine'"
+          class="nav-tab"
+          :class="{ 'is-active': mode === 'combine' }"
+          @click="mode = 'combine'"
+        >
+          Regionen kombinieren
+        </button>
+      </div>
+
+      <div v-show="mode === 'geojson'">
       <p class="hint">
         GeoJSON (Polygon oder MultiPolygon, WGS84, Koordinaten als [lon, lat]) einfügen oder hochladen. Die Region wird
         nur für die Abfrage an die API gesendet und nicht gespeichert.
@@ -308,66 +267,33 @@ onBeforeUnmount(() => {
       <p v-else-if="geometry" class="hint">✓ {{ geometry.type }} erkannt.</p>
 
       <div ref="mapContainer" class="map-container custom-region-map" aria-label="Vorschau der Region"></div>
+      </div>
+      <CombineRegionsPicker v-show="mode === 'combine'" ref="combinePicker" @update:geometry="combinedGeometry = $event" />
     </div>
 
     <div class="panel">
-      <h3>Datensätze</h3>
       <p v-if="loadingDatasets" class="hint">Lade Datensätze …</p>
-      <ul v-else class="custom-region-datasets">
-        <li v-for="slug in selectableSlugs" :key="slug">
-          <label>
-            <input v-model="selected" type="checkbox" :value="slug" />
-            {{ labelFor(slug) }}
-            <span class="hint">({{ levelFor(slug) }})</span>
-          </label>
-        </li>
-      </ul>
       <p>
-        <button type="button" :disabled="!canRun" @click="run">
-          {{ running ? "Berechne …" : "Daten abfragen" }}
-        </button>
+        <button type="button" :disabled="!canRun || !geometry" @click="run">Daten für diese Region abfragen</button>
       </p>
       <p v-if="requestError" class="error-text" role="alert">{{ requestError }}</p>
     </div>
 
-    <div v-if="hasResult" class="panel">
+    <div v-if="queryGeometry" class="panel">
       <h3>Ergebnis</h3>
-      <p v-if="!groups.length" class="hint">
-        Für diese Region liegen zu den gewählten Datensätzen keine Werte vor (liegt sie außerhalb Deutschlands?).
-      </p>
-
-      <article v-for="g in groups" :key="g.key" class="custom-region-result">
-        <h4>{{ g.title }} <span class="badge">{{ LEVEL_LABEL[g.rows[0].level_used] ?? g.rows[0].level_used }}</span></h4>
-        <TimeseriesChart v-if="g.points.length > 1" :points="g.points" />
-        <div class="data-table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>{{ g.monthly ? "Monat" : "Jahr" }}</th>
-                <th>Wert</th>
-                <th>Methode</th>
-                <th>Einheiten</th>
-                <th>Abdeckung</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="r in g.rows" :key="`${r.year}-${r.month ?? 0}`" class="is-computed">
-                <td>{{ r.month != null ? formatMonthLabel(r.year, r.month) : r.year }}</td>
-                <td>{{ formatNumber(r.value) }}</td>
-                <td>{{ methodNote(r) }}</td>
-                <td>{{ r.source_region_count }}</td>
-                <td>{{ formatPercent(r.coverage) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p v-for="note in notesFor(g.rows)" :key="note" class="hint">{{ note }}</p>
-      </article>
-
-      <p v-if="groups.length">
+      <DatasetPicker
+        :key="queryId"
+        kind="custom"
+        :datasets="pickerDatasets"
+        nuts-code=""
+        :geometry="queryGeometry"
+        :selected-slugs="selected"
+        @update:selected-slugs="(s) => (selected = s)"
+      />
+      <p>
         <button type="button" @click="downloadCsv">CSV herunterladen</button>
       </p>
-      <details v-if="groups.length">
+      <details>
         <summary>API-Aufruf (curl)</summary>
         <pre class="api-snippet">{{ curlSnippet }}</pre>
       </details>
@@ -376,6 +302,12 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.sub-nav {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
 .custom-region {
   display: grid;
   gap: 1rem;
@@ -400,18 +332,6 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border);
   border-radius: 6px;
   margin-top: 0.5rem;
-}
-
-.custom-region-datasets {
-  list-style: none;
-  margin: 0 0 0.75rem;
-  padding: 0;
-  display: grid;
-  gap: 0.25rem;
-}
-
-.custom-region-result {
-  margin-top: 1rem;
 }
 
 .api-snippet {

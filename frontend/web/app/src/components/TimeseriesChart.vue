@@ -89,6 +89,24 @@ const legendItems = computed(() => {
   return items;
 });
 
+// Status-Legende der kombinierten Ansicht (Form statt Farbe, da die Farbe die
+// Serie kennzeichnet): nur Status, die bei Jahreswerten tatsächlich vorkommen.
+// Monatswerte werden als Linie ohne Marker gezeichnet und zählen nicht mit.
+const indexedLegendItems = computed(() => {
+  const pts = (props.indexedSeries ?? []).flatMap((s) => s.points).filter((p) => p.month == null);
+  const items: { key: string; markerClass: string; label: string }[] = [];
+  if (pts.some((p) => !p.is_computed && !p.is_interpolated)) {
+    items.push({ key: "observed", markerClass: "marker-observed", label: "beobachtet" });
+  }
+  if (pts.some((p) => !p.is_computed && p.is_interpolated)) {
+    items.push({ key: "interpolated", markerClass: "marker-interpolated", label: "interpoliert" });
+  }
+  if (pts.some((p) => p.is_computed)) {
+    items.push({ key: "computed", markerClass: "marker-computed", label: "berechnet" });
+  }
+  return items;
+});
+
 function showTooltip(evt: MouseEvent, point: TimeseriesPoint) {
   const rows: [string, string | number][] = [
     ["Jahr", point.year],
@@ -622,6 +640,9 @@ watch(() => [props.points, props.periodSeries, props.indexedSeries], drawChart, 
   <p v-if="indexedSeries && indexedSeries.length" class="chart-caption">
     <span v-for="(s, i) in indexedSeries" :key="s.key">
       <span class="marker" :style="{ backgroundColor: SERIES_COLORS[i % SERIES_COLORS.length] }"></span>{{ s.label }}
+    </span>
+    <span v-for="item in indexedLegendItems" :key="item.key">
+      <span class="marker marker-neutral" :class="item.markerClass"></span>{{ item.label }}
     </span>
     <span v-if="hasMonthlySeries" class="hint">
       Indexiert{{ indexBaseYear !== null ? `, ${indexBaseYear} = 100 (Jahresdurchschnitt bzw. Jahreswert)` : "" }}.

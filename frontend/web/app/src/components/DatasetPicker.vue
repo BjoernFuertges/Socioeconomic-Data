@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { apiGet } from "../api/client";
+import { apiGet, apiPost } from "../api/client";
 import type {
   AgenturDatasetAggregatePoint,
   DatasetCatalogEntry,
@@ -9,7 +9,10 @@ import type {
   NutsDatasetAggregatePoint,
   TimeseriesPoint,
 } from "../types/api";
-import { formatDatasetLabel } from "../format";
+import type { CustomRegionAggregateRow } from "../types/api";
+import type { RegionGeometry } from "../customRegion";
+import { formatDatasetLabel, formatMonthLabel } from "../format";
+import CustomRegionNote from "./CustomRegionNote.vue";
 import TimeseriesChart from "./TimeseriesChart.vue";
 import DataTable from "./DataTable.vue";
 import DatasetInfo from "./DatasetInfo.vue";
@@ -22,7 +25,7 @@ const MAX_SELECTED = 4;
 
 type LoadResult =
   | { kind: "loading" }
-  | { kind: "timeseries"; points: TimeseriesPoint[] }
+  | { kind: "timeseries"; points: (TimeseriesPoint & { month?: number })[] }
   | { kind: "raw"; rows: GenericDatasetRow[] }
   | { kind: "error"; message: string };
 
@@ -46,7 +49,12 @@ const props = defineProps<{
   // über /agenturbezirke/{ba_schl}/dataset-aggregate/{slug} (flächenanteils-
   // statt bevölkerungsgewichtet, siehe mart_agentur_dataset_aggregate) - es
   // gibt für Agenturbezirke keine Kreis-grain-Rohdaten, nur die Aggregation.
-  kind?: "nuts" | "agentur";
+  kind?: "nuts" | "agentur" | "custom";
+  // Nur kind="custom": die Region (GeoJSON-Polygon/MultiPolygon), über die per
+  // POST /custom-regions/dataset-aggregate aggregiert wird. route_slug ist dann
+  // der Datensatz-Slug bzw. "slug::indikator" bei Datensätzen mit mehreren
+  // Indikatoren (siehe CustomRegionView.vue). Monatsreihen tragen `month`.
+  geometry?: RegionGeometry;
   // Nur kind="agentur": BA-Monatsreihen der Region (z.B. Arbeitslose), die im
   // kombinierten Diagramm neben den jährlichen Kreis-Aggregaten erscheinen
   // können. Punkte tragen `month` (siehe IndexedSeries in TimeseriesChart.vue).
@@ -56,6 +64,27 @@ const props = defineProps<{
 const emit = defineEmits<{
   "update:selectedSlugs": [slugs: string[]];
 }>();
+
+// kind="custom": route_slug = "slug" oder "slug::indikator".
+function baseSlug(routeSlug: string): string {
+  return routeSlug.split("::")[0];
+}
+function labelOf(routeSlug: string): string {
+  const [slug, indicator] = routeSlug.split("::");
+  return indicator ? `${formatDatasetLabel(slug)} – ${indicator}` : formatDatasetLabel(slug);
+}
+
+// Monatsreihen (Agenturbezirke, nur kind="custom") haben Punkte mit `month`.
+function isMonthly(points: (TimeseriesPoint & { month?: number })[]): boolean {
+  return points.some((p) => p.month != null);
+}
+function periodSeriesOf(slug: string, points: (TimeseriesPoint & { month?: number })[]) {
+  return [{ key: slug, label: labelOf(slug), points: points.map((p) => ({ label: formatMonthLabel(p.year, p.month ?? 1), value: p.value })) }];
+}
+function periodRowsOf(points: (TimeseriesPoint & { month?: number })[]) {
+  return points.map((p) => ({ label: formatMonthLabel(p.year, p.month ?? 1), arbeitslose: p.value, unterbeschaeftigung: null }));
+}
+const VALUE_COLUMN = [{ key: "arbeitslose" as const, label: "Wert" }];
 
 // Reihenfolge der Checkboxen folgt der Reihenfolge in `datasets`, damit
 // selectedDatasets (unten) für Chart-Serien/Tabs eine stabile Reihenfolge hat.
@@ -104,10 +133,42 @@ const metadataBySlug = ref<Map<string, DatasetMetadataEntry | null>>(new Map());
 async function loadSlug(slug: string) {
   results.value.set(slug, { kind: "loading" });
   try {
-    const body = await apiGet<DatasetMetadataEntry>(`/datasets/${slug}`);
+    const body = await apiGet<DatasetMetadataEntry>(`/datasets/${baseSlug(slug)}`);
     metadataBySlug.value.set(slug, body.data ?? null);
   } catch {
     metadataBySlug.value.set(slug, null);
+  }
+  if (props.kind === "custom") {
+    try {
+      const [base, indicator] = slug.split("::");
+      const body = await apiPost<CustomRegionAggregateRow[]>("/custom-regions/dataset-aggregate", {
+        geometry: props.geometry,
+        datasets: [base],
+      });
+      const rows = (body.data ?? []).filter((r) => !indicator || r.indicator === indicator);
+      results.value.set(slug, {
+        kind: "timeseries",
+        points: rows.map((r) => ({
+          year: r.year,
+          month: r.month,
+          value: r.value,
+          is_interpolated: false,
+          // Exakt passende Region mit Direktwert: die Werte der Einheit selbst,
+          // nichts Berechnetes (Legende: "beobachtet").
+          is_computed: !r.matched_unit || !!r.is_crosswalked,
+          aggregation_method: r.aggregation_method,
+          value_kind: r.value_kind,
+          level_used: r.level_used,
+          coverage: r.coverage,
+          source_region_count: r.source_region_count,
+          matched_unit: r.matched_unit,
+          is_crosswalked: r.is_crosswalked,
+        })),
+      });
+    } catch (err) {
+      results.value.set(slug, { kind: "error", message: err instanceof Error ? err.message : String(err) });
+    }
+    return;
   }
   if (props.kind === "agentur") {
     try {
@@ -181,7 +242,7 @@ const combinableSeries = computed(() =>
   selectedDatasets.value.flatMap((ds) => {
     const result = results.value.get(ds.route_slug);
     if (!result || result.kind !== "timeseries" || !result.points.length) return [];
-    return [{ key: ds.route_slug, label: formatDatasetLabel(ds.route_slug), points: result.points }];
+    return [{ key: ds.route_slug, label: labelOf(ds.route_slug), points: result.points }];
   }),
 );
 // Monatsreihen zuerst; auf die validierten Farbslots gekappt.
@@ -226,7 +287,7 @@ watch(
           "
           @change="toggleSlug(ds.route_slug, ($event.target as HTMLInputElement).checked)"
         />
-        {{ formatDatasetLabel(ds.route_slug) }} ({{ ds.available_years.length }} Jahre)
+        {{ labelOf(ds.route_slug) }}<template v-if="ds.available_years.length"> ({{ ds.available_years.length }} Jahre)</template>
       </label>
       <p v-if="atMax" class="hint">Maximal {{ maxSelected }} Datensätze gleichzeitig.</p>
     </fieldset>
@@ -238,7 +299,7 @@ watch(
 
   <template v-else-if="isCombined">
     <p v-if="nonCombinableSlugs.length" class="hint">
-      {{ nonCombinableSlugs.map(formatDatasetLabel).join(", ") }} unterstützt keine Zeitreihe und wird nur in der
+      {{ nonCombinableSlugs.map(labelOf).join(", ") }} unterstützt keine Zeitreihe und wird nur in der
       Tabelle unten gezeigt, nicht im kombinierten Chart.
     </p>
     <p v-if="chartTruncated" class="hint">Es werden höchstens {{ MAX_SELECTED }} Reihen gleichzeitig gezeigt.</p>
@@ -267,7 +328,7 @@ watch(
         :aria-selected="activeTabSlug === ds.route_slug"
         @click="activeTabSlug = ds.route_slug"
       >
-        {{ formatDatasetLabel(ds.route_slug) }}
+        {{ labelOf(ds.route_slug) }}
       </button>
     </div>
     <div v-if="hasBaTab && activeTabSlug === BA_TAB">
@@ -277,6 +338,7 @@ watch(
       <div v-if="activeTabSlug === ds.route_slug">
         <DatasetInfo v-if="metadataBySlug.get(ds.route_slug)" :metadata="metadataBySlug.get(ds.route_slug)!" />
         <AgenturAggregationNote v-if="kind === 'agentur'" :points="pointsOf(ds.route_slug)" />
+        <CustomRegionNote v-else-if="kind === 'custom'" :points="pointsOf(ds.route_slug) as any" />
         <p v-if="results.get(ds.route_slug)?.kind === 'loading'" class="hint">Lade Daten…</p>
         <p v-else-if="results.get(ds.route_slug)?.kind === 'error'" class="error-text">
           Fehler beim Laden: {{ (results.get(ds.route_slug) as { message: string }).message }}
@@ -285,6 +347,11 @@ watch(
           <p v-if="!(results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points.length" class="hint">
             Keine Werte für diesen Datensatz und diese Region vorhanden.
           </p>
+          <DataTable
+            v-else-if="isMonthly((results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points)"
+            :period-rows="periodRowsOf((results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points)"
+            :period-columns="VALUE_COLUMN"
+          />
           <DataTable v-else :points="(results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points" />
         </template>
         <template v-else-if="results.get(ds.route_slug)?.kind === 'raw'">
@@ -299,9 +366,10 @@ watch(
 
   <template v-else>
     <section v-for="ds in selectedDatasets" :key="ds.route_slug" class="dataset-block">
-      <h3 v-if="selectedDatasets.length > 1" class="dataset-block-title">{{ formatDatasetLabel(ds.route_slug) }}</h3>
+      <h3 v-if="selectedDatasets.length > 1" class="dataset-block-title">{{ labelOf(ds.route_slug) }}</h3>
       <DatasetInfo v-if="metadataBySlug.get(ds.route_slug)" :metadata="metadataBySlug.get(ds.route_slug)!" />
       <AgenturAggregationNote v-if="kind === 'agentur'" :points="pointsOf(ds.route_slug)" />
+        <CustomRegionNote v-else-if="kind === 'custom'" :points="pointsOf(ds.route_slug) as any" />
       <p v-if="results.get(ds.route_slug)?.kind === 'loading'" class="hint">Lade Daten…</p>
       <p v-else-if="results.get(ds.route_slug)?.kind === 'error'" class="error-text">
         Fehler beim Laden: {{ (results.get(ds.route_slug) as { message: string }).message }}
@@ -311,8 +379,17 @@ watch(
           Keine Werte für diesen Datensatz und diese Region vorhanden.
         </p>
         <template v-else>
-          <TimeseriesChart :points="(results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points" />
-          <DataTable :points="(results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points" />
+          <template v-if="isMonthly((results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points)">
+            <TimeseriesChart :period-series="periodSeriesOf(ds.route_slug, (results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points)" />
+            <DataTable
+              :period-rows="periodRowsOf((results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points)"
+              :period-columns="VALUE_COLUMN"
+            />
+          </template>
+          <template v-else>
+            <TimeseriesChart :points="(results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points" />
+            <DataTable :points="(results.get(ds.route_slug) as { points: TimeseriesPoint[] }).points" />
+          </template>
         </template>
       </template>
       <template v-else-if="results.get(ds.route_slug)?.kind === 'raw'">
