@@ -2747,7 +2747,7 @@
         },
         "/datasets": {
             "get": {
-                "description": "Liefert pro Datensatz Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum\nsowie eine persistente URI. Lizenz ist \"unbekannt\", solange die tatsächlichen Nutzungsbedingungen der Quelle noch nicht recherchiert wurden.\n?datasets= filtert auf einzelne Slugs (kommagetrennt, leer = alle) - gedacht für den\ngleichzeitigen Metadaten-Export neben einem Daten-Download (siehe DownloadDialog.vue/download.ts).\nFormat per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
+                "description": "Liefert pro Datensatz Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum\nsowie eine persistente URI. Lizenz ist \"unbekannt\", solange die tatsächlichen Nutzungsbedingungen der Quelle noch nicht recherchiert wurden.\n?datasets= filtert auf einzelne Slugs (kommagetrennt, leer = alle) - gedacht für den\ngleichzeitigen Metadaten-Export neben einem Daten-Download\nFormat per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2874,6 +2874,89 @@
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/models.DatasetCatalogEintrag"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/datasets/{slug}/source": {
+            "get": {
+                "description": "Liefert die Werte des Datensatzes so, wie sie aus dem geo-mapper-Teilprojekt kommen: unverändert, nur die\nRegionsnamen sind auf Geodaten-IDs gemappt (original_*, geodata_id_*, mapper, parameter). Keine NUTS-Harmonisierung,\nInterpolation oder Aggregation - dafür die Datensatz-Endpunkte verwenden. Herkunft und Lizenz: GET /datasets/{slug}.\nNicht verfügbar für abgeleitete Slugs (beschaeftigungsquote-nuts3, lau_*, ba_*) und die Agenturbezirks-Arbeitslosenzahlen (siehe /agenturbezirke).\nFormat per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Datensatz-Katalog"
+                ],
+                "summary": "Quelldaten eines Datensatzes (gemappt, unverändert)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "bevoelkerung",
+                        "description": "Datensatz-Slug (z.B. bevoelkerung)",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.DatasetQuellwert"
+                                            }
                                         }
                                     }
                                 }
@@ -7903,6 +7986,57 @@
                 "dataset": {
                     "type": "string",
                     "example": "schuldnerquote"
+                }
+            }
+        },
+        "models.DatasetQuellwert": {
+            "type": "object",
+            "properties": {
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                },
+                "geodata_id_ars": {
+                    "type": "string"
+                },
+                "geodata_id_lau": {
+                    "type": "string"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DE929"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "mapper": {
+                    "type": "string"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "03241"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Region Hannover"
+                },
+                "parameter": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
                 }
             }
         },

@@ -203,6 +203,42 @@ models:
       - name: distinct_geodata_ars
         description: "Anzahl unterschiedlicher geodata_id_ars"
 
+  - name: mart_dataset_source
+    description: "Quelldaten der meta.yaml-basierten Datensätze im Long-Format, unverändert wie aus dem geo-mapper-Teilprojekt geliefert (nur Regionsnamen auf Geodaten-IDs gemappt). Grundlage für GET /datasets/{slug}/source."
+    columns:
+      - name: dataset_slug
+        description: "Dataset-Slug, identisch zu mart_dataset_catalog"
+        tests:
+          - not_null
+      - name: original_id_1
+        description: "Regions-ID aus der Quelldatei"
+      - name: original_name
+        description: "Regionsname aus der Quelldatei"
+      - name: geodata_name
+        description: "Gemappter Geodata-Name"
+      - name: geodata_id_nuts
+        description: "Gemappte NUTS-ID (Bezugsjahr geodata_year)"
+      - name: geodata_id_lau
+        description: "Gemappte LAU-ID (nur Gemeinde-Datensätze)"
+      - name: geodata_id_ars
+        description: "Gemappter Amtlicher Regionalschlüssel"
+      - name: mapper
+        description: "Mapping-Methode des geo-mapper"
+      - name: parameter
+        description: "Mapping-Parameter des geo-mapper"
+      - name: geodata_level
+        description: "Geodaten-Ebene (NUTS_3, LAU, ...)"
+      - name: geodata_year
+        description: "Bezugsjahr der Geodaten"
+      - name: year
+        description: "Jahr der Beobachtung"
+        tests:
+          - not_null
+      - name: value
+        description: "Unveränderter Quellwert"
+        tests:
+          - not_null
+
   - name: mart_dataset_catalog
     description: "Ein Katalog-Eintrag pro Datensatz mit Herkunft, Lizenz, Beschreibung und persistenter URI (F09/F10/F11/F15/F16). Umfasst die meta.yaml-basierten Kreis-/Gemeinden-Datensätze sowie arbeitslosenzahlen-afa-agenturbezirke."
     columns:

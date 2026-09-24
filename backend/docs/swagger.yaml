@@ -785,6 +785,42 @@ definitions:
         example: schuldnerquote
         type: string
     type: object
+  models.DatasetQuellwert:
+    properties:
+      dataset_slug:
+        example: bevoelkerung
+        type: string
+      geodata_id_ars:
+        type: string
+      geodata_id_lau:
+        type: string
+      geodata_id_nuts:
+        example: DE929
+        type: string
+      geodata_level:
+        example: NUTS_3
+        type: string
+      geodata_name:
+        type: string
+      geodata_year:
+        example: 2024
+        type: integer
+      mapper:
+        type: string
+      original_id_1:
+        example: "03241"
+        type: string
+      original_name:
+        example: Region Hannover
+        type: string
+      parameter:
+        type: string
+      value:
+        type: number
+      year:
+        example: 2020
+        type: integer
+    type: object
   models.DatasetYearMetrics:
     properties:
       max:
@@ -3893,7 +3929,7 @@ paths:
         Liefert pro Datensatz Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum
         sowie eine persistente URI. Lizenz ist "unbekannt", solange die tatsächlichen Nutzungsbedingungen der Quelle noch nicht recherchiert wurden.
         ?datasets= filtert auf einzelne Slugs (kommagetrennt, leer = alle) - gedacht für den
-        gleichzeitigen Metadaten-Export neben einem Daten-Download (siehe DownloadDialog.vue/download.ts).
+        gleichzeitigen Metadaten-Export neben einem Daten-Download
         Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.
       parameters:
       - description: Kommagetrennte Datensatz-Slugs (leer = alle)
@@ -3989,6 +4025,64 @@ paths:
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Katalogeintrag eines einzelnen Datensatzes
+      tags:
+      - Datensatz-Katalog
+  /datasets/{slug}/source:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Liefert die Werte des Datensatzes so, wie sie aus dem geo-mapper-Teilprojekt kommen: unverändert, nur die
+        Regionsnamen sind auf Geodaten-IDs gemappt (original_*, geodata_id_*, mapper, parameter). Keine NUTS-Harmonisierung,
+        Interpolation oder Aggregation - dafür die Datensatz-Endpunkte verwenden. Herkunft und Lizenz: GET /datasets/{slug}.
+        Nicht verfügbar für abgeleitete Slugs (beschaeftigungsquote-nuts3, lau_*, ba_*) und die Agenturbezirks-Arbeitslosenzahlen (siehe /agenturbezirke).
+        Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.
+      parameters:
+      - description: Datensatz-Slug (z.B. bevoelkerung)
+        example: bevoelkerung
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.DatasetQuellwert'
+                  type: array
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Quelldaten eines Datensatzes (gemappt, unverändert)
       tags:
       - Datensatz-Katalog
   /durchschnittsalter:

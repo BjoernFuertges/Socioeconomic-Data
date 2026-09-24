@@ -181,6 +181,26 @@ type DatasetCatalogEintrag struct {
 	LicenseBackfilled bool `json:"license_backfilled" db:"license_backfilled" example:"true"`
 }
 
+// DatasetQuellwert ist eine Zeile der Quelldaten eines Datensatzes: der Wert
+// unverändert wie aus dem geo-mapper-Teilprojekt geliefert, nur die
+// Regionsnamen sind auf Geodaten-IDs gemappt (keine Harmonisierung,
+// Interpolation oder Aggregation). Quelle: transformed_data.mart_dataset_source.
+type DatasetQuellwert struct {
+	DatasetSlug   string  `json:"dataset_slug" db:"dataset_slug" example:"bevoelkerung"`
+	OriginalID    *string `json:"original_id_1,omitempty" db:"original_id_1" example:"03241"`
+	OriginalName  *string `json:"original_name,omitempty" db:"original_name" example:"Region Hannover"`
+	GeodataName   *string `json:"geodata_name,omitempty" db:"geodata_name"`
+	GeodataIDNuts *string `json:"geodata_id_nuts,omitempty" db:"geodata_id_nuts" example:"DE929"`
+	GeodataIDLau  *string `json:"geodata_id_lau,omitempty" db:"geodata_id_lau"`
+	GeodataIDArs  *string `json:"geodata_id_ars,omitempty" db:"geodata_id_ars"`
+	Mapper        *string `json:"mapper,omitempty" db:"mapper"`
+	Parameter     *string `json:"parameter,omitempty" db:"parameter"`
+	GeodataLevel  *string `json:"geodata_level,omitempty" db:"geodata_level" example:"NUTS_3"`
+	GeodataYear   *int    `json:"geodata_year,omitempty" db:"geodata_year" example:"2024"`
+	Year          int     `json:"year" db:"year" example:"2020"`
+	Value         float64 `json:"value" db:"value"`
+}
+
 // RegionDataset beschreibt einen verfügbaren Soziodata-Datensatz für eine Region.
 type RegionDataset struct {
 	Dataset        string `json:"dataset" example:"bevoelkerung"`

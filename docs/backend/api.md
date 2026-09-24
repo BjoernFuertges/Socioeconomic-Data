@@ -132,12 +132,25 @@ contained" = ≥ 99 %), not an official assignment.
 |---|---|---|
 | GET | `/datasets` | Provenance/license/description catalog for all datasets |
 | GET | `/datasets/{slug}` | Catalog entry for a single dataset |
+| GET | `/datasets/{slug}/source` | Source values of a dataset, unharmonized |
 
 Both serve JSON or CSV like the endpoints above (`respondList`/
 `respondNegotiated`, `?format=`/`?download=1`). `GET /datasets?datasets=a,b`
 restricts the list to those slugs (empty = all) - used to export metadata
 for exactly the datasets included in a data download, see "Combined region
 export" above.
+
+`GET /datasets/{slug}/source` returns the dataset's values as they came out
+of the upstream [geo-mapper](https://pypi.org/project/geo-mapper/) step
+(`mapped_pairs.csv`): the values are unchanged, only the region names are
+mapped to geodata IDs (`geodata_id_*`, `mapper`, `parameter` document how).
+There is no NUTS harmonization, interpolation or aggregation - use the
+dataset endpoints for that. Together with `GET /datasets/{slug}`
+(provenance, license) this lets any harmonized value be traced back to its
+input (FAIR: reusability/provenance). Derived slugs (`beschaeftigungsquote-
+nuts3`, `lau_*`, `ba_*`) and the Agenturbezirk figures have no source
+rows here (404); the latter are available via `/agenturbezirke`. Backed by
+the dbt model `mart_dataset_source`.
 
 Includes four synthetic entries with no own `loaded_data.dataset_metadata`
 row: `ba_arbeitslose`/`ba_unterbeschaeftigung` (provenance/license borrowed

@@ -88,6 +88,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 		{
 			datasetsGroup.GET("", handler.GetDatasetCatalog)
 			datasetsGroup.GET("/:slug", handler.GetDatasetCatalogEntry)
+			datasetsGroup.GET("/:slug/source", handler.GetDatasetSource)
 		}
 
 		// Metriken-Endpunkte: statistische Aggregationen über Soziodata-Datensätze
