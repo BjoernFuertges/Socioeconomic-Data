@@ -10,6 +10,7 @@
 }}
 
 {% set reference_nuts_version = 2024 %}
+{% set min_share = var('crosswalk_min_share', 0.10) %}
 
 /*
   n:m-Zuordnung Agenturbezirk <-> NUTS-3-Region mit Flächenanteil in beide
@@ -31,13 +32,17 @@
   Da nicht ausreichend Bevölkerungsdaten vorhanden sind, geht es nur nach Fläche.
 
   Kleine geometrische Überlappungs-"Krümel" durch Grenzungenauigkeiten
-  werden über einen Schwellwert (0.5% Flächenanteil in beide Richtungen)
-  herausgefiltert. Empirisch ermittelt (siehe
-  analysis/agentur_nuts3_crosswalk_shares.ipynb): der jeweils größere der
-  beiden Anteile liegt bei ~98% aller Paare klar unter 1% (Krümel) oder
-  über 20% (echte Bestandteile), nur eine Handvoll Paare liegen dazwischen
-  - 0.5% trennt die beiden Gruppen sicher, ohne dass ein Agenturbezirk
-  seine NUTS-3-Zuordnung komplett verliert (auch nicht im Berlin).
+  werden über einen Schwellwert (10% Flächenanteil, mindestens einer der
+  beiden Anteile muss darüber liegen) herausgefiltert. Empirisch ermittelt
+  (siehe analysis/agentur_nuts3_crosswalk_shares.ipynb): der jeweils
+  größere der beiden Anteile liegt bei Krümeln höchstens bei ~6% (bei
+  kleinen Kreisfreien Städten kann ein Krümel von ~1-2 km² schon mehrere %
+  der Stadtfläche ausmachen, z.B. 0.7% bei Stuttgart), echte Bestandteile
+  liegen bei >= ~28%. 10% liegt sicher in dieser Lücke, ohne dass ein
+  Agenturbezirk oder Kreis seine Zuordnung komplett verliert (auch nicht
+  in Berlin). Für die Analyse im Notebook lässt sich der Filter mit
+  `--vars '{crosswalk_min_share: 0}'` abschalten. Frühere Schwellen von 0.2% / 0.5% ließen noch sichtbare
+  Krümel durch (Anzeige "0 %" im Frontend).
 */
 
 with agentur_geom as (
@@ -89,5 +94,5 @@ final as (
 
 select *
 from final
-where area_share_of_agentur > 0.005
-   or area_share_of_nuts3 > 0.005
+where area_share_of_agentur > {{ min_share }}
+   or area_share_of_nuts3 > {{ min_share }}
