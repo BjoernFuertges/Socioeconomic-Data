@@ -252,6 +252,16 @@ function reconcileNutsSelection(wanted: string[]) {
 // oder Deep-Link); ohne Angabe bleibt die bisherige Auswahl bestehen
 // (Regionswechsel behält die zuvor gewählten Datensätze bei, sofern in der
 // neuen Region verfügbar - siehe reconcileNutsSelection).
+// Region-Push, dessen Abschluss der currentQuery-Watcher abwartet: select*()
+// ändert den Komponentenzustand synchron und der Watcher würde sein
+// router.replace() sonst noch während der ausstehenden Navigation absetzen -
+// das bricht den Push ab und ersetzt stattdessen den *vorherigen* Chronik-
+// Eintrag (Browser-Zurück landet dann eine Ansicht zu weit hinten).
+let pendingRegionPush: Promise<unknown> = Promise.resolve();
+function pushRegionRoute(to: Parameters<typeof router.push>[0]) {
+  pendingRegionPush = router.push(to);
+}
+
 async function selectNuts(nutsId: string, wantedSlugs?: string[], navigate = true) {
   const region = nutsRegions.value.find((r) => r.nuts_id === nutsId);
   if (!region) return;
@@ -266,7 +276,7 @@ async function selectNuts(nutsId: string, wantedSlugs?: string[], navigate = tru
   nutsLauAggregate.value = null;
   nutsAgenturbezirke.value = null;
   if (navigate) {
-    router.push({ name: "regionen", params: { regionId: nutsId }, query: { type: "nuts" } });
+    pushRegionRoute({ name: "regionen", params: { regionId: nutsId }, query: { type: "nuts" } });
   }
   // Nicht awaiten: unabhängig von Datensatz-Katalog/Gemeinden unten.
   if (region.nuts_level >= 1) loadNutsAgenturbezirke(region.nuts_id);
@@ -391,7 +401,7 @@ async function selectLau(giscoId: string, wantedSlugs?: string[], navigate = tru
   lauDatasetsError.value = null;
   const wanted = wantedSlugs ?? lauSelectedSlugs.value;
   if (navigate) {
-    router.push({ name: "regionen", params: { regionId: giscoId }, query: { type: "lau" } });
+    pushRegionRoute({ name: "regionen", params: { regionId: giscoId }, query: { type: "lau" } });
   }
   try {
     const body = await apiGet<LauRegion>(`/lau/${giscoId}`);
@@ -564,7 +574,7 @@ async function selectAgentur(baSchl: string, navigate = true, wantedMetrics?: Ag
   // also direkt übernommen werden.
   if (wantedMetrics?.length) agenturSelectedMetrics.value = wantedMetrics;
   if (navigate) {
-    router.push({ name: "regionen", params: { regionId: baSchl }, query: { type: "agentur" } });
+    pushRegionRoute({ name: "regionen", params: { regionId: baSchl }, query: { type: "agentur" } });
   }
   loadAgenturHierarchy(baSchl);
   try {
@@ -801,12 +811,13 @@ const currentRegionId = computed<string | undefined>(() => {
   if (regionType.value === "agentur") return selectedAgentur.value?.ba_schl;
   return undefined;
 });
-watch([currentQuery, currentRegionId], ([query, id]) => {
+watch([currentQuery, currentRegionId], async () => {
+  await pendingRegionPush;
   // route.name-Check siehe Kommentar in applyRouteSelection() - wegen
   // <KeepAlive> läuft dieser Watcher auch außerhalb der "regionen"-Route
   // weiter, darf dann aber nicht dorthin zurücknavigieren.
   if (route.name !== "regionen") return;
-  router.replace({ name: "regionen", params: { regionId: id }, query });
+  router.replace({ name: "regionen", params: { regionId: currentRegionId.value }, query: currentQuery.value });
 });
 
 // Übernimmt Typ-Filter/regionId/Typ/Datensatz aus der aktuellen Route in den
