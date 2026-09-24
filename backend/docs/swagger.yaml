@@ -1,5 +1,79 @@
 basePath: /api/v1
 definitions:
+  handlers.CustomRegionAggregateRequest:
+    properties:
+      datasets:
+        example:
+        - bevoelkerung
+        - schuldnerquote
+        items:
+          type: string
+        type: array
+      from_year:
+        example: 2015
+        type: integer
+      geometry:
+        type: object
+      min_share:
+        example: 0.01
+        type: number
+      to_year:
+        example: 2024
+        type: integer
+    type: object
+  handlers.CustomRegionAggregateRow:
+    properties:
+      aggregation_method:
+        example: weighted_avg_population
+        type: string
+      coverage:
+        example: 0.98
+        type: number
+      dataset_slug:
+        example: schuldnerquote
+        type: string
+      indicator:
+        example: schuldnerquote
+        type: string
+      level_used:
+        example: nuts3
+        type: string
+      month:
+        example: 6
+        type: integer
+      source_region_count:
+        example: 3
+        type: integer
+      value:
+        example: 7.4
+        type: number
+      value_kind:
+        example: rate
+        type: string
+      year:
+        example: 2023
+        type: integer
+    type: object
+  handlers.customRegionMeta:
+    properties:
+      dataset_slug:
+        example: schuldnerquote
+        type: string
+      finer_slug:
+        type: string
+      indicator:
+        example: schuldnerquote
+        type: string
+      kind:
+        example: rate
+        type: string
+      level:
+        example: nuts3
+        type: string
+      measure_type:
+        example: weighted_avg
+        type: string
+    type: object
   models.APIResponse:
     properties:
       data: {}
@@ -3921,6 +3995,75 @@ paths:
         – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Bruttoverdienst
+  /custom-regions/dataset-aggregate:
+    post:
+      consumes:
+      - application/json
+      description: 'Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten
+        und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt
+        (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene
+        vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte
+        (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt. Näherungswerte (z.
+        B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet.
+        Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: Version 2024.'
+      parameters:
+      - description: GeoJSON-Region und Datensätze
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CustomRegionAggregateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.CustomRegionAggregateRow'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Datensätze für eine Custom-Region (GeoJSON)
+      tags:
+      - Geo
+  /custom-regions/datasets:
+    get:
+      description: 'Gibt je Datensatz/Indikator die Quellebene (lau, nuts3, agentur),
+        die Aggregationsart (sum, weighted_avg) und die Kennzeichnung der Näherung
+        (kind) zurück. Namen und Lizenz: GET /datasets/{slug}.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.customRegionMeta'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Für Custom-Regionen abfragbare Datensätze
+      tags:
+      - Geo
   /datasets:
     get:
       consumes:

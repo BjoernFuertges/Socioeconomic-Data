@@ -555,3 +555,45 @@ models:
         description: "Anteil der Agenturbezirksfläche, der auf diese NUTS-3-Region entfällt (Zeilen eines Agenturbezirks summieren sich näherungsweise auf 1.0)"
       - name: area_share_of_nuts3
         description: "Anteil der NUTS-3-Fläche, der auf diesen Agenturbezirk entfällt (Zeilen einer NUTS-3-Region summieren sich näherungsweise auf 1.0)"
+
+  - name: mart_dataset_aggregation_meta
+    description: "Aggregationsmetadaten je Indikator (Ebene, sum vs. weighted_avg, Kennzeichnung der Näherung, feinerer Slug).."
+    columns:
+      - name: dataset_slug
+        tests:
+          - not_null
+      - name: indicator
+        tests:
+          - not_null
+      - name: level
+        tests:
+          - accepted_values:
+              values: ['lau', 'nuts3', 'agentur']
+      - name: measure_type
+        tests:
+          - accepted_values:
+              values: ['sum', 'weighted_avg']
+      - name: kind
+        tests:
+          - accepted_values:
+              values: ['count', 'rate', 'mean', 'median']
+
+  - name: mart_custom_region_unit_values
+    description: "Einheitliche Werte je Ebene (LAU/NUTS-3/Agenturbezirk) inkl. Bevölkerung als Gewicht, Grundlage der Custom-Region-Aggregation. NUTS-3/LAU fixiert auf Zielversion 2024."
+    columns:
+      - name: level
+        tests:
+          - accepted_values:
+              values: ['lau', 'nuts3', 'agentur']
+      - name: unit_id
+        tests:
+          - not_null
+      - name: dataset_slug
+        tests:
+          - not_null
+      - name: year
+        tests:
+          - not_null
+      - name: value
+        tests:
+          - not_null

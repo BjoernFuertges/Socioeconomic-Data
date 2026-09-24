@@ -57,6 +57,13 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			geoGroup.POST("/query", handler.QueryGeoRegionsByGeometry)
 		}
 
+		// Custom-Regionen (GeoJSON pro Anfrage, nichts wird gespeichert)
+		customRegionsGroup := v1.Group("/custom-regions")
+		{
+			customRegionsGroup.GET("/datasets", handler.ListCustomRegionDatasets)
+			customRegionsGroup.POST("/dataset-aggregate", handler.QueryCustomRegionDatasetAggregate)
+		}
+
 		// Agenturbezirke (eigenständige Gebietsgliederung der Bundesagentur
 		// für Arbeit, nicht deckungsgleich mit NUTS/LAU/ARS) mit monatlichen
 		// Arbeitslosenzahlen (AfA Lange Zeitreihen)

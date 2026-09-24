@@ -2749,6 +2749,108 @@ const docTemplate = `{
                 }
             }
         },
+        "/custom-regions/dataset-aggregate": {
+            "post": {
+                "description": "Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt. Näherungswerte (z. B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet. Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: Version 2024.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Geo"
+                ],
+                "summary": "Datensätze für eine Custom-Region (GeoJSON)",
+                "parameters": [
+                    {
+                        "description": "GeoJSON-Region und Datensätze",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CustomRegionAggregateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/handlers.CustomRegionAggregateRow"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/custom-regions/datasets": {
+            "get": {
+                "description": "Gibt je Datensatz/Indikator die Quellebene (lau, nuts3, agentur), die Aggregationsart (sum, weighted_avg) und die Kennzeichnung der Näherung (kind) zurück. Namen und Lizenz: GET /datasets/{slug}.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Geo"
+                ],
+                "summary": "Für Custom-Regionen abfragbare Datensätze",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/handlers.customRegionMeta"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/datasets": {
             "get": {
                 "description": "Liefert pro Datensatz Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum\nsowie eine persistente URI. Lizenz ist \"unbekannt\", solange die tatsächlichen Nutzungsbedingungen der Quelle noch nicht recherchiert wurden.\n?datasets= filtert auf einzelne Slugs (kommagetrennt, leer = alle) - gedacht für den\ngleichzeitigen Metadaten-Export neben einem Daten-Download\nFormat per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
@@ -7030,6 +7132,109 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "handlers.CustomRegionAggregateRequest": {
+            "type": "object",
+            "properties": {
+                "datasets": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "bevoelkerung",
+                        "schuldnerquote"
+                    ]
+                },
+                "from_year": {
+                    "type": "integer",
+                    "example": 2015
+                },
+                "geometry": {
+                    "type": "object"
+                },
+                "min_share": {
+                    "type": "number",
+                    "example": 0.01
+                },
+                "to_year": {
+                    "type": "integer",
+                    "example": 2024
+                }
+            }
+        },
+        "handlers.CustomRegionAggregateRow": {
+            "type": "object",
+            "properties": {
+                "aggregation_method": {
+                    "type": "string",
+                    "example": "weighted_avg_population"
+                },
+                "coverage": {
+                    "type": "number",
+                    "example": 0.98
+                },
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "schuldnerquote"
+                },
+                "indicator": {
+                    "type": "string",
+                    "example": "schuldnerquote"
+                },
+                "level_used": {
+                    "type": "string",
+                    "example": "nuts3"
+                },
+                "month": {
+                    "type": "integer",
+                    "example": 6
+                },
+                "source_region_count": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "value": {
+                    "type": "number",
+                    "example": 7.4
+                },
+                "value_kind": {
+                    "type": "string",
+                    "example": "rate"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2023
+                }
+            }
+        },
+        "handlers.customRegionMeta": {
+            "type": "object",
+            "properties": {
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "schuldnerquote"
+                },
+                "finer_slug": {
+                    "type": "string"
+                },
+                "indicator": {
+                    "type": "string",
+                    "example": "schuldnerquote"
+                },
+                "kind": {
+                    "type": "string",
+                    "example": "rate"
+                },
+                "level": {
+                    "type": "string",
+                    "example": "nuts3"
+                },
+                "measure_type": {
+                    "type": "string",
+                    "example": "weighted_avg"
+                }
+            }
+        },
         "models.APIResponse": {
             "type": "object",
             "properties": {

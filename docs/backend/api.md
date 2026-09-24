@@ -102,6 +102,23 @@ combined one.
 | GET | `/geo/{geo_id}/versions` | Available versions of a geo region |
 | POST | `/geo/query` | Spatial query by geometry (e.g. point/polygon) |
 
+### Custom regions (GeoJSON)
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/custom-regions/dataset-aggregate` | Time series of the requested datasets for a user-defined Polygon/MultiPolygon (GeoJSON, WGS84) |
+
+The region is sent per request and never stored. The polygon is intersected
+with the source geometries (reference state 2024) and the values are
+aggregated per dataset on the finest available level: LAU before NUTS-3;
+the monthly Agentur figures exist only per Agenturbezirk and are always
+aggregated on that level. Counts (`sum`) are distributed by area share,
+rates/means (`weighted_avg`) are population-weighted where every
+contributing unit has a population, otherwise area-weighted. Every row
+carries `level_used`, `aggregation_method`, `value_kind` (approximation
+flag, e.g. medians) and `coverage` (share of the polygon area that has
+data). Supports JSON/CSV like the other endpoints. Details in Swagger.
+
 ## Agenturbezirke (AfA unemployment figures)
 
 Agenturbezirke are a Bundesagentur-für-Arbeit-internal district partition,
