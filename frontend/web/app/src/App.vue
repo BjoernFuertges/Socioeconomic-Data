@@ -45,6 +45,15 @@ onMounted(async () => {
           Karte
         </RouterLink>
         <RouterLink
+          :to="{ name: 'eigene-region' }"
+          class="nav-tab"
+          :class="{ 'is-active': route.name === 'eigene-region' }"
+          role="tab"
+          :aria-selected="route.name === 'eigene-region'"
+        >
+          Eigene Region
+        </RouterLink>
+        <RouterLink
           :to="{ name: 'katalog' }"
           class="nav-tab"
           :class="{ 'is-active': route.name === 'katalog' }"

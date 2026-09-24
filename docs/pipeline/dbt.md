@@ -214,6 +214,25 @@ flowchart TB
   `render_lau_fill_gaps_view` macro; exposes `lau_version` instead of
   `nuts_version`.
 
+## Custom-region aggregation
+
+`POST /custom-regions/dataset-aggregate` needs no geometry work beyond the
+polygon intersection, so the values it weights are prepared in two marts:
+
+- **`mart_dataset_aggregation_meta`** – per (dataset, indicator): source
+  level (`lau`/`nuts3`/`agentur`), `measure_type` (`sum`/`weighted_avg`),
+  `kind` and an optional finer slug (NUTS-3 employment rate → LAU). The
+  NUTS-3 list duplicates the `source_datasets` of
+  `mart_nuts3_sociodata_harmonized`; keep them in sync.
+- **`mart_custom_region_unit_values`** – one long table of unit values
+  (NUTS-3 / LAU pinned to target version 2024, Agenturbezirke monthly) plus
+  the population used as weight.
+
+The weighting formulas mirror `mart_agentur_dataset_aggregate`. Agenturbezirke
+are only finer than NUTS-3 in Berlin, but their monthly figures have no
+NUTS-3 equivalent, so that dataset is aggregated on Agenturbezirk level
+everywhere.
+
 ## Conventions
 
 - Surrogate keys via `dbt_utils.generate_surrogate_key(...)`.

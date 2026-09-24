@@ -29,6 +29,24 @@ export async function apiGet<T>(path: string, params?: QueryParams): Promise<Api
   return body;
 }
 
+export async function apiPost<T>(path: string, body: unknown): Promise<ApiResponse<T>> {
+  const res = await fetch(API_BASE + path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  let parsed: ApiResponse<T> | undefined;
+  try {
+    parsed = await res.json();
+  } catch {
+    throw new Error(`Ungültige Antwort (HTTP ${res.status})`);
+  }
+  if (!res.ok || !parsed || parsed.success === false) {
+    throw new Error(parsed?.error || `HTTP ${res.status}`);
+  }
+  return parsed;
+}
+
 // Die Go-API serialisiert einige nullable Felder (LAU-Metadaten) als
 // database/sql.Null*-Structs ({"Int64":1,"Valid":true}) statt schlichter
 // Skalare. Beide Formen entpacken, damit die UI unabhängig vom Shape läuft.

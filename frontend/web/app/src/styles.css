@@ -508,7 +508,7 @@ table.nuts3-share-table th {
   border: 2px solid var(--series-1);
 }
 
-.marker-computed {
+.chart-caption .marker-computed {
   background: var(--series-1);
   border-radius: 2px;
 }

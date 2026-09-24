@@ -18,6 +18,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import("./components/MapView.vue"),
   },
   {
+    path: "/eigene-region",
+    name: "eigene-region",
+    component: () => import("./components/CustomRegionView.vue"),
+  },
+  {
     path: "/katalog/:slug?",
     name: "katalog",
     component: () => import("./components/DatasetCatalog.vue"),

@@ -283,3 +283,27 @@ export interface InventoryEntry {
 // je Datensatz -> nur die für den Fallback-Tabellen-Renderer relevanten Keys
 // sind bekannt, alle weiteren werden generisch durchgereicht.
 export type GenericDatasetRow = Record<string, unknown>;
+
+// GET /custom-regions/datasets (mart_dataset_aggregation_meta)
+export interface CustomRegionDataset {
+  dataset_slug: string;
+  indicator: string;
+  level: "lau" | "nuts3" | "agentur";
+  measure_type: "sum" | "weighted_avg";
+  kind: "count" | "rate" | "mean" | "median";
+  finer_slug?: string | null;
+}
+
+// Zeile von POST /custom-regions/dataset-aggregate
+export interface CustomRegionAggregateRow {
+  dataset_slug: string;
+  indicator: string;
+  level_used: "lau" | "nuts3" | "agentur";
+  year: number;
+  month?: number;
+  value: number;
+  value_kind: string;
+  aggregation_method: string;
+  source_region_count: number;
+  coverage: number;
+}
