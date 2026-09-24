@@ -100,6 +100,16 @@ export function datasetMetadataApiUrl(slugs: string[]): string {
   return absoluteApiUrl("/datasets", { datasets: slugs.join(",") });
 }
 
+// Quelldaten eines Datensatzes (GET /datasets/{slug}/source): die Werte
+// unverändert wie aus dem geo-mapper geliefert, ohne Harmonisierung.
+export function datasetSourceUrl(slug: string, format: DownloadFormat): string {
+  return absoluteApiUrl(`/datasets/${encodeURIComponent(slug)}/source`, { format, download: 1 });
+}
+
+export function datasetSourceApiUrl(slug: string): string {
+  return absoluteApiUrl(`/datasets/${encodeURIComponent(slug)}/source`);
+}
+
 export function datasetMetadataFilename(baseFilename: string): string {
   return `${baseFilename}_metadata`;
 }

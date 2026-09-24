@@ -19,6 +19,7 @@ import {
   type RegionType,
 } from "../api/download";
 import { formatDatasetLabel } from "../format";
+import { hasSourceData } from "../constants";
 import ApiSnippet from "./ApiSnippet.vue";
 
 // Zusätzliche, nicht katalogbasierte Wertereihen einer Region (BA-Monatswerte
@@ -136,6 +137,13 @@ const metadataApiUrl = computed(() => datasetMetadataApiUrl(metadataSlugs.value)
 const metadataDownloadUrl = computed(() => datasetMetadataUrl(metadataSlugs.value, format.value));
 const metadataFilename = computed(() => datasetMetadataFilename(filename.value));
 
+// Katalog-Karten mit den unveränderten Quelldaten zur aktuellen Auswahl
+// (/katalog/:slug scrollt zur Karte und hebt sie hervor). Bei "alle" wären das
+// zu viele Links - dann reicht der Sprung in den Katalog insgesamt.
+const sourceLinkOptions = computed(() =>
+  options.value.filter((o) => selectedSlugs.value.includes(o.slug) && hasSourceData(o.slug)),
+);
+
 // Ein Klick löst Daten- und (falls gewählt) Metadaten-Download gleichzeitig aus.
 function startDownload() {
   const urls = [downloadUrl.value];
@@ -198,6 +206,18 @@ function startDownload() {
         {{ format.toUpperCase() }} herunterladen ↓
       </button>
     </div>
+
+    <p class="hint">
+      Die Werte hier sind auf aktuelle Gebietsstände harmonisiert und interpoliert. Die unveränderten Quelldaten
+      je Datensatz gibt es im Datenkatalog:
+      <template v-if="sourceLinkOptions.length">
+        <template v-for="(o, i) in sourceLinkOptions" :key="o.slug">
+          <RouterLink :to="{ name: 'katalog', params: { slug: o.slug } }" @click="emit('close')">{{ o.label }}</RouterLink
+          ><template v-if="i < sourceLinkOptions.length - 1">, </template>
+        </template>
+      </template>
+      <RouterLink v-else :to="{ name: 'katalog' }" @click="emit('close')">zum Datenkatalog</RouterLink>.
+    </p>
 
     <details class="catalog-details">
       <summary>Dieselben Daten per API (curl/Link)</summary>

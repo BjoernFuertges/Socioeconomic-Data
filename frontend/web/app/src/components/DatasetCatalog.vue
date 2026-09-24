@@ -8,12 +8,14 @@ import {
   datasetMetadataApiUrl,
   datasetMetadataFilename,
   datasetMetadataUrl,
+  datasetSourceApiUrl,
+  datasetSourceUrl,
   triggerDownloads,
   type DownloadFormat,
 } from "../api/download";
 import type { DatasetMetadataEntry, GenericDatasetRow } from "../types/api";
 import { formatDateDE, formatNumber } from "../format";
-import { AGENTUR_DATASET_SLUG } from "../constants";
+import { AGENTUR_DATASET_SLUG, hasSourceData } from "../constants";
 import DataTable from "./DataTable.vue";
 import ApiSnippet from "./ApiSnippet.vue";
 
@@ -80,6 +82,10 @@ function metadataApiUrl(e: DatasetMetadataEntry): string {
 }
 function metadataDownloadUrl(e: DatasetMetadataEntry): string {
   return datasetMetadataUrl([e.dataset_slug], downloadFormat(e.dataset_slug));
+}
+
+function sourceDownloadUrl(e: DatasetMetadataEntry): string {
+  return datasetSourceUrl(e.dataset_slug, downloadFormat(e.dataset_slug));
 }
 
 function startDatasetDownload(e: DatasetMetadataEntry) {
@@ -375,6 +381,7 @@ function exportCsv() {
           <p class="hint">
             Vollständiger Datensatz ({{ e.total_records ? formatNumber(e.total_records) + " Zeilen" : "alle Zeilen" }}),
             nicht nur die Vorschau oben. Für einzelne Regionen mit aggregierten Werten: „In Regionen anzeigen“ unten.
+            Die unveränderten Quelldaten stehen weiter unten.
           </p>
           <div class="download-format-choice">
             <label>
@@ -416,6 +423,25 @@ function exportCsv() {
             :format="downloadFormat(e.dataset_slug)"
             :filename="datasetMetadataFilename(e.dataset_slug)"
           />
+          <template v-if="hasSourceData(e.dataset_slug)">
+            <p class="hint">
+              Quelldaten: die Werte unverändert, wie sie aus dem vorgelagerten Mapping-Schritt
+              (<a href="https://pypi.org/project/geo-mapper/" target="_blank" rel="noopener noreferrer">geo-mapper</a>)
+              kommen. Nur die Regionsnamen sind auf Geodaten-IDs gemappt, es gibt keine Harmonisierung auf
+              aktuelle Gebietsstände und keine Interpolation. Herkunft und Lizenz stehen oben.
+            </p>
+            <div class="download-format-choice">
+              <a :href="sourceDownloadUrl(e)" download class="link-button">
+                Quelldaten als {{ downloadFormat(e.dataset_slug).toUpperCase() }} herunterladen ↓
+              </a>
+            </div>
+            <ApiSnippet
+              :api-url="datasetSourceApiUrl(e.dataset_slug)"
+              :download-url="sourceDownloadUrl(e)"
+              :format="downloadFormat(e.dataset_slug)"
+              :filename="`${e.dataset_slug}_source`"
+            />
+          </template>
         </details>
 
         <div class="catalog-card-footer">
