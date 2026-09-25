@@ -52,7 +52,7 @@ mkdir -p letsencrypt && touch letsencrypt/acme.json && chmod 600 letsencrypt/acm
 
 ## Deployment: Neues Backend-Image mit laufender Compose-Umgebung
 
-Die Compose-Konfiguration nutzt für den Backend-Service das Image `${DOCKER_HUB_USERNAME}/backend:latest`.
+Die Compose-Konfiguration nutzt für den Backend-Service das Image `ghcr.io/${GHCR_OWNER}/soziodata-backend:${IMAGE_TAG}` (GitHub Container Registry).
 
 ```bash
 cd backend/deployments
@@ -101,80 +101,29 @@ Logs prüfen:
 docker compose logs --tail=80 pipeline
 ```
 
-## CI-Deployment auf der VM (erforderliche Schritte)
+## CI/CD und Deployment (GitHub Actions → Hetzner Cloud)
 
-Der Deploy-Job läuft im bestehenden GitLab Docker-Runner und verbindet sich per SSH auf die VM. Ein zusätzlicher lokaler Shell-Runner ist nicht nötig.
+Der Server wird per Terraform bereitgestellt (`infra/`, Workflow `.github/workflows/infra.yml`), die Anwendung per
+`.github/workflows/main.yml` ausgerollt. Erst-Einrichtung, benötigte Secrets/Variablen und DNS: [`infra/README.md`](infra/README.md).
 
-1. Zugriff auf Repo und Docker auf der VM sicherstellen
+Ablauf von `main.yml`:
 
-Der Deploy wird remote im Server-Pfad `/root/soziooekonomische-daten` ausgeführt.
+1. **Push/PR auf `main`**: Tests (Go, Frontend-Build, mkdocs `--strict`, Syntax-Check dlt, `docker compose config`).
+2. **Nur Push auf `main`** (bzw. manuell): Semantic-Release-Dry-Run → Images (`soziodata-backend|frontend|docs`) nach GHCR
+   (`sha-<commit>`, `latest`, Version) → Semantic Release (Tag, Changelog, GitHub Release) → Deploy per SSH.
+3. **Deploy** (`backend/scripts/deploy_remote.sh`): Commit auf dem Server auschecken, `.env`-Dateien aus Secrets schreiben,
+   Nextcloud-Sync, `docker compose pull && up -d`. Optional (`initial_load`) danach dlt + dbt einmalig komplett ausführen.
+4. **E2E** (Playwright, `frontend/web/app/e2e`) gegen die deployte Instanz; bei Fehlschlag Rollback auf den letzten guten Stand.
 
-```bash
-cd /root/soziooekonomische-daten
-git status
-docker compose version
-```
+Der Deploy-Job bricht ab, solange `APP_HOST` nicht per DNS auf den Server zeigt (Let's-Encrypt-Challenge).
+Der Server braucht `rclone` und die Nextcloud-Zugangsdaten (`RCLONE_SOURCE`, `RCLONE_CONF`), damit
+`backend/scripts/sync_nextcloud_data_exchange.sh` läuft; ohne diese wird der Sync übersprungen.
 
-1. Nextcloud-Sync auf der VM konfigurieren
+## Datenbank-Backup
 
-Das CI-Deploy ruft `backend/scripts/sync_nextcloud_data_exchange.sh` auf. Dafür muss auf der VM die produktive Sync-Env-Datei vorhanden sein.
-
-```bash
-cd /root/soziooekonomische-daten
-cp backend/deployments/.env.nextcloud-sync.example backend/deployments/.env.nextcloud-sync
-```
-
-Danach in `backend/deployments/.env.nextcloud-sync` mindestens setzen:
-
-- `RCLONE_SOURCE`
-- `RCLONE_CONFIG_FILE` (falls nicht Default)
-- optional `RCLONE_DEST`, `RCLONE_GEODATA_DEST`
-
-Zusätzlich muss `rclone` auf der VM installiert und lauffähig sein.
-
-1. Erforderliche GitLab CI-Variablen
-
-Im Projekt unter GitLab CI/CD Variables müssen vorhanden sein:
-
-- `DOCKER_HUB_USERNAME`
-- `DOCKER_HUB_TOKEN`
-- `SSH_USER` (z. B. `root`)
-- `SSH_HOST` (z. B. `example.org` oder IP)
-- `SSH_PRIVATE_KEY` (private Key zum SSH-Zugang)
-- `SSH_KNOWN_HOSTS` (Output von `ssh-keyscan -H <host>`)
-
-Kurze Checkliste zum Setzen der SSH-Variablen:
-
-```bash
-# 1) Known Hosts für die Ziel-VM erzeugen
-ssh-keyscan -H <SSH_HOST>
-
-# Beispiel mit Port 22 und Ausgabe in temporäre Datei
-ssh-keyscan -p 22 -H <SSH_HOST> > /tmp/gitlab_known_hosts
-cat /tmp/gitlab_known_hosts
-```
-
-- `SSH_PRIVATE_KEY`: privater Deploy-Key (multiline), als **masked + protected** Variable speichern
-- `SSH_KNOWN_HOSTS`: kompletter Inhalt aus `ssh-keyscan`, als multiline Variable speichern
-- `SSH_USER`: SSH-User auf der VM (z. B. `root`)
-- `SSH_HOST`: Hostname/IP der VM
-
-Optionaler Schnelltest lokal:
-
-```bash
-ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/tmp/gitlab_known_hosts <SSH_USER>@<SSH_HOST> "echo ok"
-```
-
-1. Verhalten beim Deploy-Job
-
-Bei Push auf `main` führt der Deploy-Job auf der VM aus:
-
-1. `GIT_LFS_SKIP_SMUDGE=1 git pull --ff-only origin main`
-2. `bash backend/scripts/sync_nextcloud_data_exchange.sh`
-3. `docker compose pull backend`
-4. Selektive Restarts (`backend` und bei relevanten Änderungen auch `pipeline`)
-
-Damit werden Änderungen am Nextcloud-Sync-Script ebenfalls automatisch ausgerollt und angewendet.
+Nachts (02:17 Uhr) sichert `backend/scripts/backup_db.sh` das Schema `snapshots` (dbt-Historie) und
+`loaded_data.dataset_metadata` per `pg_dump` in einen Hetzner-Object-Storage-Bucket (30 Tage Aufbewahrung).
+Alles andere baut die Pipeline neu. Einrichtung, Restore und Restore-Reihenfolge: [docs/operations.md](docs/operations.md).
 
 ## Speicherplatz-Verwaltung
 
@@ -195,14 +144,14 @@ du -sh /var/lib/docker/volumes/* | sort -rh
 
 ### Bekannte Speicherfresser
 
-**Docker Volumes:** GitLab-Runner legt bei jedem CI-Job temporäre Volumes für Cache und Build-Verzeichnisse an. Diese werden nach Abschluss des Jobs **nicht automatisch gelöscht** und können mehrere GB belegen.
+**Docker Volumes und Images:** Jedes Deployment zieht neue Images (`sha-<commit>`); alte Image-Versionen bleiben auf dem Server liegen und können mehrere GB belegen. Ungenutzte Volumes können sich ebenfalls ansammeln.
 
-Ungenutzte Runner-Volumes identifizieren und löschen:
+Ungenutzte Volumes identifizieren und löschen:
 ```bash
 # Volumes auflisten und prüfen
 docker volume inspect $(docker volume ls -q)
 
-# Ungenutzte Runner-Volumes löschen (pgdata NICHT löschen!)
+# Ungenutzte Volumes löschen (pgdata NICHT löschen!)
 docker volume rm <volume-name>
 
 # Alternativ: alle ungenutzten Volumes auf einmal löschen

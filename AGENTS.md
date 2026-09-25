@@ -120,9 +120,19 @@ built/tested independently as shown above.
   `pre-commit` hook that regenerates Swagger docs, regenerates Go models
   (`go generate ./internal/models/...`), and runs `go test ./...`. Do not
   bypass it silently — if a change requires `--no-verify`, say so.
-- **CI is GitLab CI** (`.gitlab-ci.yml`), not GitHub Actions. Pipeline
-  stages: `validate` → `build` → `deploy` → `pages`. Deploys happen on push
-  to `main` only.
+- **CI is GitHub Actions** (`.github/workflows/`): `main.yml` (tests →
+  semantic-release dry run → GHCR images → release → deploy to Hetzner →
+  Playwright E2E against the deployed instance, rollback on failure) and
+  `infra.yml` (Terraform for the Hetzner server, `infra/`). Deploys happen on
+  push to `main` only; the server-side steps live in
+  `backend/scripts/deploy_remote.sh`. Commit messages follow Conventional
+  Commits, because Semantic Release derives version and changelog from them
+  (`.releaserc`). Setup steps and required secrets: `infra/README.md`.
+- **Backups**: `backend/scripts/backup_db.sh` (nightly cron on the server,
+  installed by the deploy job) dumps only what the pipeline cannot rebuild —
+  the `snapshots` schema and `loaded_data.dataset_metadata` — to Hetzner
+  Object Storage, 30 days retention; `restore_db.sh` restores into a fresh DB.
+  If you add a new non-reproducible schema/table, extend `backup_db.sh`.
 
 ## Verifying non-trivial changes
 
