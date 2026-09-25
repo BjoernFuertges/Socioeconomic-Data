@@ -71,7 +71,7 @@
 with all_source_data as (
 
     -- Alle Kreis-Rohdatensätze vereinen. Sources werden mit
-    -- write_disposition=replace geladen (siehe dlt/load_soziodata_generic.py),
+    -- write_disposition=replace geladen (siehe pipeline/dlt/load_soziodata_generic.py),
     -- daher keine Duplikate je (geodata_id_nuts, year) zu erwarten - DISTINCT
     -- ist trotzdem defensiv gesetzt: sum()-Measure-Types (siehe measure_type
     -- unten) würden jede versehentlich erneut geladene Dopplung stillschweigend

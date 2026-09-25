@@ -5,22 +5,22 @@ load raw data unchanged into PostgreSQL (schema `loaded_data`). Each script
 can be run standalone:
 
 ```bash
-cd dlt
+cd pipeline/dlt
 python load_<name>.py [args...]
 ```
 
-Configuration (target DB connection, etc.) via `dlt/config.toml` or
-`dlt/.dlt/secrets.toml` (generate locally from `.secrets.toml.example`).
+Configuration (target DB connection, etc.) via `pipeline/dlt/config.toml` or
+`pipeline/dlt/.dlt/secrets.toml` (generate locally from `.secrets.toml.example`).
 
 ## Scripts
 
 | Script | Purpose | Target tables (`loaded_data`) |
 |---|---|---|
-| [`load_arbeitslosenzahlen_afa.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dlt/load_arbeitslosenzahlen_afa.py) | Monthly unemployment/underemployment figures per Agenturbezirk (Bundesagentur-für-Arbeit district partition, distinct from NUTS-3/LAU/Kreise), pulled live from the official "Lange Zeitreihen" REST API on every run | `results_arbeitslosenzahlen_afa_agenturbezirke`, `dataset_metadata` |
-| [`load_agenturbezirke_geodata.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dlt/load_agenturbezirke_geodata.py) | Agenturbezirk boundaries (official BA-Gebietsstruktur shapefile, all ~146 districts) | `agenturbezirk_geometry` |
-| [`load_geodata_to_postgis.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dlt/load_geodata_to_postgis.py) | LAU/NUTS geometries (GeoJSON) + LAU population (CSV) | `lau_geometry`, `lau_population`, `nuts_geometry` |
-| [`load_beschaeftigungsquote.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dlt/load_beschaeftigungsquote.py) | Employment rate (special case: municipalities/LAU) | `results_beschaeftigungsquote_gemeinden` |
-| [`load_soziodata_generic.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dlt/load_soziodata_generic.py) | generic format `mapped_pairs.csv` + `meta.yaml` for all remaining county-level (Kreis) datasets (population, debtor quota, work volume, ...) | `results_<dataset>_kreise`, `dataset_metadata` |
+| [`load_arbeitslosenzahlen_afa.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/load_arbeitslosenzahlen_afa.py) | Monthly unemployment/underemployment figures per Agenturbezirk (Bundesagentur-für-Arbeit district partition, distinct from NUTS-3/LAU/Kreise), pulled live from the official "Lange Zeitreihen" REST API on every run | `results_arbeitslosenzahlen_afa_agenturbezirke`, `dataset_metadata` |
+| [`load_agenturbezirke_geodata.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/load_agenturbezirke_geodata.py) | Agenturbezirk boundaries (official BA-Gebietsstruktur shapefile, all ~146 districts) | `agenturbezirk_geometry` |
+| [`load_geodata_to_postgis.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/load_geodata_to_postgis.py) | LAU/NUTS geometries (GeoJSON) + LAU population (CSV) | `lau_geometry`, `lau_population`, `nuts_geometry` |
+| [`load_beschaeftigungsquote.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/load_beschaeftigungsquote.py) | Employment rate (special case: municipalities/LAU) | `results_beschaeftigungsquote_gemeinden` |
+| [`load_soziodata_generic.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/load_soziodata_generic.py) | generic format `mapped_pairs.csv` + `meta.yaml` for all remaining county-level (Kreis) datasets (population, debtor quota, work volume, ...) | `results_<dataset>_kreise`, `dataset_metadata` |
 
 ### Generic format (`load_soziodata_generic.py`)
 
@@ -43,7 +43,7 @@ Expected input structure under `<DATA_EXCHANGE_PATH>/<dataset_subdir>/`:
   optionally `license`/`license_url` as a manual override. Normally these
   two are left unset: for any dataset whose `source` mentions BBSR
   (currently all of them),
-  [`bbsr_license.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dlt/bbsr_license.py)
+  [`bbsr_license.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/bbsr_license.py)
   looks up the license BBSR currently states for "Laufende
   Raumbeobachtung"/INKAR automatically on every pipeline run (cached for
   24h, falls back to a stale cache or `"unbekannt"` rather than failing
@@ -57,12 +57,12 @@ Every run also upserts (merge on `dataset_slug`) one row into the shared
 `loaded_data.dataset_metadata` table with the provenance/license/
 description fields from `meta.yaml`, so that information reaches the
 database instead of staying on disk only - see
-[`stg_dataset_metadata.sql`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dbt/socioeconomic_data_pipeline/models/staging/stg_dataset_metadata.sql)
+[`stg_dataset_metadata.sql`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dbt/socioeconomic_data_pipeline/models/staging/stg_dataset_metadata.sql)
 / `mart_dataset_catalog.sql` downstream and the `/datasets` API endpoint
 in [../backend/api.md](../backend/api.md).
 
 All datasets loaded in production are listed in
-[`run_all_pipelines.sh`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dlt/run_all_pipelines.sh).
+[`run_all_pipelines.sh`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/run_all_pipelines.sh).
 
 ### Geodata with fallback paths
 

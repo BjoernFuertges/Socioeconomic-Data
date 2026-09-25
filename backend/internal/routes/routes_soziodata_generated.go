@@ -4,8 +4,8 @@
 package routes
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/handlers"
+	"github.com/gin-gonic/gin"
 )
 
 // RegisterSoziodataRoutes registriert alle generierten Soziodata-Routen.

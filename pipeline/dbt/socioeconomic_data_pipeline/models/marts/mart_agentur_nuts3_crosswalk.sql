@@ -34,7 +34,7 @@
   Kleine geometrische Überlappungs-"Krümel" durch Grenzungenauigkeiten
   werden über einen Schwellwert (10% Flächenanteil, mindestens einer der
   beiden Anteile muss darüber liegen) herausgefiltert. Empirisch ermittelt
-  (siehe analysis/agentur_nuts3_crosswalk_shares.ipynb): der jeweils
+  (siehe analysis/data-analysis/agentur_nuts3_crosswalk_shares.ipynb): der jeweils
   größere der beiden Anteile liegt bei Krümeln höchstens bei ~6% (bei
   kleinen Kreisfreien Städten kann ein Krümel von ~1-2 km² schon mehrere %
   der Stadtfläche ausmachen, z.B. 0.7% bei Stuttgart), echte Bestandteile

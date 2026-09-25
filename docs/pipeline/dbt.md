@@ -1,11 +1,11 @@
 # dbt – Transformation
 
-Project: [`dbt/socioeconomic_data_pipeline/`](https://github.com/BjoernFuertges/Socioeconomic-Data/tree/main/dbt/socioeconomic_data_pipeline).
+Project: [`pipeline/dbt/socioeconomic_data_pipeline/`](https://github.com/BjoernFuertges/Socioeconomic-Data/tree/main/pipeline/dbt/socioeconomic_data_pipeline).
 Reads from the `loaded_data` schema (populated by dlt), writes to
 `transformed_data`.
 
 ```bash
-cd dbt/socioeconomic_data_pipeline
+cd pipeline/dbt/socioeconomic_data_pipeline
 dbt deps      # once / when packages change (dbt_utils)
 dbt snapshot  # advance historization
 dbt run       # build staging/intermediate/marts
@@ -27,7 +27,7 @@ or the `DBT_PROFILES_DIR` environment variable.
 ### Snapshots
 
 Each `snap_results_*` snapshot typically uses the
-[`soziodata_snapshot_query`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dbt/socioeconomic_data_pipeline/macros/soziodata_snapshot_query.sql)
+[`soziodata_snapshot_query`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dbt/socioeconomic_data_pipeline/macros/soziodata_snapshot_query.sql)
 macro, which returns the latest value per `(geodata_id_nuts, year)`
 (`distinct on` + `order by ... loaded_at desc`). Since different dlt load
 runs may bring different metadata columns (`loaded_at` vs. `_dlt_load_id`),
@@ -119,7 +119,7 @@ flags estimated rows; `value_linear` / `value_peer_trend` /
 (`is_interpolated = true`) so that non-estimated rows aren't cluttered with
 irrelevant alternative values.
 
-**Evaluation methodology:** [`analysis/impute_missing_values.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/analysis/impute_missing_values.py)
+**Evaluation methodology:** [`analysis/data-analysis/impute_missing_values.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/analysis/data-analysis/impute_missing_values.py)
 implements both methods (plus a third, regression-based method that is
 *not* used in production due to poor accuracy, see below) and evaluates
 them with a leave-one-out procedure: 40 known values per dataset are
@@ -134,7 +134,7 @@ the real value. Across n=520 samples over all 13 Kreis datasets:
 | 4 – Multi-linear regression (not used) | 2071.65 | 8846.76 | 45.88 % | 7.1 % |
 
 Full raw results (per-sample errors, per-dataset breakdown) are in
-[`analysis/results/`](https://github.com/BjoernFuertges/Socioeconomic-Data/tree/main/analysis/results).
+[`analysis/data-analysis/results/`](https://github.com/BjoernFuertges/Socioeconomic-Data/tree/main/analysis/data-analysis/results).
 
 Takeaways:
 

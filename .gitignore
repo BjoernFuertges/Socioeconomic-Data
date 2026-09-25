@@ -23,3 +23,5 @@
 /backend/web/static/config.js
 
 /.vscode/
+# Kompiliertes Backend-Binary (go build)
+/backend/soziodata

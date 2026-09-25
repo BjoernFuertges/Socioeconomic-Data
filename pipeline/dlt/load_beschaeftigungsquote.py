@@ -158,7 +158,7 @@ def main():
         sys.exit(1)
 
     dataset_subdir = sys.argv[1]
-    exchange_path = Path(os.environ.get("DATA_EXCHANGE_PATH", "/home/bjoern/Software/HTW/soziooekonomische-daten"))
+    exchange_path = Path(os.environ.get("DATA_EXCHANGE_PATH", str(Path(__file__).resolve().parents[2])))
     dataset_dir = exchange_path / dataset_subdir
     dataset_name = dataset_dir.name
 

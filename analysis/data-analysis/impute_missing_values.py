@@ -29,7 +29,7 @@ Zwei Betriebsarten:
      keinen NUTS-3-Code für Peer-Gruppierung/Regression).
 
 Voraussetzung: lokale Postgres/PostGIS-DB mit geladenen Rohdaten im
-loaded_data-Schema (siehe dlt/run_all_pipelines.sh für den Ladevorgang).
+loaded_data-Schema (siehe pipeline/dlt/run_all_pipelines.sh für den Ladevorgang).
 Für eine rein lokale Ausführung außerhalb von docker-compose:
   - Postgres/PostGIS-Container z.B. mit
     `docker run -d --name sozio_postgis -e POSTGRES_DB=soziooekonomische-daten
@@ -39,8 +39,8 @@ Für eine rein lokale Ausführung außerhalb von docker-compose:
     überschrieben werden (Defaults siehe unten passen zu obigem Container).
 
 Aufruf:
-    source dlt/.venv/bin/activate
-    python analysis/impute_missing_values.py
+    source pipeline/dlt/.venv/bin/activate
+    python analysis/data-analysis/impute_missing_values.py
 """
 
 from __future__ import annotations

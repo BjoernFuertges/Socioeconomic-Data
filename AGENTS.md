@@ -15,10 +15,10 @@ duplicate implementation detail that already lives in code, code comments,
 or Swagger; link to it instead. Skip doc updates for purely internal
 refactors that don't change behavior or structure visible to the docs.
 
-The same applies to the per-directory `CLAUDE.md` files (`backend/`,
-`frontend/`, `dbt/`, `dlt/`, `analysis/`, `arbeitslosenzahlen-berlin/`):
+The same applies to the per-directory `AGENTS.md` files (`backend/`,
+`frontend/`, `pipeline/dbt/`, `pipeline/dlt/`, `analysis/data-analysis/`, `analysis/arbeitsagentur/`):
 if a change alters commands, generated-file boundaries, model/mart
-layering, or another fact one of them states, update that `CLAUDE.md` in
+layering, or another fact one of them states, update that `AGENTS.md` in
 the same change rather than letting it drift out of date.
 
 ## Project overview
@@ -32,9 +32,9 @@ diagram across all modules.
 | Component | Language | Purpose |
 |---|---|---|
 | `backend/` | Go | REST API, reads only from `transformed_data` (read-only) |
-| `dlt/` | Python | Extract & Load raw data into `loaded_data` (unchanged) |
-| `dbt/socioeconomic_data_pipeline/` | SQL (dbt) | Transform `loaded_data` → `transformed_data` (staging/intermediate/marts/snapshots) |
-| `geo-importer/`, `geo-mapper/` | Python | Prepare geodata and map raw datasets onto geodata IDs, upstream of `dlt/` |
+| `pipeline/dlt/` | Python | Extract & Load raw data into `loaded_data` (unchanged) |
+| `pipeline/dbt/socioeconomic_data_pipeline/` | SQL (dbt) | Transform `loaded_data` → `transformed_data` (staging/intermediate/marts/snapshots) |
+| `geo-importer/`, `geo-mapper/` | Python | Prepare geodata and map raw datasets onto geodata IDs, upstream of `pipeline/dlt/` |
 | `data-exchange/` | data only | Exchange area for intermediate raw-data states |
 | `docs/`, `mkdocs.yml` | Markdown | This documentation site |
 
@@ -47,10 +47,10 @@ cd backend && go test ./...                  # tests
 cd backend && swag init -g cmd/soziodata/main.go -o docs  # regenerate Swagger
 
 # dbt (needs a configured profiles.yml / DBT_PROFILES_DIR + reachable Postgres/PostGIS)
-cd dbt/socioeconomic_data_pipeline && dbt deps && dbt snapshot && dbt run && dbt test
+cd pipeline/dbt/socioeconomic_data_pipeline && dbt deps && dbt snapshot && dbt run && dbt test
 
-# dlt (needs dlt/.dlt/secrets.toml + reachable Postgres)
-cd dlt && python load_<name>.py [args...]
+# dlt (needs pipeline/dlt/.dlt/secrets.toml + reachable Postgres)
+cd pipeline/dlt && python load_<name>.py [args...]
 
 # Docs site
 pip install -r requirements-docs.txt && mkdocs build --strict   # must pass with zero warnings
@@ -67,7 +67,7 @@ built/tested independently as shown above.
 - **dlt never historizes.** History over time is exclusively built by dbt
   snapshots (`snapshots/snap_results_*.sql`). Do not add historization
   logic to a dlt script. `write_disposition` is now uniformly `"replace"`
-  for every dataset-content resource across `dlt/` (`load_soziodata_generic.py`
+  for every dataset-content resource across `pipeline/dlt/` (`load_soziodata_generic.py`
   was the one exception - it used `"append"` with no primary key/dedup
   until this was fixed; reruns had been silently accumulating duplicate
   `loaded_data` rows, which inflated every "sum"-type indicator in
@@ -101,9 +101,9 @@ built/tested independently as shown above.
   repeated pattern — copy it rather than inventing a new one:
   1. Raw data as `mapped_pairs.csv` + `meta.yaml` under
      `data-exchange/.../<dataset>/results_<dataset>_kreise/`
-  2. `dlt/load_soziodata_generic.py <dataset>/results_<dataset>_kreise` →
+  2. `pipeline/dlt/load_soziodata_generic.py <dataset>/results_<dataset>_kreise` →
      table `loaded_data.results_<dataset>_kreise`
-  3. `dbt/.../models/staging/stg_<dataset>_kreise.sql` (+ matching
+  3. `pipeline/dbt/.../models/staging/stg_<dataset>_kreise.sql` (+ matching
      `*_schema.yml` with `not_null`/`accepted_range` tests)
   4. Add an entry to the `source_datasets` list in
      `mart_nuts3_sociodata_harmonized.sql`

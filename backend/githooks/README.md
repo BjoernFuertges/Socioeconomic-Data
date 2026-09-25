@@ -17,7 +17,7 @@ git config core.hooksPath backend/githooks
 Wird vor jedem Commit ausgeführt und prüft/generiert folgendes:
 
 1. **Swagger-Dokumentation** – führt `swag init` aus und staged `docs/docs.go`, `docs/swagger.json`, `docs/swagger.yaml`.
-2. **Go-Models aus dbt-Schemas** – wenn sich Dateien nach dem Muster `dbt/.../staging/stg_*_kreise_schema.yml` im Staging-Bereich befinden, wird `go generate ./internal/models/...` ausgeführt. Die drei generierten Dateien werden anschließend automatisch gestaged:
+2. **Go-Models aus dbt-Schemas** – wenn sich Dateien nach dem Muster `pipeline/dbt/.../staging/stg_*_kreise_schema.yml` im Staging-Bereich befinden, wird `go generate ./internal/models/...` ausgeführt. Die drei generierten Dateien werden anschließend automatisch gestaged:
    - `internal/models/models_soziodata_generated.go`
    - `internal/handlers/handlers_soziodata_generated.go`
    - `internal/routes/routes_soziodata_generated.go`

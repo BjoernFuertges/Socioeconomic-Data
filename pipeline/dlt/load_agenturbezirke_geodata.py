@@ -1,7 +1,7 @@
 """
 DLT pipeline for loading the official BA-Gebietsstruktur (Agenturbezirke) into PostGIS.
 
-Downloads the same shapefile as arbeitslosenzahlen-berlin/fetch_geodata.sh
+Downloads the same shapefile as analysis/arbeitsagentur/fetch_geodata.sh
 (https://statistik.arbeitsagentur.de .../BA-Gebietsstrukturen-shp.zip), but
 keeps all ~146 Agenturbezirke nationwide instead of filtering to the 3
 Berlin districts. Agenturbezirke are a distinct geo-level from NUTS/LAU/ARS

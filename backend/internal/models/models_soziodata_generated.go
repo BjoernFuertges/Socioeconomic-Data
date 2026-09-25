@@ -10,7 +10,7 @@ type ArbeitsloseData struct {
 }
 
 // ArbeitsloseConfig ist die Dataset-Konfiguration für Arbeitslose-Daten,
-// generiert aus dbt/.../models/staging/stg_arbeitslose_kreise_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_arbeitslose_kreise_schema.yml
 var ArbeitsloseConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_arbeitslose_kreise",
@@ -30,7 +30,7 @@ type ArbeitsvolumenData struct {
 }
 
 // ArbeitsvolumenConfig ist die Dataset-Konfiguration für Arbeitsvolumen-Daten,
-// generiert aus dbt/.../models/staging/stg_arbeitsvolumen_kreise_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_arbeitsvolumen_kreise_schema.yml
 var ArbeitsvolumenConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_arbeitsvolumen_kreise",
@@ -50,7 +50,7 @@ type AuszubildendeData struct {
 }
 
 // AuszubildendeConfig ist die Dataset-Konfiguration für Auszubildende-Daten,
-// generiert aus dbt/.../models/staging/stg_auszubildende_kreise_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_auszubildende_kreise_schema.yml
 var AuszubildendeConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_auszubildende_kreise",
@@ -70,7 +70,7 @@ type BeschaeftigungsquoteGemeindenData struct {
 }
 
 // BeschaeftigungsquoteGemeindenConfig ist die Dataset-Konfiguration für BeschaeftigungsquoteGemeinden-Daten,
-// generiert aus dbt/.../models/staging/stg_beschaeftigungsquote_gemeinden_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_beschaeftigungsquote_gemeinden_schema.yml
 var BeschaeftigungsquoteGemeindenConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_beschaeftigungsquote_gemeinden",
@@ -93,7 +93,7 @@ type BeschaeftigungsquoteNuts3Data struct {
 }
 
 // BeschaeftigungsquoteNuts3Config ist die Dataset-Konfiguration für BeschaeftigungsquoteNuts3-Daten,
-// generiert aus dbt/.../models/staging/stg_beschaeftigungsquote_nuts3_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_beschaeftigungsquote_nuts3_schema.yml
 var BeschaeftigungsquoteNuts3Config = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_beschaeftigungsquote_nuts3",
@@ -113,7 +113,7 @@ type BevoelkerungData struct {
 }
 
 // BevoelkerungConfig ist die Dataset-Konfiguration für Bevoelkerung-Daten,
-// generiert aus dbt/.../models/staging/stg_bevoelkerung_kreise_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_bevoelkerung_kreise_schema.yml
 var BevoelkerungConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_bevoelkerung_kreise",
@@ -133,7 +133,7 @@ type BruttoverdienstData struct {
 }
 
 // BruttoverdienstConfig ist die Dataset-Konfiguration für Bruttoverdienst-Daten,
-// generiert aus dbt/.../models/staging/stg_bruttoverdienst_kreise_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_bruttoverdienst_kreise_schema.yml
 var BruttoverdienstConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_bruttoverdienst_kreise",
@@ -153,7 +153,7 @@ type DurchschnittsalterData struct {
 }
 
 // DurchschnittsalterConfig ist die Dataset-Konfiguration für Durchschnittsalter-Daten,
-// generiert aus dbt/.../models/staging/stg_durchschnittsalter_kreise_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_durchschnittsalter_kreise_schema.yml
 var DurchschnittsalterConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_durchschnittsalter_kreise",
@@ -173,7 +173,7 @@ type ErwerbstaetigePro1000EinwohnerData struct {
 }
 
 // ErwerbstaetigePro1000EinwohnerConfig ist die Dataset-Konfiguration für ErwerbstaetigePro1000Einwohner-Daten,
-// generiert aus dbt/.../models/staging/stg_erwerbstaetige_pro_1000_einwohner_kreise_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_erwerbstaetige_pro_1000_einwohner_kreise_schema.yml
 var ErwerbstaetigePro1000EinwohnerConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_erwerbstaetige_pro_1000_einwohner_kreise",
@@ -193,7 +193,7 @@ type KinderarmutData struct {
 }
 
 // KinderarmutConfig ist die Dataset-Konfiguration für Kinderarmut-Daten,
-// generiert aus dbt/.../models/staging/stg_kinderarmut_kreise_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_kinderarmut_kreise_schema.yml
 var KinderarmutConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_kinderarmut_kreise",
@@ -213,7 +213,7 @@ type MedianeinkommenData struct {
 }
 
 // MedianeinkommenConfig ist die Dataset-Konfiguration für Medianeinkommen-Daten,
-// generiert aus dbt/.../models/staging/stg_medianeinkommen_kreise_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_medianeinkommen_kreise_schema.yml
 var MedianeinkommenConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_medianeinkommen_kreise",
@@ -233,7 +233,7 @@ type SchuldnerquoteData struct {
 }
 
 // SchuldnerquoteConfig ist die Dataset-Konfiguration für Schuldnerquote-Daten,
-// generiert aus dbt/.../models/staging/stg_schuldnerquote_kreise_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_schuldnerquote_kreise_schema.yml
 var SchuldnerquoteConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_schuldnerquote_kreise",
@@ -253,7 +253,7 @@ type SgbIiQuoteData struct {
 }
 
 // SgbIiQuoteConfig ist die Dataset-Konfiguration für SgbIiQuote-Daten,
-// generiert aus dbt/.../models/staging/stg_sgb_ii_quote_kreise_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_sgb_ii_quote_kreise_schema.yml
 var SgbIiQuoteConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_sgb_ii_quote_kreise",
@@ -273,7 +273,7 @@ type StudierendeData struct {
 }
 
 // StudierendeConfig ist die Dataset-Konfiguration für Studierende-Daten,
-// generiert aus dbt/.../models/staging/stg_studierende_kreise_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_studierende_kreise_schema.yml
 var StudierendeConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_studierende_kreise",
@@ -293,7 +293,7 @@ type WohngeldhaushalteData struct {
 }
 
 // WohngeldhaushalteConfig ist die Dataset-Konfiguration für Wohngeldhaushalte-Daten,
-// generiert aus dbt/.../models/staging/stg_wohngeldhaushalte_kreise_schema.yml
+// generiert aus pipeline/dbt/.../models/staging/stg_wohngeldhaushalte_kreise_schema.yml
 var WohngeldhaushalteConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_wohngeldhaushalte_kreise",

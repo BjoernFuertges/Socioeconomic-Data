@@ -255,7 +255,7 @@ def main() -> None:
     exchange_base = Path(
         os.environ.get(
             "DATA_EXCHANGE_PATH",
-            "/home/bjoern/Software/HTW/soziooekonomische-daten/data-exchange/1_friedrich-bjoern",
+            str(Path(__file__).resolve().parents[2] / "data-exchange" / "1_friedrich-bjoern"),
         )
     )
     dataset_dir = exchange_base / dataset_subdir

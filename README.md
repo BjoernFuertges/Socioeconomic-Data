@@ -45,20 +45,6 @@ Nextcloud-Sync einmalig ausführen (braucht Zugangsdaten in
 [backend/scripts/sync_nextcloud_data_exchange.sh](backend/scripts/sync_nextcloud_data_exchange.sh))
 oder per Hand in den Pfad kopieren.
 
-## GLFS
-This project is using [Git Large File Storage (git LFS)](https://git-lfs.com/).
-
-### Enable on your device
-```bash
-git lfs install
-```
-
-### Add files to GLFS
-```bash
-git lfs track "*.psd"
-git add .gitattributes
-```
-
 ## Traefik & TLS
 ```bash
 mkdir -p letsencrypt && touch letsencrypt/acme.json && chmod 600 letsencrypt/acme.json
@@ -89,7 +75,7 @@ docker compose up -d --pull always --no-deps backend
 
 ## Deployment: Geänderte Pipeline manuell auf dem Server ausführen
 
-Da `dlt/` und `dbt/` als Volumes in den `pipeline`-Container eingebunden sind, reicht nach einem `git pull` auf dem Server ein Neustart des Containers, damit Änderungen wirksam werden.
+Da `pipeline/dlt/` und `pipeline/dbt/` als Volumes in den `pipeline`-Container eingebunden sind, reicht nach einem `git pull` auf dem Server ein Neustart des Containers, damit Änderungen wirksam werden.
 
 ```bash
 cd /root/soziooekonomische-daten

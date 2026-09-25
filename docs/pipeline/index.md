@@ -2,9 +2,9 @@
 
 The pipeline consists of two tools with a clear division of labor:
 
-- **[dlt](dlt.md)** (`dlt/`) – Extract & Load: reads raw data (CSV/GeoJSON)
+- **[dlt](dlt.md)** (`pipeline/dlt/`) – Extract & Load: reads raw data (CSV/GeoJSON)
   and writes it **unchanged** into PostgreSQL, schema `loaded_data`.
-- **[dbt](dbt.md)** (`dbt/socioeconomic_data_pipeline/`) – Transform:
+- **[dbt](dbt.md)** (`pipeline/dbt/socioeconomic_data_pipeline/`) – Transform:
   historizes, cleans, harmonizes, and aggregates the data into views/tables
   in the `transformed_data` schema, which are read by the backend.
 
@@ -23,7 +23,7 @@ flowchart LR
 
 ## Order of a full run
 
-See [`dlt/run_all_pipelines.sh`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dlt/run_all_pipelines.sh):
+See [`pipeline/dlt/run_all_pipelines.sh`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/run_all_pipelines.sh):
 
 1. All dlt scripts run (unemployment figures, geodata, generic
    socioeconomic datasets) → populate `loaded_data`.

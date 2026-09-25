@@ -179,17 +179,17 @@ from `arbeitslosenzahlen-afa-agenturbezirke`) and
 the combined region export above, not as their own routes, so without these
 rows the metadata export would have nothing for them. Same synthetic
 pattern already used for `beschaeftigungsquote-nuts3`, see
-[`mart_dataset_catalog.sql`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dbt/socioeconomic_data_pipeline/models/marts/mart_dataset_catalog.sql).
+[`mart_dataset_catalog.sql`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dbt/socioeconomic_data_pipeline/models/marts/mart_dataset_catalog.sql).
 
 Reads `transformed_data.mart_dataset_catalog` (name, description, unit,
 provenance, license/license_url, geodata level/year, year coverage, and a
 persistent `dataset_uri` of the form `urn:soziodata:dataset:<slug>`).
 `license` is the literal string `"unbekannt"` rather than a bare `null`
 for any dataset whose usage terms couldn't be determined — see
-[`stg_dataset_metadata.sql`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dbt/socioeconomic_data_pipeline/models/staging/stg_dataset_metadata.sql).
+[`stg_dataset_metadata.sql`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dbt/socioeconomic_data_pipeline/models/staging/stg_dataset_metadata.sql).
 For BBSR-sourced datasets (currently all of them) the license is looked
 up automatically and kept up to date by
-[`dlt/bbsr_license.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dlt/bbsr_license.py)
+[`pipeline/dlt/bbsr_license.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/bbsr_license.py)
 — no manual research needed, see [dlt.md](../pipeline/dlt.md).
 
 Two additional fields make the license's temporal coverage honest:
@@ -199,7 +199,7 @@ older than `license_tracked_since` — the current license was then
 retroactively applied to those older years without independent
 verification for that period, since neither BBSR nor we kept a license
 history before that date). Historized via
-[`snap_dataset_license.sql`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dbt/socioeconomic_data_pipeline/snapshots/snap_dataset_license.sql)
+[`snap_dataset_license.sql`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dbt/socioeconomic_data_pipeline/snapshots/snap_dataset_license.sql)
 / `stg_dataset_license_history`.
 
 Covers every dataset whose loader upserts a `loaded_data.dataset_metadata`

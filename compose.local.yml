@@ -50,8 +50,8 @@ services:
     image: python:3.12-slim
     working_dir: /app
     volumes:
-      - ./dlt:/app/dlt
-      - ./dbt:/app/dbt
+      - ./pipeline/dlt:/app/dlt
+      - ./pipeline/dbt:/app/dbt
       - ./data-exchange:/app/data-exchange
       - ./geo-mapper:/app/geo-mapper:ro
       - ./geo-importer:/app/geo-importer:ro
@@ -60,7 +60,7 @@ services:
       LAU_GEODATA_PATH: /app/geo-mapper/geo_mapper/geodata_raw/lau
       NUTS_GEODATA_PATH: /app/geo-mapper/geo_mapper/geodata_raw/nuts
       LAU_POPULATION_PATH: /app/geo-importer/src/geodata/LAU
-      # Von dlt/fetch_lau_population.py befuellt (Eurostat LAU-NUTS-
+      # Von pipeline/dlt/fetch_lau_population.py befuellt (Eurostat LAU-NUTS-
       # Korrespondenztabellen) - ohne echte lau_population_*.csv hier faellt
       # load_geodata_to_postgis.py auf LAU_POPULATION_PATH zurueck, das nur
       # ID/Name ohne gisco_id/nuts_3_code/population liefert (siehe dortigen

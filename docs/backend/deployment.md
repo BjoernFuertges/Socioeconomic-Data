@@ -21,7 +21,7 @@ On push to `main` (`.gitlab-ci.yml`):
    - Nextcloud data sync (`backend/scripts/sync_nextcloud_data_exchange.sh`)
    - `docker compose pull backend`
    - Backend restart on changes under `backend/`
-   - Pipeline restart on changes under `dlt/`, `dbt/`, `geo-mapper/`, etc.
+   - Pipeline restart on changes under `pipeline/dlt/`, `pipeline/dbt/`, `geo-mapper/`, etc.
 
 Required GitLab CI variables: `DOCKER_HUB_USERNAME`, `DOCKER_HUB_TOKEN`,
 `SSH_USER`, `SSH_HOST`, `SSH_PRIVATE_KEY`, `SSH_KNOWN_HOSTS`.
@@ -50,7 +50,7 @@ docker compose up -d --pull always --no-deps backend
 
 ## Manually running a changed pipeline on the server
 
-Since `dlt/` and `dbt/` are mounted as volumes into the `pipeline`
+Since `pipeline/dlt/` and `pipeline/dbt/` are mounted as volumes into the `pipeline`
 container, restarting the container after a `git pull` on the server is
 enough for changes to take effect:
 

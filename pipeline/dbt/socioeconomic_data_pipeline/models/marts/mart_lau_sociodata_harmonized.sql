@@ -37,7 +37,7 @@
   gisco_id führt - dafür muss fetch_lau_population.py gelaufen sein
   (Teil von run_all_pipelines.sh), sonst fällt load_geodata_to_postgis.py
   auf einen Fallback ohne gisco_id/Bevölkerung zurück und dieser Mart
-  bleibt leer, obwohl er baut (siehe dlt/CLAUDE.md).
+  bleibt leer, obwohl er baut (siehe pipeline/dlt/AGENTS.md).
 */
 
 {% set target_versions = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024] %}

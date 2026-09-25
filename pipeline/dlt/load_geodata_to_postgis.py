@@ -19,13 +19,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Base paths — GEODATA_BASE_PATH zeigt auf den Output des socioeconomic-data-parser
-BASE_PATH = Path(os.environ.get("GEODATA_BASE_PATH", "/home/bjoern/Software/HTW/soziooekonomische-daten/socioeconomic-data-parser"))
+BASE_PATH = Path(os.environ.get("GEODATA_BASE_PATH", str(Path(__file__).resolve().parents[2] / "socioeconomic-data-parser")))
 GEODATA_PATH = BASE_PATH / "geodata" / "lau" / "output" / "geojson"
 # Fallback: unkomprimierte GeoJSON-Dateien aus geo-mapper (lokal verfügbar)
 LAU_GEOJSON_FALLBACK_PATH = Path(
     os.environ.get(
         "LAU_GEODATA_PATH",
-        str(Path(__file__).resolve().parents[1] / "geo-mapper" / "geo_mapper" / "geodata_raw" / "lau"),
+        str(Path(__file__).resolve().parents[2] / "geo-mapper" / "geo_mapper" / "geodata_raw" / "lau"),
     )
 )
 POPULATION_PATH = BASE_PATH / "statistics" / "lokale_verwaltungseinheiten_eu" / "output"
@@ -33,13 +33,13 @@ POPULATION_PATH = BASE_PATH / "statistics" / "lokale_verwaltungseinheiten_eu" / 
 POPULATION_FALLBACK_PATH = Path(
     os.environ.get(
         "LAU_POPULATION_PATH",
-        str(Path(__file__).resolve().parents[1] / "geo-importer" / "src" / "geodata" / "LAU"),
+        str(Path(__file__).resolve().parents[2] / "geo-importer" / "src" / "geodata" / "LAU"),
     )
 )
 NUTS_GEODATA_PATH = Path(
     os.environ.get(
         "NUTS_GEODATA_PATH",
-        str(Path(__file__).resolve().parents[1] / "geo-mapper" / "geo_mapper" / "geodata_raw" / "nuts"),
+        str(Path(__file__).resolve().parents[2] / "geo-mapper" / "geo_mapper" / "geodata_raw" / "nuts"),
     )
 )
 

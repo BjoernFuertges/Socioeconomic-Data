@@ -41,7 +41,7 @@ fi
 
 # 2. Regenerate Go models if dbt schema YAMLs changed
 echo -e "\n${YELLOW} Checking for dbt schema changes...${NC}"
-if git diff --cached --name-only | grep -qE "dbt/socioeconomic_data_pipeline/models/staging/stg_.*_kreise_schema\.yml"; then
+if git diff --cached --name-only | grep -qE "pipeline/dbt/socioeconomic_data_pipeline/models/staging/stg_.*_kreise_schema\.yml"; then
     echo -e "${YELLOW} dbt schema changes detected – regenerating Go models...${NC}"
     cd "$(git rev-parse --show-toplevel)/backend/internal/models" || exit 1
     go generate .

@@ -41,7 +41,7 @@ Für API-Responses gilt:
 
 - `gisco_id` ist **nicht** auf Deutschland oder ein `DE_<Ziffern>`-Format
   beschränkt. Die Rohdaten (GISCO LAU-GeoJSONs, siehe
-  `dlt/load_geodata_to_postgis.py`) und der Pfad, der tatsächlich
+  `pipeline/dlt/load_geodata_to_postgis.py`) und der Pfad, der tatsächlich
   `transformed_data.lau_integrated` speist
   (`stg_lau_geometry` → `mart_lau_geometry_historized` → `lau_integrated`), filtern nicht auf
   `country_code = 'DE'` - das tun nur einzelne, andere Zwecke dienende

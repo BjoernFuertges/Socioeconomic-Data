@@ -117,7 +117,7 @@ context here (details in the respective READMEs in the repository):
 - **`geo-mapper/`** – matches the socioeconomic raw datasets (from
   `data-exchange/`) to geodata IDs (LAU/NUTS) and produces the
   `mapped_pairs.csv`/`meta.yaml` files consumed by
-  `dlt/load_soziodata_generic.py`.
+  `pipeline/dlt/load_soziodata_generic.py`.
 - **`data-exchange/`** – exchange directory for intermediate raw-data
   states between project contributors; no code of its own, only data.
 
