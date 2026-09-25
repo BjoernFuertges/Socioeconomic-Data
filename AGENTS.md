@@ -66,16 +66,20 @@ built/tested independently as shown above.
   joining, or aggregation logic belongs in dbt, not in Go handlers.
 - **dlt never historizes.** History over time is exclusively built by dbt
   snapshots (`snapshots/snap_results_*.sql`). Do not add historization
-  logic to a dlt script. Note `write_disposition` is currently *not*
-  uniformly `"replace"` across `dlt/` — `load_soziodata_generic.py` uses
-  `"append"` (no primary key/dedup) and `load_arbeitslosenzahlen_afa.py`
-  mixes `"merge"` and `"replace"`; only `load_beschaeftigungsquote.py` and
-  `load_geodata_to_postgis.py` are pure `"replace"`. This is a known
-  inconsistency, not an intentional per-script historization strategy —
-  the `"append"` case in particular means reruns accumulate duplicate
-  `loaded_data` rows rather than overwrite them, which should be fixed
-  (target `"replace"` there too) rather than treated as precedent for new
-  scripts.
+  logic to a dlt script. `write_disposition` is now uniformly `"replace"`
+  for every dataset-content resource across `dlt/` (`load_soziodata_generic.py`
+  was the one exception - it used `"append"` with no primary key/dedup
+  until this was fixed; reruns had been silently accumulating duplicate
+  `loaded_data` rows, which inflated every "sum"-type indicator in
+  `mart_nuts3_sociodata_harmonized`/`mart_nuts3_timeseries_interpolated`
+  and downstream fill_gaps views by however many times the pipeline had
+  been rerun locally - "weighted_avg" indicators happened to cancel the
+  duplication out in their ratio and were unaffected). `load_arbeitslosenzahlen_afa.py`
+  still legitimately mixes `"merge"` (upserting `dataset_metadata` by
+  `dataset_slug`, same pattern as `load_soziodata_generic.py`'s own
+  metadata resource) and `"replace"` (the actual Agenturbezirk data) -
+  that split is intentional, not the same bug. Treat `"append"` as a red
+  flag, not a pattern to copy into a new loader.
 - **NUTS-3 region IDs are not stable over time** (2003/2006/2010/2013/
   2016/2021/2024 boundary versions exist). Any new model that aggregates
   or compares NUTS-3 data across years must go through
