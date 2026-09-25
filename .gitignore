@@ -21,3 +21,5 @@
 
 # Frontend-Laufzeitkonfiguration (API-/Docs-URL), pro Umgebung anders
 /backend/web/static/config.js
+
+/.vscode/
