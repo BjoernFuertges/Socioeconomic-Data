@@ -1,4 +1,4 @@
-module gitlab.htw-berlin.de/s0595954/soziooekonomische-daten
+module github.com/BjoernFuertges/Socioeconomic-Data/backend
 
 go 1.19
 

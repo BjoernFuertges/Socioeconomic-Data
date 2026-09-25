@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/models"
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
 func TestDatasetCatalogQuery(t *testing.T) {

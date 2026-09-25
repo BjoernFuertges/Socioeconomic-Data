@@ -27,9 +27,9 @@ flowchart LR
 
 | Module | Purpose | Docs |
 |---|---|---|
-| [`backend/`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/backend/README.md) | Go API (Gin), reads from `transformed_data` | [Backend overview](backend/index.md) |
-| [`dlt/`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/tree/main/dlt) | Python pipelines that load raw/geodata into `loaded_data` | [dlt](pipeline/dlt.md) |
-| [`dbt/socioeconomic_data_pipeline/`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/tree/main/dbt/socioeconomic_data_pipeline) | Transformation, snapshots, NUTS/LAU harmonization | [dbt](pipeline/dbt.md) |
+| [`backend/`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/backend/README.md) | Go API (Gin), reads from `transformed_data` | [Backend overview](backend/index.md) |
+| [`dlt/`](https://github.com/BjoernFuertges/Socioeconomic-Data/tree/main/dlt) | Python pipelines that load raw/geodata into `loaded_data` | [dlt](pipeline/dlt.md) |
+| [`dbt/socioeconomic_data_pipeline/`](https://github.com/BjoernFuertges/Socioeconomic-Data/tree/main/dbt/socioeconomic_data_pipeline) | Transformation, snapshots, NUTS/LAU harmonization | [dbt](pipeline/dbt.md) |
 | `geo-importer/`, `geo-mapper/` | Prepares geodata (NUTS/LAU) and maps the socioeconomic raw data onto geodata IDs before it is loaded via dlt | [Architecture](architecture.md#other-modules) |
 | `data-exchange/` | Storage for exchanged intermediate raw-data states between project contributors | [Architecture](architecture.md#other-modules) |
 

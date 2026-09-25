@@ -23,7 +23,7 @@ flowchart LR
 
 ## Order of a full run
 
-See [`dlt/run_all_pipelines.sh`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/dlt/run_all_pipelines.sh):
+See [`dlt/run_all_pipelines.sh`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/dlt/run_all_pipelines.sh):
 
 1. All dlt scripts run (unemployment figures, geodata, generic
    socioeconomic datasets) → populate `loaded_data`.

@@ -4,6 +4,10 @@ In production, the stack runs via Docker Compose on a VM
 (`backend/deployments/docker-compose.yml`): Traefik (TLS/routing), PostGIS,
 a backend container, and a `pipeline` container for dlt/dbt.
 
+The Postgres password is not stored in the compose file: `docker compose`
+reads `DB_PASSWORD` from an untracked `backend/deployments/.env` on the VM
+(template: `backend/deployments/.env.example`) and refuses to start without it.
+
 ## CI/CD (GitLab CI)
 
 On push to `main` (`.gitlab-ci.yml`):

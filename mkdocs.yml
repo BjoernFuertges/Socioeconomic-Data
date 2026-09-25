@@ -1,6 +1,6 @@
 site_name: Sozioökonomische Daten
 site_description: Documentation for the backend (Go API) and the data pipeline (dlt + dbt)
-repo_url: https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten
+repo_url: https://github.com/BjoernFuertges/Socioeconomic-Data
 docs_dir: docs
 
 theme:

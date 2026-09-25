@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
-	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/models"
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
 const datasetCatalogColumns = `dataset_slug, dataset_uri, name, description, description_long, unit,

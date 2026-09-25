@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/handlers"
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/handlers"
 )
 
 // SetupRoutes konfiguriert alle API-Routen

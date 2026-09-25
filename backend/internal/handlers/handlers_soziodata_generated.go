@@ -5,7 +5,7 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
-	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/models"
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
 // GetArbeitsloseData gibt Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag zurück

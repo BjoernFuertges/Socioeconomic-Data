@@ -4,19 +4,19 @@
     To run the pipeline, database, backend, and frontend together with a
     single command instead of setting each one up individually, see
     `compose.local.yml` at the repo root (documented in the root
-    [README.md](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/README.md#lokal-testen-docker-compose)).
+    [README.md](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/README.md#lokal-testen-docker-compose)).
     The rest of this page covers running the backend standalone.
 
 ## Prerequisites
 
-- Go (see [`go.mod`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/backend/go.mod) for the version)
+- Go (see [`go.mod`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/backend/go.mod) for the version)
 - A running PostgreSQL/PostGIS instance with a populated `transformed_data` schema
   (see [Data Pipeline](../pipeline/index.md))
 - A `.env` file in the `backend/` directory (see `.env.example`)
 
 ## Configuration (environment variables)
 
-From [`backend/.env.example`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/backend/.env.example):
+From [`backend/.env.example`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/backend/.env.example):
 
 | Variable | Default (in code) | Purpose |
 |---|---|---|
@@ -63,7 +63,7 @@ The `pre-commit` hook automatically runs:
 | Skip the hook temporarily | `git commit --no-verify` |
 | Run the hook manually | `bash backend/githooks/pre-commit` |
 
-Details: [`backend/githooks/README.md`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/backend/githooks/README.md).
+Details: [`backend/githooks/README.md`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/backend/githooks/README.md).
 
 ## Code generation from dbt schemas
 
@@ -109,7 +109,7 @@ go doc ./internal/handlers.GetLAURegions
 
 # or browse interactively in the browser:
 go install golang.org/x/pkgsite/cmd/pkgsite@latest
-pkgsite -http=:8080   # then open http://localhost:8080/gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/backend
+pkgsite -http=:8080   # then open http://localhost:8080/github.com/BjoernFuertges/Socioeconomic-Data/backend
 ```
 
 !!! note "Why not a hosted godoc site?"

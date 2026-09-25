@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/jmoiron/sqlx"
-	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/models"
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
 // Handler enthält alle Handler für die API

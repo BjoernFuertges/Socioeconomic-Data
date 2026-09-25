@@ -5,14 +5,14 @@ from the `transformed_data` schema produced by dbt and serves the
 socioeconomic/geographic data for frontends/analyses.
 
 Full details (git hooks, standard Go project layout) live in
-[`backend/README.md`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/backend/README.md).
+[`backend/README.md`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/backend/README.md).
 
 ## Technology stack
 
 - **Language/Framework:** Go, [Gin](https://gin-gonic.com/)
 - **DB access:** [`sqlx`](https://github.com/jmoiron/sqlx) + `lib/pq` (PostgreSQL/PostGIS, read-only against `transformed_data`)
 - **API docs:** [swaggo/swag](https://github.com/swaggo/swag) → `backend/docs/swagger.json` / `swagger.yaml`, served at `/api/docs/*any`
-- **Entry point:** [`cmd/soziodata/main.go`](https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/-/blob/main/backend/cmd/soziodata/main.go)
+- **Entry point:** [`cmd/soziodata/main.go`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/backend/cmd/soziodata/main.go)
 
 ## Directory structure (excerpt)
 

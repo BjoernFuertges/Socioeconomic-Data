@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/models"
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
 // regionNutsDatasets gibt die verfügbaren Soziodata-Datensätze für eine NUTS-ID zurück.

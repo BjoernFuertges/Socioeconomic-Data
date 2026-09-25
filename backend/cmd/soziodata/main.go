@@ -7,11 +7,11 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/docs"
-	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/config"
-	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/handlers"
-	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/models"
-	"gitlab.htw-berlin.de/s0595954/soziooekonomische-daten/internal/routes"
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/docs"
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/config"
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/handlers"
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/routes"
 )
 
 // @title Sozioökonomische Daten API

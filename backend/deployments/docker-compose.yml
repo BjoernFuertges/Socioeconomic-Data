@@ -22,13 +22,14 @@ services:
     networks:
       - backend-net
 
+  # DB_PASSWORD kommt aus backend/deployments/.env (Vorlage: .env.example, nicht committen).
   postgis:
     image: postgis/postgis:17-3.5
     container_name: postgis
     environment:
       POSTGRES_DB: soziooekonomische-daten
       POSTGRES_USER: sozio_data_compose_user
-      POSTGRES_PASSWORD: REMOVED_PASSWORD
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?}
     ports:
       - "5432:5432"
     volumes:
@@ -47,7 +48,7 @@ services:
       DB_HOST: postgis
       DB_PORT: 5432
       DB_USER: sozio_data_compose_user
-      DB_PASSWORD: REMOVED_PASSWORD
+      DB_PASSWORD: ${DB_PASSWORD:?}
       DB_NAME: soziooekonomische-daten
     restart: always
     depends_on:
@@ -81,13 +82,13 @@ services:
       DB_HOST: postgis
       DB_PORT: 5432
       DB_USER: sozio_data_compose_user
-      DB_PASSWORD: REMOVED_PASSWORD
+      DB_PASSWORD: ${DB_PASSWORD:?}
       DB_NAME: soziooekonomische-daten
       DESTINATION__POSTGRES__CREDENTIALS__HOST: postgis
       DESTINATION__POSTGRES__CREDENTIALS__PORT: 5432
       DESTINATION__POSTGRES__CREDENTIALS__DATABASE: soziooekonomische-daten
       DESTINATION__POSTGRES__CREDENTIALS__USERNAME: sozio_data_compose_user
-      DESTINATION__POSTGRES__CREDENTIALS__PASSWORD: REMOVED_PASSWORD
+      DESTINATION__POSTGRES__CREDENTIALS__PASSWORD: ${DB_PASSWORD:?}
       DBT_PROFILES_DIR: /app/dbt/socioeconomic_data_pipeline
     command: >
       bash -c "python -m pip install -q -r /app/dlt/requirements.txt 'dlt[postgres]' dbt-postgres geo-mapper-htw==0.1.0b10 && python -c 'import dlt, pandas, shapely' && echo 'Pipeline image ready' && tail -f /dev/null"
