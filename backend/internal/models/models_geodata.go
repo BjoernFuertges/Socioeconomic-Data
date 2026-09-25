@@ -7,16 +7,25 @@ import (
 
 // LAURegion repräsentiert eine LAU-Region mit Geometrie und Population
 type LAURegion struct {
-	GiscoID               string          `json:"gisco_id" db:"gisco_id" example:"DE111"`
-	Year                  int             `json:"year" db:"year" example:"2024"`
-	LAUName               string          `json:"lau_name" db:"lau_name" example:"Stuttgart"`
-	CountryCode           string          `json:"country_code" db:"country_code" example:"DE"`
-	LAUID                 string          `json:"lau_id" db:"lau_id" example:"08111000"`
-	GeometryWGS84         json.RawMessage `json:"geometry_wgs84,omitempty" db:"geometry_wgs84" swaggertype:"object"`
-	HasValidGeometry      bool            `json:"has_valid_geometry" db:"has_valid_geometry" example:"true"`
-	LAUNameNational       sql.NullString  `json:"lau_name_national,omitempty" db:"lau_name_national" swaggertype:"string"`
-	LAUNameLatin          sql.NullString  `json:"lau_name_latin,omitempty" db:"lau_name_latin" swaggertype:"string"`
-	NUTS3Code             sql.NullString  `json:"nuts_3_code,omitempty" db:"nuts_3_code" swaggertype:"string"`
+	GiscoID          string          `json:"gisco_id" db:"gisco_id" example:"DE111"`
+	Year             int             `json:"year" db:"year" example:"2024"`
+	LAUName          string          `json:"lau_name" db:"lau_name" example:"Stuttgart"`
+	CountryCode      string          `json:"country_code" db:"country_code" example:"DE"`
+	LAUID            sql.NullString  `json:"lau_id,omitempty" db:"lau_id" swaggertype:"string" example:"08111000"`
+	GeometryWGS84    json.RawMessage `json:"geometry_wgs84,omitempty" db:"geometry_wgs84" swaggertype:"object"`
+	HasValidGeometry bool            `json:"has_valid_geometry" db:"has_valid_geometry" example:"true"`
+	LAUNameNational  sql.NullString  `json:"lau_name_national,omitempty" db:"lau_name_national" swaggertype:"string"`
+	LAUNameLatin     sql.NullString  `json:"lau_name_latin,omitempty" db:"lau_name_latin" swaggertype:"string"`
+	NUTS3Code        sql.NullString  `json:"nuts_3_code,omitempty" db:"nuts_3_code" swaggertype:"string"`
+	// NUTS3ID ist die kanonische LAU->NUTS-3-Verlinkung: deklarierte
+	// Quellspalte (nuts_3_code/nuts_3), sonst räumlich ermittelter Fallback
+	// (siehe int_lau_nuts3_spatial_link.sql). Robuster als NUTS3Code, das
+	// oft NULL ist, wenn die Quelldaten keinen NUTS-3-Code führen.
+	NUTS3ID sql.NullString `json:"nuts3_id,omitempty" db:"nuts3_id" swaggertype:"string"`
+	// NUTS3LinkSource kennzeichnet, woher NUTS3ID stammt: 'declared' (aus
+	// Quelldaten) oder 'spatial_estimate' (räumlich ermittelt, keine
+	// amtliche Zuordnung) - siehe lau_integrated.sql.
+	NUTS3LinkSource       sql.NullString  `json:"nuts3_link_source,omitempty" db:"nuts3_link_source" swaggertype:"string"`
 	LAUNatCode            sql.NullString  `json:"lau_nat_code,omitempty" db:"lau_nat_code" swaggertype:"string"`
 	PopulationCount       sql.NullInt64   `json:"population_count,omitempty" db:"population_count" swaggertype:"integer"`
 	Country               sql.NullString  `json:"country,omitempty" db:"country" swaggertype:"string"`
@@ -40,7 +49,9 @@ type LAURegionFilter struct {
 	Offset              int    `form:"offset" binding:"omitempty,min=0" example:"0"`
 }
 
-// GeoRegionSummary ist ein einheitlicher Listen-Eintrag für NUTS- und LAU-Regionen.
+// GeoRegionSummary ist ein einheitlicher Listen-Eintrag für NUTS-, LAU- und
+// Agentur-Regionen (GeoType: "NUTS", "LAU" oder "Agentur"). NutsLevel/
+// NutsLevelCode/CountryCode sind nur für NUTS bzw. LAU gesetzt.
 type GeoRegionSummary struct {
 	GeoID            string          `json:"geo_id" example:"DE111"`
 	GeoType          string          `json:"geo_type" example:"NUTS"`
@@ -48,7 +59,7 @@ type GeoRegionSummary struct {
 	NutsLevel        *int            `json:"nuts_level,omitempty" example:"3"`
 	NutsLevelCode    *string         `json:"nuts_level_code,omitempty" example:"NUTS-3"`
 	CountryCode      *string         `json:"country_code,omitempty" example:"DE"`
-	Year             int             `json:"year" example:"2024"`
+	Year             int             `json:"vintage_year" example:"2024"`
 	GeometryWGS84    json.RawMessage `json:"geometry_wgs84,omitempty" swaggertype:"object"`
 	HasValidGeometry *bool           `json:"has_valid_geometry,omitempty" example:"true"`
 	Datasets         []RegionDataset `json:"datasets,omitempty"`
@@ -72,13 +83,21 @@ type GeoRegionFilter struct {
 	Offset              int    `form:"offset" binding:"omitempty,min=0"`
 }
 
-// GeoRegionVersions enthält verfügbare Jahre für eine Geo-Region (NUTS oder LAU).
+// GeoPeriod repräsentiert einen Gültigkeitszeitraum einer Geometrie-Version.
+// ValidTo ist nil, wenn die Version noch aktuell ist.
+type GeoPeriod struct {
+	ValidFrom int  `json:"valid_from" db:"valid_from" example:"2016"`
+	ValidTo   *int `json:"valid_to"   db:"valid_to"   example:"2023" swaggertype:"integer"`
+}
+
+// GeoRegionVersions enthält die Geometrie-Perioden einer Geo-Region (NUTS oder LAU).
+// Jede Periode repräsentiert eine Version der Geometrie; ValidTo=null bedeutet noch aktuell.
 type GeoRegionVersions struct {
-	GeoID         string  `json:"geo_id" example:"DE111"`
-	GeoType       string  `json:"geo_type" example:"NUTS"`
-	NutsLevel     *int    `json:"nuts_level,omitempty" example:"3"`
-	NutsLevelCode *string `json:"nuts_level_code,omitempty" example:"NUTS-3"`
-	Versions      []int   `json:"versions" example:"2024,2023,2022"`
+	GeoID         string      `json:"geo_id"                    example:"DE111"`
+	GeoType       string      `json:"geo_type"                  example:"NUTS"`
+	NutsLevel     *int        `json:"nuts_level,omitempty"      example:"3"`
+	NutsLevelCode *string     `json:"nuts_level_code,omitempty" example:"NUTS-3"`
+	Periods       []GeoPeriod `json:"periods"`
 }
 
 // GeoSpatialQueryRequest beschreibt eine räumliche Abfrage mit GeoJSON-Geometrie.

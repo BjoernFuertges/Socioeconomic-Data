@@ -1,0 +1,5 @@
+Methode,Anzahl Siege,Anteil %
+1. Lineare Interpolation,228,44.0
+3. Peer-basierte Fortschreibung,187,36.1
+2. Naive Fortschreibung,71,13.7
+4. Regressionsschätzung,32,6.2

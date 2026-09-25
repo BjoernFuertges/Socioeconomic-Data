@@ -13,7 +13,6 @@
   da die zeitliche Abdeckung variiert.
 
   Nur Datensätze mit has_valid_value = true werden einbezogen.
-  Das mart_arbeitslosenzahlen enthält bereits ausschließlich jahresbezogene Datensätze.
 */
 
 with bevoelkerung as (
@@ -36,16 +35,6 @@ schuldnerquote as (
         schuldnerquote_prozent
     from {{ ref('stg_schuldnerquote_kreise') }}
     where has_valid_value = true
-),
-
-arbeitslos as (
-    select
-        geodata_id,
-        geodata_name,
-        year,
-        arbeitslose,
-        yoy_change_percent
-    from {{ ref('mart_arbeitslosenzahlen') }}
 ),
 
 arbeitslose_kreise as (
@@ -132,47 +121,70 @@ nuts_base as (
     full outer join schuldnerquote s
         on  b.geodata_id_nuts = s.geodata_id_nuts
         and b.year            = s.year
+),
+
+joined as (
+    select
+        n.nuts_id,
+        n.region_name,
+        n.year,
+        n.geodata_id_ars,
+        n.bevoelkerung,
+        n.schuldnerquote_prozent,
+        ak.arbeitslose_kreise,
+        -- arbeitslose ist ein Alias von arbeitslose_kreise (nicht dessen
+        -- Ersatz - siehe mart_nuts0/1/2_summary.sql, die weiterhin
+        -- arbeitslose_kreise referenzieren): GetNutsRegionData (backend/
+        -- internal/handlers/nuts.go) nutzt dieselbe selectCols-Spaltenliste
+        -- für alle vier NUTS-Ebenen und erwartet dort den Spaltennamen
+        -- "arbeitslose", nicht "arbeitslose_kreise".
+        ak.arbeitslose_kreise::numeric as arbeitslose,
+        av.arbeitsvolumen,
+        bv.bruttoverdienst,
+        da.durchschnittsalter,
+        sq.sgb_ii_quote_prozent,
+        wg.wohngeldhaushalte_je_1000,
+        bq.beschaeftigungsquote_prozent,
+        bq.beschaeftigungsquote_median
+    from nuts_base n
+    left join arbeitslose_kreise ak
+        on  ak.geodata_id_nuts = n.nuts_id
+        and ak.year            = n.year
+    left join arbeitsvolumen av
+        on  av.geodata_id_nuts = n.nuts_id
+        and av.year            = n.year
+    left join bruttoverdienst bv
+        on  bv.geodata_id_nuts = n.nuts_id
+        and bv.year            = n.year
+    left join durchschnittsalter da
+        on  da.geodata_id_nuts = n.nuts_id
+        and da.year            = n.year
+    left join sgb_ii_quote sq
+        on  sq.geodata_id_nuts = n.nuts_id
+        and sq.year            = n.year
+    left join wohngeldhaushalte wg
+        on  wg.geodata_id_nuts = n.nuts_id
+        and wg.year            = n.year
+    left join beschaeftigungsquote bq
+        on  bq.geodata_id_nuts = n.nuts_id
+        and bq.year            = n.year
 )
 
+-- yoy_change_percent fehlte bisher komplett auf Kreisebene (anders als bei
+-- mart_nuts0/1/2_summary, die es aus ihrer eigenen Aggregation neu
+-- berechnen) - GetNutsRegionData griff dadurch für NUTS-3 (einzelnes Jahr
+-- wie auch ?all=true-Zeitreihe) mit "column ... does not exist" ins Leere.
 select
-    n.nuts_id,
-    n.region_name,
-    n.year,
-    n.geodata_id_ars,
-    n.bevoelkerung,
-    n.schuldnerquote_prozent,
-    a.arbeitslose,
-    a.yoy_change_percent,
-    ak.arbeitslose_kreise,
-    av.arbeitsvolumen,
-    bv.bruttoverdienst,
-    da.durchschnittsalter,
-    sq.sgb_ii_quote_prozent,
-    wg.wohngeldhaushalte_je_1000,
-    bq.beschaeftigungsquote_prozent,
-    bq.beschaeftigungsquote_median
-from nuts_base n
-left join arbeitslos a
-    on  a.geodata_id = n.nuts_id
-    and a.year       = n.year
-left join arbeitslose_kreise ak
-    on  ak.geodata_id_nuts = n.nuts_id
-    and ak.year            = n.year
-left join arbeitsvolumen av
-    on  av.geodata_id_nuts = n.nuts_id
-    and av.year            = n.year
-left join bruttoverdienst bv
-    on  bv.geodata_id_nuts = n.nuts_id
-    and bv.year            = n.year
-left join durchschnittsalter da
-    on  da.geodata_id_nuts = n.nuts_id
-    and da.year            = n.year
-left join sgb_ii_quote sq
-    on  sq.geodata_id_nuts = n.nuts_id
-    and sq.year            = n.year
-left join wohngeldhaushalte wg
-    on  wg.geodata_id_nuts = n.nuts_id
-    and wg.year            = n.year
-left join beschaeftigungsquote bq
-    on  bq.geodata_id_nuts = n.nuts_id
-    and bq.year            = n.year
+    *,
+    round(
+        case
+            when lag(arbeitslose) over w is not null
+                 and lag(arbeitslose) over w != 0
+            then (arbeitslose - lag(arbeitslose) over w)
+                 / lag(arbeitslose) over w * 100
+            else null
+        end,
+        2
+    ) as yoy_change_percent
+from joined
+window w as (partition by nuts_id order by year)

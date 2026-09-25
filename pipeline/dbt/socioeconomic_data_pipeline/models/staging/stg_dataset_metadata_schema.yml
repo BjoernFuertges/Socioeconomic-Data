@@ -1,0 +1,69 @@
+version: 2
+
+models:
+  - name: stg_dataset_metadata
+    description: "Cleaned provenance/license/description metadata for the generic Kreis/Gemeinden datasets, one row per dataset_slug"
+    columns:
+      - name: dataset_slug
+        description: "Stable slug identifying the dataset, matches dataset_slug in mart_*_sociodata_harmonized/mart_socioeconomic_inventory"
+        data_type: text
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: source('loaded_data', 'dataset_metadata')
+              field: dataset_slug
+
+      - name: table_name
+        description: "loaded_data table this metadata belongs to"
+        data_type: text
+
+      - name: name
+        description: "Short display name"
+        data_type: text
+
+      - name: description
+        description: "Short description"
+        data_type: text
+
+      - name: description_long
+        description: "Long-form methodological description"
+        data_type: text
+
+      - name: unit
+        description: "Unit of the value column"
+        data_type: text
+
+      - name: source
+        description: "Publisher / source series (provenance"
+        data_type: text
+
+      - name: license
+        description: "Data usage license; 'unbekannt' if not yet researched for this dataset"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: license_url
+        description: "URL to the license text, null if not yet researched"
+        data_type: text
+
+      - name: algorithm
+        description: "Free-text note on how the value is computed/derived, if applicable"
+        data_type: text
+
+      - name: number_type
+        description: "absolute or relative"
+        data_type: text
+
+      - name: geodata_level
+        description: "Geodata level the dataset is mapped to (e.g. NUTS_3)"
+        data_type: text
+
+      - name: geodata_year
+        description: "Reference year of the geodata used for mapping"
+        data_type: integer
+
+      - name: updated_at
+        description: "Timestamp of the last upsert"
+        data_type: timestamp

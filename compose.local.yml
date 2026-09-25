@@ -1,0 +1,137 @@
+# Lokaler Testaufbau für die gesamte Anwendung (Pipeline, Datenbank, Backend,
+# Frontend) auf einer Dev-Maschine. Kein Traefik/TLS, keine produktiven
+# Domains/Images — Ports werden direkt auf den Host gemappt und Backend/
+# Frontend werden aus den lokalen Quellen gebaut.
+#
+# Nutzung:
+#   docker compose -f compose.local.yml up --build
+#
+#   Backend:  http://localhost:8081/api/v1  (Swagger: /api/docs/index.html)
+#   Frontend: http://localhost:5174 (Container-intern läuft Vite auf 5173;
+#             Port 5174 vermeidet Kollisionen mit lokal laufenden
+#             Vite-Dev-Servern anderer Projekte — bei Bedarf in der
+#             "ports:"-Zeile des frontend-Service anpassen)
+#   Adminer:  http://localhost:8082 (Server: postgis, User/Passwort s.u.)
+#
+# Die transformed_data-Schicht ist zu Beginn leer. Pipeline einmalig
+# ausführen, sobald postgis/pipeline laufen:
+#   docker compose -f compose.local.yml exec pipeline \
+#     bash /app/dlt/run_all_pipelines.sh
+#
+# Hinweis: load_geodata_to_postgis.py findet seine Geodaten lokal über die
+# im Repo vorhandenen Fallback-Pfade (geo-mapper/, geo-importer/) und
+# funktioniert daher ohne weiteres Zutun. Die übrigen Kreis-Datensätze
+# (arbeitslose, bevoelkerung, ...) lesen aus data-exchange/1_friedrich-bjoern,
+# das lokal standardmäßig leer ist (wird produktiv per Nextcloud-Sync
+# befüllt, siehe backend/scripts/sync_nextcloud_data_exchange.sh) — ohne
+# eigene Testdaten dort bleiben diese Datensätze leer.
+
+name: sozio-local
+
+services:
+  postgis:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: soziooekonomische-daten
+      POSTGRES_USER: sozio_data_compose_user
+      POSTGRES_PASSWORD: local_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_local:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sozio_data_compose_user -d soziooekonomische-daten"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  pipeline:
+    image: python:3.12-slim
+    working_dir: /app
+    volumes:
+      - ./dlt:/app/dlt
+      - ./dbt:/app/dbt
+      - ./data-exchange:/app/data-exchange
+      - ./geo-mapper:/app/geo-mapper:ro
+      - ./geo-importer:/app/geo-importer:ro
+    environment:
+      DATA_EXCHANGE_PATH: /app/data-exchange/1_friedrich-bjoern
+      LAU_GEODATA_PATH: /app/geo-mapper/geo_mapper/geodata_raw/lau
+      NUTS_GEODATA_PATH: /app/geo-mapper/geo_mapper/geodata_raw/nuts
+      LAU_POPULATION_PATH: /app/geo-importer/src/geodata/LAU
+      # Von dlt/fetch_lau_population.py befuellt (Eurostat LAU-NUTS-
+      # Korrespondenztabellen) - ohne echte lau_population_*.csv hier faellt
+      # load_geodata_to_postgis.py auf LAU_POPULATION_PATH zurueck, das nur
+      # ID/Name ohne gisco_id/nuts_3_code/population liefert (siehe dortigen
+      # Kommentar) und z.B. die LAU->NUTS-3-Aufloesung fuer
+      # beschaeftigungsquote-gemeinden lahmlegt.
+      GEODATA_BASE_PATH: /app/data-exchange/eurostat_lau_population
+      DB_HOST: postgis
+      DB_PORT: 5432
+      DB_USER: sozio_data_compose_user
+      DB_PASSWORD: local_dev_password
+      DB_NAME: soziooekonomische-daten
+      DESTINATION__POSTGRES__CREDENTIALS__HOST: postgis
+      DESTINATION__POSTGRES__CREDENTIALS__PORT: "5432"
+      DESTINATION__POSTGRES__CREDENTIALS__DATABASE: soziooekonomische-daten
+      DESTINATION__POSTGRES__CREDENTIALS__USERNAME: sozio_data_compose_user
+      DESTINATION__POSTGRES__CREDENTIALS__PASSWORD: local_dev_password
+      DBT_PROFILES_DIR: /app/dbt/socioeconomic_data_pipeline
+    command: >
+      bash -c "pip install -q -r /app/dlt/requirements.txt 'dlt[postgres]' dbt-postgres && ([ -f /app/dbt/socioeconomic_data_pipeline/profiles.yml ] || cp /app/dbt/socioeconomic_data_pipeline/profiles.example.yml /app/dbt/socioeconomic_data_pipeline/profiles.yml) && echo 'Pipeline-Container bereit. Ausfuehren mit: docker compose -f compose.local.yml exec pipeline bash /app/dlt/run_all_pipelines.sh' && tail -f /dev/null"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import dlt, pandas, shapely'"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      postgis:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      API_HOST: 0.0.0.0
+      PORT: "8081"
+      DB_HOST: postgis
+      DB_PORT: "5432"
+      DB_USER: sozio_data_compose_user
+      DB_PASSWORD: local_dev_password
+      DB_NAME: soziooekonomische-daten
+    depends_on:
+      postgis:
+        condition: service_healthy
+
+  frontend:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend/web/app:/app
+      - frontend_node_modules_local:/app/node_modules
+    environment:
+      VITE_API_BASE_URL: http://localhost:8081/api/v1
+    ports:
+      - "5174:5173"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - backend
+
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgis
+    ports:
+      - "8082:8080"
+    depends_on:
+      - postgis
+
+volumes:
+  pgdata_local:
+  frontend_node_modules_local:

@@ -9,11 +9,12 @@
     )
 }}
 
-{% set source_relation = source('loaded_data', 'results_beschaeftigungsquote_gemeinden') %}
+{% set source_relation = ref('snap_results_beschaeftigungsquote_gemeinden') %}
 {% set source_columns = adapter.get_columns_in_relation(source_relation) | map(attribute='name') | map('lower') | list %}
 
 with source_data as (
     select * from {{ source_relation }}
+    where dbt_valid_to is null
 ),
 
 cleaned as (

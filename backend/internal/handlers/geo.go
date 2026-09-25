@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -29,13 +30,26 @@ func normalizeGeoType(raw string) (string, error) {
 		return "nuts", nil
 	case "lau":
 		return "lau", nil
+	case "agentur":
+		return "agentur", nil
 	default:
-		return "", fmt.Errorf("ungültiger geo_type: erlaubt sind auto, nuts oder lau")
+		return "", fmt.Errorf("ungültiger geo_type: erlaubt sind auto, nuts, lau oder agentur")
 	}
 }
 
+var baSchlPattern = regexp.MustCompile(`^\d+$`)
+
 func detectGeoType(geoID string) string {
 	trimmed := strings.TrimSpace(geoID)
+	// ba_schl-Werte sind rein numerisch (z. B. "962") - das unterscheidet sie
+	// eindeutig von NUTS-Codes (immer mit 2-stelligem Ländercode-Präfix,
+	// z. B. "DE111"). LAU gisco_ids haben zwar auch ein <Ländercode>_-Präfix,
+	// sind aber nicht auf DE beschränkt und der Teil nach dem "_" ist nicht
+	// immer rein numerisch (z. B. "CH_CH6194", "BG_VRC32") - deshalb bleibt
+	// "lau" hier der Default-Fall statt einem eigenen Pattern-Check.
+	if baSchlPattern.MatchString(trimmed) {
+		return "agentur"
+	}
 	if _, err := nutsLevelDetailsFromID(trimmed); err == nil {
 		return "nuts"
 	}
@@ -117,21 +131,21 @@ func spatialPredicateSQL(operation string, geomColumn string, geoJSONParam int) 
 	return fmt.Sprintf("ST_Intersects(%s, ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($%d), 4326), 3035))", geomColumn, geoJSONParam)
 }
 
-// GetGeoRegions gibt eine einheitliche Liste von NUTS- oder LAU-Regionen zurück
+// GetGeoRegions gibt eine einheitliche Liste von NUTS-, LAU- oder Agentur-Regionen zurück
 // @Summary Liste allgemeiner Geo-Regionen
-// @Description Gibt eine einheitliche Liste für NUTS- oder LAU-Regionen zurück. Standard ist NUTS. Mit geo_type=lau werden LAU-Regionen geliefert.
+// @Description Gibt eine einheitliche Liste für NUTS-, LAU- oder Agenturbezirk-Regionen zurück. Standard ist NUTS. Mit geo_type=lau bzw. geo_type=agentur werden LAU- bzw. Agenturbezirk-Regionen geliefert.
 // @Tags Geo
 // @Accept json
 // @Produce json
-// @Param geo_type query string false "Regionstyp: nuts oder lau" Enums(nuts,lau) default(nuts)
+// @Param geo_type query string false "Regionstyp: nuts, lau oder agentur" Enums(nuts,lau,agentur) default(nuts)
 // @Param level query int false "NUTS-Level (nur für geo_type=nuts, 0-3)" Enums(0,1,2,3) example(3)
 // @Param country_code query string false "Ländercode (nur für geo_type=lau)" example(DE)
 // @Param nuts_parent_id query string false "NUTS-Präfix-Filter (z.B. DE1)" example(DE1)
 // @Param geodata_name_contains query string false "Teilstring-Suche nach Regionenamen" example(berlin)
 // @Param point query string false "Punktabfrage im Format lon,lat (nur für geo_type=lau)" example(13.404954,52.520008)
 // @Param include_geometry query bool false "Geometrie einschließen, wenn verfügbar" example(false)
-// @Param geometry_strategy query string false "Geometrieauswahl: latest oder exact" Enums(latest,exact) default(latest)
-// @Param geometry_year query int false "Zieljahr für Geometrie (bei exact erforderlich)" example(2024)
+// @Param geometry_strategy query string false "Geometrieauswahl (nur für geo_type=nuts): latest oder exact" Enums(latest,exact) default(latest)
+// @Param geometry_year query int false "Zieljahr für Geometrie (nur für geo_type=nuts; bei exact erforderlich)" example(2024)
 // @Param year query int false "Jahr (optional)" example(2024)
 // @Param limit query int false "Anzahl der Ergebnisse (1-1000)" default(100) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
@@ -176,12 +190,100 @@ func (h *Handler) GetGeoRegions(c *gin.Context) {
 		h.getGeoRegionsLAU(c, filter, limitNull)
 		return
 	}
+	if geoType == "agentur" {
+		h.getGeoRegionsAgentur(c, filter, limitNull)
+		return
+	}
 
 	h.getGeoRegionsNUTS(c, filter, limitNull)
 }
 
+func (h *Handler) getGeoRegionsAgentur(c *gin.Context, filter models.GeoRegionFilter, limitNull bool) {
+	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	if filter.IncludeGeometry {
+		geometrySelect = `geometry_wgs84, has_valid_geometry`
+	}
+
+	query := `SELECT DISTINCT ON (ba_schl)
+		ba_schl AS geo_id,
+		'Agentur' AS geo_type,
+		name AS region_name,
+		` + geometrySelect + `,
+		extract(year from valid_from)::int AS year
+	FROM transformed_data.mart_agenturbezirk_sociodata
+	WHERE name IS NOT NULL`
+
+	args := []interface{}{}
+	argPos := 1
+
+	if filter.GeodataNameContains != "" {
+		query += fmt.Sprintf(" AND name ILIKE $%d", argPos)
+		args = append(args, "%"+strings.TrimSpace(filter.GeodataNameContains)+"%")
+		argPos++
+	}
+
+	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
+	var total int
+	if err := h.DB.Get(&total, countQuery, args...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+		return
+	}
+
+	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
+		c,
+		query,
+		args,
+		argPos,
+		"ba_schl",
+		100,
+		filter.Limit,
+		filter.Offset,
+		limitNull,
+	)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+
+	type row struct {
+		GeoID            string          `db:"geo_id"`
+		GeoType          string          `db:"geo_type"`
+		RegionName       string          `db:"region_name"`
+		GeometryWGS84    json.RawMessage `db:"geometry_wgs84"`
+		HasValidGeometry *bool           `db:"has_valid_geometry"`
+		Year             int             `db:"year"`
+	}
+
+	rows := make([]row, 0)
+	if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	data := make([]models.GeoRegionSummary, 0, len(rows))
+	for _, r := range rows {
+		data = append(data, models.GeoRegionSummary{
+			GeoID:            r.GeoID,
+			GeoType:          r.GeoType,
+			RegionName:       r.RegionName,
+			GeometryWGS84:    r.GeometryWGS84,
+			HasValidGeometry: r.HasValidGeometry,
+			Year:             r.Year,
+		})
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    data,
+		Meta: &models.MetaInfo{
+			Total:  total,
+			Offset: offset,
+		},
+	})
+}
+
 func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter, limitNull bool) {
-	geometrySelect := `null::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
 	if filter.IncludeGeometry {
 		geometrySelect = `geometry_wgs84, has_valid_geometry`
 	}
@@ -194,7 +296,7 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 		` + geometrySelect + `,
 		year
 	FROM transformed_data.lau_integrated
-	WHERE 1=1`
+	WHERE lau_name IS NOT NULL`
 
 	args := []interface{}{}
 	argPos := 1
@@ -205,7 +307,10 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 		argPos++
 	}
 	if filter.NutsParentID != "" {
-		query += fmt.Sprintf(" AND nuts_3_code IS NOT NULL AND nuts_3_code LIKE $%d", argPos)
+		// nuts3_id ist die kanonische LAU->NUTS-3-Verlinkung (deklariert oder
+		// räumlich ermittelt, siehe lau_integrated.sql) - robuster als die oft
+		// NULLe nuts_3_code-Rohspalte.
+		query += fmt.Sprintf(" AND nuts3_id IS NOT NULL AND nuts3_id LIKE $%d", argPos)
 		args = append(args, strings.ToUpper(strings.TrimSpace(filter.NutsParentID))+"%")
 		argPos++
 	}
@@ -224,20 +329,42 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 		args = append(args, lon, lat)
 		argPos += 2
 	}
+	yearFilterApplied := false
 	if filter.Year != nil {
 		query += fmt.Sprintf(" AND year = $%d", argPos)
 		args = append(args, *filter.Year)
 		argPos++
+		yearFilterApplied = true
+	} else if filter.IncludeGeometry && filter.GeometryYear != nil {
+		// Wenn kein Datenjahr gesetzt ist, aber eine explizite Geometrieversion
+		// angefordert wird, wird geometry_year als Jahresfilter auf lau_integrated
+		// verwendet (year-Spalte entspricht dort dem Vintage-Jahr der Geometrie).
+		query += fmt.Sprintf(" AND year = $%d", argPos)
+		args = append(args, *filter.GeometryYear)
+		argPos++
+		yearFilterApplied = true
 	}
 	if filter.FromYear != nil {
 		query += fmt.Sprintf(" AND year >= $%d", argPos)
 		args = append(args, *filter.FromYear)
 		argPos++
+		yearFilterApplied = true
 	}
 	if filter.ToYear != nil {
 		query += fmt.Sprintf(" AND year <= $%d", argPos)
 		args = append(args, *filter.ToYear)
 		argPos++
+		yearFilterApplied = true
+	}
+	if !yearFilterApplied {
+		// Ohne jeglichen Jahresfilter nur den aktuellsten Vintage-Jahrgang
+		// berücksichtigen. lau_integrated hat (anders als die valid_from/
+		// valid_to-Perioden in mart_lau_geometry_historized) keinen Konzept
+		// von "noch aktuell" - DISTINCT ON (gisco_id) ... ORDER BY year DESC
+		// würde sonst auch stillgelegte/fusionierte gisco_ids mit ihrer
+		// letzten bekannten (alten) Zeile durchlassen, doppelt neben ihrem
+		// Nachfolgecode (analog zum NUTS-valid_to-Bug).
+		query += " AND year = (SELECT MAX(year) FROM transformed_data.lau_integrated)"
 	}
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
@@ -307,7 +434,7 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 	argPos := 1
 	args := make([]interface{}, 0)
 
-	geometrySelect := `null::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
 	if filter.IncludeGeometry {
 		geometrySelect = `geometry_wgs84, has_valid_geometry`
 	}
@@ -324,8 +451,8 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 			ELSE 'NUTS-3'
 		END AS nuts_level_code,
 		` + geometrySelect + `,
-		year
-	FROM transformed_data.mart_nuts_geometry
+		max_vintage_year AS year
+	FROM transformed_data.mart_nuts_geometry_historized
 	WHERE 1=1`
 
 	if filter.Level != nil {
@@ -334,12 +461,14 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 		argPos++
 	}
 	if filter.IncludeGeometry {
-		if filter.GeometryStrategy == "exact" {
-			query += fmt.Sprintf(" AND year = $%d", argPos)
-			args = append(args, *filter.GeometryYear)
-			argPos++
-		} else if filter.GeometryYear != nil {
-			query += fmt.Sprintf(" AND year <= $%d", argPos)
+		// In der historisierten Tabelle deckt genau eine Periode ein Jahr ab;
+		// "exact" und "latest-before" fallen daher zusammen.
+		// geometry_year wird nur angewendet, wenn year nicht gesetzt ist –
+		// andernfalls würden zwei überschneidungsfreie Perioden-Filter zu 0
+		// Ergebnissen führen, wenn geometry_year und year auf verschiedene
+		// Perioden zeigen.
+		if filter.GeometryYear != nil && filter.Year == nil {
+			query += fmt.Sprintf(" AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d)", argPos, argPos)
 			args = append(args, *filter.GeometryYear)
 			argPos++
 		}
@@ -355,17 +484,17 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 		argPos++
 	}
 	if filter.Year != nil {
-		query += fmt.Sprintf(" AND year = $%d", argPos)
+		query += fmt.Sprintf(" AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d)", argPos, argPos)
 		args = append(args, *filter.Year)
 		argPos++
 	}
 	if filter.FromYear != nil {
-		query += fmt.Sprintf(" AND year >= $%d", argPos)
+		query += fmt.Sprintf(" AND (valid_to IS NULL OR valid_to >= $%d)", argPos)
 		args = append(args, *filter.FromYear)
 		argPos++
 	}
 	if filter.ToYear != nil {
-		query += fmt.Sprintf(" AND year <= $%d", argPos)
+		query += fmt.Sprintf(" AND valid_from <= $%d", argPos)
 		args = append(args, *filter.ToYear)
 		argPos++
 	}
@@ -414,6 +543,14 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 	for _, r := range rows {
 		level := r.NutsLevel
 		code := r.NutsLevelCode
+		// Wenn ein konkretes Jahr abgefragt wurde, wird es direkt zurückgegeben
+		// (analog zu LAU, das den tatsächlichen Jahreswert aus der DB liefert).
+		// Ohne Jahresfilter kommt max_vintage_year: das neueste Vintage-Jahr
+		// der gültigen Periode – ebenfalls konsistent mit LAUs letztem verfügbaren Jahr.
+		year := r.Year
+		if filter.Year != nil {
+			year = *filter.Year
+		}
 		data = append(data, models.GeoRegionSummary{
 			GeoID:            r.GeoID,
 			GeoType:          r.GeoType,
@@ -422,7 +559,7 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 			NutsLevelCode:    &code,
 			GeometryWGS84:    r.GeometryWGS84,
 			HasValidGeometry: r.HasValidGeometry,
-			Year:             r.Year,
+			Year:             year,
 		})
 	}
 
@@ -438,12 +575,12 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 
 // GetGeoRegionByID gibt eine einzelne Geo-Region (NUTS oder LAU) zurück
 // @Summary Allgemeine Geo-Region nach ID
-// @Description Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt (NUTS: 2-5 Zeichen, sonst LAU).
+// @Description Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt (rein numerisch: Agentur; NUTS: 2-5 Zeichen; sonst LAU).
 // @Tags Geo
 // @Accept json
 // @Produce json
 // @Param geo_id path string true "Geo-ID (NUTS oder GISCO-ID)" example(DE111)
-// @Param geo_type query string false "Regionstyp: auto, nuts oder lau" Enums(auto,nuts,lau) default(auto)
+// @Param geo_type query string false "Regionstyp: auto, nuts, lau oder agentur" Enums(auto,nuts,lau,agentur) default(auto)
 // @Param year query int false "Jahr (optional)" example(2024)
 // @Param all query bool false "Nur für NUTS: alle verfügbaren Jahre zurückgeben" example(false)
 // @Param part query string false "Nur für NUTS: full, metadata oder socioeconomic" Enums(full,metadata,socioeconomic) default(full)
@@ -475,19 +612,26 @@ func (h *Handler) GetGeoRegionByID(c *gin.Context) {
 		h.GetNutsRegionData(c)
 		return
 	}
+	if geoType == "agentur" {
+		c.Params = append(c.Params, gin.Param{Key: "ba_schl", Value: geoID})
+		h.GetAgenturbezirkByID(c)
+		return
+	}
 
 	c.Params = append(c.Params, gin.Param{Key: "gisco_id", Value: geoID})
 	h.GetLAURegionByID(c)
 }
 
-// GetGeoRegionVersions gibt alle verfügbaren Jahre für eine Geo-Region zurück
-// @Summary Versionsliste für eine Geo-Region
-// @Description Gibt alle verfügbaren Jahre für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt.
+// GetGeoRegionVersions gibt alle Geometrie-Perioden für eine Geo-Region zurück
+// @Summary Geometrie-Perioden einer Geo-Region
+// @Description Gibt alle Geometrie-Perioden (valid_from/valid_to) für eine Geo-Region zurück.
+// Jede Periode repräsentiert eine Geometrie-Version; valid_to=null bedeutet noch aktuell.
+// Mit geo_type=auto wird der Typ aus der ID erkannt.
 // @Tags Geo
 // @Accept json
 // @Produce json
 // @Param geo_id path string true "Geo-ID (NUTS oder GISCO-ID)" example(DE111)
-// @Param geo_type query string false "Regionstyp: auto, nuts oder lau" Enums(auto,nuts,lau) default(auto)
+// @Param geo_type query string false "Regionstyp: auto, nuts, lau oder agentur" Enums(auto,nuts,lau,agentur) default(auto)
 // @Success 200 {object} models.APIResponse{data=models.GeoRegionVersions}
 // @Failure 400 {object} models.APIResponse
 // @Failure 404 {object} models.APIResponse
@@ -516,13 +660,16 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 			return
 		}
 
-		versions := make([]int, 0)
-		query := `SELECT DISTINCT year FROM transformed_data.mart_nuts_geometry WHERE nuts_id = $1 ORDER BY year DESC`
-		if err := h.DB.Select(&versions, query, details.NormalizedID); err != nil {
+		periods := make([]models.GeoPeriod, 0)
+		query := `SELECT valid_from, valid_to
+			FROM transformed_data.mart_nuts_geometry_historized
+			WHERE nuts_id = $1
+			ORDER BY valid_from DESC`
+		if err := h.DB.Select(&periods, query, details.NormalizedID); err != nil {
 			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
 			return
 		}
-		if len(versions) == 0 {
+		if len(periods) == 0 {
 			respondNotFound(c, "Keine Versionsdaten für diese Geo-Region gefunden")
 			return
 		}
@@ -536,20 +683,60 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 				GeoType:       "NUTS",
 				NutsLevel:     &level,
 				NutsLevelCode: &levelCode,
-				Versions:      versions,
+				Periods:       periods,
+			},
+		})
+		return
+	}
+
+	if geoType == "agentur" {
+		var period struct {
+			ValidFrom *int `db:"valid_from"`
+			ValidTo   *int `db:"valid_to"`
+		}
+		query := `SELECT extract(year from valid_from)::int AS valid_from, extract(year from valid_to)::int AS valid_to
+			FROM transformed_data.mart_agenturbezirk_sociodata
+			WHERE ba_schl = $1
+			LIMIT 1`
+		if err := h.DB.Get(&period, query, geoID); err != nil {
+			if err.Error() == "sql: no rows in result set" {
+				respondNotFound(c, "Keine Versionsdaten für diese Geo-Region gefunden")
+				return
+			}
+			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+			return
+		}
+
+		validFrom := 0
+		if period.ValidFrom != nil {
+			validFrom = *period.ValidFrom
+		}
+
+		// Agenturbezirke haben bewusst keinen Versions-Crosswalk (nur eine
+		// aktuelle Grenzen-Vintage, siehe mart_agenturbezirk_sociodata.sql) -
+		// daher immer genau eine Periode statt mehrerer wie bei NUTS/LAU.
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success: true,
+			Data: models.GeoRegionVersions{
+				GeoID:   geoID,
+				GeoType: "Agentur",
+				Periods: []models.GeoPeriod{{ValidFrom: validFrom, ValidTo: period.ValidTo}},
 			},
 		})
 		return
 	}
 
 	normalizedGeoID := strings.ToUpper(geoID)
-	versions := make([]int, 0)
-	query := `SELECT DISTINCT year FROM transformed_data.lau_integrated WHERE gisco_id = $1 ORDER BY year DESC`
-	if err := h.DB.Select(&versions, query, normalizedGeoID); err != nil {
+	periods := make([]models.GeoPeriod, 0)
+	query := `SELECT valid_from, valid_to
+		FROM transformed_data.mart_lau_geometry_historized
+		WHERE gisco_id = $1
+		ORDER BY valid_from DESC`
+	if err := h.DB.Select(&periods, query, normalizedGeoID); err != nil {
 		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
 		return
 	}
-	if len(versions) == 0 {
+	if len(periods) == 0 {
 		respondNotFound(c, "Keine Versionsdaten für diese Geo-Region gefunden")
 		return
 	}
@@ -557,9 +744,9 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data: models.GeoRegionVersions{
-			GeoID:    normalizedGeoID,
-			GeoType:  "LAU",
-			Versions: versions,
+			GeoID:   normalizedGeoID,
+			GeoType: "LAU",
+			Periods: periods,
 		},
 	})
 }
@@ -570,7 +757,7 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 // @Tags Geo
 // @Accept json
 // @Produce json
-// @Param request body models.GeoSpatialQueryRequest true "GeoJSON-Abfrage"
+// @Param request body models.GeoSpatialQueryRequest true "GeoJSON-Abfrage. geometry_strategy und geometry_year wirken nur bei geo_type=nuts."
 // @Success 200 {object} models.APIResponse{data=[]models.GeoRegionSummary}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -630,12 +817,101 @@ func (h *Handler) QueryGeoRegionsByGeometry(c *gin.Context) {
 		h.queryGeoRegionsLAU(c, filter, geometryJSON, operation)
 		return
 	}
+	if geoType == "agentur" {
+		h.queryGeoRegionsAgentur(c, filter, geometryJSON, operation)
+		return
+	}
 
 	h.queryGeoRegionsNUTS(c, filter, geometryJSON, operation)
 }
 
+func (h *Handler) queryGeoRegionsAgentur(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, operation string) {
+	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	if filter.IncludeGeometry {
+		geometrySelect = `ST_AsGeoJSON(geometry_wgs84)::json AS geometry_wgs84, has_valid_geometry`
+	}
+
+	// stg_agenturbezirk_geometry statt der bereits GeoJSON-serialisierten
+	// mart_agenturbezirk_sociodata - Agenturbezirke sind mit nur ~150
+	// Regionen klein genug, dass der fehlende Geometrie-Index (View ohne
+	// materialisierte geometry_3035-Spalte) hier nicht ins Gewicht fällt,
+	// anders als beim LAU-NUTS-3-Join (siehe int_lau_nuts3_membership.sql).
+	query := `SELECT
+		ba_schl AS geo_id,
+		'Agentur' AS geo_type,
+		name AS region_name,
+		` + geometrySelect + `,
+		extract(year from valid_from)::int AS year
+	FROM transformed_data.stg_agenturbezirk_geometry
+	WHERE has_valid_geometry
+	  AND name IS NOT NULL
+	  AND ` + spatialPredicateSQL(operation, "ST_Transform(geometry_wgs84, 3035)", 1)
+
+	args := []interface{}{geometryJSON}
+	argPos := 2
+
+	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
+	var total int
+	if err := h.DB.Get(&total, countQuery, args...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+		return
+	}
+
+	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
+		c,
+		query,
+		args,
+		argPos,
+		"ba_schl",
+		100,
+		filter.Limit,
+		filter.Offset,
+		false,
+	)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+
+	type row struct {
+		GeoID            string          `db:"geo_id"`
+		GeoType          string          `db:"geo_type"`
+		RegionName       string          `db:"region_name"`
+		GeometryWGS84    json.RawMessage `db:"geometry_wgs84"`
+		HasValidGeometry *bool           `db:"has_valid_geometry"`
+		Year             int             `db:"year"`
+	}
+
+	rows := make([]row, 0)
+	if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+
+	data := make([]models.GeoRegionSummary, 0, len(rows))
+	for _, r := range rows {
+		data = append(data, models.GeoRegionSummary{
+			GeoID:            r.GeoID,
+			GeoType:          r.GeoType,
+			RegionName:       r.RegionName,
+			GeometryWGS84:    r.GeometryWGS84,
+			HasValidGeometry: r.HasValidGeometry,
+			Year:             r.Year,
+		})
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data:    data,
+		Meta: &models.MetaInfo{
+			Total:  total,
+			Offset: offset,
+		},
+	})
+}
+
 func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, operation string) {
-	geometrySelect := `null::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
 	if filter.IncludeGeometry {
 		geometrySelect = `geometry_wgs84, has_valid_geometry`
 	}
@@ -649,25 +925,44 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 		year
 	FROM transformed_data.lau_integrated
 	WHERE has_valid_geometry
+	  AND lau_name IS NOT NULL
 	  AND ` + spatialPredicateSQL(operation, "geometry_3035", 1)
 
 	args := []interface{}{geometryJSON}
 	argPos := 2
 
+	yearFilterApplied := false
 	if filter.Year != nil {
 		query += fmt.Sprintf(" AND year = $%d", argPos)
 		args = append(args, *filter.Year)
 		argPos++
+		yearFilterApplied = true
+	} else if filter.IncludeGeometry && filter.GeometryYear != nil {
+		// Wenn kein Datenjahr gesetzt ist, aber eine explizite Geometrieversion
+		// angefordert wird, wird geometry_year als Jahresfilter auf lau_integrated
+		// verwendet (year-Spalte entspricht dort dem Vintage-Jahr der Geometrie).
+		query += fmt.Sprintf(" AND year = $%d", argPos)
+		args = append(args, *filter.GeometryYear)
+		argPos++
+		yearFilterApplied = true
 	}
 	if filter.FromYear != nil {
 		query += fmt.Sprintf(" AND year >= $%d", argPos)
 		args = append(args, *filter.FromYear)
 		argPos++
+		yearFilterApplied = true
 	}
 	if filter.ToYear != nil {
 		query += fmt.Sprintf(" AND year <= $%d", argPos)
 		args = append(args, *filter.ToYear)
 		argPos++
+		yearFilterApplied = true
+	}
+	if !yearFilterApplied {
+		// Ohne jeglichen Jahresfilter nur den aktuellsten Vintage-Jahrgang
+		// berücksichtigen - siehe getGeoRegionsLAU für die ausführliche
+		// Begründung (analog zum NUTS-valid_to-Bug).
+		query += " AND year = (SELECT MAX(year) FROM transformed_data.lau_integrated)"
 	}
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
@@ -727,10 +1022,10 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 		for i := range data {
 			var nuts3Code string
 			if err := h.DB.Get(&nuts3Code,
-				`SELECT nuts_3_code FROM transformed_data.lau_integrated WHERE gisco_id = $1 AND nuts_3_code IS NOT NULL LIMIT 1`,
+				`SELECT nuts3_id FROM transformed_data.lau_integrated WHERE gisco_id = $1 AND nuts3_id IS NOT NULL AND lau_name IS NOT NULL LIMIT 1`,
 				data[i].GeoID,
 			); err == nil && nuts3Code != "" {
-				if datasets, dsErr := h.regionNutsDatasets(nuts3Code); dsErr == nil {
+				if datasets, dsErr := h.regionNutsDatasets(nuts3Code, 3); dsErr == nil {
 					data[i].Datasets = datasets
 				}
 			}
@@ -748,7 +1043,7 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 }
 
 func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, operation string) {
-	geometrySelect := `null::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
+	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
 	if filter.IncludeGeometry {
 		geometrySelect = `base.geometry_wgs84, base.has_valid_geometry`
 	}
@@ -759,41 +1054,44 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 			nuts_id,
 			levl_code,
 			region_name,
-			year,
+			valid_from,
+			max_vintage_year,
 			geometry_3035,
 			geometry_wgs84,
 			has_valid_geometry
-		FROM transformed_data.mart_nuts_geometry
+		FROM transformed_data.mart_nuts_geometry_historized
 		WHERE has_valid_geometry`
 
 	args := make([]interface{}, 0)
-	if filter.GeometryStrategy == "exact" {
-		query += fmt.Sprintf(" AND year = $%d", argPos)
-		args = append(args, *filter.GeometryYear)
-		argPos++
-	} else if filter.GeometryYear != nil {
-		query += fmt.Sprintf(" AND year <= $%d", argPos)
+	// In der historisierten Tabelle deckt genau eine Periode ein Jahr ab;
+	// "exact" und "latest-before" fallen daher zusammen.
+	// geometry_year wird nur angewendet, wenn year nicht gesetzt ist –
+	// andernfalls würden zwei überschneidungsfreie Perioden-Filter zu 0
+	// Ergebnissen führen, wenn geometry_year und year auf verschiedene
+	// Perioden zeigen.
+	if filter.GeometryYear != nil && filter.Year == nil {
+		query += fmt.Sprintf(" AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d)", argPos, argPos)
 		args = append(args, *filter.GeometryYear)
 		argPos++
 	}
 
 	if filter.Year != nil {
-		query += fmt.Sprintf(" AND year = $%d", argPos)
+		query += fmt.Sprintf(" AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d)", argPos, argPos)
 		args = append(args, *filter.Year)
 		argPos++
 	}
 	if filter.FromYear != nil {
-		query += fmt.Sprintf(" AND year >= $%d", argPos)
+		query += fmt.Sprintf(" AND (valid_to IS NULL OR valid_to >= $%d)", argPos)
 		args = append(args, *filter.FromYear)
 		argPos++
 	}
 	if filter.ToYear != nil {
-		query += fmt.Sprintf(" AND year <= $%d", argPos)
+		query += fmt.Sprintf(" AND valid_from <= $%d", argPos)
 		args = append(args, *filter.ToYear)
 		argPos++
 	}
 	query += `
-		ORDER BY nuts_id, year DESC
+		ORDER BY nuts_id, valid_from DESC
 	)
 	SELECT
 		base.nuts_id AS geo_id,
@@ -808,7 +1106,7 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 		END AS nuts_level_code,
 		null::text AS country_code,
 		` + geometrySelect + `,
-		base.year
+		base.max_vintage_year AS year
 	FROM base
 	WHERE ` + spatialPredicateSQL(operation, "base.geometry_3035", argPos)
 	args = append(args, geometryJSON)
@@ -858,6 +1156,10 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 	for _, r := range rows {
 		level := r.NutsLevel
 		code := r.NutsLevelCode
+		year := r.Year
+		if filter.Year != nil {
+			year = *filter.Year
+		}
 		data = append(data, models.GeoRegionSummary{
 			GeoID:            r.GeoID,
 			GeoType:          r.GeoType,
@@ -866,14 +1168,14 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 			NutsLevelCode:    &code,
 			GeometryWGS84:    r.GeometryWGS84,
 			HasValidGeometry: r.HasValidGeometry,
-			Year:             r.Year,
+			Year:             year,
 		})
 	}
 
 	if filter.IncludeDatasets {
 		for i := range data {
 			if data[i].NutsLevel != nil && *data[i].NutsLevel == 3 {
-				if datasets, dsErr := h.regionNutsDatasets(data[i].GeoID); dsErr == nil {
+				if datasets, dsErr := h.regionNutsDatasets(data[i].GeoID, 3); dsErr == nil {
 					data[i].Datasets = datasets
 				}
 			}

@@ -1,0 +1,57 @@
+site_name: Sozioökonomische Daten
+site_description: Documentation for the backend (Go API) and the data pipeline (dlt + dbt)
+repo_url: https://gitlab.htw-berlin.de/s0595954/soziooekonomische-daten
+docs_dir: docs
+
+theme:
+  name: material
+  language: en
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+plugins:
+  - search
+  - include-markdown
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Backend:
+      - Overview: backend/index.md
+      - API: backend/api.md
+      - Development: backend/development.md
+      - Deployment: backend/deployment.md
+  - Data Pipeline:
+      - Overview: pipeline/index.md
+      - "dlt (Extraction & Load)": pipeline/dlt.md
+      - "dbt (Transformation)": pipeline/dbt.md
+  - Operations: operations.md

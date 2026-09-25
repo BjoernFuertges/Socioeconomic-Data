@@ -103,31 +103,14 @@ services:
       - backend-net
     labels:
       ofelia.enabled: "true"
-      # dlt jede Stunde zur vollen Stunde
-      ofelia.job-exec.dlt.schedule: "0 0 * * * *"
-      ofelia.job-exec.dlt.command: >
-        bash -c "cd /app/dlt &&
-          python load_arbeitslosenzahlen_afa.py &&
-          python load_geodata_to_postgis.py &&
-          python load_soziodata_generic.py bevoelkerung/results_bevoelkerung_kreise &&
-          python load_soziodata_generic.py schuldnerquote/results_schuldnerquote_kreise &&
-          python load_soziodata_generic.py arbeitslose/results_arbeitslose_kreise"
+      # dlt + dbt jede Stunde zur vollen Stunde
+      ofelia.job-exec.pipeline.schedule: "0 0 * * * *"
+      ofelia.job-exec.pipeline.command: "bash /app/dlt/run_all_pipelines.sh"
 
       # geo-mapper runs every hour at minute 15
       ofelia.job-exec.geo-mapper.schedule: "0 15 * * * *"
       ofelia.job-exec.geo-mapper.command: >
         bash -c "bash /app/geo-mapper-scripts/run_geo_mapper.sh"
-
-      # dbt 30 Minuten nach dlt
-      ofelia.job-exec.dbt.schedule: "0 30 * * * *"
-      ofelia.job-exec.dbt.command: >
-        bash -c "cd /app/dbt/socioeconomic_data_pipeline &&
-          dbt deps &&
-          if [ -f /app/data-exchange/1_friedrich-bjoern/arbeitslose/meta.json ] && [ -d /app/data-exchange/1_friedrich-bjoern/geodata/lau/output/geojson ] && [ -d /app/data-exchange/1_friedrich-bjoern/statistics/lokale_verwaltungseinheiten_eu/output ]; then
-            dbt run;
-          else
-            dbt run --select stg_bevoelkerung_kreise stg_schuldnerquote_kreise;
-          fi"
 
   scheduler:
     image: mcuadros/ofelia:0.3.21
@@ -171,6 +154,51 @@ services:
       - "traefik.http.middlewares.adminer-add-trailing-slash.redirectregex.replacement=https://$${1}/adminer/"
       - "traefik.http.middlewares.adminer-add-trailing-slash.redirectregex.permanent=true"
       - "traefik.http.services.adminer.loadbalancer.server.port=8080"
+
+  frontend:
+    image: ${DOCKER_HUB_USERNAME}/soziodata-frontend:latest
+    container_name: frontend
+    restart: always
+    depends_on:
+      - traefik
+    networks:
+      - backend-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`fp-icw-soziooekonomische-daten.f4.htw-berlin.de`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=le_http"
+      - "traefik.http.routers.frontend.priority=1"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+
+  docs:
+    image: ${DOCKER_HUB_USERNAME}/soziodata-docs:latest
+    container_name: docs
+    restart: always
+    depends_on:
+      - traefik
+    networks:
+      - backend-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.docs.rule=Host(`fp-icw-soziooekonomische-daten.f4.htw-berlin.de`) && PathPrefix(`/docs/`)"
+      - "traefik.http.routers.docs.entrypoints=websecure"
+      - "traefik.http.routers.docs.tls=true"
+      - "traefik.http.routers.docs.tls.certresolver=le_http"
+      - "traefik.http.routers.docs.priority=90"
+      - "traefik.http.routers.docs.middlewares=docs-strip-prefix@docker"
+      - "traefik.http.middlewares.docs-strip-prefix.stripprefix.prefixes=/docs"
+      - "traefik.http.routers.docs-slash.rule=Host(`fp-icw-soziooekonomische-daten.f4.htw-berlin.de`) && Path(`/docs`)"
+      - "traefik.http.routers.docs-slash.entrypoints=websecure"
+      - "traefik.http.routers.docs-slash.tls=true"
+      - "traefik.http.routers.docs-slash.tls.certresolver=le_http"
+      - "traefik.http.routers.docs-slash.priority=91"
+      - "traefik.http.routers.docs-slash.middlewares=docs-add-trailing-slash@docker"
+      - "traefik.http.middlewares.docs-add-trailing-slash.redirectregex.regex=^https?://([^/]+)/docs$$"
+      - "traefik.http.middlewares.docs-add-trailing-slash.redirectregex.replacement=https://$${1}/docs/"
+      - "traefik.http.middlewares.docs-add-trailing-slash.redirectregex.permanent=true"
+      - "traefik.http.services.docs.loadbalancer.server.port=80"
 
 volumes:
   pgdata:

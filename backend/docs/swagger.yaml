@@ -1,5 +1,92 @@
 basePath: /api/v1
 definitions:
+  handlers.CustomRegionAggregateRequest:
+    properties:
+      datasets:
+        example:
+        - bevoelkerung
+        - schuldnerquote
+        items:
+          type: string
+        type: array
+      from_year:
+        example: 2015
+        type: integer
+      geometry:
+        type: object
+      min_share:
+        example: 0.01
+        type: number
+      to_year:
+        example: 2024
+        type: integer
+    type: object
+  handlers.CustomRegionAggregateRow:
+    properties:
+      aggregation_method:
+        example: weighted_avg_population
+        type: string
+      coverage:
+        example: 0.98
+        type: number
+      dataset_slug:
+        example: schuldnerquote
+        type: string
+      indicator:
+        example: schuldnerquote
+        type: string
+      is_crosswalked:
+        description: |-
+          IsCrosswalked: mindestens ein beteiligter Einheitenwert wurde über eine
+          Versionsgrenze umgerechnet (kein Direktwert).
+        example: false
+        type: boolean
+      level_used:
+        example: nuts3
+        type: string
+      matched_unit:
+        description: |-
+          MatchedUnit ist gesetzt, wenn das Polygon exakt einer bestehenden Einheit
+          der genutzten Ebene entspricht (nuts_id, gisco_id bzw. ba_schl); die Werte
+          sind dann die Werte dieser Einheit, ohne Beiträge benachbarter Einheiten.
+        example: DE300
+        type: string
+      month:
+        example: 6
+        type: integer
+      source_region_count:
+        example: 3
+        type: integer
+      value:
+        example: 7.4
+        type: number
+      value_kind:
+        example: rate
+        type: string
+      year:
+        example: 2023
+        type: integer
+    type: object
+  handlers.customRegionMeta:
+    properties:
+      dataset_slug:
+        example: schuldnerquote
+        type: string
+      finer_slug:
+        type: string
+      indicator:
+        example: schuldnerquote
+        type: string
+      kind:
+        example: rate
+        type: string
+      level:
+        example: nuts3
+        type: string
+      measure_type:
+        example: weighted_avg
+        type: string
+    type: object
   models.APIResponse:
     properties:
       data: {}
@@ -14,6 +101,183 @@ definitions:
       success:
         example: true
         type: boolean
+    type: object
+  models.AgenturDatasetAggregatePoint:
+    properties:
+      aggregation_method:
+        description: |-
+          Wie der Wert entstanden ist (siehe mart_agentur_dataset_aggregate):
+          "sum" = Summe der Kreis-Werte; "weighted_avg_population" =
+          bevölkerungsgewichteter Durchschnitt der Kreis-Werte;
+          "weighted_avg_area" = flächengewichteter Durchschnitt (Rückfall, wenn
+          für einen beteiligten Kreis die Bevölkerung fehlt). Die beiden
+          Durchschnitte sind eine Näherung, keine exakte Neuberechnung.
+        enum:
+        - sum
+        - weighted_avg_population
+        - weighted_avg_area
+        example: weighted_avg_population
+        type: string
+      ba_schl:
+        example: "962"
+        type: string
+      dataset_slug:
+        example: bevoelkerung
+        type: string
+      is_computed:
+        description: |-
+          Immer true: jeder Punkt ist eine flächengewichtete Aggregation über
+          mehrere Kreise, keine an einer einzelnen Quelle abgelesene
+          Einzelbeobachtung.
+        example: true
+        type: boolean
+      is_interpolated:
+        description: |-
+          Immer false - keine gap-gefüllte Version wird hier aggregiert. Nicht
+          aus der DB gescannt, damit TimeseriesChart.vue/DataTable.vue dieselbe
+          Interpolationsstatus-Spalte wie bei den anderen Aggregat-Endpunkten
+          anzeigen können.
+        example: false
+        type: boolean
+      source_region_count:
+        description: Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert
+          beigetragen haben.
+        example: 3
+        type: integer
+      value:
+        example: 340123
+        type: number
+      value_kind:
+        description: |-
+          Art der Größe: "count" (Zählgröße), "rate" (Quote), "mean"
+          (Durchschnitt) oder "median". Mediane lassen sich nicht aus Kreis-
+          Medianen zusammensetzen - der Wert ist dann nur eine Schätzung.
+        enum:
+        - count
+        - rate
+        - mean
+        - median
+        example: rate
+        type: string
+      year:
+        example: 2022
+        type: integer
+    type: object
+  models.AgenturDatasetAggregateYear:
+    properties:
+      dataset_slug:
+        example: bevoelkerung
+        type: string
+      year:
+        example: 2022
+        type: integer
+    type: object
+  models.AgenturNuts3Share:
+    properties:
+      area_share_of_agentur:
+        example: 0.42
+        type: number
+      area_share_of_nuts3:
+        example: 1
+        type: number
+      nuts3_id:
+        example: DE300
+        type: string
+      region_name:
+        example: Berlin
+        type: string
+    type: object
+  models.AgenturNutsMembership:
+    properties:
+      area_share_of_agentur:
+        example: 1
+        type: number
+      is_fully_contained:
+        type: boolean
+      is_parent:
+        type: boolean
+      nuts_id:
+        example: DE30
+        type: string
+      nuts_level:
+        example: 2
+        type: integer
+      region_name:
+        example: Berlin
+        type: string
+    type: object
+  models.AgenturbezirkArbeitslosigkeitPoint:
+    properties:
+      arbeitslose:
+        type: number
+      month:
+        example: 8
+        type: integer
+      observation_date:
+        example: "2026-08-01"
+        type: string
+      unterbeschaeftigung:
+        type: number
+      year:
+        example: 2026
+        type: integer
+    type: object
+  models.AgenturbezirkLatestValue:
+    properties:
+      arbeitslose:
+        type: number
+      ba_schl:
+        example: "962"
+        type: string
+      geometry_wgs84:
+        type: object
+      has_valid_geometry:
+        type: boolean
+      month:
+        example: 8
+        type: integer
+      name:
+        example: Berlin Mitte
+        type: string
+      observation_date:
+        example: "2026-08-01"
+        type: string
+      unterbeschaeftigung:
+        type: number
+      year:
+        example: 2026
+        type: integer
+    type: object
+  models.AgenturbezirkPeriod:
+    properties:
+      month:
+        example: 8
+        type: integer
+      observation_date:
+        example: "2026-08-01"
+        type: string
+      year:
+        example: 2026
+        type: integer
+    type: object
+  models.AgenturbezirkSummary:
+    properties:
+      ba_schl:
+        example: "962"
+        type: string
+      geometry_wgs84:
+        type: object
+      has_valid_geometry:
+        type: boolean
+      name:
+        example: Berlin Mitte
+        type: string
+      valid_from:
+        example: "2019-06-01"
+        type: string
+      valid_to:
+        example: "2050-12-31"
+        type: string
     type: object
   models.ArbeitsloseData:
     properties:
@@ -41,9 +305,30 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -56,6 +341,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -86,9 +377,30 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -101,13 +413,19 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
     type: object
-  models.AuzubildendeData:
+  models.AuszubildendeData:
     properties:
-      auzubildende:
+      auszubildende:
         example: 0
         type: number
       geodata_id_ars:
@@ -131,9 +449,30 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -146,6 +485,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -176,9 +521,30 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -191,6 +557,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -230,9 +602,30 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -245,6 +638,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -275,9 +674,30 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -290,6 +710,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -320,9 +746,30 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -335,9 +782,82 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
+    type: object
+  models.DatasetCatalogEintrag:
+    properties:
+      algorithm:
+        type: string
+      dataset_slug:
+        example: bevoelkerung
+        type: string
+      dataset_uri:
+        description: |-
+          DatasetURI ist eine persistente, deterministisch aus DatasetSlug abgeleitete
+          Kennung (urn:soziodata:dataset:<slug>) - keine künstliche Zufalls-ID.
+        example: urn:soziodata:dataset:bevoelkerung
+        type: string
+      description:
+        example: Zahl der Erwerbstätigen in 1000 Personen
+        type: string
+      description_long:
+        type: string
+      geodata_level:
+        example: NUTS_3
+        type: string
+      geodata_year:
+        example: 2024
+        type: integer
+      license:
+        example: unbekannt
+        type: string
+      license_backfilled:
+        description: |-
+          LicenseBackfilled ist true, wenn der Datensatz Jahre vor LicenseTrackedSince
+          enthält - die aktuelle Lizenz wurde dann rückwirkend auf diese älteren Jahre
+          angewendet, ohne für sie unabhängig verifiziert zu sein.
+        example: true
+        type: boolean
+      license_tracked_since:
+        description: |-
+          LicenseTrackedSince ist das Datum, seit dem die Lizenz dieses Datensatzes
+          per snap_dataset_license beobachtet wird; null falls noch kein dbt snapshot
+          gelaufen ist.
+        example: "2026-09-11"
+        type: string
+      license_url:
+        type: string
+      max_year:
+        example: 2023
+        type: integer
+      min_year:
+        example: 1995
+        type: integer
+      name:
+        example: Bevölkerung
+        type: string
+      number_type:
+        example: absolute
+        type: string
+      provenance:
+        example: Laufende Raumbeobachtung des BBSR; Fortschreibung des Bevölkerungsstandes
+        type: string
+      total_records:
+        example: 11600
+        type: integer
+      unit:
+        example: Einwohner
+        type: string
+      updated_at:
+        type: string
     type: object
   models.DatasetMetricsResult:
     properties:
@@ -351,6 +871,42 @@ definitions:
       dataset:
         example: schuldnerquote
         type: string
+    type: object
+  models.DatasetQuellwert:
+    properties:
+      dataset_slug:
+        example: bevoelkerung
+        type: string
+      geodata_id_ars:
+        type: string
+      geodata_id_lau:
+        type: string
+      geodata_id_nuts:
+        example: DE929
+        type: string
+      geodata_level:
+        example: NUTS_3
+        type: string
+      geodata_name:
+        type: string
+      geodata_year:
+        example: 2024
+        type: integer
+      mapper:
+        type: string
+      original_id_1:
+        example: "03241"
+        type: string
+      original_name:
+        example: Region Hannover
+        type: string
+      parameter:
+        type: string
+      value:
+        type: number
+      year:
+        example: 2020
+        type: integer
     type: object
   models.DatasetYearMetrics:
     properties:
@@ -434,9 +990,30 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -449,6 +1026,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -479,9 +1062,30 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -494,6 +1098,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -522,6 +1132,15 @@ definitions:
       dataset:
         example: bevoelkerung
         type: string
+    type: object
+  models.GeoPeriod:
+    properties:
+      valid_from:
+        example: 2016
+        type: integer
+      valid_to:
+        example: 2023
+        type: integer
     type: object
   models.GeoRegionSummary:
     properties:
@@ -552,7 +1171,7 @@ definitions:
       region_name:
         example: Stuttgart, Stadtkreis
         type: string
-      year:
+      vintage_year:
         example: 2024
         type: integer
     type: object
@@ -570,13 +1189,9 @@ definitions:
       nuts_level_code:
         example: NUTS-3
         type: string
-      versions:
-        example:
-        - 2024
-        - 2023
-        - 2022
+      periods:
         items:
-          type: integer
+          $ref: '#/definitions/models.GeoPeriod'
         type: array
     type: object
   models.GeoSpatialQueryRequest:
@@ -640,12 +1255,33 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
       kinderarmut:
         example: 50
         type: number
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -658,6 +1294,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -700,6 +1342,19 @@ definitions:
         type: boolean
       nuts_3_code:
         type: string
+      nuts3_id:
+        description: |-
+          NUTS3ID ist die kanonische LAU->NUTS-3-Verlinkung: deklarierte
+          Quellspalte (nuts_3_code/nuts_3), sonst räumlich ermittelter Fallback
+          (siehe int_lau_nuts3_spatial_link.sql). Robuster als NUTS3Code, das
+          oft NULL ist, wenn die Quelldaten keinen NUTS-3-Code führen.
+        type: string
+      nuts3_link_source:
+        description: |-
+          NUTS3LinkSource kennzeichnet, woher NUTS3ID stammt: 'declared' (aus
+          Quelldaten) oder 'spatial_estimate' (räumlich ermittelt, keine
+          amtliche Zuordnung) - siehe lau_integrated.sql.
+        type: string
       population_count:
         type: integer
       year:
@@ -708,6 +1363,47 @@ definitions:
       year_match:
         example: true
         type: boolean
+    type: object
+  models.LauTimeseriesPoint:
+    properties:
+      dataset_slug:
+        example: beschaeftigungsquote-gemeinden
+        type: string
+      gisco_id:
+        example: DE_11000000
+        type: string
+      is_interpolated:
+        description: true = Wert wurde imputiert (kein Originalwert vorhanden für
+          dieses Jahr).
+        example: true
+        type: boolean
+      lau_version:
+        description: LauVersion ist die LAU-Zielversion dieses Zeitreihenpunkts (2011-2024).
+        example: 2021
+        type: integer
+      n_peer_regions:
+        description: Anzahl Peer-Gemeinden (gleicher Kreis), die zu value_peer_trend
+          beigetragen haben.
+        example: 8
+        type: integer
+      value:
+        example: 58.3
+        type: number
+      value_linear:
+        description: Methode-1-Schätzung (lineare Interpolation). Nur bei is_interpolated
+          = true befüllt.
+        example: 58.3
+        type: number
+      value_peer_trend:
+        description: |-
+          Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen
+          Veränderung anderer Gemeinden desselben Kreises). Nur befüllt, wenn
+          is_interpolated = true und die Schätzung berechenbar war.
+        example: 57.9
+        type: number
+      year:
+        example: 2021
+        type: integer
     type: object
   models.MedianeinkommenData:
     properties:
@@ -732,12 +1428,33 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
       medianeinkommen:
         example: 0
         type: number
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -750,6 +1467,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
@@ -765,6 +1488,88 @@ definitions:
       total:
         example: 140400
         type: integer
+    type: object
+  models.NutsAgenturbezirk:
+    properties:
+      area_share_of_agentur:
+        example: 1
+        type: number
+      ba_schl:
+        example: "962"
+        type: string
+      is_fully_contained:
+        type: boolean
+      name:
+        example: Berlin Mitte
+        type: string
+    type: object
+  models.NutsDatasetAggregatePoint:
+    properties:
+      dataset_slug:
+        example: bevoelkerung
+        type: string
+      is_computed:
+        description: |-
+          Immer true (siehe SELECT true AS is_computed in GetNutsDatasetAggregateTimeseries):
+          jeder Punkt ist eine Aggregation über mehrere Kreise, keine an einer
+          einzelnen Quelle abgelesene Einzelbeobachtung.
+        example: true
+        type: boolean
+      is_interpolated:
+        description: |-
+          Immer false - siehe Typkommentar oben (keine gap-gefüllte Version wird hier aggregiert).
+          Nicht aus der DB gescannt (kein db-Tag), damit TimeseriesChart.vue/DataTable.vue
+          dieselbe Interpolationsstatus-Spalte wie bei NutsTimeseriesPoint anzeigen können.
+        example: false
+        type: boolean
+      nuts_id:
+        example: DE1
+        type: string
+      source_region_count:
+        description: Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert
+          beigetragen haben.
+        example: 44
+        type: integer
+      value:
+        example: 12876243
+        type: number
+      year:
+        example: 2022
+        type: integer
+    type: object
+  models.NutsLauAggregatePoint:
+    properties:
+      lau_beschaeftigungsquote_weighted_avg:
+        description: Bevölkerungsgewichteter Durchschnitt der Gemeinde-Beschäftigungsquote;
+          null ohne Datenabdeckung.
+        example: 64.2
+        type: number
+      lau_population_sum:
+        description: Kann null sein, wenn für keine zugeordnete Gemeinde ein Bevölkerungswert
+          vorliegt.
+        example: 634830
+        type: number
+      lau_region_count:
+        description: Anzahl der diesem Kreis zugeordneten Gemeinden.
+        example: 23
+        type: integer
+      lau_region_count_with_population:
+        description: Davon mit einem tatsächlichen Bevölkerungswert (<=lau_region_count).
+        example: 21
+        type: integer
+      year:
+        example: 2022
+        type: integer
+    type: object
+  models.NutsLauAggregateResponse:
+    properties:
+      nuts_id:
+        example: DE300
+        type: string
+      series:
+        items:
+          $ref: '#/definitions/models.NutsLauAggregatePoint'
+        type: array
     type: object
   models.NutsRegionMetadata:
     properties:
@@ -844,13 +1649,9 @@ definitions:
       nuts_level_code:
         example: NUTS-3
         type: string
-      versions:
-        example:
-        - 2024
-        - 2023
-        - 2022
+      periods:
         items:
-          type: integer
+          $ref: '#/definitions/models.GeoPeriod'
         type: array
     type: object
   models.NutsSocioeconomicData:
@@ -870,6 +1671,94 @@ definitions:
       yoy_change_percent:
         example: -2.3
         type: number
+    type: object
+  models.NutsTimeseriesPoint:
+    properties:
+      dataset_slug:
+        example: wohngeldhaushalte
+        type: string
+      is_interpolated:
+        description: true = Wert wurde imputiert (kein Originalwert vorhanden für
+          dieses Jahr).
+        example: true
+        type: boolean
+      n_peer_regions:
+        description: Anzahl Peer-Regionen (gleiche NUTS-2-Gruppe), die zu value_peer_trend
+          beigetragen haben.
+        example: 11
+        type: integer
+      nuts_id:
+        example: DE226
+        type: string
+      nuts_version:
+        description: NutsVersion ist die NUTS-3-Zielversion dieses Zeitreihenpunkts
+          (2016, 2021 oder 2024).
+        example: 2021
+        type: integer
+      value:
+        example: 8.78
+        type: number
+      value_linear:
+        description: Methode-1-Schätzung (lineare Interpolation). Nur bei is_interpolated
+          = true befüllt.
+        example: 8.78
+        type: number
+      value_peer_trend:
+        description: |-
+          Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen
+          Veränderung anderer Regionen derselben NUTS-2-Gruppe). Nur befüllt, wenn
+          is_interpolated = true und die Schätzung berechenbar war.
+        example: 8.5
+        type: number
+      year:
+        example: 2021
+        type: integer
+    type: object
+  models.RegionDataRow:
+    properties:
+      aggregation_method:
+        description: 'Nur bei aggregierten Werten: sum, weighted_avg_population, weighted_avg_area.'
+        example: weighted_avg_population
+        type: string
+      dataset_slug:
+        example: bevoelkerung
+        type: string
+      is_computed:
+        description: true = aus mehreren Quellregionen berechnet, false = Ursprungswert
+          der Region.
+        type: boolean
+      is_interpolated:
+        description: true = kein Originalwert, sondern imputiert (nur NUTS-3/LAU-Rohwerte).
+        type: boolean
+      month:
+        description: Nur bei Monatswerten (Agenturbezirk-Rohwerte), sonst leer.
+        example: 8
+        type: integer
+      region_id:
+        example: DE300
+        type: string
+      region_type:
+        enum:
+        - nuts
+        - lau
+        - agentur
+        example: nuts
+        type: string
+      source_region_count:
+        description: Anzahl der Quellregionen (Kreise/Gemeinden) hinter einem aggregierten
+          Wert.
+        example: 3
+        type: integer
+      value:
+        example: 340123
+        type: number
+      value_kind:
+        description: 'Nur bei Agentur-Aggregaten: count, rate, mean, median.'
+        example: rate
+        type: string
+      year:
+        example: 2022
+        type: integer
     type: object
   models.RegionDataset:
     properties:
@@ -924,9 +1813,30 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -941,6 +1851,12 @@ definitions:
         type: string
       schuldnerquote_prozent:
         example: 50
+        type: number
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
         type: number
       year:
         example: 2020
@@ -969,9 +1885,30 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -986,6 +1923,12 @@ definitions:
         type: string
       sgb_ii_quote_prozent:
         example: 50
+        type: number
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
         type: number
       year:
         example: 2020
@@ -1038,9 +1981,30 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -1056,71 +2020,15 @@ definitions:
       studierende:
         example: 0
         type: number
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       year:
         example: 2020
         type: integer
-    type: object
-  models.UnemploymentAggregation:
-    properties:
-      avg_arbeitslose:
-        example: 18622.03
-        type: number
-      earliest_observation:
-        example: "1998-01-01T00:00:00Z"
-        type: string
-      geodata_id:
-        example: DE111
-        type: string
-      geodata_name:
-        example: Stuttgart, Stadtkreis
-        type: string
-      latest_observation:
-        example: "2024-12-31T00:00:00Z"
-        type: string
-      max_arbeitslose:
-        example: 31655
-        type: number
-      min_arbeitslose:
-        example: 13334
-        type: number
-      total_records:
-        example: 351
-        type: integer
-    type: object
-  models.UnemploymentData:
-    properties:
-      arbeitslose:
-        example: 20749
-        type: number
-      arbeitslose_previous_year:
-        example: 18416
-        type: number
-      arbeitslosenzahlen_pk:
-        type: string
-      geodata_id:
-        example: DE111
-        type: string
-      geodata_id_ars:
-        example: "08111000"
-        type: string
-      geodata_level:
-        example: NUTS_3
-        type: string
-      geodata_name:
-        example: Stuttgart, Stadtkreis
-        type: string
-      geodata_year:
-        example: 2021
-        type: integer
-      observation_date:
-        example: "2024-01-01T00:00:00Z"
-        type: string
-      year:
-        example: 2024
-        type: integer
-      yoy_change_percent:
-        example: 12.67
-        type: number
     type: object
   models.WohngeldhaushalteData:
     properties:
@@ -1145,9 +2053,30 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
+          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
+          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+        example: 2021
+        type: integer
       mapper:
         example: exact_id
         type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
+          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
+          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
+          Zielversion erkennbar zurückgeben.
+        example: 2021
+        type: integer
       observation_date:
         example: "2020-01-01"
         type: string
@@ -1160,6 +2089,12 @@ definitions:
       parameter:
         example: id_ars
         type: string
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
       wohngeldhaushalte_je_1000:
         example: 0
         type: number
@@ -1177,6 +2112,493 @@ info:
   title: Sozioökonomische Daten API
   version: "1.0"
 paths:
+  /agenturbezirke:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle Agenturbezirke mit Geometrie zurück. Agenturbezirke sind
+        eine eigenständige Gebietsgliederung, nicht deckungsgleich mit NUTS-3/LAU/ARS.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturbezirkSummary'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Liste aller Agenturbezirke
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/{ba_schl}:
+    get:
+      consumes:
+      - application/json
+      description: Gibt Details eines Agenturbezirks mit Geometrie zurück
+      parameters:
+      - description: Amtlicher BA-Schlüssel des Agenturbezirks
+        example: "962"
+        in: path
+        name: ba_schl
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.AgenturbezirkSummary'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Agenturbezirk-Details
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/{ba_schl}/arbeitslosigkeit:
+    get:
+      consumes:
+      - application/json
+      description: Gibt die monatliche Zeitreihe (Arbeitslose, Unterbeschäftigung)
+        für einen Agenturbezirk zurück (AfA Lange Zeitreihen, ab Januar 2007)
+      parameters:
+      - description: Amtlicher BA-Schlüssel des Agenturbezirks
+        example: "962"
+        in: path
+        name: ba_schl
+        required: true
+        type: string
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturbezirkArbeitslosigkeitPoint'
+                  type: array
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Monatliche Arbeitslosenzahlen eines Agenturbezirks
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/{ba_schl}/dataset-aggregate/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: 'Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets)
+        über den Agentur<->NUTS-3-Flächenanteils-Crosswalk auf Agenturbezirk-Ebene
+        hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe
+        mart_agentur_dataset_aggregate). Analog zu GET /nuts/{nuts_id}/dataset-aggregate/{slug}
+        für NUTS-0/1/2. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte;
+        Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der
+        Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen)
+        - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen
+        und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist.
+        Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung).
+        Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig
+        aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.'
+      parameters:
+      - description: Amtlicher BA-Schlüssel des Agenturbezirks
+        example: "962"
+        in: path
+        name: ba_schl
+        required: true
+        type: string
+      - description: Route-Slug des Datensatzes
+        example: bevoelkerung
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturDatasetAggregatePoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Auf Agenturbezirk-Ebene aggregierte Datensatz-Zeitreihe
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/{ba_schl}/nuts-hierarchy:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle überlappenden NUTS-1/2/3-Regionen eines Agenturbezirks
+        zurück. is_fully_contained markiert Regionen, die den Agenturbezirk vollständig
+        enthalten (Flächenanteil >= 99 %); is_parent die kleinste davon (übergeordnete
+        Region). Reicht ein Agenturbezirk über Bundeslandgrenzen hinaus, ist keine
+        Zeile is_parent. Räumliche Schätzung, keine amtliche Zuordnung.
+      parameters:
+      - description: Amtlicher BA-Schlüssel des Agenturbezirks
+        example: "962"
+        in: path
+        name: ba_schl
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturNutsMembership'
+                  type: array
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: NUTS-Hierarchie eines Agenturbezirks (Kreis/Regierungsbezirk/Bundesland)
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/{ba_schl}/nuts3:
+    get:
+      consumes:
+      - application/json
+      description: 'Gibt die überlappenden NUTS-3-Regionen eines Agenturbezirks zurück,
+        mit Flächenanteil in beide Richtungen. Agenturbezirke bestehen i.d.R. aus
+        einem oder mehreren ganzen Kreisen (Ausnahme Berlin: 3 Agenturbezirke teilen
+        sich einen Kreis) - eine räumliche Schätzung, keine amtliche Zuordnung.'
+      parameters:
+      - description: Amtlicher BA-Schlüssel des Agenturbezirks
+        example: "962"
+        in: path
+        name: ba_schl
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturNuts3Share'
+                  type: array
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: NUTS-3-Zuordnung eines Agenturbezirks (Flächenanteile)
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/dataset-aggregate:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle (Datensatz-Slug, Jahr)-Kombinationen zurück, für die
+        mart_agentur_dataset_aggregate Werte enthält - Grundlage der Datensatz-/Jahresauswahl
+        in der Karte.
+      parameters:
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturDatasetAggregateYear'
+                  type: array
+              type: object
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Verfügbare aggregierte Datensätze/Jahre (Agenturbezirke)
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/dataset-aggregate/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: 'Liefert für einen Kreis-grain-Datensatz und ein Jahr den auf Agenturbezirk-Ebene
+        aggregierten Wert je Agenturbezirk (siehe mart_agentur_dataset_aggregate)
+        - für die Kartendarstellung. Geometrien kommen weiterhin aus GET /agenturbezirke/period.
+        LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und
+        Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte
+        (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung,
+        keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung
+        nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht
+        aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt
+        sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro
+        Punkt kennzeichnen aggregation_method und value_kind das Verfahren.'
+      parameters:
+      - description: Route-Slug des Datensatzes
+        example: bevoelkerung
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Jahr
+        example: 2022
+        in: query
+        name: year
+        required: true
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturDatasetAggregatePoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Aggregierter Datensatz für alle Agenturbezirke (ein Jahr)
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/latest:
+    get:
+      consumes:
+      - application/json
+      description: Gibt jeden Agenturbezirk mit Geometrie und dem jeweils neuesten
+        verfügbaren Monatswert (Arbeitslose, Unterbeschäftigung) zurück.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturbezirkLatestValue'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Agenturbezirke mit neuestem Berichtsmonat (für die Karte)
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/period:
+    get:
+      consumes:
+      - application/json
+      description: Gibt jeden Agenturbezirk mit Geometrie und dem Monatswert (Arbeitslose,
+        Unterbeschäftigung) für das angegebene Jahr/Monat zurück.
+      parameters:
+      - description: Jahr
+        example: 2026
+        in: query
+        name: year
+        required: true
+        type: integer
+      - description: Monat (1-12)
+        example: 8
+        in: query
+        name: month
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturbezirkLatestValue'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Agenturbezirke zu einem gewählten Berichtsmonat (für die Karte)
+      tags:
+      - Agenturbezirke
+  /agenturbezirke/periods:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle distinkten (Jahr, Monat)-Kombinationen zurück, für die
+        Arbeitslosenzahlen vorliegen (neueste zuerst).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.AgenturbezirkPeriod'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Verfügbare Berichtsmonate der Agenturbezirke
+      tags:
+      - Agenturbezirke
   /arbeitslose:
     get:
       consumes:
@@ -1204,6 +2626,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1216,8 +2653,33 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -1234,12 +2696,110 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Arbeitslose
+  /arbeitslose/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Arbeitslosenzahlen je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Arbeitslose
   /arbeitsvolumen:
@@ -1269,6 +2829,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1281,8 +2856,33 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -1299,6 +2899,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1307,7 +2911,101 @@ paths:
         und Qualitätsflag
       tags:
       - Arbeitsvolumen
-  /auzubildende:
+  /arbeitsvolumen/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2000-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Arbeitsvolumen je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
+      tags:
+      - Arbeitsvolumen
+  /auszubildende:
     get:
       consumes:
       - application/json
@@ -1334,6 +3032,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1346,8 +3059,33 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -1357,11 +3095,15 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.AuzubildendeData'
+                    $ref: '#/definitions/models.AuszubildendeData'
                   type: array
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
@@ -1371,7 +3113,101 @@ paths:
       summary: Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
       tags:
-      - Auzubildende
+      - Auszubildende
+  /auszubildende/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Auszubildende je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
+      tags:
+      - Auszubildende
   /beschaeftigungsquote-gemeinden:
     get:
       consumes:
@@ -1399,6 +3235,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1411,8 +3262,33 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-LAU-Version (2011-2024,
+          Default 2024)'
+        example: 2021
+        in: query
+        name: lau_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -1429,12 +3305,110 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt,
         mit Datumsableitung und Qualitätsflag
+      tags:
+      - BeschaeftigungsquoteGemeinden
+  /beschaeftigungsquote-gemeinden/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte LAU-Zeitreihe aus mart_lau_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: GISCO-ID der Gemeinde
+        example: DE_11000000
+        in: query
+        name: geodata_id_lau
+        type: string
+      - description: NUTS-3-Präfix für Hierarchieabfragen (über die kanonische LAU->NUTS-3-Verlinkung,
+          z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2000-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-LAU-Version (2011-2024, Default 2024)
+        example: 2021
+        in: query
+        name: lau_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.LauTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je
+        Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - BeschaeftigungsquoteGemeinden
   /beschaeftigungsquote-nuts3:
@@ -1464,6 +3438,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1476,8 +3465,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -1494,12 +3496,110 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert
         aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
+      tags:
+      - BeschaeftigungsquoteNuts3
+  /beschaeftigungsquote-nuts3/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2000-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je
+        NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
       tags:
       - BeschaeftigungsquoteNuts3
   /bevoelkerung:
@@ -1529,6 +3629,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1541,8 +3656,33 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -1559,12 +3699,110 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Bevoelkerung
+  /bevoelkerung/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Bevölkerungsdaten je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Bevoelkerung
   /bruttoverdienst:
@@ -1594,6 +3832,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1606,8 +3859,33 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -1624,6 +3902,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1632,6 +3914,333 @@ paths:
         und Qualitätsflag
       tags:
       - Bruttoverdienst
+  /bruttoverdienst/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2000-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Bruttoverdienst je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
+      tags:
+      - Bruttoverdienst
+  /custom-regions/dataset-aggregate:
+    post:
+      consumes:
+      - application/json
+      description: 'Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten
+        und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt
+        (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene
+        vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte
+        (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt. Näherungswerte (z.
+        B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet.
+        Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: Version 2024.'
+      parameters:
+      - description: GeoJSON-Region und Datensätze
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CustomRegionAggregateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.CustomRegionAggregateRow'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Datensätze für eine Custom-Region (GeoJSON)
+      tags:
+      - Geo
+  /custom-regions/datasets:
+    get:
+      description: 'Gibt je Datensatz/Indikator die Quellebene (lau, nuts3, agentur),
+        die Aggregationsart (sum, weighted_avg) und die Kennzeichnung der Näherung
+        (kind) zurück. Namen und Lizenz: GET /datasets/{slug}.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.customRegionMeta'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Für Custom-Regionen abfragbare Datensätze
+      tags:
+      - Geo
+  /datasets:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Liefert pro Datensatz Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum
+        sowie eine persistente URI. Lizenz ist "unbekannt", solange die tatsächlichen Nutzungsbedingungen der Quelle noch nicht recherchiert wurden.
+        ?datasets= filtert auf einzelne Slugs (kommagetrennt, leer = alle) - gedacht für den
+        gleichzeitigen Metadaten-Export neben einem Daten-Download
+        Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.
+      parameters:
+      - description: Kommagetrennte Datensatz-Slugs (leer = alle)
+        example: bevoelkerung,arbeitslose
+        in: query
+        name: datasets
+        type: string
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.DatasetCatalogEintrag'
+                  type: array
+              type: object
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Datensatz-Katalog (Herkunft, Lizenz, Beschreibung)
+      tags:
+      - Datensatz-Katalog
+  /datasets/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Liefert Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum für einen Datensatz-Slug.
+        Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.
+      parameters:
+      - description: Datensatz-Slug (z.B. bevoelkerung)
+        example: bevoelkerung
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.DatasetCatalogEintrag'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Katalogeintrag eines einzelnen Datensatzes
+      tags:
+      - Datensatz-Katalog
+  /datasets/{slug}/source:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Liefert die Werte des Datensatzes so, wie sie aus dem geo-mapper-Teilprojekt kommen: unverändert, nur die
+        Regionsnamen sind auf Geodaten-IDs gemappt (original_*, geodata_id_*, mapper, parameter). Keine NUTS-Harmonisierung,
+        Interpolation oder Aggregation - dafür die Datensatz-Endpunkte verwenden. Herkunft und Lizenz: GET /datasets/{slug}.
+        Nicht verfügbar für abgeleitete Slugs (beschaeftigungsquote-nuts3, lau_*, ba_*) und die Agenturbezirks-Arbeitslosenzahlen (siehe /agenturbezirke).
+        Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.
+      parameters:
+      - description: Datensatz-Slug (z.B. bevoelkerung)
+        example: bevoelkerung
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.DatasetQuellwert'
+                  type: array
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Quelldaten eines Datensatzes (gemappt, unverändert)
+      tags:
+      - Datensatz-Katalog
   /durchschnittsalter:
     get:
       consumes:
@@ -1659,6 +4268,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1671,8 +4295,33 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -1689,12 +4338,110 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Durchschnittsalter
+  /durchschnittsalter/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Durchschnittsalter je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Durchschnittsalter
   /erwerbstaetige_pro_1000_einwohner:
@@ -1724,6 +4471,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -1736,8 +4498,33 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -1754,6 +4541,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -1762,18 +4553,114 @@ paths:
         mit Datumsableitung und Qualitätsflag
       tags:
       - ErwerbstaetigePro1000Einwohner
+  /erwerbstaetige_pro_1000_einwohner/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Erwerbstätige je 1.000
+        Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+      tags:
+      - ErwerbstaetigePro1000Einwohner
   /geo:
     get:
       consumes:
       - application/json
-      description: Gibt eine einheitliche Liste für NUTS- oder LAU-Regionen zurück.
-        Standard ist NUTS. Mit geo_type=lau werden LAU-Regionen geliefert.
+      description: Gibt eine einheitliche Liste für NUTS-, LAU- oder Agenturbezirk-Regionen
+        zurück. Standard ist NUTS. Mit geo_type=lau bzw. geo_type=agentur werden LAU-
+        bzw. Agenturbezirk-Regionen geliefert.
       parameters:
       - default: nuts
-        description: 'Regionstyp: nuts oder lau'
+        description: 'Regionstyp: nuts, lau oder agentur'
         enum:
         - nuts
         - lau
+        - agentur
         in: query
         name: geo_type
         type: string
@@ -1813,14 +4700,14 @@ paths:
         name: include_geometry
         type: boolean
       - default: latest
-        description: 'Geometrieauswahl: latest oder exact'
+        description: 'Geometrieauswahl (nur für geo_type=nuts): latest oder exact'
         enum:
         - latest
         - exact
         in: query
         name: geometry_strategy
         type: string
-      - description: Zieljahr für Geometrie (bei exact erforderlich)
+      - description: Zieljahr für Geometrie (nur für geo_type=nuts; bei exact erforderlich)
         example: 2024
         in: query
         name: geometry_year
@@ -1872,7 +4759,8 @@ paths:
       consumes:
       - application/json
       description: 'Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird
-        der Typ aus der ID erkannt (NUTS: 2-5 Zeichen, sonst LAU).'
+        der Typ aus der ID erkannt (rein numerisch: Agentur; NUTS: 2-5 Zeichen; sonst
+        LAU).'
       parameters:
       - description: Geo-ID (NUTS oder GISCO-ID)
         example: DE111
@@ -1881,11 +4769,12 @@ paths:
         required: true
         type: string
       - default: auto
-        description: 'Regionstyp: auto, nuts oder lau'
+        description: 'Regionstyp: auto, nuts, lau oder agentur'
         enum:
         - auto
         - nuts
         - lau
+        - agentur
         in: query
         name: geo_type
         type: string
@@ -1947,8 +4836,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Gibt alle verfügbaren Jahre für eine Geo-Region zurück. Mit geo_type=auto
-        wird der Typ aus der ID erkannt.
+      description: Gibt alle Geometrie-Perioden (valid_from/valid_to) für eine Geo-Region
+        zurück.
       parameters:
       - description: Geo-ID (NUTS oder GISCO-ID)
         example: DE111
@@ -1957,11 +4846,12 @@ paths:
         required: true
         type: string
       - default: auto
-        description: 'Regionstyp: auto, nuts oder lau'
+        description: 'Regionstyp: auto, nuts, lau oder agentur'
         enum:
         - auto
         - nuts
         - lau
+        - agentur
         in: query
         name: geo_type
         type: string
@@ -1989,7 +4879,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Versionsliste für eine Geo-Region
+      summary: Geometrie-Perioden einer Geo-Region
       tags:
       - Geo
   /geo/query:
@@ -1999,7 +4889,8 @@ paths:
       description: Führt eine räumliche Abfrage (intersects/contains) gegen NUTS oder
         LAU Geometrien aus.
       parameters:
-      - description: GeoJSON-Abfrage
+      - description: GeoJSON-Abfrage. geometry_strategy und geometry_year wirken nur
+          bei geo_type=nuts.
         in: body
         name: request
         required: true
@@ -2072,6 +4963,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -2084,8 +4990,33 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2102,12 +5033,111 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte
         unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
+      tags:
+      - Kinderarmut
+  /kinderarmut/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2010-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Kinderarmut je Kreis –
+        nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Kinderarmut
   /lau:
@@ -2276,6 +5306,47 @@ paths:
       summary: Verfügbare Datensätze für eine LAU-Region
       tags:
       - LAU
+  /lau/{gisco_id}/versions:
+    get:
+      consumes:
+      - application/json
+      description: Gibt alle Geometrie-Perioden (valid_from/valid_to) einer LAU-Region
+        aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null
+        bedeutet noch aktuell.
+      parameters:
+      - description: GISCO ID der LAU-Region
+        example: DE_11000000
+        in: path
+        name: gisco_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.GeoRegionVersions'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Geometrie-Perioden einer LAU-Region
+      tags:
+      - LAU
   /medianeinkommen:
     get:
       consumes:
@@ -2303,6 +5374,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -2315,8 +5401,33 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2333,12 +5444,110 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Medianeinkommen
+  /medianeinkommen/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2010-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Medianeinkommen je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Medianeinkommen
   /metrics:
@@ -2562,8 +5771,7 @@ paths:
         5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe
         aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur
         Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen
-        Daten. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code
-        selbst.'
+        Daten.'
       parameters:
       - description: NUTS-Code der Region (Level 0–3)
         example: DE111
@@ -2635,6 +5843,113 @@ paths:
       summary: Alle Indikatoren für eine NUTS-Region (Level 0–3)
       tags:
       - NUTS
+  /nuts/{nuts_id}/agenturbezirke:
+    get:
+      consumes:
+      - application/json
+      description: 'Gibt die Agenturbezirke zurück, die eine NUTS-1/2/3-Region überlappen.
+        is_fully_contained=true: der Agenturbezirk liegt vollständig in der Region
+        (untergeordneter Agenturbezirk); false: nur teilweise Überlappung. Die meisten
+        Kreise haben keinen vollständig enthaltenen Agenturbezirk, weil sie nur Teil
+        eines größeren Agenturbezirks sind. NUTS-0 wird nicht unterstützt. Räumliche
+        Schätzung, keine amtliche Zuordnung.'
+      parameters:
+      - description: NUTS-Code der Region (Level 1–3)
+        example: DE30
+        in: path
+        name: nuts_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsAgenturbezirk'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Agenturbezirke einer NUTS-Region
+      tags:
+      - NUTS
+  /nuts/{nuts_id}/dataset-aggregate/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets)
+        auf Land-/Bundesland-/Regierungsbezirksebene hoch (Summe bzw. bevölkerungsgewichteter
+        Durchschnitt je nach Datensatz, siehe mart_nuts012_dataset_aggregate). Pendant
+        zu GET /{slug}/timeseries für NUTS-3, das für Level 0-2 keine Kreis-Zeilen
+        findet. Nur für NUTS-0/1/2-IDs (2-4 Zeichen) gültig; für Kreise (NUTS-3) GET
+        /{slug}/timeseries verwenden.
+      parameters:
+      - description: NUTS-0/1/2-Code der Region
+        example: DE1
+        in: path
+        name: nuts_id
+        required: true
+        type: string
+      - description: Route-Slug des Datensatzes (siehe GET /nuts/{nuts_id}/datasets)
+        example: bevoelkerung
+        in: path
+        name: slug
+        required: true
+        type: string
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsDatasetAggregatePoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Auf NUTS-0/1/2-Ebene aggregierte Datensatz-Zeitreihe
+      tags:
+      - NUTS
   /nuts/{nuts_id}/datasets:
     get:
       consumes:
@@ -2671,11 +5986,72 @@ paths:
       summary: Verfügbare Datensätze für eine NUTS-Region
       tags:
       - NUTS
+  /nuts/{nuts_id}/lau-aggregate:
+    get:
+      consumes:
+      - application/json
+      description: Gibt eine Zeitreihe der auf diesen Kreis hochaggregierten Gemeinde-Werte
+        zurück (Bevölkerungssumme, Anzahl zugeordneter Gemeinden, bevölkerungsgewichtete
+        Beschäftigungsquote) - als Ergänzung/Cross-Check zu den nativen Kreis-Werten
+        aus GET /nuts/{nuts_id}. Nur für NUTS-3-IDs (5 Zeichen) gültig.
+      parameters:
+      - description: NUTS-3-Code des Kreises
+        example: DE300
+        in: path
+        name: nuts_id
+        required: true
+        type: string
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.NutsLauAggregateResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Auf NUTS-3-Ebene aggregierte LAU-Werte (Gemeinden)
+      tags:
+      - NUTS
   /nuts/{nuts_id}/versions:
     get:
       consumes:
       - application/json
-      description: Gibt alle verfügbaren Jahre einer NUTS-Region zurück (neueste zuerst)
+      description: Gibt alle Geometrie-Perioden (valid_from/valid_to) einer NUTS-Region
+        aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null
+        bedeutet noch aktuell.
       parameters:
       - description: NUTS-Code der Region (Level 0–3)
         example: DE111
@@ -2707,9 +6083,106 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Versionsliste für eine NUTS-Region
+      summary: Geometrie-Perioden einer NUTS-Region
       tags:
       - NUTS
+  /regions/{region_type}/{region_id}/data:
+    get:
+      consumes:
+      - application/json
+      description: 'Stellt die gewünschten Datensätze einer Region (NUTS, LAU oder
+        Agenturbezirk) aus den bestehenden Marts zusammen und liefert sie in einem
+        einheitlichen Long-Format (region_type, region_id, dataset_slug, year, month,
+        value, is_computed, is_interpolated, aggregation_method, value_kind, source_region_count).
+        scope=raw liefert die Ursprungswerte der Region (NUTS-3: interpolierte Kreis-Zeitreihe;
+        LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung),
+        scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus
+        Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert). NUTS-0/1/2 haben keine
+        Rohwerte, LAU keine aggregierten Werte. Format per Accept-Header (application/json
+        oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.'
+      parameters:
+      - description: Regionstyp
+        enum:
+        - nuts
+        - lau
+        - agentur
+        in: path
+        name: region_type
+        required: true
+        type: string
+      - description: nuts_id, gisco_id bzw. ba_schl
+        example: DE300
+        in: path
+        name: region_id
+        required: true
+        type: string
+      - description: Kommagetrennte Datensatz-Slugs (leer = alle verfügbaren)
+        example: bevoelkerung,arbeitslose
+        in: query
+        name: datasets
+        type: string
+      - default: both
+        description: raw, aggregated oder both (kommagetrennt)
+        enum:
+        - raw
+        - aggregated
+        - both
+        in: query
+        name: scope
+        type: string
+      - description: Frühestes Jahr
+        in: query
+        name: from_year
+        type: integer
+      - description: Spätestes Jahr
+        in: query
+        name: to_year
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.RegionDataRow'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Kombinierter Daten-Export einer Region (roh und/oder aggregiert)
+      tags:
+      - Regionen
   /schuldnerquote:
     get:
       consumes:
@@ -2737,6 +6210,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -2749,8 +6237,33 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2767,12 +6280,110 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Schuldnerquote
+  /schuldnerquote/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2000-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Schuldnerquoten je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Schuldnerquote
   /sgb_ii_quote:
@@ -2802,6 +6413,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -2814,8 +6440,33 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2832,12 +6483,110 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - SgbIiQuote
+  /sgb_ii_quote/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2005-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für SGB-II-Quote je Kreis –
+        bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - SgbIiQuote
   /socioeconomic/inventory:
@@ -2914,6 +6663,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -2926,8 +6690,33 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -2944,6 +6733,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -2952,41 +6745,44 @@ paths:
         mit Datumsableitung und Qualitätsflag
       tags:
       - Studierende
-  /unemployment:
+  /studierende/timeseries:
     get:
       consumes:
       - application/json
-      description: Gibt Arbeitslosenzahlen mit optionalen Filtern zurück
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
       parameters:
-      - description: Filter nach Geodaten-ID
-        example: DE111
+      - description: NUTS-3-Code der Region
+        example: DEF01
         in: query
-        name: geodata_id
+        name: geodata_id_nuts
         type: string
-      - description: Start-Datum (YYYY-MM-DD)
-        example: "2024-01-01"
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
         in: query
-        name: from_date
+        name: nuts_parent_id
         type: string
-      - description: End-Datum (YYYY-MM-DD)
-        example: "2024-12-31"
-        in: query
-        name: to_date
-        type: string
-      - description: Filter nach Jahr
-        example: 2024
+      - description: Jahr der Beobachtung (1990-2030)
+        example: 2020
         in: query
         name: year
         type: integer
-      - description: Erstes Jahr (inklusiv)
-        example: 2020
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
         in: query
         name: from_year
         type: integer
-      - description: Letztes Jahr (inklusiv)
-        example: 2024
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
         in: query
         name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
         type: integer
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
@@ -3000,8 +6796,21 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3011,151 +6820,25 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.UnemploymentData'
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Arbeitslosenzahlen abrufen
-      tags:
-      - Unemployment
-  /unemployment/aggregated:
-    get:
-      consumes:
-      - application/json
-      description: Gibt aggregierte Statistiken pro Gebiet zurück
-      parameters:
-      - description: Filter nach Geodaten-ID
-        example: DE111
-        in: query
-        name: geodata_id
-        type: string
-      - description: Filter nach Jahr
-        example: 2024
-        in: query
-        name: year
-        type: integer
-      - description: Erstes Jahr (inklusiv)
-        example: 2020
-        in: query
-        name: from_year
-        type: integer
-      - description: Letztes Jahr (inklusiv)
-        example: 2024
-        in: query
-        name: to_year
-        type: integer
-      - description: Start-Datum (YYYY-MM-DD)
-        example: "2024-01-01"
-        in: query
-        name: from_date
-        type: string
-      - description: End-Datum (YYYY-MM-DD)
-        example: "2024-12-31"
-        in: query
-        name: to_date
-        type: string
-      - default: 100
-        description: Anzahl der Ergebnisse
-        example: 100
-        in: query
-        name: limit
-        type: integer
-      - default: 0
-        description: Offset für Pagination
-        example: 0
-        in: query
-        name: offset
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/models.APIResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/models.UnemploymentAggregation'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
+        "406":
+          description: Not Acceptable
           schema:
             $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
-      summary: Aggregierte Arbeitslosenstatistiken
+      summary: Lückenlose Zeitreihe für Staging-Modell für Studierende je 1.000 Einwohner
+        je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
-      - Unemployment
-  /unemployment/geodata/{geodata_id}:
-    get:
-      consumes:
-      - application/json
-      description: Gibt alle Arbeitslosenzahlen für eine spezifische Geodaten-ID zurück
-      parameters:
-      - description: Geodaten-ID
-        example: DE111
-        in: path
-        name: geodata_id
-        required: true
-        type: string
-      - description: Start-Datum (YYYY-MM-DD)
-        example: "2024-01-01"
-        in: query
-        name: from_date
-        type: string
-      - description: End-Datum (YYYY-MM-DD)
-        example: "2024-12-31"
-        in: query
-        name: to_date
-        type: string
-      - description: 'Zeittyp: yearly, monthly'
-        example: monthly
-        in: query
-        name: time_type
-        type: string
-      - default: 100
-        description: Anzahl der Ergebnisse
-        example: 12
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/models.APIResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/models.UnemploymentData'
-                  type: array
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/models.APIResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Arbeitslosenzahlen für ein Gebiet
-      tags:
-      - Unemployment
+      - Studierende
   /wohngeldhaushalte:
     get:
       consumes:
@@ -3183,6 +6866,21 @@ paths:
         in: query
         name: year
         type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - default: 1000
         description: Anzahl der Ergebnisse (1-10000)
         example: 100
@@ -3195,8 +6893,33 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
       produces:
       - application/json
+      - text/csv
       responses:
         "200":
           description: OK
@@ -3213,12 +6936,110 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/models.APIResponse'
       summary: Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung
         und Qualitätsflag
+      tags:
+      - Wohngeldhaushalte
+  /wohngeldhaushalte/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2010-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging-Modell für Wohngeldhaushalte je Kreis
+        – bereinigt, mit Datumsableitung und Qualitätsflag
       tags:
       - Wohngeldhaushalte
 schemes:

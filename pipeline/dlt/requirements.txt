@@ -1,3 +1,5 @@
+dbt-postgres==1.9.1
+beautifulsoup4==4.15.0
 certifi==2025.8.3
 charset-normalizer==3.4.3
 click==8.2.1
@@ -13,6 +15,7 @@ jsonpath-ng==1.7.0
 markdown-it-py==4.0.0
 mdurl==0.1.2
 numpy==2.3.3
+openpyxl==3.1.5
 orjson==3.11.3
 packaging==25.0
 pandas==2.3.2
@@ -37,6 +40,7 @@ shapely==2.1.1
 simplejson==3.20.1
 six==1.17.0
 smmap==5.0.2
+soupsieve==2.9.2
 sqlglot==27.14.0
 tenacity==9.1.2
 tomlkit==0.13.3

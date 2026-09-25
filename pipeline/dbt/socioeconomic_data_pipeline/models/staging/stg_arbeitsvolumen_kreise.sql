@@ -10,7 +10,8 @@
 }}
 
 with source_data as (
-    select * from {{ source('loaded_data', 'results_arbeitsvolumen_kreise') }}
+    select * from {{ ref('snap_results_arbeitsvolumen_kreise') }}
+    where dbt_valid_to is null
 ),
 
 cleaned as (

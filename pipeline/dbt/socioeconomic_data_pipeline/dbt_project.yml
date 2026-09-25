@@ -26,13 +26,34 @@ clean-targets:         # directories to be removed by `dbt clean`
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
 
+snapshots:
+  socioeconomic_data_pipeline:
+    +target_schema: snapshots
+    +strategy: check
+    +check_cols: ['value']
+    +unique_key: "geodata_id_nuts || '_' || year::text"
+    +invalidate_hard_deletes: false
+
+vars:
+  # Ziel-NUTS-Version für mart_nuts3_sociodata_harmonized.
+  # 2024 = aktuell genutzte Version (kein Crosswalk nötig).
+  # Für Harmonisierung auf 2021: dbt run --vars 'target_nuts_version: 2021'
+  target_nuts_version: 2024
+
 models:
   socioeconomic_data_pipeline:
     # Staging models from loaded_data schema
     staging:
       +materialized: view
       +schema: transformed_data
+    # Intermediate models (crosswalk building blocks)
+    intermediate:
+      +materialized: view
+      +schema: transformed_data
     # Marts models for final integrated data
     marts:
       +materialized: table
       +schema: transformed_data
+      fill_gaps:
+        +materialized: view
+        +schema: transformed_data

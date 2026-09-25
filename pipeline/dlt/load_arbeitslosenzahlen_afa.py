@@ -1,257 +1,219 @@
 """
-DLT Pipeline for loading unemployment data from Agentur für Arbeit (transposed) into PostgreSQL.
-Transposes the CSV (swaps rows/columns) and creates a normalized long-format table.
-
-Data source: Agentur für Arbeit - Arbeitslosenzahlen nach Regionen
+DLT pipeline for loading unemployment figures per Agenturbezirk from the
+official, auth-free "Lange Zeitreihen" REST API of the Statistik der
+Bundesagentur für Arbeit (EckwerteZeitreiheALO?Agentur für Arbeit=<name>,
+see https://statistik.arbeitsagentur.de/.../API-ALO-Zeitreihe.html).
 """
 
-import dlt
-import pandas as pd
+import argparse
+import csv
 import json
-import os
-from pathlib import Path
-from typing import Iterator, Dict, Any
 import logging
-from datetime import datetime
+import time
+from datetime import datetime, timezone
+from typing import Any, Dict, Iterator, List, Optional
 
-# Configure logging
+import dlt
+import requests
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Paths — DATA_EXCHANGE_PATH wird per Env-Variable gesetzt (z.B. /app/data-exchange/1_friedrich-bjoern)
-_EXCHANGE = Path(os.environ.get("DATA_EXCHANGE_PATH", "/home/bjoern/Software/HTW/soziooekonomische-daten"))
-CSV_PATH = _EXCHANGE / "arbeitslose" / "mapped_pairs.csv"
-META_PATH = _EXCHANGE / "arbeitslose" / "meta.json"
+REGION_LIST_URL = (
+    "https://statistik.arbeitsagentur.de/Auswahl/Layout/Statistiktabellen/JS/"
+    "DR-LZR-persistListenfelderJSON.js"
+)
+ZEITREIHE_URL = (
+    "https://statistik-dr.arbeitsagentur.de/bifrontend/bids-api/ct/v1/"
+    "tableFetch/csv/EckwerteZeitreiheALO"
+)
+REQUEST_DELAY_SECONDS = 0.4
 
-def generate_dataset_id(metadata: Dict[str, Any]) -> str:
+# Kein benannter Standard-Lizenztext (z.B. CC BY) - die Quelle formuliert ihre
+# eigene Nutzungsbedingung im Antworttext jeder Abfrage license_url verweist auf die Doku-Seite, die diese Bedingungen
+# formal beschreibt.
+LICENSE_NAME = "Freie Nutzung mit Quellenangabe (Statistik der Bundesagentur für Arbeit)"
+LICENSE_URL = "https://statistik.arbeitsagentur.de/DE/Statischer-Content/Service/API/API-ALO-Zeitreihe.html"
+
+GERMAN_MONTHS = {
+    "Januar": 1, "Februar": 2, "März": 3, "April": 4, "Mai": 5, "Juni": 6,
+    "Juli": 7, "August": 8, "September": 9, "Oktober": 10, "November": 11, "Dezember": 12,
+}
+
+
+def fetch_agenturbezirke() -> List[Dict[str, str]]:
     """
-    Generate a unique dataset_id from metadata.
-    Uses series and table_name to create a stable identifier.
+    Lädt die amtliche Liste der Agenturbezirke (Name + BA-Schlüssel) aus
+    demselben JS-Datenfeld, das auch die interaktive Statistikseite nutzt,
+    statt sie hart zu codieren.
     """
-    series = metadata['metadata']['series'].lower().replace(' ', '_').replace('-', '_')
-    table_name = metadata['metadata']['table_name'].lower().replace(' ', '_').replace('-', '_')
-    # Use series as primary identifier, table_name as secondary
-    dataset_id = f"afa_{series}_{table_name}"
-    # Remove any special characters
-    dataset_id = ''.join(c if c.isalnum() or c == '_' else '_' for c in dataset_id)
-    return dataset_id
+    resp = requests.get(REGION_LIST_URL, timeout=30)
+    resp.raise_for_status()
+    text = resp.text
+    obj = json.loads(text[text.index("{"): text.rindex("}") + 1])
+
+    for entries in obj.values():
+        if entries and entries[0].get("formValues", {}).get("Filtername") == "Agentur für Arbeit":
+            return [
+                {"name": e["formValues"]["DESC"], "ba_schl": e["formValues"]["BA_SCHL"]}
+                for e in entries
+            ]
+    raise RuntimeError("Konnte 'Agentur für Arbeit'-Einträge in persistListenfelderJSON nicht finden")
+
+
+def _parse_value(raw: str) -> Optional[float]:
+    raw = raw.strip()
+    if not raw or raw == "x":
+        return None
+    try:
+        return float(raw)
+    except ValueError:
+        logger.warning(f"Konnte Wert nicht parsen: {raw!r}")
+        return None
+
+
+def fetch_agentur_timeseries(name: str) -> List[Dict[str, Any]]:
+    """
+    Ruft die monatliche Zeitreihe für einen Agenturbezirk ab. Gibt eine
+    leere Liste zurück (statt zu werfen), wenn die Quelle für diesen Namen
+    keine Daten liefert - ein einzelner fehlschlagender Bezirk soll den
+    gesamten Lauf nicht abbrechen (anders als die alte, tote Version dieses
+    Skripts mit ihrem set -euo pipefail-Vorgänger in run_all_pipelines.sh).
+    """
+    try:
+        resp = requests.get(ZEITREIHE_URL, params={"Agentur für Arbeit": name}, timeout=30)
+    except requests.exceptions.RequestException as e:
+        # Ein zweiter Versuch fängt kurze DNS-/Verbindungsaussetzer ab, ohne
+        # bei einem echten Ausfall den gesamten Lauf (146 Requests) zu blockieren.
+        logger.warning(f"Agenturbezirk {name!r}: Netzwerkfehler ({e}), ein Versuch erneut...")
+        time.sleep(2)
+        try:
+            resp = requests.get(ZEITREIHE_URL, params={"Agentur für Arbeit": name}, timeout=30)
+        except requests.exceptions.RequestException as e2:
+            logger.warning(f"Agenturbezirk {name!r}: erneuter Netzwerkfehler ({e2}), überspringe")
+            return []
+    if resp.status_code != 200:
+        logger.warning(f"Agenturbezirk {name!r}: HTTP {resp.status_code}, überspringe")
+        return []
+
+    text = resp.content.decode("utf-8-sig")
+    if text.lstrip().startswith("{"):
+        # Fehlerantwort kommt als JSON statt CSV (z.B. "501 Datensatz leer")
+        logger.warning(f"Agenturbezirk {name!r}: Fehlerantwort statt CSV, überspringe: {text[:200]}")
+        return []
+
+    lines = text.splitlines()
+    try:
+        header_idx = next(i for i, line in enumerate(lines) if line.startswith("Berichtsmonat;"))
+    except StopIteration:
+        logger.warning(f"Agenturbezirk {name!r}: keine Kopfzeile 'Berichtsmonat;' gefunden, überspringe")
+        return []
+
+    rows: List[Dict[str, Any]] = []
+    reader = csv.reader(lines[header_idx:], delimiter=";")
+    next(reader)  # Kopfzeile überspringen
+    for row in reader:
+        if not row or not row[0].strip() or row[0].startswith("©"):
+            break  # Lizenz-/Copyright-Fußzeilen erreicht
+        berichtsmonat_parts = row[0].strip().split(" ")
+        if len(berichtsmonat_parts) != 2 or berichtsmonat_parts[0] not in GERMAN_MONTHS:
+            continue
+        rows.append({
+            "year": int(berichtsmonat_parts[1]),
+            "month": GERMAN_MONTHS[berichtsmonat_parts[0]],
+            "arbeitslose": _parse_value(row[1]) if len(row) > 1 else None,
+            "unterbeschaeftigung": _parse_value(row[2]) if len(row) > 2 else None,
+        })
+    return rows
+
+
+@dlt.resource(name="results_arbeitslosenzahlen_afa_agenturbezirke", write_disposition="replace")
+def load_arbeitslosenzahlen(limit: Optional[int] = None) -> Iterator[Dict[str, Any]]:
+    agenturbezirke = fetch_agenturbezirke()
+    if limit:
+        agenturbezirke = agenturbezirke[:limit]
+    logger.info(f"Lade Zeitreihen für {len(agenturbezirke)} Agenturbezirke...")
+
+    skipped = 0
+    for i, agentur in enumerate(agenturbezirke, start=1):
+        rows = fetch_agentur_timeseries(agentur["name"])
+        if not rows:
+            skipped += 1
+        for row in rows:
+            yield {
+                "geodata_id_agentur": agentur["ba_schl"],
+                "geodata_name": agentur["name"],
+                **row,
+                "loaded_at": datetime.now(timezone.utc).isoformat(),
+            }
+        if i % 20 == 0:
+            logger.info(f"  {i}/{len(agenturbezirke)} Agenturbezirke verarbeitet ({skipped} übersprungen)...")
+        time.sleep(REQUEST_DELAY_SECONDS)
+
+    logger.info(
+        f"Fertig: {len(agenturbezirke) - skipped}/{len(agenturbezirke)} Agenturbezirke geladen, "
+        f"{skipped} übersprungen."
+    )
+
 
 @dlt.resource(
-    name="arbeitslosenzahlen_metadata", 
+    name="dataset_metadata",
     write_disposition="merge",
-    primary_key="dataset_id"
+    primary_key="dataset_slug",
+    # Explizite Typ-Hints wie in load_soziodata_generic.py: algorithm ist
+    # hier durchgehend NULL, ohne Hint würde dlt die Spalte sonst weglassen.
+    columns={
+        "license": {"data_type": "text"},
+        "license_url": {"data_type": "text"},
+        "algorithm": {"data_type": "text"},
+    },
 )
-def load_metadata() -> Iterator[Dict[str, Any]]:
-    """
-    Load metadata from meta.json file.
-    Uses merge mode to update existing metadata or insert new ones.
-    """
-    logger.info(f"Loading metadata from: {META_PATH}")
-    
-    with open(META_PATH, 'r', encoding='utf-8') as f:
-        metadata = json.load(f)
-    
-    # Generate dynamic dataset_id from metadata
-    dataset_id = generate_dataset_id(metadata)
-    logger.info(f"Generated dataset_id: {dataset_id}")
-    
-    # Extract relevant metadata
-    meta_record = {
-        'dataset_id': dataset_id,  # Unique identifier for linking (primary key)
-        'title': metadata['metadata']['title'],
-        'series': metadata['metadata']['series'],
-        'publisher_name': metadata['metadata']['publisher_name'],
-        'source_name': metadata['metadata']['source_name'],
-        'source_url': metadata['metadata']['source_url'],
-        'description': metadata['metadata']['description'],
-        'table_name': metadata['metadata']['table_name'],
-        'page_number': metadata['metadata']['page_number'],
-        'load_date': metadata['metadata']['load_date'],
-        'collection_date': metadata['metadata']['collection_date'],
-        'start_date': metadata['metadata']['time_resolution']['start_date'],
-        'end_date': metadata['metadata']['time_resolution']['end_date'],
-        'categories': ', '.join(metadata['metadata']['categories']),
-        'geodata_level': metadata['geodata_level'],
-        'geodata_year': metadata['geodata_year'],
-        'methodology': metadata['metadata']['methodology'],
-        'license': metadata['metadata']['license'],
-        'updated_at': datetime.now().isoformat()  # Track when metadata was last updated
+def arbeitslosenzahlen_afa_metadata() -> Iterator[Dict[str, Any]]:
+    yield {
+        "dataset_slug": "arbeitslosenzahlen-afa-agenturbezirke",
+        "table_name": "results_arbeitslosenzahlen_afa_agenturbezirke",
+        "name": "Arbeitslosenzahlen (Agenturbezirke)",
+        "description": "Monatliche Arbeitslosen- und Unterbeschäftigungszahlen je Agenturbezirk der Bundesagentur für Arbeit.",
+        "description_long": (
+            "Direkt von der Statistik der Bundesagentur für Arbeit über die öffentliche "
+            "'Lange Zeitreihen'-API bezogen (EckwerteZeitreiheALO, Agenturbezirk-Parametrisierung). "
+            "Agenturbezirke sind eine eigenständige, von Kreisen/NUTS-3/LAU unabhängige "
+            "Gebietsgliederung der Bundesagentur für Arbeit."
+        ),
+        "unit": "Personen",
+        "source": "Statistik der Bundesagentur für Arbeit",
+        "license": LICENSE_NAME,
+        "license_url": LICENSE_URL,
+        "algorithm": None,
+        "number_type": "absolute",
+        "geodata_level": "AGENTURBEZIRK",
+        "geodata_year": datetime.now(timezone.utc).year,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
-    
-    yield meta_record
-    logger.info(f"Metadata loaded successfully with dataset_id: {dataset_id}")
-    
-    return dataset_id  # Return for use in data loading
 
-@dlt.resource(name="arbeitslosenzahlen_agentur_arbeit", write_disposition="replace")
-def load_unemployment_data_transposed(dataset_id: str, load_date: str) -> Iterator[Dict[str, Any]]:
-    """
-    Load and transpose unemployment data from Agentur für Arbeit.
-    Creates normalized records with one row per region-timepoint combination.
-    Each record contains unemployment numbers for a specific region and time period.
-    
-    Args:
-        dataset_id: The unique identifier linking to metadata table
-        load_date: The date when the data was originally loaded/collected
-    """
-    logger.info(f"Loading CSV from: {CSV_PATH}")
-    logger.info(f"Using dataset_id: {dataset_id}")
-    logger.info(f"Using load_date: {load_date}")
-    
-    # Read CSV
-    df = pd.read_csv(CSV_PATH)
-    logger.info(f"Original shape: {df.shape} (rows x columns)")
-    
-    # Get metadata columns (first 4 columns)
-    metadata_cols = ['original_id', 'original_name', 'geodata_id', 'geodata_name']
-    
-    # Get last two columns (mapper, parameter)
-    additional_cols = ['mapper', 'parameter']
-    
-    # Get time columns (all columns between metadata and additional columns)
-    time_cols = [col for col in df.columns if col not in metadata_cols + additional_cols]
-    
-    logger.info(f"Found {len(time_cols)} time columns")
-    logger.info(f"Time columns: {time_cols[:5]}... (showing first 5)")
-    
-    # Transpose: For each region, create records for each time point
-    record_count = 0
-    
-    for idx, row in df.iterrows():
-        # Get metadata for this region
-        region_data = {
-            'dataset_id': dataset_id,  # Link to metadata table
-            'original_id': row['original_id'],
-            'original_name': row['original_name'],
-            'geodata_id': row['geodata_id'],
-            'geodata_name': row['geodata_name'],
-            'mapper': row['mapper'],
-            'parameter': row['parameter']
-        }
-        
-        # Create a record for each time column
-        for time_col in time_cols:
-            value = row[time_col]
-            
-            # Skip if value is NaN or empty
-            if pd.isna(value) or value == '':
-                continue
-            
-            # Determine if this is a year or a date
-            is_date = '-' in str(time_col)
-            
-            record = {
-                **region_data,
-                'time_column': time_col,
-                'is_date': is_date,
-                'arbeitslose': value,  # Anzahl der Arbeitslosen
-                'load_date': load_date  # When the data was loaded
-            }
-            
-            # Parse time information
-            if is_date:
-                # It's a date like "1998-01-31 00:00:00"
-                try:
-                    date_obj = pd.to_datetime(time_col)
-                    record['year'] = date_obj.year
-                    record['month'] = date_obj.month
-                    record['day'] = date_obj.day
-                    record['time_type'] = 'monthly'
-                except:
-                    logger.warning(f"Could not parse date: {time_col}")
-                    record['year'] = None
-                    record['month'] = None
-                    record['day'] = None
-                    record['time_type'] = 'unknown'
-            else:
-                # It's a year like "1998"
-                try:
-                    record['year'] = int(time_col)
-                    record['month'] = None
-                    record['day'] = None
-                    record['time_type'] = 'yearly'
-                except:
-                    logger.warning(f"Could not parse year: {time_col}")
-                    record['year'] = None
-                    record['month'] = None
-                    record['day'] = None
-                    record['time_type'] = 'unknown'
-            
-            yield record
-            record_count += 1
-            
-            # Log progress
-            if record_count % 10000 == 0:
-                logger.info(f"Processed {record_count} records...")
-    
-    logger.info(f"Total records generated: {record_count}")
 
-def create_pipeline():
-    """Create and configure the DLT pipeline."""
-    
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--limit", type=int, default=None, help="Nur die ersten N Agenturbezirke laden (Dev/Test)")
+    args = parser.parse_args()
+
     pipeline = dlt.pipeline(
-        pipeline_name="arbeitslosenzahlen_pipeline",
+        pipeline_name="arbeitslosenzahlen_afa_pipeline",
         destination="postgres",
-        dataset_name="loaded_data"
+        dataset_name="loaded_data",
     )
-    
-    return pipeline
+    load_info = pipeline.run([
+        load_arbeitslosenzahlen(limit=args.limit),
+        arbeitslosenzahlen_afa_metadata(),
+    ])
+    logger.info(f"Load completed: {load_info}")
 
-def main():
-    """Main execution function."""
-    logger.info("Starting unemployment data pipeline from Agentur für Arbeit (transposed)...")
+    print("\n" + "=" * 70)
+    print("ARBEITSLOSENZAHLEN AFA (AGENTURBEZIRKE) LOAD SUMMARY")
+    print("=" * 70)
+    print(f"Result: {load_info}")
+    print("=" * 70)
 
-    missing_inputs = False
-    if not META_PATH.exists():
-        logger.warning(f"Skipping pipeline: required metadata file is missing: {META_PATH}")
-        missing_inputs = True
-    if not CSV_PATH.exists():
-        logger.warning(f"Skipping pipeline: required data file is missing: {CSV_PATH}")
-        missing_inputs = True
-    if missing_inputs:
-        return
-    
-    # Generate dataset_id from metadata first
-    logger.info(f"Reading metadata to generate dataset_id from: {META_PATH}")
-    with open(META_PATH, 'r', encoding='utf-8') as f:
-        metadata = json.load(f)
-    dataset_id = generate_dataset_id(metadata)
-    logger.info(f"Generated dataset_id: {dataset_id}")
-    
-    # Create pipeline
-    pipeline = create_pipeline()
-    
-    try:
-        # Load metadata first (will merge/update based on dataset_id)
-        logger.info("Loading metadata...")
-        metadata_info = pipeline.run(
-            load_metadata(),
-            table_name="arbeitslosenzahlen_metadata"
-        )
-        logger.info(f"Metadata load completed: {metadata_info}")
-        
-        # Load data with the same dataset_id and load_date from metadata
-        logger.info("Loading and transposing unemployment data...")
-        load_date = metadata['metadata']['load_date']
-        load_info = pipeline.run(
-            load_unemployment_data_transposed(dataset_id, load_date),
-            table_name="arbeitslosenzahlen_agentur_arbeit"
-        )
-        logger.info(f"Data load completed: {load_info}")
-        
-        logger.info("Pipeline completed successfully!")
-        
-        # Print summary
-        print("\n" + "="*70)
-        print("PIPELINE SUMMARY")
-        print("="*70)
-        print(f"Metadata: {metadata_info}")
-        print(f"Data: {load_info}")
-        print("="*70)
-        
-    except Exception as e:
-        logger.error(f"Pipeline failed: {e}")
-        raise
 
 if __name__ == "__main__":
     main()

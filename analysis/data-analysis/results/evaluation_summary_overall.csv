@@ -1,0 +1,5 @@
+Methode,n verfügbar,MAE,Median AE,RMSE,Std (signed err),MAPE %,Median APE %,Bias (mean signed err),P90 AE,P95 AE,Max AE
+1. Lineare Interpolation,520,64.068,0.832,268.89,268.02,2.45,0.93,24.61,108.85,328.575,3524.5
+2. Naive Fortschreibung,520,127.754,1.4,456.896,457.253,4.11,2.03,-8.719,234.5,930.9,5540.0
+3. Peer-basierte Fortschreibung,518,82.484,0.739,343.221,342.066,3.57,0.95,31.905,133.555,376.535,4064.428
+4. Regressionsschätzung,520,2071.652,6.742,8846.757,8855.184,45.88,5.82,-40.24,1716.318,12846.996,103032.087

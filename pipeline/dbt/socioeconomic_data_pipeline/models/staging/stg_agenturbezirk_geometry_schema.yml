@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: stg_agenturbezirk_geometry
+    description: "Grenzen aller Agenturbezirke, bereits nach WGS84 reprojiziert (siehe load_agenturbezirke_geodata.py). Aktuell eine einzelne Grenzen-Vintage, keine Mehr-Versions-Historisierung (siehe Phase 2 in der Planung)."
+    columns:
+      - name: ba_schl
+        description: "Amtlicher BA-Schlüssel des Agenturbezirks"
+        data_type: text
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "Name des Agenturbezirks"
+        data_type: text
+        tests:
+          - not_null
+      - name: id_dwh
+        description: "Data-Warehouse-ID der Quelle"
+        data_type: text
+      - name: valid_from
+        description: "Gültig-ab-Datum laut Shapefile"
+        data_type: date
+      - name: valid_to
+        description: "Gültig-bis-Datum laut Shapefile"
+        data_type: date
+      - name: geometry_wgs84
+        description: "PostGIS-Geometrie in WGS84 (EPSG:4326)"
+      - name: has_valid_geometry
+        description: "true, wenn eine nicht-leere Geometrie vorhanden ist"
+        data_type: boolean
+        tests:
+          - not_null
+      - name: loaded_at
+        description: "Zeitpunkt der Staging-Auswertung"

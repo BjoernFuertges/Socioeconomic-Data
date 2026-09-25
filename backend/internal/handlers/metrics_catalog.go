@@ -107,11 +107,11 @@ func (h *Handler) computeDerivedMetric(entry models.DerivedMetricEntry, filter m
 	switch {
 	case entry.Formula.Denominator.Builtin == "nuts_geometry_area_sqkm":
 		denomCTE = `area_cte AS (
-		SELECT nuts_id, year, ST_Area(geometry_3035) / 1e6 AS area_sqkm
-		FROM transformed_data.mart_nuts_geometry
+		SELECT nuts_id, valid_from, valid_to, ST_Area(geometry_3035) / 1e6 AS area_sqkm
+		FROM transformed_data.mart_nuts_geometry_historized
 		WHERE has_valid_geometry
 	), `
-		denomJoin = `INNER JOIN area_cte dc ON n.geodata_id_nuts = dc.nuts_id AND n.year = dc.year`
+		denomJoin = `INNER JOIN area_cte dc ON n.geodata_id_nuts = dc.nuts_id AND n.year >= dc.valid_from AND (dc.valid_to IS NULL OR n.year <= dc.valid_to)`
 		denomExpr = `dc.area_sqkm`
 	case entry.Formula.Denominator.Dataset != "":
 		denCfg, ok := models.DatasetConfigBySlug(entry.Formula.Denominator.Dataset)

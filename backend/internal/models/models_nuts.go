@@ -3,7 +3,6 @@ package models
 import "encoding/json"
 
 // NutsRegionData enthält alle sozioökonomischen Indikatoren einer NUTS-Region (Level 0–3) für ein Jahr.
-// Bei Level 0–2 entspricht region_name mangels Namenstabelle dem NUTS-Code selbst.
 type NutsRegionData struct {
 	NutsID     string `db:"nuts_id"                json:"nuts_id"                example:"DE111"`
 	RegionName string `db:"region_name"            json:"region_name"            example:"Stuttgart, Stadtkreis"`
@@ -61,10 +60,56 @@ type NutsRegionSummary struct {
 	ARS           *string `db:"geodata_id_ars" json:"ars"             example:"08111000"`
 }
 
-// NutsRegionVersions enthält verfügbare Versionsstände (Jahre) für eine NUTS-Region.
+// NutsRegionVersions enthält die Geometrie-Perioden einer NUTS-Region.
+// Jede Periode repräsentiert einen Zeitraum, in dem eine Geometrie-Version gültig war.
+// ValidTo ist nil, wenn die Version noch aktuell ist.
 type NutsRegionVersions struct {
-	NutsID        string `json:"nuts_id"         example:"DE111"`
-	NutsLevel     int    `json:"nuts_level"      example:"3"`
-	NutsLevelCode string `json:"nuts_level_code" example:"NUTS-3"`
-	Versions      []int  `json:"versions"        example:"2024,2023,2022"`
+	NutsID        string      `json:"nuts_id"         example:"DE111"`
+	NutsLevel     int         `json:"nuts_level"      example:"3"`
+	NutsLevelCode string      `json:"nuts_level_code" example:"NUTS-3"`
+	Periods       []GeoPeriod `json:"periods"`
+}
+
+// NutsLauAggregatePoint enthält die auf NUTS-3-Ebene hochaggregierten
+// LAU-Werte (Gemeinden) für ein Jahr - siehe mart_nuts3_lau_aggregate.
+// Ergänzt/kreuzvalidiert die nativen Kreis-Werte aus NutsSocioeconomicData
+// (z.B. Bevölkerung direkt auf Kreisebene vs. Summe der Gemeinden).
+type NutsLauAggregatePoint struct {
+	Year int `db:"year" json:"year" example:"2022"`
+	// Kann null sein, wenn für keine zugeordnete Gemeinde ein Bevölkerungswert vorliegt.
+	LauPopulationSum *float64 `db:"lau_population_sum" json:"lau_population_sum" example:"634830"`
+	// Anzahl der diesem Kreis zugeordneten Gemeinden.
+	LauRegionCount int `db:"lau_region_count" json:"lau_region_count" example:"23"`
+	// Davon mit einem tatsächlichen Bevölkerungswert (<=lau_region_count).
+	LauRegionCountWithPopulation int `db:"lau_region_count_with_population" json:"lau_region_count_with_population" example:"21"`
+	// Bevölkerungsgewichteter Durchschnitt der Gemeinde-Beschäftigungsquote; null ohne Datenabdeckung.
+	LauBeschaeftigungsquoteWeightedAvg *float64 `db:"lau_beschaeftigungsquote_weighted_avg" json:"lau_beschaeftigungsquote_weighted_avg" example:"64.2"`
+}
+
+// NutsLauAggregateResponse bündelt die Zeitreihe der LAU-Aggregate für eine NUTS-3-Region.
+type NutsLauAggregateResponse struct {
+	NutsID string                  `json:"nuts_id" example:"DE300"`
+	Series []NutsLauAggregatePoint `json:"series"`
+}
+
+// NutsDatasetAggregatePoint enthält einen auf NUTS-0/1/2-Ebene hochaggregierten
+// Zeitreihenpunkt eines Kreis-grain-Soziodata-Datensatzes - siehe
+// mart_nuts012_dataset_aggregate. Das Pendant zu NutsTimeseriesPoint (NUTS-3),
+// aber ohne Interpolation: es fließen nur tatsächlich vorhandene Kreis-Werte
+// ein (siehe SourceRegionCount), keine Imputationen.
+type NutsDatasetAggregatePoint struct {
+	NutsID      string  `db:"nuts_id"      json:"nuts_id"      example:"DE1"`
+	DatasetSlug string  `db:"dataset_slug" json:"dataset_slug" example:"bevoelkerung"`
+	Year        int     `db:"year"         json:"year"         example:"2022"`
+	Value       float64 `db:"value"        json:"value"        example:"12876243"`
+	// Immer false - siehe Typkommentar oben (keine gap-gefüllte Version wird hier aggregiert).
+	// Nicht aus der DB gescannt (kein db-Tag), damit TimeseriesChart.vue/DataTable.vue
+	// dieselbe Interpolationsstatus-Spalte wie bei NutsTimeseriesPoint anzeigen können.
+	IsInterpolated bool `json:"is_interpolated" example:"false"`
+	// Immer true (siehe SELECT true AS is_computed in GetNutsDatasetAggregateTimeseries):
+	// jeder Punkt ist eine Aggregation über mehrere Kreise, keine an einer
+	// einzelnen Quelle abgelesene Einzelbeobachtung.
+	IsComputed bool `db:"is_computed" json:"is_computed" example:"true"`
+	// Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert beigetragen haben.
+	SourceRegionCount int `db:"source_region_count" json:"source_region_count" example:"44"`
 }

@@ -32,6 +32,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 		{
 			lau.GET("", handler.GetLAURegions)
 			lau.GET("/:gisco_id/datasets", handler.GetLAUDatasets)
+			lau.GET("/:gisco_id/versions", handler.GetLAURegionVersions)
 			lau.GET("/:gisco_id", handler.GetLAURegionByID)
 		}
 
@@ -42,6 +43,9 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			nutsGroup.GET("", handler.GetAllNutsRegions)
 			nutsGroup.GET("/:nuts_id/versions", handler.GetNutsRegionVersions)
 			nutsGroup.GET("/:nuts_id/datasets", handler.GetNutsDatasets)
+			nutsGroup.GET("/:nuts_id/lau-aggregate", handler.GetNutsLauAggregate)
+			nutsGroup.GET("/:nuts_id/agenturbezirke", handler.GetNutsAgenturbezirke)
+			nutsGroup.GET("/:nuts_id/dataset-aggregate/:slug", handler.GetNutsDatasetAggregateTimeseries)
 			nutsGroup.GET("/:nuts_id", handler.GetNutsRegionData)
 		}
 
@@ -53,17 +57,45 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			geoGroup.POST("/query", handler.QueryGeoRegionsByGeometry)
 		}
 
-		// Arbeitslosenzahlen
-		unemployment := v1.Group("/unemployment")
+		// Custom-Regionen (GeoJSON pro Anfrage, nichts wird gespeichert)
+		customRegionsGroup := v1.Group("/custom-regions")
 		{
-			unemployment.GET("", handler.GetUnemploymentData)
-			unemployment.GET("/aggregated", handler.GetUnemploymentAggregated)
-			unemployment.GET("/geodata/:geodata_id", handler.GetUnemploymentByGeodataID)
+			customRegionsGroup.GET("/datasets", handler.ListCustomRegionDatasets)
+			customRegionsGroup.POST("/dataset-aggregate", handler.QueryCustomRegionDatasetAggregate)
 		}
+
+		// Agenturbezirke (eigenständige Gebietsgliederung der Bundesagentur
+		// für Arbeit, nicht deckungsgleich mit NUTS/LAU/ARS) mit monatlichen
+		// Arbeitslosenzahlen (AfA Lange Zeitreihen)
+		agenturbezirkeGroup := v1.Group("/agenturbezirke")
+		{
+			agenturbezirkeGroup.GET("", handler.GetAgenturbezirke)
+			agenturbezirkeGroup.GET("/latest", handler.GetAgenturbezirkeLatest)
+			agenturbezirkeGroup.GET("/periods", handler.GetAgenturbezirkePeriods)
+			agenturbezirkeGroup.GET("/period", handler.GetAgenturbezirkeByPeriod)
+			agenturbezirkeGroup.GET("/dataset-aggregate", handler.GetAgenturbezirkDatasetAggregateYears)
+			agenturbezirkeGroup.GET("/dataset-aggregate/:slug", handler.GetAgenturbezirkeDatasetAggregateByYear)
+			agenturbezirkeGroup.GET("/:ba_schl", handler.GetAgenturbezirkByID)
+			agenturbezirkeGroup.GET("/:ba_schl/arbeitslosigkeit", handler.GetAgenturbezirkArbeitslosigkeit)
+			agenturbezirkeGroup.GET("/:ba_schl/nuts3", handler.GetAgenturbezirkNuts3)
+			agenturbezirkeGroup.GET("/:ba_schl/nuts-hierarchy", handler.GetAgenturbezirkNutsHierarchy)
+			agenturbezirkeGroup.GET("/:ba_schl/dataset-aggregate/:slug", handler.GetAgenturbezirkDatasetAggregateTimeseries)
+		}
+
+		// Kombinierter Export einer Region (roh und/oder aggregiert, JSON/CSV)
+		v1.GET("/regions/:region_type/:region_id/data", handler.GetRegionData)
 
 		socioeconomic := v1.Group("/socioeconomic")
 		{
 			socioeconomic.GET("/inventory", handler.GetSoziooekonomischesInventar)
+		}
+
+		// Datensatz-Katalog: Herkunft, Lizenz, Beschreibung
+		datasetsGroup := v1.Group("/datasets")
+		{
+			datasetsGroup.GET("", handler.GetDatasetCatalog)
+			datasetsGroup.GET("/:slug", handler.GetDatasetCatalogEntry)
+			datasetsGroup.GET("/:slug/source", handler.GetDatasetSource)
 		}
 
 		// Metriken-Endpunkte: statistische Aggregationen über Soziodata-Datensätze
@@ -91,6 +123,8 @@ func corsMiddleware() gin.HandlerFunc {
 		c.Header("Access-Control-Allow-Credentials", "true")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Header("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+		// Damit Cross-Origin-fetch den Dateinamen von ?download=1-Antworten lesen kann
+		c.Header("Access-Control-Expose-Headers", "Content-Disposition")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)

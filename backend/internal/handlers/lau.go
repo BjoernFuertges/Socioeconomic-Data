@@ -42,12 +42,12 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 		filter.Limit = 100
 	}
 
-	query := `SELECT gisco_id, year, lau_name, country_code, lau_id, 
+	query := `SELECT gisco_id, year, lau_name, country_code, lau_id,
 		geometry_wgs84, has_valid_geometry, lau_name_national, lau_name_latin,
-		nuts_3_code, lau_nat_code, population_count, country, has_valid_population,
+		nuts_3_code, nuts3_id, nuts3_link_source, lau_nat_code, population_count, country, has_valid_population,
 		missing_population_data, year_match
 		FROM transformed_data.lau_integrated
-		WHERE 1=1`
+		WHERE lau_name IS NOT NULL`
 
 	args := []interface{}{}
 	argPos := 1
@@ -59,8 +59,10 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 	}
 
 	if filter.NutsParentID != "" {
+		// nuts3_id ist die kanonische LAU->NUTS-3-Verlinkung (deklariert oder
+		// räumlich ermittelt) - robuster als die oft NULLe nuts_3_code-Rohspalte.
 		normalizedParent := strings.ToUpper(strings.TrimSpace(filter.NutsParentID))
-		query += fmt.Sprintf(" AND nuts_3_code IS NOT NULL AND nuts_3_code LIKE $%d", argPos)
+		query += fmt.Sprintf(" AND nuts3_id IS NOT NULL AND nuts3_id LIKE $%d", argPos)
 		args = append(args, normalizedParent+"%")
 		argPos++
 	}
@@ -170,12 +172,12 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 	yearStr := c.Query("year")
 	includeDatasets := c.Query("include_datasets") == "true"
 
-	query := `SELECT gisco_id, year, lau_name, country_code, lau_id, 
+	query := `SELECT gisco_id, year, lau_name, country_code, lau_id,
 		geometry_wgs84, has_valid_geometry, lau_name_national, lau_name_latin,
-		nuts_3_code, lau_nat_code, population_count, country, has_valid_population,
+		nuts_3_code, nuts3_id, nuts3_link_source, lau_nat_code, population_count, country, has_valid_population,
 		missing_population_data, year_match
 		FROM transformed_data.lau_integrated
-		WHERE gisco_id = $1`
+		WHERE gisco_id = $1 AND lau_name IS NOT NULL`
 
 	args := []interface{}{giscoID}
 
@@ -197,8 +199,10 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 		return
 	}
 
-	if includeDatasets && region.NUTS3Code.Valid {
-		datasets, dsErr := h.regionNutsDatasets(region.NUTS3Code.String)
+	// nuts3_id ist die kanonische Verlinkung (deklariert oder räumlich
+	// ermittelt) - siehe Kommentar auf models.LAURegion.NUTS3ID.
+	if includeDatasets && region.NUTS3ID.Valid {
+		datasets, dsErr := h.regionNutsDatasets(region.NUTS3ID.String, 3)
 		if dsErr == nil {
 			region.Datasets = datasets
 		}
@@ -207,5 +211,49 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data:    region,
+	})
+}
+
+// GetLAURegionVersions gibt alle Geometrie-Perioden einer LAU-Region zurück
+// @Summary Geometrie-Perioden einer LAU-Region
+// @Description Gibt alle Geometrie-Perioden (valid_from/valid_to) einer LAU-Region aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null bedeutet noch aktuell.
+// @Tags LAU
+// @Accept json
+// @Produce json
+// @Param gisco_id path string true "GISCO ID der LAU-Region" example(DE_11000000)
+// @Success 200 {object} models.APIResponse{data=models.GeoRegionVersions}
+// @Failure 400 {object} models.APIResponse
+// @Failure 404 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
+// @Router /lau/{gisco_id}/versions [get]
+func (h *Handler) GetLAURegionVersions(c *gin.Context) {
+	giscoID := strings.TrimSpace(c.Param("gisco_id"))
+	if giscoID == "" {
+		respondBadRequest(c, "gisco_id darf nicht leer sein")
+		return
+	}
+
+	normalizedID := strings.ToUpper(giscoID)
+	periods := make([]models.GeoPeriod, 0)
+	query := `SELECT valid_from, valid_to
+		FROM transformed_data.mart_lau_geometry_historized
+		WHERE gisco_id = $1
+		ORDER BY valid_from DESC`
+	if err := h.DB.Select(&periods, query, normalizedID); err != nil {
+		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		return
+	}
+	if len(periods) == 0 {
+		respondNotFound(c, "Keine Versionsdaten für diese LAU-Region gefunden")
+		return
+	}
+
+	c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data: models.GeoRegionVersions{
+			GeoID:   normalizedID,
+			GeoType: "LAU",
+			Periods: periods,
+		},
 	})
 }

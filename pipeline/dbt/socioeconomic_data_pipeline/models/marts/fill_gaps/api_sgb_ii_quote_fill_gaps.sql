@@ -1,0 +1,1 @@
+{{ render_nuts3_fill_gaps_view('stg_sgb_ii_quote_kreise', 'sgb_ii_quote', 'sgb_ii_quote') }}

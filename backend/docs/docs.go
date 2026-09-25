@@ -19,6 +19,727 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/agenturbezirke": {
+            "get": {
+                "description": "Gibt alle Agenturbezirke mit Geometrie zurück. Agenturbezirke sind eine eigenständige Gebietsgliederung, nicht deckungsgleich mit NUTS-3/LAU/ARS.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Liste aller Agenturbezirke",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturbezirkSummary"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/dataset-aggregate": {
+            "get": {
+                "description": "Gibt alle (Datensatz-Slug, Jahr)-Kombinationen zurück, für die mart_agentur_dataset_aggregate Werte enthält - Grundlage der Datensatz-/Jahresauswahl in der Karte.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Verfügbare aggregierte Datensätze/Jahre (Agenturbezirke)",
+                "parameters": [
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturDatasetAggregateYear"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/dataset-aggregate/{slug}": {
+            "get": {
+                "description": "Liefert für einen Kreis-grain-Datensatz und ein Jahr den auf Agenturbezirk-Ebene aggregierten Wert je Agenturbezirk (siehe mart_agentur_dataset_aggregate) - für die Kartendarstellung. Geometrien kommen weiterhin aus GET /agenturbezirke/period. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Aggregierter Datensatz für alle Agenturbezirke (ein Jahr)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "bevoelkerung",
+                        "description": "Route-Slug des Datensatzes",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Jahr",
+                        "name": "year",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturDatasetAggregatePoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/latest": {
+            "get": {
+                "description": "Gibt jeden Agenturbezirk mit Geometrie und dem jeweils neuesten verfügbaren Monatswert (Arbeitslose, Unterbeschäftigung) zurück.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Agenturbezirke mit neuestem Berichtsmonat (für die Karte)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturbezirkLatestValue"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/period": {
+            "get": {
+                "description": "Gibt jeden Agenturbezirk mit Geometrie und dem Monatswert (Arbeitslose, Unterbeschäftigung) für das angegebene Jahr/Monat zurück.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Agenturbezirke zu einem gewählten Berichtsmonat (für die Karte)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 2026,
+                        "description": "Jahr",
+                        "name": "year",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 8,
+                        "description": "Monat (1-12)",
+                        "name": "month",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturbezirkLatestValue"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/periods": {
+            "get": {
+                "description": "Gibt alle distinkten (Jahr, Monat)-Kombinationen zurück, für die Arbeitslosenzahlen vorliegen (neueste zuerst).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Verfügbare Berichtsmonate der Agenturbezirke",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturbezirkPeriod"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/{ba_schl}": {
+            "get": {
+                "description": "Gibt Details eines Agenturbezirks mit Geometrie zurück",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Agenturbezirk-Details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "962",
+                        "description": "Amtlicher BA-Schlüssel des Agenturbezirks",
+                        "name": "ba_schl",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.AgenturbezirkSummary"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/{ba_schl}/arbeitslosigkeit": {
+            "get": {
+                "description": "Gibt die monatliche Zeitreihe (Arbeitslose, Unterbeschäftigung) für einen Agenturbezirk zurück (AfA Lange Zeitreihen, ab Januar 2007)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Monatliche Arbeitslosenzahlen eines Agenturbezirks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "962",
+                        "description": "Amtlicher BA-Schlüssel des Agenturbezirks",
+                        "name": "ba_schl",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturbezirkArbeitslosigkeitPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/{ba_schl}/dataset-aggregate/{slug}": {
+            "get": {
+                "description": "Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) über den Agentur\u003c-\u003eNUTS-3-Flächenanteils-Crosswalk auf Agenturbezirk-Ebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_agentur_dataset_aggregate). Analog zu GET /nuts/{nuts_id}/dataset-aggregate/{slug} für NUTS-0/1/2. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "Auf Agenturbezirk-Ebene aggregierte Datensatz-Zeitreihe",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "962",
+                        "description": "Amtlicher BA-Schlüssel des Agenturbezirks",
+                        "name": "ba_schl",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "bevoelkerung",
+                        "description": "Route-Slug des Datensatzes",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturDatasetAggregatePoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/{ba_schl}/nuts-hierarchy": {
+            "get": {
+                "description": "Gibt alle überlappenden NUTS-1/2/3-Regionen eines Agenturbezirks zurück. is_fully_contained markiert Regionen, die den Agenturbezirk vollständig enthalten (Flächenanteil \u003e= 99 %); is_parent die kleinste davon (übergeordnete Region). Reicht ein Agenturbezirk über Bundeslandgrenzen hinaus, ist keine Zeile is_parent. Räumliche Schätzung, keine amtliche Zuordnung.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "NUTS-Hierarchie eines Agenturbezirks (Kreis/Regierungsbezirk/Bundesland)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "962",
+                        "description": "Amtlicher BA-Schlüssel des Agenturbezirks",
+                        "name": "ba_schl",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturNutsMembership"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agenturbezirke/{ba_schl}/nuts3": {
+            "get": {
+                "description": "Gibt die überlappenden NUTS-3-Regionen eines Agenturbezirks zurück, mit Flächenanteil in beide Richtungen. Agenturbezirke bestehen i.d.R. aus einem oder mehreren ganzen Kreisen (Ausnahme Berlin: 3 Agenturbezirke teilen sich einen Kreis) - eine räumliche Schätzung, keine amtliche Zuordnung.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agenturbezirke"
+                ],
+                "summary": "NUTS-3-Zuordnung eines Agenturbezirks (Flächenanteile)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "962",
+                        "description": "Amtlicher BA-Schlüssel des Agenturbezirks",
+                        "name": "ba_schl",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.AgenturNuts3Share"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/arbeitslose": {
             "get": {
                 "description": "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
@@ -26,7 +747,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Arbeitslose"
@@ -63,6 +785,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -75,6 +818,37 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -106,6 +880,146 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/arbeitslose/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Arbeitslose"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -122,7 +1036,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Arbeitsvolumen"
@@ -159,6 +1074,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -171,6 +1107,37 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -202,6 +1169,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -211,17 +1184,152 @@ const docTemplate = `{
                 }
             }
         },
-        "/auzubildende": {
+        "/arbeitsvolumen/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Arbeitsvolumen"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auszubildende": {
             "get": {
                 "description": "Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
-                    "Auzubildende"
+                    "Auszubildende"
                 ],
                 "summary": "Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
@@ -255,6 +1363,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -267,6 +1396,37 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -284,7 +1444,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.AuzubildendeData"
+                                                "$ref": "#/definitions/models.AuszubildendeData"
                                             }
                                         }
                                     }
@@ -294,6 +1454,146 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auszubildende/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Auszubildende"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -314,7 +1614,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "BeschaeftigungsquoteGemeinden"
@@ -351,6 +1652,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -363,6 +1685,37 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-LAU-Version (2011-2024, Default 2024)",
+                        "name": "lau_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -394,6 +1747,146 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/beschaeftigungsquote-gemeinden/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte LAU-Zeitreihe aus mart_lau_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "BeschaeftigungsquoteGemeinden"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE_11000000",
+                        "description": "GISCO-ID der Gemeinde",
+                        "name": "geodata_id_lau",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-3-Präfix für Hierarchieabfragen (über die kanonische LAU-\u003eNUTS-3-Verlinkung, z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-LAU-Version (2011-2024, Default 2024)",
+                        "name": "lau_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.LauTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -410,7 +1903,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "BeschaeftigungsquoteNuts3"
@@ -447,6 +1941,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -459,6 +1974,23 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -490,6 +2022,146 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/beschaeftigungsquote-nuts3/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "BeschaeftigungsquoteNuts3"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -506,7 +2178,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Bevoelkerung"
@@ -543,6 +2216,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -555,6 +2249,37 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -586,6 +2311,146 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/bevoelkerung/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Bevoelkerung"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -602,7 +2467,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Bruttoverdienst"
@@ -639,6 +2505,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -651,6 +2538,37 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -682,6 +2600,487 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/bruttoverdienst/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Bruttoverdienst"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/custom-regions/dataset-aggregate": {
+            "post": {
+                "description": "Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt. Näherungswerte (z. B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet. Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: Version 2024.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Geo"
+                ],
+                "summary": "Datensätze für eine Custom-Region (GeoJSON)",
+                "parameters": [
+                    {
+                        "description": "GeoJSON-Region und Datensätze",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CustomRegionAggregateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/handlers.CustomRegionAggregateRow"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/custom-regions/datasets": {
+            "get": {
+                "description": "Gibt je Datensatz/Indikator die Quellebene (lau, nuts3, agentur), die Aggregationsart (sum, weighted_avg) und die Kennzeichnung der Näherung (kind) zurück. Namen und Lizenz: GET /datasets/{slug}.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Geo"
+                ],
+                "summary": "Für Custom-Regionen abfragbare Datensätze",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/handlers.customRegionMeta"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/datasets": {
+            "get": {
+                "description": "Liefert pro Datensatz Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum\nsowie eine persistente URI. Lizenz ist \"unbekannt\", solange die tatsächlichen Nutzungsbedingungen der Quelle noch nicht recherchiert wurden.\n?datasets= filtert auf einzelne Slugs (kommagetrennt, leer = alle) - gedacht für den\ngleichzeitigen Metadaten-Export neben einem Daten-Download\nFormat per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Datensatz-Katalog"
+                ],
+                "summary": "Datensatz-Katalog (Herkunft, Lizenz, Beschreibung)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "bevoelkerung,arbeitslose",
+                        "description": "Kommagetrennte Datensatz-Slugs (leer = alle)",
+                        "name": "datasets",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.DatasetCatalogEintrag"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/datasets/{slug}": {
+            "get": {
+                "description": "Liefert Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum für einen Datensatz-Slug.\nFormat per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Datensatz-Katalog"
+                ],
+                "summary": "Katalogeintrag eines einzelnen Datensatzes",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "bevoelkerung",
+                        "description": "Datensatz-Slug (z.B. bevoelkerung)",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.DatasetCatalogEintrag"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/datasets/{slug}/source": {
+            "get": {
+                "description": "Liefert die Werte des Datensatzes so, wie sie aus dem geo-mapper-Teilprojekt kommen: unverändert, nur die\nRegionsnamen sind auf Geodaten-IDs gemappt (original_*, geodata_id_*, mapper, parameter). Keine NUTS-Harmonisierung,\nInterpolation oder Aggregation - dafür die Datensatz-Endpunkte verwenden. Herkunft und Lizenz: GET /datasets/{slug}.\nNicht verfügbar für abgeleitete Slugs (beschaeftigungsquote-nuts3, lau_*, ba_*) und die Agenturbezirks-Arbeitslosenzahlen (siehe /agenturbezirke).\nFormat per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Datensatz-Katalog"
+                ],
+                "summary": "Quelldaten eines Datensatzes (gemappt, unverändert)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "bevoelkerung",
+                        "description": "Datensatz-Slug (z.B. bevoelkerung)",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.DatasetQuellwert"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -698,7 +3097,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Durchschnittsalter"
@@ -735,6 +3135,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -747,6 +3168,37 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -778,6 +3230,146 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/durchschnittsalter/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Durchschnittsalter"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -794,7 +3386,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "ErwerbstaetigePro1000Einwohner"
@@ -831,6 +3424,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -843,6 +3457,37 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -874,6 +3519,146 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/erwerbstaetige_pro_1000_einwohner/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "ErwerbstaetigePro1000Einwohner"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -885,7 +3670,7 @@ const docTemplate = `{
         },
         "/geo": {
             "get": {
-                "description": "Gibt eine einheitliche Liste für NUTS- oder LAU-Regionen zurück. Standard ist NUTS. Mit geo_type=lau werden LAU-Regionen geliefert.",
+                "description": "Gibt eine einheitliche Liste für NUTS-, LAU- oder Agenturbezirk-Regionen zurück. Standard ist NUTS. Mit geo_type=lau bzw. geo_type=agentur werden LAU- bzw. Agenturbezirk-Regionen geliefert.",
                 "consumes": [
                     "application/json"
                 ],
@@ -900,11 +3685,12 @@ const docTemplate = `{
                     {
                         "enum": [
                             "nuts",
-                            "lau"
+                            "lau",
+                            "agentur"
                         ],
                         "type": "string",
                         "default": "nuts",
-                        "description": "Regionstyp: nuts oder lau",
+                        "description": "Regionstyp: nuts, lau oder agentur",
                         "name": "geo_type",
                         "in": "query"
                     },
@@ -963,14 +3749,14 @@ const docTemplate = `{
                         ],
                         "type": "string",
                         "default": "latest",
-                        "description": "Geometrieauswahl: latest oder exact",
+                        "description": "Geometrieauswahl (nur für geo_type=nuts): latest oder exact",
                         "name": "geometry_strategy",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "example": 2024,
-                        "description": "Zieljahr für Geometrie (bei exact erforderlich)",
+                        "description": "Zieljahr für Geometrie (nur für geo_type=nuts; bei exact erforderlich)",
                         "name": "geometry_year",
                         "in": "query"
                     },
@@ -1050,7 +3836,7 @@ const docTemplate = `{
                 "summary": "Räumliche Geo-Abfrage via GeoJSON",
                 "parameters": [
                     {
-                        "description": "GeoJSON-Abfrage",
+                        "description": "GeoJSON-Abfrage. geometry_strategy und geometry_year wirken nur bei geo_type=nuts.",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -1098,7 +3884,7 @@ const docTemplate = `{
         },
         "/geo/{geo_id}": {
             "get": {
-                "description": "Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt (NUTS: 2-5 Zeichen, sonst LAU).",
+                "description": "Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt (rein numerisch: Agentur; NUTS: 2-5 Zeichen; sonst LAU).",
                 "consumes": [
                     "application/json"
                 ],
@@ -1122,11 +3908,12 @@ const docTemplate = `{
                         "enum": [
                             "auto",
                             "nuts",
-                            "lau"
+                            "lau",
+                            "agentur"
                         ],
                         "type": "string",
                         "default": "auto",
-                        "description": "Regionstyp: auto, nuts oder lau",
+                        "description": "Regionstyp: auto, nuts, lau oder agentur",
                         "name": "geo_type",
                         "in": "query"
                     },
@@ -1205,7 +3992,7 @@ const docTemplate = `{
         },
         "/geo/{geo_id}/versions": {
             "get": {
-                "description": "Gibt alle verfügbaren Jahre für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt.",
+                "description": "Gibt alle Geometrie-Perioden (valid_from/valid_to) für eine Geo-Region zurück.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1215,7 +4002,7 @@ const docTemplate = `{
                 "tags": [
                     "Geo"
                 ],
-                "summary": "Versionsliste für eine Geo-Region",
+                "summary": "Geometrie-Perioden einer Geo-Region",
                 "parameters": [
                     {
                         "type": "string",
@@ -1229,11 +4016,12 @@ const docTemplate = `{
                         "enum": [
                             "auto",
                             "nuts",
-                            "lau"
+                            "lau",
+                            "agentur"
                         ],
                         "type": "string",
                         "default": "auto",
-                        "description": "Regionstyp: auto, nuts oder lau",
+                        "description": "Regionstyp: auto, nuts, lau oder agentur",
                         "name": "geo_type",
                         "in": "query"
                     }
@@ -1308,7 +4096,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Kinderarmut"
@@ -1345,6 +4134,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -1357,6 +4167,37 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -1384,6 +4225,146 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/kinderarmut/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Kinderarmut"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2010-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -1653,6 +4634,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/lau/{gisco_id}/versions": {
+            "get": {
+                "description": "Gibt alle Geometrie-Perioden (valid_from/valid_to) einer LAU-Region aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null bedeutet noch aktuell.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "LAU"
+                ],
+                "summary": "Geometrie-Perioden einer LAU-Region",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE_11000000",
+                        "description": "GISCO ID der LAU-Region",
+                        "name": "gisco_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.GeoRegionVersions"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/medianeinkommen": {
             "get": {
                 "description": "Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
@@ -1660,7 +4704,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Medianeinkommen"
@@ -1697,6 +4742,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -1709,6 +4775,37 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -1736,6 +4833,146 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medianeinkommen/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Medianeinkommen"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2010-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -2061,7 +5298,7 @@ const docTemplate = `{
         },
         "/nuts/{nuts_id}": {
             "get": {
-                "description": "Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen Daten. Für NUTS-Level 0–2 enthält region_name mangels Namenstabelle den NUTS-Code selbst.",
+                "description": "Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen Daten.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2173,6 +5410,158 @@ const docTemplate = `{
                 }
             }
         },
+        "/nuts/{nuts_id}/agenturbezirke": {
+            "get": {
+                "description": "Gibt die Agenturbezirke zurück, die eine NUTS-1/2/3-Region überlappen. is_fully_contained=true: der Agenturbezirk liegt vollständig in der Region (untergeordneter Agenturbezirk); false: nur teilweise Überlappung. Die meisten Kreise haben keinen vollständig enthaltenen Agenturbezirk, weil sie nur Teil eines größeren Agenturbezirks sind. NUTS-0 wird nicht unterstützt. Räumliche Schätzung, keine amtliche Zuordnung.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "NUTS"
+                ],
+                "summary": "Agenturbezirke einer NUTS-Region",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE30",
+                        "description": "NUTS-Code der Region (Level 1–3)",
+                        "name": "nuts_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsAgenturbezirk"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/nuts/{nuts_id}/dataset-aggregate/{slug}": {
+            "get": {
+                "description": "Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) auf Land-/Bundesland-/Regierungsbezirksebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_nuts012_dataset_aggregate). Pendant zu GET /{slug}/timeseries für NUTS-3, das für Level 0-2 keine Kreis-Zeilen findet. Nur für NUTS-0/1/2-IDs (2-4 Zeichen) gültig; für Kreise (NUTS-3) GET /{slug}/timeseries verwenden.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "NUTS"
+                ],
+                "summary": "Auf NUTS-0/1/2-Ebene aggregierte Datensatz-Zeitreihe",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-0/1/2-Code der Region",
+                        "name": "nuts_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "bevoelkerung",
+                        "description": "Route-Slug des Datensatzes (siehe GET /nuts/{nuts_id}/datasets)",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsDatasetAggregatePoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/nuts/{nuts_id}/datasets": {
             "get": {
                 "description": "Gibt alle Soziodata-Datensätze zurück, für die Daten zu dieser NUTS-Region vorhanden sind",
@@ -2230,9 +5619,96 @@ const docTemplate = `{
                 }
             }
         },
+        "/nuts/{nuts_id}/lau-aggregate": {
+            "get": {
+                "description": "Gibt eine Zeitreihe der auf diesen Kreis hochaggregierten Gemeinde-Werte zurück (Bevölkerungssumme, Anzahl zugeordneter Gemeinden, bevölkerungsgewichtete Beschäftigungsquote) - als Ergänzung/Cross-Check zu den nativen Kreis-Werten aus GET /nuts/{nuts_id}. Nur für NUTS-3-IDs (5 Zeichen) gültig.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "NUTS"
+                ],
+                "summary": "Auf NUTS-3-Ebene aggregierte LAU-Werte (Gemeinden)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DE300",
+                        "description": "NUTS-3-Code des Kreises",
+                        "name": "nuts_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.NutsLauAggregateResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/nuts/{nuts_id}/versions": {
             "get": {
-                "description": "Gibt alle verfügbaren Jahre einer NUTS-Region zurück (neueste zuerst)",
+                "description": "Gibt alle Geometrie-Perioden (valid_from/valid_to) einer NUTS-Region aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null bedeutet noch aktuell.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2242,7 +5718,7 @@ const docTemplate = `{
                 "tags": [
                     "NUTS"
                 ],
-                "summary": "Versionsliste für eine NUTS-Region",
+                "summary": "Geometrie-Perioden einer NUTS-Region",
                 "parameters": [
                     {
                         "type": "string",
@@ -2293,6 +5769,138 @@ const docTemplate = `{
                 }
             }
         },
+        "/regions/{region_type}/{region_id}/data": {
+            "get": {
+                "description": "Stellt die gewünschten Datensätze einer Region (NUTS, LAU oder Agenturbezirk) aus den bestehenden Marts zusammen und liefert sie in einem einheitlichen Long-Format (region_type, region_id, dataset_slug, year, month, value, is_computed, is_interpolated, aggregation_method, value_kind, source_region_count). scope=raw liefert die Ursprungswerte der Region (NUTS-3: interpolierte Kreis-Zeitreihe; LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung), scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert). NUTS-0/1/2 haben keine Rohwerte, LAU keine aggregierten Werte. Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Regionen"
+                ],
+                "summary": "Kombinierter Daten-Export einer Region (roh und/oder aggregiert)",
+                "parameters": [
+                    {
+                        "enum": [
+                            "nuts",
+                            "lau",
+                            "agentur"
+                        ],
+                        "type": "string",
+                        "description": "Regionstyp",
+                        "name": "region_type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE300",
+                        "description": "nuts_id, gisco_id bzw. ba_schl",
+                        "name": "region_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "bevoelkerung,arbeitslose",
+                        "description": "Kommagetrennte Datensatz-Slugs (leer = alle verfügbaren)",
+                        "name": "datasets",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "raw",
+                            "aggregated",
+                            "both"
+                        ],
+                        "type": "string",
+                        "default": "both",
+                        "description": "raw, aggregated oder both (kommagetrennt)",
+                        "name": "scope",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Frühestes Jahr",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Spätestes Jahr",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.RegionDataRow"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/schuldnerquote": {
             "get": {
                 "description": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
@@ -2300,7 +5908,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Schuldnerquote"
@@ -2337,6 +5946,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -2349,6 +5979,37 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -2380,6 +6041,146 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/schuldnerquote/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Schuldnerquote"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2000-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -2396,7 +6197,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "SgbIiQuote"
@@ -2433,6 +6235,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -2445,6 +6268,37 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -2472,6 +6326,146 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/sgb_ii_quote/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "SgbIiQuote"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2005-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -2565,7 +6559,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Studierende"
@@ -2602,6 +6597,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -2614,6 +6630,37 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -2645,6 +6692,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -2654,60 +6707,61 @@ const docTemplate = `{
                 }
             }
         },
-        "/unemployment": {
+        "/studierende/timeseries": {
             "get": {
-                "description": "Gibt Arbeitslosenzahlen mit optionalen Filtern zurück",
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
-                    "Unemployment"
+                    "Studierende"
                 ],
-                "summary": "Arbeitslosenzahlen abrufen",
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
                 "parameters": [
                     {
                         "type": "string",
-                        "example": "DE111",
-                        "description": "Filter nach Geodaten-ID",
-                        "name": "geodata_id",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "example": "2024-01-01",
-                        "description": "Start-Datum (YYYY-MM-DD)",
-                        "name": "from_date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "2024-12-31",
-                        "description": "End-Datum (YYYY-MM-DD)",
-                        "name": "to_date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "example": 2024,
-                        "description": "Filter nach Jahr",
-                        "name": "year",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "example": 2020,
-                        "description": "Erstes Jahr (inklusiv)",
+                        "description": "Jahr der Beobachtung (1990-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
                         "name": "from_year",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "example": 2024,
-                        "description": "Letztes Jahr (inklusiv)",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
                         "in": "query"
                     },
                     {
@@ -2725,6 +6779,23 @@ const docTemplate = `{
                         "description": "Offset für Pagination",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2741,7 +6812,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.UnemploymentData"
+                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -2755,201 +6826,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/unemployment/aggregated": {
-            "get": {
-                "description": "Gibt aggregierte Statistiken pro Gebiet zurück",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Unemployment"
-                ],
-                "summary": "Aggregierte Arbeitslosenstatistiken",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "DE111",
-                        "description": "Filter nach Geodaten-ID",
-                        "name": "geodata_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "example": 2024,
-                        "description": "Filter nach Jahr",
-                        "name": "year",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "example": 2020,
-                        "description": "Erstes Jahr (inklusiv)",
-                        "name": "from_year",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "example": 2024,
-                        "description": "Letztes Jahr (inklusiv)",
-                        "name": "to_year",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "2024-01-01",
-                        "description": "Start-Datum (YYYY-MM-DD)",
-                        "name": "from_date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "2024-12-31",
-                        "description": "End-Datum (YYYY-MM-DD)",
-                        "name": "to_date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 100,
-                        "example": 100,
-                        "description": "Anzahl der Ergebnisse",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "example": 0,
-                        "description": "Offset für Pagination",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/models.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/models.UnemploymentAggregation"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/unemployment/geodata/{geodata_id}": {
-            "get": {
-                "description": "Gibt alle Arbeitslosenzahlen für eine spezifische Geodaten-ID zurück",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Unemployment"
-                ],
-                "summary": "Arbeitslosenzahlen für ein Gebiet",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "DE111",
-                        "description": "Geodaten-ID",
-                        "name": "geodata_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "example": "2024-01-01",
-                        "description": "Start-Datum (YYYY-MM-DD)",
-                        "name": "from_date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "2024-12-31",
-                        "description": "End-Datum (YYYY-MM-DD)",
-                        "name": "to_date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "monthly",
-                        "description": "Zeittyp: yearly, monthly",
-                        "name": "time_type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 100,
-                        "example": 12,
-                        "description": "Anzahl der Ergebnisse",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/models.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/models.UnemploymentData"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
+                    "406": {
+                        "description": "Not Acceptable",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -2970,7 +6848,8 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/csv"
                 ],
                 "tags": [
                     "Wohngeldhaushalte"
@@ -3007,6 +6886,27 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "default": 1000,
                         "example": 100,
                         "description": "Anzahl der Ergebnisse (1-10000)",
@@ -3019,6 +6919,37 @@ const docTemplate = `{
                         "example": 0,
                         "description": "Offset für Pagination",
                         "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
                         "in": "query"
                     }
                 ],
@@ -3050,6 +6981,146 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/wohngeldhaushalte/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "Wohngeldhaushalte"
+                ],
+                "summary": "Lückenlose Zeitreihe für Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2010-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -3061,6 +7132,119 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "handlers.CustomRegionAggregateRequest": {
+            "type": "object",
+            "properties": {
+                "datasets": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "bevoelkerung",
+                        "schuldnerquote"
+                    ]
+                },
+                "from_year": {
+                    "type": "integer",
+                    "example": 2015
+                },
+                "geometry": {
+                    "type": "object"
+                },
+                "min_share": {
+                    "type": "number",
+                    "example": 0.01
+                },
+                "to_year": {
+                    "type": "integer",
+                    "example": 2024
+                }
+            }
+        },
+        "handlers.CustomRegionAggregateRow": {
+            "type": "object",
+            "properties": {
+                "aggregation_method": {
+                    "type": "string",
+                    "example": "weighted_avg_population"
+                },
+                "coverage": {
+                    "type": "number",
+                    "example": 0.98
+                },
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "schuldnerquote"
+                },
+                "indicator": {
+                    "type": "string",
+                    "example": "schuldnerquote"
+                },
+                "is_crosswalked": {
+                    "description": "IsCrosswalked: mindestens ein beteiligter Einheitenwert wurde über eine\nVersionsgrenze umgerechnet (kein Direktwert).",
+                    "type": "boolean",
+                    "example": false
+                },
+                "level_used": {
+                    "type": "string",
+                    "example": "nuts3"
+                },
+                "matched_unit": {
+                    "description": "MatchedUnit ist gesetzt, wenn das Polygon exakt einer bestehenden Einheit\nder genutzten Ebene entspricht (nuts_id, gisco_id bzw. ba_schl); die Werte\nsind dann die Werte dieser Einheit, ohne Beiträge benachbarter Einheiten.",
+                    "type": "string",
+                    "example": "DE300"
+                },
+                "month": {
+                    "type": "integer",
+                    "example": 6
+                },
+                "source_region_count": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "value": {
+                    "type": "number",
+                    "example": 7.4
+                },
+                "value_kind": {
+                    "type": "string",
+                    "example": "rate"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2023
+                }
+            }
+        },
+        "handlers.customRegionMeta": {
+            "type": "object",
+            "properties": {
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "schuldnerquote"
+                },
+                "finer_slug": {
+                    "type": "string"
+                },
+                "indicator": {
+                    "type": "string",
+                    "example": "schuldnerquote"
+                },
+                "kind": {
+                    "type": "string",
+                    "example": "rate"
+                },
+                "level": {
+                    "type": "string",
+                    "example": "nuts3"
+                },
+                "measure_type": {
+                    "type": "string",
+                    "example": "weighted_avg"
+                }
+            }
+        },
         "models.APIResponse": {
             "type": "object",
             "properties": {
@@ -3079,6 +7263,228 @@ const docTemplate = `{
                 "success": {
                     "type": "boolean",
                     "example": true
+                }
+            }
+        },
+        "models.AgenturDatasetAggregatePoint": {
+            "type": "object",
+            "properties": {
+                "aggregation_method": {
+                    "description": "Wie der Wert entstanden ist (siehe mart_agentur_dataset_aggregate):\n\"sum\" = Summe der Kreis-Werte; \"weighted_avg_population\" =\nbevölkerungsgewichteter Durchschnitt der Kreis-Werte;\n\"weighted_avg_area\" = flächengewichteter Durchschnitt (Rückfall, wenn\nfür einen beteiligten Kreis die Bevölkerung fehlt). Die beiden\nDurchschnitte sind eine Näherung, keine exakte Neuberechnung.",
+                    "type": "string",
+                    "enum": [
+                        "sum",
+                        "weighted_avg_population",
+                        "weighted_avg_area"
+                    ],
+                    "example": "weighted_avg_population"
+                },
+                "ba_schl": {
+                    "type": "string",
+                    "example": "962"
+                },
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                },
+                "is_computed": {
+                    "description": "Immer true: jeder Punkt ist eine flächengewichtete Aggregation über\nmehrere Kreise, keine an einer einzelnen Quelle abgelesene\nEinzelbeobachtung.",
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_interpolated": {
+                    "description": "Immer false - keine gap-gefüllte Version wird hier aggregiert. Nicht\naus der DB gescannt, damit TimeseriesChart.vue/DataTable.vue dieselbe\nInterpolationsstatus-Spalte wie bei den anderen Aggregat-Endpunkten\nanzeigen können.",
+                    "type": "boolean",
+                    "example": false
+                },
+                "source_region_count": {
+                    "description": "Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert beigetragen haben.",
+                    "type": "integer",
+                    "example": 3
+                },
+                "value": {
+                    "type": "number",
+                    "example": 340123
+                },
+                "value_kind": {
+                    "description": "Art der Größe: \"count\" (Zählgröße), \"rate\" (Quote), \"mean\"\n(Durchschnitt) oder \"median\". Mediane lassen sich nicht aus Kreis-\nMedianen zusammensetzen - der Wert ist dann nur eine Schätzung.",
+                    "type": "string",
+                    "enum": [
+                        "count",
+                        "rate",
+                        "mean",
+                        "median"
+                    ],
+                    "example": "rate"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
+                }
+            }
+        },
+        "models.AgenturDatasetAggregateYear": {
+            "type": "object",
+            "properties": {
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
+                }
+            }
+        },
+        "models.AgenturNuts3Share": {
+            "type": "object",
+            "properties": {
+                "area_share_of_agentur": {
+                    "type": "number",
+                    "example": 0.42
+                },
+                "area_share_of_nuts3": {
+                    "type": "number",
+                    "example": 1
+                },
+                "nuts3_id": {
+                    "type": "string",
+                    "example": "DE300"
+                },
+                "region_name": {
+                    "type": "string",
+                    "example": "Berlin"
+                }
+            }
+        },
+        "models.AgenturNutsMembership": {
+            "type": "object",
+            "properties": {
+                "area_share_of_agentur": {
+                    "type": "number",
+                    "example": 1
+                },
+                "is_fully_contained": {
+                    "type": "boolean"
+                },
+                "is_parent": {
+                    "type": "boolean"
+                },
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE30"
+                },
+                "nuts_level": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "region_name": {
+                    "type": "string",
+                    "example": "Berlin"
+                }
+            }
+        },
+        "models.AgenturbezirkArbeitslosigkeitPoint": {
+            "type": "object",
+            "properties": {
+                "arbeitslose": {
+                    "type": "number"
+                },
+                "month": {
+                    "type": "integer",
+                    "example": 8
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2026-08-01"
+                },
+                "unterbeschaeftigung": {
+                    "type": "number"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2026
+                }
+            }
+        },
+        "models.AgenturbezirkLatestValue": {
+            "type": "object",
+            "properties": {
+                "arbeitslose": {
+                    "type": "number"
+                },
+                "ba_schl": {
+                    "type": "string",
+                    "example": "962"
+                },
+                "geometry_wgs84": {
+                    "type": "object"
+                },
+                "has_valid_geometry": {
+                    "type": "boolean"
+                },
+                "month": {
+                    "type": "integer",
+                    "example": 8
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Berlin Mitte"
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2026-08-01"
+                },
+                "unterbeschaeftigung": {
+                    "type": "number"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2026
+                }
+            }
+        },
+        "models.AgenturbezirkPeriod": {
+            "type": "object",
+            "properties": {
+                "month": {
+                    "type": "integer",
+                    "example": 8
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2026-08-01"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2026
+                }
+            }
+        },
+        "models.AgenturbezirkSummary": {
+            "type": "object",
+            "properties": {
+                "ba_schl": {
+                    "type": "string",
+                    "example": "962"
+                },
+                "geometry_wgs84": {
+                    "type": "object"
+                },
+                "has_valid_geometry": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Berlin Mitte"
+                },
+                "valid_from": {
+                    "type": "string",
+                    "example": "2019-06-01"
+                },
+                "valid_to": {
+                    "type": "string",
+                    "example": "2050-12-31"
                 }
             }
         },
@@ -3117,9 +7523,27 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -3136,6 +7560,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3178,9 +7610,27 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -3198,16 +7648,24 @@ const docTemplate = `{
                     "type": "string",
                     "example": "id_ars"
                 },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
+                },
                 "year": {
                     "type": "integer",
                     "example": 2020
                 }
             }
         },
-        "models.AuzubildendeData": {
+        "models.AuszubildendeData": {
             "type": "object",
             "properties": {
-                "auzubildende": {
+                "auszubildende": {
                     "type": "number",
                     "example": 0
                 },
@@ -3239,9 +7697,27 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -3258,6 +7734,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3300,9 +7784,27 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -3319,6 +7821,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3373,9 +7883,27 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -3392,6 +7920,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3434,9 +7970,27 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -3453,6 +8007,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3495,9 +8057,27 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -3515,9 +8095,97 @@ const docTemplate = `{
                     "type": "string",
                     "example": "id_ars"
                 },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
+                },
                 "year": {
                     "type": "integer",
                     "example": 2020
+                }
+            }
+        },
+        "models.DatasetCatalogEintrag": {
+            "type": "object",
+            "properties": {
+                "algorithm": {
+                    "type": "string"
+                },
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                },
+                "dataset_uri": {
+                    "description": "DatasetURI ist eine persistente, deterministisch aus DatasetSlug abgeleitete\nKennung (urn:soziodata:dataset:\u003cslug\u003e) - keine künstliche Zufalls-ID.",
+                    "type": "string",
+                    "example": "urn:soziodata:dataset:bevoelkerung"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Zahl der Erwerbstätigen in 1000 Personen"
+                },
+                "description_long": {
+                    "type": "string"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "license": {
+                    "type": "string",
+                    "example": "unbekannt"
+                },
+                "license_backfilled": {
+                    "description": "LicenseBackfilled ist true, wenn der Datensatz Jahre vor LicenseTrackedSince\nenthält - die aktuelle Lizenz wurde dann rückwirkend auf diese älteren Jahre\nangewendet, ohne für sie unabhängig verifiziert zu sein.",
+                    "type": "boolean",
+                    "example": true
+                },
+                "license_tracked_since": {
+                    "description": "LicenseTrackedSince ist das Datum, seit dem die Lizenz dieses Datensatzes\nper snap_dataset_license beobachtet wird; null falls noch kein dbt snapshot\ngelaufen ist.",
+                    "type": "string",
+                    "example": "2026-09-11"
+                },
+                "license_url": {
+                    "type": "string"
+                },
+                "max_year": {
+                    "type": "integer",
+                    "example": 2023
+                },
+                "min_year": {
+                    "type": "integer",
+                    "example": 1995
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Bevölkerung"
+                },
+                "number_type": {
+                    "type": "string",
+                    "example": "absolute"
+                },
+                "provenance": {
+                    "type": "string",
+                    "example": "Laufende Raumbeobachtung des BBSR; Fortschreibung des Bevölkerungsstandes"
+                },
+                "total_records": {
+                    "type": "integer",
+                    "example": 11600
+                },
+                "unit": {
+                    "type": "string",
+                    "example": "Einwohner"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -3537,6 +8205,57 @@ const docTemplate = `{
                 "dataset": {
                     "type": "string",
                     "example": "schuldnerquote"
+                }
+            }
+        },
+        "models.DatasetQuellwert": {
+            "type": "object",
+            "properties": {
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                },
+                "geodata_id_ars": {
+                    "type": "string"
+                },
+                "geodata_id_lau": {
+                    "type": "string"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DE929"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "mapper": {
+                    "type": "string"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "03241"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Region Hannover"
+                },
+                "parameter": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
                 }
             }
         },
@@ -3652,9 +8371,27 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -3671,6 +8408,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3713,9 +8458,27 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -3732,6 +8495,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -3775,6 +8546,19 @@ const docTemplate = `{
                 }
             }
         },
+        "models.GeoPeriod": {
+            "type": "object",
+            "properties": {
+                "valid_from": {
+                    "type": "integer",
+                    "example": 2016
+                },
+                "valid_to": {
+                    "type": "integer",
+                    "example": 2023
+                }
+            }
+        },
         "models.GeoRegionSummary": {
             "type": "object",
             "properties": {
@@ -3815,7 +8599,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Stuttgart, Stadtkreis"
                 },
-                "year": {
+                "vintage_year": {
                     "type": "integer",
                     "example": 2024
                 }
@@ -3840,16 +8624,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "NUTS-3"
                 },
-                "versions": {
+                "periods": {
                     "type": "array",
                     "items": {
-                        "type": "integer"
-                    },
-                    "example": [
-                        2024,
-                        2023,
-                        2022
-                    ]
+                        "$ref": "#/definitions/models.GeoPeriod"
+                    }
                 }
             }
         },
@@ -3936,13 +8715,31 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
                 "kinderarmut": {
                     "type": "number",
                     "example": 50
                 },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -3959,6 +8756,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -4017,6 +8822,14 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
+                "nuts3_id": {
+                    "description": "NUTS3ID ist die kanonische LAU-\u003eNUTS-3-Verlinkung: deklarierte\nQuellspalte (nuts_3_code/nuts_3), sonst räumlich ermittelter Fallback\n(siehe int_lau_nuts3_spatial_link.sql). Robuster als NUTS3Code, das\noft NULL ist, wenn die Quelldaten keinen NUTS-3-Code führen.",
+                    "type": "string"
+                },
+                "nuts3_link_source": {
+                    "description": "NUTS3LinkSource kennzeichnet, woher NUTS3ID stammt: 'declared' (aus\nQuelldaten) oder 'spatial_estimate' (räumlich ermittelt, keine\namtliche Zuordnung) - siehe lau_integrated.sql.",
+                    "type": "string"
+                },
                 "nuts_3_code": {
                     "type": "string"
                 },
@@ -4030,6 +8843,52 @@ const docTemplate = `{
                 "year_match": {
                     "type": "boolean",
                     "example": true
+                }
+            }
+        },
+        "models.LauTimeseriesPoint": {
+            "type": "object",
+            "properties": {
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "beschaeftigungsquote-gemeinden"
+                },
+                "gisco_id": {
+                    "type": "string",
+                    "example": "DE_11000000"
+                },
+                "is_interpolated": {
+                    "description": "true = Wert wurde imputiert (kein Originalwert vorhanden für dieses Jahr).",
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist die LAU-Zielversion dieses Zeitreihenpunkts (2011-2024).",
+                    "type": "integer",
+                    "example": 2021
+                },
+                "n_peer_regions": {
+                    "description": "Anzahl Peer-Gemeinden (gleicher Kreis), die zu value_peer_trend beigetragen haben.",
+                    "type": "integer",
+                    "example": 8
+                },
+                "value": {
+                    "type": "number",
+                    "example": 58.3
+                },
+                "value_linear": {
+                    "description": "Methode-1-Schätzung (lineare Interpolation). Nur bei is_interpolated = true befüllt.",
+                    "type": "number",
+                    "example": 58.3
+                },
+                "value_peer_trend": {
+                    "description": "Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen\nVeränderung anderer Gemeinden desselben Kreises). Nur befüllt, wenn\nis_interpolated = true und die Schätzung berechenbar war.",
+                    "type": "number",
+                    "example": 57.9
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2021
                 }
             }
         },
@@ -4064,6 +8923,15 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
@@ -4071,6 +8939,15 @@ const docTemplate = `{
                 "medianeinkommen": {
                     "type": "number",
                     "example": 0
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -4087,6 +8964,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -4108,6 +8993,106 @@ const docTemplate = `{
                 "total": {
                     "type": "integer",
                     "example": 140400
+                }
+            }
+        },
+        "models.NutsAgenturbezirk": {
+            "type": "object",
+            "properties": {
+                "area_share_of_agentur": {
+                    "type": "number",
+                    "example": 1
+                },
+                "ba_schl": {
+                    "type": "string",
+                    "example": "962"
+                },
+                "is_fully_contained": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Berlin Mitte"
+                }
+            }
+        },
+        "models.NutsDatasetAggregatePoint": {
+            "type": "object",
+            "properties": {
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                },
+                "is_computed": {
+                    "description": "Immer true (siehe SELECT true AS is_computed in GetNutsDatasetAggregateTimeseries):\njeder Punkt ist eine Aggregation über mehrere Kreise, keine an einer\neinzelnen Quelle abgelesene Einzelbeobachtung.",
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_interpolated": {
+                    "description": "Immer false - siehe Typkommentar oben (keine gap-gefüllte Version wird hier aggregiert).\nNicht aus der DB gescannt (kein db-Tag), damit TimeseriesChart.vue/DataTable.vue\ndieselbe Interpolationsstatus-Spalte wie bei NutsTimeseriesPoint anzeigen können.",
+                    "type": "boolean",
+                    "example": false
+                },
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE1"
+                },
+                "source_region_count": {
+                    "description": "Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert beigetragen haben.",
+                    "type": "integer",
+                    "example": 44
+                },
+                "value": {
+                    "type": "number",
+                    "example": 12876243
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
+                }
+            }
+        },
+        "models.NutsLauAggregatePoint": {
+            "type": "object",
+            "properties": {
+                "lau_beschaeftigungsquote_weighted_avg": {
+                    "description": "Bevölkerungsgewichteter Durchschnitt der Gemeinde-Beschäftigungsquote; null ohne Datenabdeckung.",
+                    "type": "number",
+                    "example": 64.2
+                },
+                "lau_population_sum": {
+                    "description": "Kann null sein, wenn für keine zugeordnete Gemeinde ein Bevölkerungswert vorliegt.",
+                    "type": "number",
+                    "example": 634830
+                },
+                "lau_region_count": {
+                    "description": "Anzahl der diesem Kreis zugeordneten Gemeinden.",
+                    "type": "integer",
+                    "example": 23
+                },
+                "lau_region_count_with_population": {
+                    "description": "Davon mit einem tatsächlichen Bevölkerungswert (\u003c=lau_region_count).",
+                    "type": "integer",
+                    "example": 21
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
+                }
+            }
+        },
+        "models.NutsLauAggregateResponse": {
+            "type": "object",
+            "properties": {
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE300"
+                },
+                "series": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.NutsLauAggregatePoint"
+                    }
                 }
             }
         },
@@ -4221,16 +9206,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "NUTS-3"
                 },
-                "versions": {
+                "periods": {
                     "type": "array",
                     "items": {
-                        "type": "integer"
-                    },
-                    "example": [
-                        2024,
-                        2023,
-                        2022
-                    ]
+                        "$ref": "#/definitions/models.GeoPeriod"
+                    }
                 }
             }
         },
@@ -4256,6 +9236,110 @@ const docTemplate = `{
                 "yoy_change_percent": {
                     "type": "number",
                     "example": -2.3
+                }
+            }
+        },
+        "models.NutsTimeseriesPoint": {
+            "type": "object",
+            "properties": {
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "wohngeldhaushalte"
+                },
+                "is_interpolated": {
+                    "description": "true = Wert wurde imputiert (kein Originalwert vorhanden für dieses Jahr).",
+                    "type": "boolean",
+                    "example": true
+                },
+                "n_peer_regions": {
+                    "description": "Anzahl Peer-Regionen (gleiche NUTS-2-Gruppe), die zu value_peer_trend beigetragen haben.",
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_id": {
+                    "type": "string",
+                    "example": "DE226"
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieses Zeitreihenpunkts (2016, 2021 oder 2024).",
+                    "type": "integer",
+                    "example": 2021
+                },
+                "value": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_linear": {
+                    "description": "Methode-1-Schätzung (lineare Interpolation). Nur bei is_interpolated = true befüllt.",
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "description": "Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen\nVeränderung anderer Regionen derselben NUTS-2-Gruppe). Nur befüllt, wenn\nis_interpolated = true und die Schätzung berechenbar war.",
+                    "type": "number",
+                    "example": 8.5
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2021
+                }
+            }
+        },
+        "models.RegionDataRow": {
+            "type": "object",
+            "properties": {
+                "aggregation_method": {
+                    "description": "Nur bei aggregierten Werten: sum, weighted_avg_population, weighted_avg_area.",
+                    "type": "string",
+                    "example": "weighted_avg_population"
+                },
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "bevoelkerung"
+                },
+                "is_computed": {
+                    "description": "true = aus mehreren Quellregionen berechnet, false = Ursprungswert der Region.",
+                    "type": "boolean"
+                },
+                "is_interpolated": {
+                    "description": "true = kein Originalwert, sondern imputiert (nur NUTS-3/LAU-Rohwerte).",
+                    "type": "boolean"
+                },
+                "month": {
+                    "description": "Nur bei Monatswerten (Agenturbezirk-Rohwerte), sonst leer.",
+                    "type": "integer",
+                    "example": 8
+                },
+                "region_id": {
+                    "type": "string",
+                    "example": "DE300"
+                },
+                "region_type": {
+                    "type": "string",
+                    "enum": [
+                        "nuts",
+                        "lau",
+                        "agentur"
+                    ],
+                    "example": "nuts"
+                },
+                "source_region_count": {
+                    "description": "Anzahl der Quellregionen (Kreise/Gemeinden) hinter einem aggregierten Wert.",
+                    "type": "integer",
+                    "example": 3
+                },
+                "value": {
+                    "type": "number",
+                    "example": 340123
+                },
+                "value_kind": {
+                    "description": "Nur bei Agentur-Aggregaten: count, rate, mean, median.",
+                    "type": "string",
+                    "example": "rate"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2022
                 }
             }
         },
@@ -4333,9 +9417,27 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -4356,6 +9458,14 @@ const docTemplate = `{
                 "schuldnerquote_prozent": {
                     "type": "number",
                     "example": 50
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -4394,9 +9504,27 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -4417,6 +9545,14 @@ const docTemplate = `{
                 "sgb_ii_quote_prozent": {
                     "type": "number",
                     "example": 50
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "year": {
                     "type": "integer",
@@ -4488,9 +9624,27 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -4512,94 +9666,17 @@ const docTemplate = `{
                     "type": "number",
                     "example": 0
                 },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
+                },
                 "year": {
                     "type": "integer",
                     "example": 2020
-                }
-            }
-        },
-        "models.UnemploymentAggregation": {
-            "type": "object",
-            "properties": {
-                "avg_arbeitslose": {
-                    "type": "number",
-                    "example": 18622.03
-                },
-                "earliest_observation": {
-                    "type": "string",
-                    "example": "1998-01-01T00:00:00Z"
-                },
-                "geodata_id": {
-                    "type": "string",
-                    "example": "DE111"
-                },
-                "geodata_name": {
-                    "type": "string",
-                    "example": "Stuttgart, Stadtkreis"
-                },
-                "latest_observation": {
-                    "type": "string",
-                    "example": "2024-12-31T00:00:00Z"
-                },
-                "max_arbeitslose": {
-                    "type": "number",
-                    "example": 31655
-                },
-                "min_arbeitslose": {
-                    "type": "number",
-                    "example": 13334
-                },
-                "total_records": {
-                    "type": "integer",
-                    "example": 351
-                }
-            }
-        },
-        "models.UnemploymentData": {
-            "type": "object",
-            "properties": {
-                "arbeitslose": {
-                    "type": "number",
-                    "example": 20749
-                },
-                "arbeitslose_previous_year": {
-                    "type": "number",
-                    "example": 18416
-                },
-                "arbeitslosenzahlen_pk": {
-                    "type": "string"
-                },
-                "geodata_id": {
-                    "type": "string",
-                    "example": "DE111"
-                },
-                "geodata_id_ars": {
-                    "type": "string",
-                    "example": "08111000"
-                },
-                "geodata_level": {
-                    "type": "string",
-                    "example": "NUTS_3"
-                },
-                "geodata_name": {
-                    "type": "string",
-                    "example": "Stuttgart, Stadtkreis"
-                },
-                "geodata_year": {
-                    "type": "integer",
-                    "example": 2021
-                },
-                "observation_date": {
-                    "type": "string",
-                    "example": "2024-01-01T00:00:00Z"
-                },
-                "year": {
-                    "type": "integer",
-                    "example": 2024
-                },
-                "yoy_change_percent": {
-                    "type": "number",
-                    "example": 12.67
                 }
             }
         },
@@ -4634,9 +9711,27 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
                 "mapper": {
                     "type": "string",
                     "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "type": "integer",
+                    "example": 2021
                 },
                 "observation_date": {
                     "type": "string",
@@ -4653,6 +9748,14 @@ const docTemplate = `{
                 "parameter": {
                     "type": "string",
                     "example": "id_ars"
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
                 },
                 "wohngeldhaushalte_je_1000": {
                     "type": "number",

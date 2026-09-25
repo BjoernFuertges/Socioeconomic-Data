@@ -65,100 +65,48 @@ sources:
           - name: geometry
             description: "PostGIS geometry as WKT"
             
-      - name: arbeitslosenzahlen_agentur_arbeit
-        description: "Unemployment data from Agentur für Arbeit (transposed, normalized)"
+      - name: agenturbezirk_geometry
+        description: "Grenzen aller ~146 Agenturbezirke der Bundesagentur für Arbeit (BA-Gebietsstruktur-Shapefile). Eigenständige Gebietsgliederung, nicht deckungsgleich mit NUTS/LAU/ARS."
         columns:
-          - name: dataset_id
-            description: "Unique identifier linking to metadata table"
-            tests:
-              - not_null
-              - relationships:
-                  to: source('loaded_data', 'arbeitslosenzahlen_metadata')
-                  field: dataset_id
-          - name: original_id
-            description: "Original region ID from source data"
-          - name: original_name
-            description: "Original region name from source data"
-          - name: geodata_id
-            description: "Mapped geodata ID (LAU/NUTS code)"
-            tests:
-              - not_null
-          - name: geodata_name
-            description: "Mapped geodata name"
-          - name: mapper
-            description: "Mapping method used"
-          - name: parameter
-            description: "Mapping parameter"
-          - name: time_column
-            description: "Original time column name from CSV"
-            tests:
-              - not_null
-          - name: is_date
-            description: "Whether time_column is a date or year"
-          - name: arbeitslose
-            description: "Number of unemployed persons"
-            tests:
-              - not_null
-          - name: year
-            description: "Year extracted from time_column"
-          - name: month
-            description: "Month extracted from time_column (null for yearly data)"
-          - name: day
-            description: "Day extracted from time_column"
-          - name: time_type
-            description: "Type of time data: yearly, monthly, or unknown"
-            tests:
-              - accepted_values:
-                  values: ['yearly', 'monthly', 'unknown']
-          - name: load_date
-            description: "Date when the data was originally loaded"
-            tests:
-              - not_null
-              
-      - name: arbeitslosenzahlen_metadata
-        description: "Metadata for unemployment datasets from Agentur für Arbeit"
-        columns:
-          - name: dataset_id
-            description: "Unique identifier for the dataset (primary key)"
+          - name: ba_schl
+            description: "Amtlicher BA-Schlüssel des Agenturbezirks (z.B. '962' für AA Berlin Mitte)"
             tests:
               - unique
               - not_null
-          - name: title
-            description: "Dataset title"
-          - name: series
-            description: "Data series name"
-          - name: publisher_name
-            description: "Publisher name"
-          - name: source_name
-            description: "Source name"
-          - name: source_url
-            description: "Source URL"
-          - name: description
-            description: "Dataset description"
-          - name: table_name
-            description: "Original table name"
-          - name: page_number
-            description: "Page number in source file"
-          - name: load_date
-            description: "Date when data was loaded"
-          - name: collection_date
-            description: "Date when data was collected"
-          - name: start_date
-            description: "Start date of time series"
-          - name: end_date
-            description: "End date of time series"
-          - name: categories
-            description: "Data categories (comma-separated)"
-          - name: geodata_level
-            description: "Geodata level (e.g., NUTS 3)"
-          - name: geodata_year
-            description: "Geodata reference year"
-          - name: methodology
-            description: "Methodology description"
-          - name: license
-            description: "Data license"
-          - name: updated_at
-            description: "Timestamp of last metadata update"
+          - name: name
+            description: "Name des Agenturbezirks"
+            tests:
+              - not_null
+          - name: id_dwh
+            description: "Data-Warehouse-ID der Quelle"
+          - name: valid_from
+            description: "Gültig-ab-Datum laut Shapefile"
+          - name: valid_to
+            description: "Gültig-bis-Datum laut Shapefile"
+          - name: geometry
+            description: "PostGIS-Geometrie als WKT (bereits nach WGS84/EPSG:4326 reprojiziert)"
+
+      - name: results_arbeitslosenzahlen_afa_agenturbezirke
+        description: "Monatliche Arbeitslosen-/Unterbeschäftigungszahlen je Agenturbezirk, direkt von der Statistik der Bundesagentur für Arbeit (EckwerteZeitreiheALO-API)"
+        columns:
+          - name: geodata_id_agentur
+            description: "Amtlicher BA-Schlüssel des Agenturbezirks, verlinkt agenturbezirk_geometry.ba_schl"
+            tests:
+              - not_null
+          - name: geodata_name
+            description: "Name des Agenturbezirks"
+          - name: year
+            description: "Jahr des Berichtsmonats"
+            tests:
+              - not_null
+          - name: month
+            description: "Monat des Berichtsmonats (1-12)"
+            tests:
+              - not_null
+          - name: arbeitslose
+            description: "Anzahl Arbeitsloser im Berichtsmonat, null wenn statistisch gesperrt ('x' in der Quelle)"
+          - name: unterbeschaeftigung
+            description: "Unterbeschäftigung (ohne Kurzarbeit) im Berichtsmonat, null wenn statistisch gesperrt"
 
       - name: results_arbeitslose_kreise
         description: "Arbeitslosenzahlen je Kreis – long format, ein Record pro Region und Jahr"
@@ -174,6 +122,41 @@ sources:
               - not_null
           - name: value
             description: "Anzahl Arbeitsloser"
+
+      - name: dataset_metadata
+        description: "Provenance/license/description metadata for the generic (meta.yaml-driven) Kreis/Gemeinden datasets, one row per dataset_slug, upserted by load_soziodata_generic.py on every run"
+        columns:
+          - name: dataset_slug
+            description: "Stable slug identifying the dataset, matches the dataset_slug used in mart_*_sociodata_harmonized/mart_socioeconomic_inventory"
+            tests:
+              - unique
+              - not_null
+          - name: table_name
+            description: "loaded_data table this metadata belongs to (results_<dataset>_kreise/_gemeinden)"
+          - name: name
+            description: "Short display name"
+          - name: description
+            description: "Short description"
+          - name: description_long
+            description: "Long-form methodological description"
+          - name: unit
+            description: "Unit of the value column"
+          - name: source
+            description: "Publisher / source series (provenance)"
+          - name: license
+            description: "Data usage license, null if not yet researched"
+          - name: license_url
+            description: "URL to the license text, null if not yet researched"
+          - name: algorithm
+            description: "Free-text note on how the value is computed/derived, if applicable"
+          - name: number_type
+            description: "absolute or relative"
+          - name: geodata_level
+            description: "Geodata level the dataset is mapped to (e.g. NUTS_3)"
+          - name: geodata_year
+            description: "Reference year of the geodata used for mapping"
+          - name: updated_at
+            description: "Timestamp of the last upsert"
 
       - name: results_bevoelkerung_kreise
         description: "Bevölkerungsdaten je Kreis (Destatis) – long format, ein Record pro Region und Jahr"
@@ -365,7 +348,7 @@ sources:
           - name: dataset_name
             description: "Name des Datensatzes (results_wohngeldhaushalte_kreise)"
 
-      - name: results_auzubildende_kreise
+      - name: results_auszubildende_kreise
         description: "Auszubildende je Kreis – long format, ein Record pro Region und Jahr (je 1.000 SV-Beschäftigte)"
         columns:
           - name: original_id_1
