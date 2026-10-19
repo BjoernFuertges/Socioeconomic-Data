@@ -128,6 +128,9 @@ built/tested independently as shown above.
   `backend/scripts/deploy_remote.sh`. Commit messages follow Conventional
   Commits, because Semantic Release derives version and changelog from them
   (`.releaserc`). Setup steps and required secrets: `infra/README.md`.
+- **Adminer is not public** in production: Compose profile `tools`, bound to
+  `127.0.0.1:8083`, reached via SSH tunnel (see `docs/operations.md`). Do not
+  put DB tooling behind Traefik.
 - **Backups**: `backend/scripts/backup_db.sh` (nightly cron on the server,
   installed by the deploy job) dumps only what the pipeline cannot rebuild —
   the `snapshots` schema and `loaded_data.dataset_metadata` — to Hetzner

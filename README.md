@@ -112,7 +112,8 @@ Ablauf von `main.yml`:
 2. **Nur Push auf `main`** (bzw. manuell): Semantic-Release-Dry-Run → Images (`soziodata-backend|frontend|docs`) nach GHCR
    (`sha-<commit>`, `latest`, Version) → Semantic Release (Tag, Changelog, GitHub Release) → Deploy per SSH.
 3. **Deploy** (`backend/scripts/deploy_remote.sh`): Commit auf dem Server auschecken, `.env`-Dateien aus Secrets schreiben,
-   Nextcloud-Sync, `docker compose pull && up -d`. Optional (`initial_load`) danach dlt + dbt einmalig komplett ausführen.
+   Nextcloud-Sync, `docker compose pull && up -d`. Optional (`initial_load`) danach dlt + dbt einmalig komplett im Hintergrund auf dem Server starten
+   (der Workflow wartet nicht darauf; Status: `deploy_remote.sh initial-load-status`).
 4. **E2E** (Playwright, `frontend/web/app/e2e`) gegen die deployte Instanz; bei Fehlschlag Rollback auf den letzten guten Stand.
 
 Der Deploy-Job bricht ab, solange `APP_HOST` nicht per DNS auf den Server zeigt (Let's-Encrypt-Challenge).

@@ -12,10 +12,11 @@ import (
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/handlers"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/routes"
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/version"
 )
 
 // @title Sozioökonomische Daten API
-// @version 1.0
+// @version dev
 // @description REST-API für LAU-Geodaten und Arbeitslosenzahlen aus dbt-transformierten Daten
 // @termsOfService http://swagger.io/terms/
 
@@ -69,6 +70,10 @@ func main() {
 
 	// Handler mit Datenbankverbindung erstellen
 	handler := handlers.NewHandler(db, derivedCatalog)
+
+	// Release-Version (per ldflags gesetzt) in die OpenAPI-Spec übernehmen: info.version, in der Swagger-UI sichtbar
+	docs.SwaggerInfo.Version = version.Version
+	log.Printf("Version %s (Build %s)", version.Version, version.BuildTime)
 
 	// Swagger Host dynamisch setzen (SWAGGER_HOST überschreibt API_HOST:PORT)
 	swaggerHost := getEnv("SWAGGER_HOST", fmt.Sprintf("%s:%s", apiHost, apiPort))

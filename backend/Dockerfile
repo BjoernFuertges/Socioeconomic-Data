@@ -7,7 +7,7 @@ FROM golang:1.26.0-alpine AS builder
 RUN apk add --no-cache gcc musl-dev git
 
 # Definiere Build-Arguments zur Weitergabe an den Build-Prozess
-ARG SHA
+ARG VERSION
 ARG BUILD_TIME
 
 # Ein Arbeitsverzeichnis für die App erstellen
@@ -25,8 +25,8 @@ COPY . .
 # -w -s entfernt Debug-Symbole und reduziert die Binärgröße deutlich
 RUN GOOS=linux go build -o /app/bin/server -ldflags "\
   -w -s \
-    -X 'main.appVersion=${SHA}' \
-  -X 'main.buildTime=${BUILD_TIME}'" \
+  -X 'github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/version.Version=${VERSION:-dev}' \
+  -X 'github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/version.BuildTime=${BUILD_TIME:-unknown}'" \
   ./cmd/soziodata
 
 # =============================================================================

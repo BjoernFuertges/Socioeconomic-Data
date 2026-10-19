@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/version"
 )
 
 // HealthCheck gibt den Status der API zurück
@@ -15,7 +17,9 @@ import (
 // @Router /health [get]
 func (h *Handler) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"status":  "healthy",
-		"service": "soziooekonomische-daten-api",
+		"status":     "healthy",
+		"service":    "soziooekonomische-daten-api",
+		"version":    version.Version,
+		"build_time": version.BuildTime,
 	})
 }

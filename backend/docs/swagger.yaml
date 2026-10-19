@@ -2110,7 +2110,7 @@ info:
     Daten
   termsOfService: http://swagger.io/terms/
   title: Sozioökonomische Daten API
-  version: "1.0"
+  version: dev
 paths:
   /agenturbezirke:
     get:
