@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-// Read-only Smoke-Tests gegen die deployte Instanz: keine Mocks, keine Annahmen über
-// konkrete Datenwerte. E2E_EXPECT_DATA=false überspringt den Datencheck (frischer Server
-// vor dem initialen Daten-Load).
+// Read-only smoke tests against the deployed instance: no mocks, no assumptions about
+// concrete data values. E2E_EXPECT_DATA=false skips the data check (fresh server
+// before the initial data load).
 const expectData = process.env.E2E_EXPECT_DATA !== "false";
 
 test("startet auf /regionen und zeigt die Navigation", async ({ page }) => {

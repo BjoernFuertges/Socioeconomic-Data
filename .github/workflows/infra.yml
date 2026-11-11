@@ -1,4 +1,4 @@
-# Hetzner-Infrastruktur (Terraform). Einmaliges Setup inkl. State-Bucket: siehe infra/README.md.
+# Hetzner infrastructure (Terraform). One-time setup incl. state bucket: see infra/README.md.
 name: "Infrastruktur (Terraform)"
 
 on:
@@ -39,7 +39,7 @@ jobs:
       - run: terraform fmt -check -recursive -diff
         working-directory: infra
 
-      # Ohne Backend und ohne Secrets, damit das auch für PRs aus Forks läuft
+      # No backend and no secrets, so this also runs for PRs from forks
       - name: Validate bootstrap
         working-directory: infra/bootstrap
         run: |
@@ -57,7 +57,7 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: [validate]
     runs-on: ubuntu-latest
-    # Reviewer-Freigabe wird über die Environment-Einstellungen in GitHub erzwungen
+    # Reviewer approval is enforced via the environment settings in GitHub
     environment: infra
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_ACCESS_KEY }}
@@ -77,8 +77,8 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-      # Häufigster Aussperr-Grund: öffentlicher und privater Deploy-Key gehören nicht zusammen.
-      # Die Härtung (nur Key-Login für "deploy") ließe dann niemanden mehr per SSH auf den Server.
+      # Most common lockout cause: the public and private deploy key do not match.
+      # Hardening (key-only login for "deploy") would then lock everyone out of SSH.
       - name: Check deploy key pair
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}

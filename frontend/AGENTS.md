@@ -50,9 +50,10 @@ rather than working around it another way.
 
 The dev server needs the Go backend running separately (see
 [backend/AGENTS.md](../backend/AGENTS.md)); the API base URL comes from
-the Vite env var `VITE_API_BASE_URL` (default in `.env.development`:
-`http://localhost:8081/api/v1`). For a different local backend port, add a
-gitignored `.env.local`. In production the frontend is served from the
+the Vite env var `VITE_API_BASE_URL` (no default is committed: unset it
+falls back to the relative `/api/v1`, so for `npm run dev` create a gitignored
+`.env.local` with e.g. `VITE_API_BASE_URL=http://localhost:8081/api/v1`;
+`compose.local.yml` sets it itself). In production the frontend is served from the
 same origin as the API (behind Traefik), so `VITE_API_BASE_URL` is unset
 there and the client falls back to the relative path `/api/v1`.
 
@@ -70,9 +71,10 @@ same as before. Routes deliberately mirror the backend's URI shape (see
 compare, and every view/sub-state is deep-linkable/bookmarkable (FAIR
 Findability, requirement F12.1):
 
-- `/regionen/:regionType(nuts|lau|agentur)?/:regionId?` — selected region
-  type + region, e.g. `/regionen/nuts/DE300`; `?dataset=<slug>` optionally
-  preselects a dataset once a region is picked (see below).
+- `/regionen/:regionId?` — selected region, e.g. `/regionen/DE300`;
+  `?type=nuts|lau|agentur` disambiguates the region type (ID formats are
+  disjoint, `inferRegionType()` is only a fallback for links without it);
+  `?dataset=<slug>` preselects datasets once a region is picked.
 - `/karte?geo=&nutsLevel=&dataset=&year=&nutsVersion=&lauVersion=&metric=&month=&region=`
   — the map's full selection state lives in the query string; `region=`
   optionally highlights and centers on one region, `nutsLevel=` (0-3,
@@ -96,15 +98,14 @@ Findability, requirement F12.1):
 - `/katalog/:slug?` — optionally deep-links to and highlights one catalog
   entry; `?q=&level=&license=` mirror the search/filter state.
 
-The three views are cross-linked (each direction implemented as a
+The four views are cross-linked (each direction implemented as a
 `router.push`/`RouterLink` navigation, not ad-hoc props/refs):
 
 - **Datenkatalog → Regionen**: a catalog card's "In Regionen anzeigen" link
-  jumps to the right `regionType` and arms `?dataset=<slug>`; `RegionBrowser`
-  shows a hint and applies it as the `DatasetPicker`'s `initial-slug` once a
-  region is picked (generalizes the older `jumpToInkarArbeitslose`/
-  `initialSlug` pattern, which still exists for the Agenturbezirk → INKAR
-  "Siehe auch" link).
+  jumps to the right region type and arms `?dataset=<slug>`; `RegionBrowser`
+  shows a hint and applies it as the dataset selection once a region is
+  picked (`jumpToInkarArbeitslose` serves the Agenturbezirk → INKAR "Siehe
+  auch" link).
 - **Karte → Datenkatalog**: the map's dataset/metric picker links to the
   matching `/katalog/:slug` entry.
 - **Regionen → Karte**: a region's detail panel has an "Auf der Karte
@@ -125,9 +126,9 @@ The three views are cross-linked (each direction implemented as a
   and LAU browse yearly socioeconomic time series
   (`components/TimeseriesChart.vue`, `components/DataTable.vue`,
   `components/DatasetPicker.vue`), while Agentur shows a monthly series
-  via `periodPoints`/`periodRows` props (index-based x-axis, no
-  interpolation status, unlike the year-based `points` prop used by
-  NUTS/LAU). The Agentur panel also shows a breadcrumb up its NUTS parent
+  via `periodSeries` (`TimeseriesChart.vue`) / `periodRows`
+  (`DataTable.vue`) props (index-based x-axis, no interpolation status,
+  unlike the year-based `points` prop used by NUTS/LAU). The Agentur panel also shows a breadcrumb up its NUTS parent
   chain, and NUTS-1/2/3 panels list contained/partially overlapping
   Agenturbezirke (`GET /agenturbezirke/{ba_schl}/nuts-hierarchy`,
   `GET /nuts/{nuts_id}/agenturbezirke`). Plus an "Aggregierte Kreis-Daten" section
@@ -139,11 +140,6 @@ The three views are cross-linked (each direction implemented as a
   automatisch das kombinierte, indexierte Diagramm; die Karte kann die
   Aggregate ebenfalls einfärben) analogous to NUTS-0/1/2's
   `dataset-aggregate` and LAU's Kreis-linked dataset catalog.
-  The route is `/regionen/:regionId?` (no more `:regionType` path
-  segment - `regionId` formats are disjoint across NUTS/LAU/Agentur, so a
-  single path param plus explicit `?type=` disambiguates); a lightweight
-  client-side `inferRegionType()` only kicks in as a fallback for deep
-  links without `?type=`.
   The NUTS portion of the list additionally has a level sub-switcher
   (Land/Bundesland/Regierungsbezirk/Kreis = NUTS 0-3, `nutsBrowseLevel`,
   mirrored to `?level=`, only shown while "nuts" is an active type filter);
@@ -238,10 +234,9 @@ Cross-cutting pieces:
   full dataset.
 - `src/format.ts` — shared number/date formatting helpers used across
   components.
-- `src/constants.ts` — small set of values shared across otherwise
-  independent components (currently just the Agenturbezirk dataset slug,
-  needed by `RegionBrowser.vue`, `DatasetCatalog.vue`, and `MapView.vue` for
-  the catalog cross-link).
+- `src/constants.ts` — values shared across otherwise independent
+  components (Agenturbezirk dataset slug, `hasSourceData()`,
+  `BUNDESLAND_ALIASES` for the region search).
 
 `frontend/web/README.md` and `frontend/web/static/`,
 `frontend/web/template/` are leftover from an earlier server-templated

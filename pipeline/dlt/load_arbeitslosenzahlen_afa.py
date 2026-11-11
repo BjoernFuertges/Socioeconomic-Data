@@ -28,10 +28,11 @@ ZEITREIHE_URL = (
     "tableFetch/csv/EckwerteZeitreiheALO"
 )
 REQUEST_DELAY_SECONDS = 0.4
+# "replace" would wipe the table, so abort rather than load if more districts than this fail.
+MAX_SKIPPED_FRACTION = 0.1
 
-# Kein benannter Standard-Lizenztext (z.B. CC BY) - die Quelle formuliert ihre
-# eigene Nutzungsbedingung im Antworttext jeder Abfrage license_url verweist auf die Doku-Seite, die diese Bedingungen
-# formal beschreibt.
+# No named standard license (e.g. CC BY): the source states its own reuse terms
+# in every response; license_url points to the docs page describing them.
 LICENSE_NAME = "Freie Nutzung mit Quellenangabe (Statistik der Bundesagentur für Arbeit)"
 LICENSE_URL = "https://statistik.arbeitsagentur.de/DE/Statischer-Content/Service/API/API-ALO-Zeitreihe.html"
 
@@ -43,9 +44,8 @@ GERMAN_MONTHS = {
 
 def fetch_agenturbezirke() -> List[Dict[str, str]]:
     """
-    Lädt die amtliche Liste der Agenturbezirke (Name + BA-Schlüssel) aus
-    demselben JS-Datenfeld, das auch die interaktive Statistikseite nutzt,
-    statt sie hart zu codieren.
+    Fetches the official Agenturbezirk list (name + BA key) from the same JS
+    data field the interactive statistics page uses, instead of hardcoding it.
     """
     resp = requests.get(REGION_LIST_URL, timeout=30)
     resp.raise_for_status()
@@ -74,17 +74,14 @@ def _parse_value(raw: str) -> Optional[float]:
 
 def fetch_agentur_timeseries(name: str) -> List[Dict[str, Any]]:
     """
-    Ruft die monatliche Zeitreihe für einen Agenturbezirk ab. Gibt eine
-    leere Liste zurück (statt zu werfen), wenn die Quelle für diesen Namen
-    keine Daten liefert - ein einzelner fehlschlagender Bezirk soll den
-    gesamten Lauf nicht abbrechen (anders als die alte, tote Version dieses
-    Skripts mit ihrem set -euo pipefail-Vorgänger in run_all_pipelines.sh).
+    Fetches the monthly series for one Agenturbezirk. Returns an empty list
+    instead of raising so a single bad district does not abort the run (the
+    caller enforces MAX_SKIPPED_FRACTION).
     """
     try:
         resp = requests.get(ZEITREIHE_URL, params={"Agentur für Arbeit": name}, timeout=30)
     except requests.exceptions.RequestException as e:
-        # Ein zweiter Versuch fängt kurze DNS-/Verbindungsaussetzer ab, ohne
-        # bei einem echten Ausfall den gesamten Lauf (146 Requests) zu blockieren.
+        # One retry absorbs short DNS/connection blips without stalling the run on a real outage.
         logger.warning(f"Agenturbezirk {name!r}: Netzwerkfehler ({e}), ein Versuch erneut...")
         time.sleep(2)
         try:
@@ -98,7 +95,7 @@ def fetch_agentur_timeseries(name: str) -> List[Dict[str, Any]]:
 
     text = resp.content.decode("utf-8-sig")
     if text.lstrip().startswith("{"):
-        # Fehlerantwort kommt als JSON statt CSV (z.B. "501 Datensatz leer")
+        # error responses come as JSON instead of CSV (z.B. "501 Datensatz leer")
         logger.warning(f"Agenturbezirk {name!r}: Fehlerantwort statt CSV, überspringe: {text[:200]}")
         return []
 
@@ -111,10 +108,10 @@ def fetch_agentur_timeseries(name: str) -> List[Dict[str, Any]]:
 
     rows: List[Dict[str, Any]] = []
     reader = csv.reader(lines[header_idx:], delimiter=";")
-    next(reader)  # Kopfzeile überspringen
+    next(reader)  # skip header
     for row in reader:
         if not row or not row[0].strip() or row[0].startswith("©"):
-            break  # Lizenz-/Copyright-Fußzeilen erreicht
+            break  # reached license/copyright footer
         berichtsmonat_parts = row[0].strip().split(" ")
         if len(berichtsmonat_parts) != 2 or berichtsmonat_parts[0] not in GERMAN_MONTHS:
             continue
@@ -154,14 +151,16 @@ def load_arbeitslosenzahlen(limit: Optional[int] = None) -> Iterator[Dict[str, A
         f"Fertig: {len(agenturbezirke) - skipped}/{len(agenturbezirke)} Agenturbezirke geladen, "
         f"{skipped} übersprungen."
     )
+    if not limit and skipped > len(agenturbezirke) * MAX_SKIPPED_FRACTION:
+        raise RuntimeError(f"{skipped}/{len(agenturbezirke)} Agenturbezirke übersprungen, breche ab statt Tabelle zu ersetzen")
 
 
 @dlt.resource(
     name="dataset_metadata",
     write_disposition="merge",
     primary_key="dataset_slug",
-    # Explizite Typ-Hints wie in load_soziodata_generic.py: algorithm ist
-    # hier durchgehend NULL, ohne Hint würde dlt die Spalte sonst weglassen.
+    # Type hints as in load_soziodata_generic.py: algorithm is always NULL here
+    # and dlt would otherwise drop the column.
     columns={
         "license": {"data_type": "text"},
         "license_url": {"data_type": "text"},
@@ -194,7 +193,7 @@ def arbeitslosenzahlen_afa_metadata() -> Iterator[Dict[str, Any]]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--limit", type=int, default=None, help="Nur die ersten N Agenturbezirke laden (Dev/Test)")
+    parser.add_argument("--limit", type=int, default=None, help="Nur die ersten N Agenturbezirke laden (Dev/Test; ersetzt die Tabelle dabei ebenfalls komplett)")
     args = parser.parse_args()
 
     pipeline = dlt.pipeline(

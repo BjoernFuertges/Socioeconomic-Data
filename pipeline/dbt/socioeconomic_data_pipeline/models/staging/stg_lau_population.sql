@@ -1,15 +1,11 @@
 {{ config(materialized='view') }}
 
 -- Staging model for LAU population data
--- Standardizes column names and data types for population statistics from DLT
 
 SELECT
-    -- Deutsche GISCO-IDs haben 8 Stellen (DE_ + AGS, z.B. DE_03251041), die
-    -- Eurostat-Korrespondenztabellen liefern fuer Bundeslaender 01-09 aber
-    -- 7 Stellen ohne fuehrende Null (DE_3251041). Ohne Auffuellen greift der
-    -- Join auf die LAU-Geometrie (gleiche gisco_id) nur fuer Bundeslaender
-    -- 10-16 - die Bevoelkerungsgewichtung der NUTS-Crosswalks (siehe
-    -- int_lau_nuts3_population_weight) lief sonst nur dort.
+    -- Eurostat delivers German GISCO IDs for states 01-09 without the leading
+    -- zero (DE_3251041 instead of DE_03251041). Pad them so they join to the
+    -- LAU geometry; otherwise the population weighting only works for states 10-16.
     CASE
         WHEN gisco_id ~ '^DE_[0-9]{7}$' THEN 'DE_0' || substr(gisco_id, 4)
         ELSE gisco_id

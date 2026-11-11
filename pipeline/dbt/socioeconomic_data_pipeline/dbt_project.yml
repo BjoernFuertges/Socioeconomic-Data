@@ -35,9 +35,8 @@ snapshots:
     +invalidate_hard_deletes: false
 
 vars:
-  # Ziel-NUTS-Version für mart_nuts3_sociodata_harmonized.
-  # 2024 = aktuell genutzte Version (kein Crosswalk nötig).
-  # Für Harmonisierung auf 2021: dbt run --vars 'target_nuts_version: 2021'
+  # Currently unused: mart_nuts3_sociodata_harmonized builds every version
+  # in its own target_versions list instead of reading this var.
   target_nuts_version: 2024
 
 models:

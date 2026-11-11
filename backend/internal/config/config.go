@@ -6,12 +6,13 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
 )
 
+// Load reads an optional .env file and fails if any variable listed in
+// .env.example is unset, so misconfiguration surfaces at startup.
 func Load(filenames ...string) error {
 	if err := godotenv.Load(filenames...); err != nil {
 		log.Println("No .env file found")
@@ -25,7 +26,6 @@ func Load(filenames ...string) error {
 
 	// Check if all required variables are set
 	missingVars := []string{}
-	println("check vars!")
 	for _, v := range requiredVars {
 		if os.Getenv(v) == "" {
 			missingVars = append(missingVars, v)
@@ -40,18 +40,12 @@ func Load(filenames ...string) error {
 	return nil
 }
 
-// getEnvAsInt reads an environment variable and returns it as int, or returns defaultValue if not set
-func getEnvAsInt(key string, defaultValue int) int {
-	valueStr := os.Getenv(key)
-	if valueStr == "" {
-		return defaultValue
+// Getenv returns the environment variable or defaultValue if it is unset or empty.
+func Getenv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
 	}
-	value, err := strconv.Atoi(valueStr)
-	if err != nil {
-		log.Printf("Warning: invalid value for %s, using default %d", key, defaultValue)
-		return defaultValue
-	}
-	return value
+	return defaultValue
 }
 
 // readRequiredVarsFromEnvExampleFile reads variable names from .env.example

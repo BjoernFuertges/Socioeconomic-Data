@@ -17,14 +17,14 @@ const (
 	customRegionMaxPoints    = 200000
 	customRegionMaxDatasets  = 30
 	customRegionDefaultShare = 0.01
-	// Ab dieser Flächenübereinstimmung (Schnitt / Vereinigung) gilt das Polygon
-	// als exakt eine bestehende Einheit. Nicht 1.0, weil Reprojektion (4326 →
-	// 3035) und Koordinatenrundung im GeoJSON minimale Abweichungen erzeugen.
+	// From this area match (intersection / union) the polygon counts as exactly
+	// one existing unit. Not 1.0, because reprojection (4326 -> 3035) and
+	// coordinate rounding in the GeoJSON introduce tiny deviations.
 	customRegionExactMatchIoU = 0.999
 )
 
-// CustomRegionAggregateRequest beschreibt die Abfrage von Datensätzen für eine
-// frei definierte Region (GeoJSON). Die Region wird nirgends gespeichert.
+// CustomRegionAggregateRequest describes a dataset query for a freely defined
+// region (GeoJSON). The region is never stored.
 type CustomRegionAggregateRequest struct {
 	Geometry json.RawMessage `json:"geometry" swaggertype:"object"`
 	Datasets []string        `json:"datasets" example:"bevoelkerung,schuldnerquote"`
@@ -33,7 +33,7 @@ type CustomRegionAggregateRequest struct {
 	MinShare *float64        `json:"min_share,omitempty" example:"0.01"`
 }
 
-// CustomRegionAggregateRow ist eine Zeile der aggregierten Zeitreihe.
+// CustomRegionAggregateRow is one row of the aggregated time series.
 type CustomRegionAggregateRow struct {
 	DatasetSlug       string  `json:"dataset_slug" example:"schuldnerquote"`
 	Indicator         string  `json:"indicator" example:"schuldnerquote"`
@@ -45,12 +45,12 @@ type CustomRegionAggregateRow struct {
 	AggregationMethod string  `json:"aggregation_method" example:"weighted_avg_population"`
 	SourceRegionCount int     `json:"source_region_count" example:"3"`
 	Coverage          float64 `json:"coverage" example:"0.98"`
-	// MatchedUnit ist gesetzt, wenn das Polygon exakt einer bestehenden Einheit
-	// der genutzten Ebene entspricht (nuts_id, gisco_id bzw. ba_schl); die Werte
-	// sind dann die Werte dieser Einheit, ohne Beiträge benachbarter Einheiten.
+	// MatchedUnit is set when the polygon matches exactly one existing unit of
+	// the level used (nuts_id, gisco_id or ba_schl); the values are then that
+	// unit's values, without contributions from neighbouring units.
 	MatchedUnit *string `json:"matched_unit,omitempty" example:"DE300"`
-	// IsCrosswalked: mindestens ein beteiligter Einheitenwert wurde über eine
-	// Versionsgrenze umgerechnet (kein Direktwert).
+	// IsCrosswalked: at least one contributing unit value was converted across a
+	// version boundary (not a direct value).
 	IsCrosswalked bool `json:"is_crosswalked" example:"false"`
 }
 
@@ -63,8 +63,8 @@ type customRegionMeta struct {
 	FinerSlug   *string `db:"finer_slug" json:"finer_slug"`
 }
 
-// customRegionAggRow ist eine Zwischenzeile aus SQL (je Jahr/Monat), aus der
-// computeCustomRegionValue den Endwert bildet.
+// customRegionAggRow is an intermediate SQL row (per year/month) from which
+// computeCustomRegionValue derives the final value.
 type customRegionAggRow struct {
 	Year              int             `db:"year"`
 	Month             sql.NullInt64   `db:"month"`
@@ -80,9 +80,9 @@ type customRegionAggRow struct {
 	IsCrosswalked     bool            `db:"is_crosswalked"`
 }
 
-// customRegionUnitsSQL liefert je Ebene die Einheiten-Geometrien (EPSG:3035,
-// Referenzstand 2024, wie mart_agentur_nuts3_crosswalk). Nur feste Fragmente,
-// nie Nutzereingaben.
+// customRegionUnitsSQL returns the unit geometries per level (EPSG:3035,
+// reference vintage 2024, as in mart_agentur_nuts3_crosswalk). Fixed fragments
+// only, never user input.
 var customRegionUnitsSQL = map[string]string{
 	"nuts3": `SELECT nuts_id AS unit_id, geometry_3035 AS g
 		FROM transformed_data.mart_nuts_geometry_historized
@@ -102,8 +102,8 @@ const customRegionPolyCTE = `poly AS (
 		ST_UnaryUnion(ST_MakeValid(ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1), 4326), 3035))), 3)) AS g
 )`
 
-// customRegionExactMatchSQL sucht die Einheit einer Ebene, deren Fläche mit dem
-// Polygon (nahezu) identisch ist: Schnittfläche / Vereinigungsfläche >= $2.
+// customRegionExactMatchSQL finds the unit of a level whose area is (nearly)
+// identical to the polygon: intersection area / union area >= $2.
 const customRegionExactMatchSQL = `
 WITH ` + customRegionPolyCTE + `,
 units AS (%s)
@@ -115,8 +115,8 @@ WHERE ST_Area(ST_Intersection(u.g, p.g))
 ORDER BY ST_Area(ST_Intersection(u.g, p.g)) DESC
 LIMIT 1`
 
-// $8 (optional): Einheit, auf die die Aggregation beschränkt wird, wenn das
-// Polygon exakt dieser Einheit entspricht (siehe customRegionExactMatchSQL).
+// $8 (optional): unit to which the aggregation is restricted when the polygon
+// exactly matches it (see customRegionExactMatchSQL).
 const customRegionAggregateSQL = `
 WITH ` + customRegionPolyCTE + `,
 units AS (%s),
@@ -158,8 +158,8 @@ FROM vals
 GROUP BY year, month
 ORDER BY year, month`
 
-// normalizeCustomRegionRequest validiert die Anfrage und liefert das GeoJSON-
-// Geometry-Objekt, die Datensatz-Slugs (dedupliziert) und min_share.
+// normalizeCustomRegionRequest validates the request and returns the GeoJSON
+// geometry object, the (deduplicated) dataset slugs and min_share.
 func normalizeCustomRegionRequest(req *CustomRegionAggregateRequest) (geometryJSON string, datasets []string, minShare float64, err error) {
 	geometryJSON, err = extractGeoJSONGeometry(req.Geometry)
 	if err != nil {
@@ -206,9 +206,9 @@ func normalizeCustomRegionRequest(req *CustomRegionAggregateRequest) (geometryJS
 	return geometryJSON, datasets, minShare, nil
 }
 
-// customRegionLevelChain ordnet die Kandidaten eines angefragten Indikators
-// vom feinsten zum gröbsten: feinere Variante (finer_slug) zuerst, dann der
-// Indikator selbst.
+// customRegionLevelChain orders the candidates of a requested indicator from
+// finest to coarsest: the finer variant (finer_slug) first, then the
+// indicator itself.
 func customRegionLevelChain(requested customRegionMeta, bySlug map[string][]customRegionMeta) []customRegionMeta {
 	chain := []customRegionMeta{}
 	if requested.FinerSlug != nil {
@@ -221,11 +221,11 @@ func customRegionLevelChain(requested customRegionMeta, bySlug map[string][]cust
 	return append(chain, requested)
 }
 
-// computeCustomRegionValue bildet den Endwert einer Zeile. Formeln wie in
-// mart_agentur_dataset_aggregate.sql: 'sum' verteilt den Einheitenwert
-// flächenanteilig; 'weighted_avg' gewichtet bevorzugt mit der Bevölkerung des
-// überlappenden Anteils, sonst mit dem Flächenanteil an der Region, sonst
-// ungewichtet. Mediane sind nur Näherungen (siehe value_kind).
+// computeCustomRegionValue derives the final value of a row. Formulas as in
+// mart_agentur_dataset_aggregate.sql: 'sum' distributes the unit value by area
+// share; 'weighted_avg' weights by the population of the overlapping part if
+// available, else by the area share of the region, else unweighted. Medians
+// are only approximations (see value_kind).
 func computeCustomRegionValue(measureType string, r customRegionAggRow) (value float64, method string, ok bool) {
 	if measureType != "weighted_avg" {
 		if !r.SumValue.Valid {
@@ -273,7 +273,7 @@ func customRegionRows(m customRegionMeta, agg []customRegionAggRow, matchedUnit 
 	return out
 }
 
-// ListCustomRegionDatasets listet die für Custom-Regionen abfragbaren Datensätze
+// ListCustomRegionDatasets lists the datasets that can be queried for custom regions
 // @Summary Für Custom-Regionen abfragbare Datensätze
 // @Description Gibt je Datensatz/Indikator die Quellebene (lau, nuts3, agentur), die Aggregationsart (sum, weighted_avg) und die Kennzeichnung der Näherung (kind) zurück. Namen und Lizenz: GET /datasets/{slug}.
 // @Tags Geo
@@ -299,7 +299,7 @@ func (h *Handler) loadCustomRegionMetas() ([]customRegionMeta, error) {
 	return metas, err
 }
 
-// QueryCustomRegionDatasetAggregate aggregiert Datensätze über eine frei definierte Region
+// QueryCustomRegionDatasetAggregate aggregates datasets over a freely defined region
 // @Summary Datensätze für eine Custom-Region (GeoJSON)
 // @Description Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt. Näherungswerte (z. B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet. Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: Version 2024.
 // @Tags Geo
@@ -325,8 +325,8 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 		return
 	}
 
-	// Polygon einmal prüfen (gültig, nicht leer, Größenlimit). Parse-/Transform-
-	// Fehler (z. B. Koordinaten außerhalb WGS84) sind Nutzerfehler.
+	// Check the polygon once (valid, non-empty, size limit). Parse/transform
+	// errors (e.g. coordinates outside WGS84) are user errors.
 	var check struct {
 		Points int  `db:"points"`
 		Empty  bool `db:"is_empty"`
@@ -366,9 +366,9 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 		}
 	}
 
-	// Entspricht das Polygon exakt einer Einheit einer Ebene (z. B. ein
-	// ganzer Kreis), zählen nur deren Werte - keine Randstücke der Nachbarn.
-	// Je Ebene höchstens einmal ermittelt.
+	// If the polygon exactly matches a unit of a level (e.g. a whole Kreis), only
+	// that unit's values count, not edge slivers of its neighbours. Determined at
+	// most once per level.
 	matches := map[string]*string{}
 	matchFor := func(level string) (*string, error) {
 		if m, ok := matches[level]; ok {

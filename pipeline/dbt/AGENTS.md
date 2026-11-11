@@ -5,9 +5,9 @@ This file provides guidance to AI coding agents and contributors working in this
 Scope: this file covers `pipeline/dbt/` (the actual dbt project is nested one
 level down at `pipeline/dbt/socioeconomic_data_pipeline/` — all commands below
 assume you `cd` there first). See the repository root
-[AGENTS.md](../AGENTS.md) for cross-component architecture and the
+[AGENTS.md](../../AGENTS.md) for cross-component architecture and the
 NUTS-3-versioning / historization rules that govern this project, and
-[docs/pipeline/dbt.md](../docs/pipeline/dbt.md) for the full model-layer
+[docs/pipeline/dbt.md](../../docs/pipeline/dbt.md) for the full model-layer
 writeup.
 
 ## Commands
@@ -17,7 +17,7 @@ instead of setting each up by hand, use `compose.local.yml` at the repo
 root (`docker compose -f compose.local.yml up --build`, then
 `docker compose -f compose.local.yml exec pipeline bash /app/dlt/run_all_pipelines.sh`
 — that runs the dlt loads before dbt, per the ordering rule below) — see
-the root [README.md](../README.md#lokal-testen-docker-compose). The
+the root [README.md](../../README.md#lokal-testen-docker-compose). The
 commands below are for running dbt standalone against an
 already-running/external Postgres.
 
@@ -47,7 +47,9 @@ boilerplate, not project documentation.
 
 Standard staging → intermediate → marts layering
 (`dbt_project.yml` pins materializations per layer: staging/intermediate =
-views, marts = tables, `marts/fill_gaps/*` = views):
+views, marts = tables by default, `marts/fill_gaps/*` = views; individual
+marts override this in their own `config()`, e.g. `mart_agentur_dataset_aggregate`
+and `mart_nuts0_summary` are views):
 
 - **snapshots/** — the only place historization happens. Two shapes:
   - `snap_results_<dataset>_kreise.sql` — one per Kreis-level dataset,
@@ -66,7 +68,7 @@ views, marts = tables, `marts/fill_gaps/*` = views):
   renaming/typing plus the schema tests. Adding a new Kreis dataset means
   adding a `stg_<dataset>_kreise.sql`/`_schema.yml` pair here first — see
   the "Adding a new Kreis-level dataset" recipe in
-  [AGENTS.md](../AGENTS.md).
+  [AGENTS.md](../../AGENTS.md).
 - **models/intermediate/** — crosswalk building blocks, not dataset
   content: LAU↔NUTS3 membership and population weights
   (`int_lau_nuts3_membership`, `int_lau_nuts3_population_weight`), the
@@ -89,7 +91,9 @@ views, marts = tables, `marts/fill_gaps/*` = views):
     Kreis- resp. LAU-grain datasets harmonized onto every available target
     boundary version simultaneously (`target_version` column) via
     `mart_nuts_version_crosswalk` / `mart_lau_version_crosswalk`; these are
-    the dataset lists every new Kreis/LAU dataset must be registered in.
+    the main dataset lists a new Kreis/LAU dataset must be registered in (further
+    marts that also need an entry: see the recipe in the root
+    [AGENTS.md](../../AGENTS.md)).
     Each entry carries a `measure_type` ('sum' for counts, 'weighted_avg'
     for rates/averages) that decides how values are combined when several
     source regions map onto one target region.

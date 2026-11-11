@@ -53,7 +53,7 @@ flowchart TB
     stg_nuts --> membership["int_lau_nuts3_membership\n(municipality → NUTS3 per version)"]
     lau_geo --> membership
     membership --> popweight["int_lau_nuts3_population_weight\n(real population weight per region pair)"]
-    spatial --> xwalk["mart_nuts_version_crosswalk\n(population-weighted, 1-/2-hop)"]
+    spatial --> xwalk["mart_nuts_version_crosswalk\n(population-weighted, direct per version pair)"]
     popweight --> xwalk
     xwalk --> harmonized["mart_nuts3_sociodata_harmonized\n(all datasets on target NUTS version)"]
     harmonized --> interpolated["mart_nuts3_timeseries_interpolated\n(gap-free yearly series, 2 methods)"]
@@ -70,8 +70,10 @@ flowchart TB
   `mart_nuts_version_crosswalk.sql`) – only the finer LAU level makes the
   population weighting actually effective.
 - **`mart_nuts_version_crosswalk`** – combines area and population weight
-  (falls back to area if no LAU population can be determined), including
-  2-hop compositions (e.g. 2013 → 2016 → 2021).
+  (falls back to area if no LAU population can be determined). Every pair
+  of NUTS-3 vintages (2003/2006/2010/2013/2016/2021/2024) gets a direct
+  mapping from its own spatial intersection; there is no chaining through
+  intermediate versions (`n_hops` is always 1, kept for compatibility).
 - **`mart_nuts3_sociodata_harmonized`** – converts 14 datasets onto every
   available target NUTS version simultaneously (2003/2006/2010/2013/2016/
   2021/2024, distinguished by the `target_version` column): the 13
@@ -82,7 +84,7 @@ flowchart TB
   chosen to match the corresponding backend API route slug 1:1 (e.g.
   `erwerbstaetige_pro_1000_einwohner`, `beschaeftigungsquote-nuts3`) so the
   backend can join both sides without a separate mapping table – see
-  `KreisDatasetConfig.IsHarmonized` in [API: fill_gaps](../backend/api.md#gap-free-time-series-fill_gaps).
+  `KreisDatasetConfig.IsHarmonized` in [API: fill_gaps](../backend/api.md#gap-free-time-series-fill_gaps-and-timeseries).
   Each dataset carries a `measure_type` ('sum' for counts like
   `bevoelkerung`, 'weighted_avg' for rates/averages like `schuldnerquote`)
   that decides how a merge of several source regions into one target region

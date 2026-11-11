@@ -32,8 +32,8 @@ source_rows as (
     from {{ ref(stage_model) }} src
 ),
 
--- gisco_id -> amtlicher Gemeindeschlüssel, um Quellzeilen (die keine
--- gisco_id führen) auf die Zeitreihe zurückjoinen zu können.
+-- gisco_id -> official Gemeindeschlüssel, to join source rows (which carry
+-- no gisco_id) back to the time series.
 gisco_lookup as (
     select distinct on (lau_nat_code)
         regexp_replace(cast(lau_nat_code as text), '\.0+$', '') as ars_code,
@@ -43,7 +43,7 @@ gisco_lookup as (
     order by lau_nat_code, year desc
 ),
 
--- Regionsnamen je LAU-Zielversion.
+-- Region names per LAU target version.
 target_regions as (
     select
         gisco_id,
@@ -64,9 +64,9 @@ select
     coalesce(src.parameter, 'gisco_id') as parameter,
     coalesce(src.geodata_level, 'LAU') as geodata_level,
     coalesce(src.geodata_year, ts.target_version) as geodata_year,
-    -- LAU-Zielversion dieser Zeile - macht die View konsistent mit dem
-    -- lau_version-Parameter von /{slug}/timeseries (analog nuts_version bei
-    -- den Kreis-Datensätzen).
+    -- LAU target version of this row - keeps the view consistent with the
+    -- lau_version parameter of /{slug}/timeseries (like nuts_version for
+    -- the Kreis datasets).
     ts.target_version as lau_version,
     ts.year,
     coalesce(src.observation_date, make_date(ts.year, 1, 1)) as observation_date,

@@ -8,14 +8,14 @@ import (
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
-// supportedLauVersions sind die LAU-Zielversionen, für die
-// mart_lau_sociodata_harmonized / mart_lau_timeseries_interpolated Zeilen
-// führen (siehe target_versions dort). Muss manuell synchron gehalten
-// werden - analog zu supportedNutsVersions in kreis_generic.go und
-// harmonizedLauRouteSlugs in cmd/gen-models/main.go.
+// supportedLauVersions are the LAU target versions for which
+// mart_lau_sociodata_harmonized / mart_lau_timeseries_interpolated carry rows
+// (see target_versions there). Must be kept in sync manually, like
+// supportedNutsVersions in kreis_generic.go and harmonizedLauRouteSlugs in
+// cmd/gen-models/main.go.
 var supportedLauVersions = []int{2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024}
 
-// defaultLauVersion ist die Zielversion, wenn lau_version nicht gesetzt ist.
+// defaultLauVersion is the target version when lau_version is not set.
 const defaultLauVersion = 2024
 
 func isSupportedLauVersion(v int) bool {
@@ -27,8 +27,8 @@ func isSupportedLauVersion(v int) bool {
 	return false
 }
 
-// getLauTimeseriesEndpoint liefert die typstabile Timeseries-Antwort für
-// harmonisierte LAU-Datensätze - das LAU-Pendant zu getKreisTimeseriesEndpoint.
+// getLauTimeseriesEndpoint returns the type-stable time-series response for
+// harmonized LAU datasets - the LAU counterpart of getKreisTimeseriesEndpoint.
 func getLauTimeseriesEndpoint(h *Handler, c *gin.Context, cfg models.KreisDatasetConfig) {
 	limitNull := normalizeNullableLimitQuery(c)
 
@@ -41,13 +41,13 @@ func getLauTimeseriesEndpoint(h *Handler, c *gin.Context, cfg models.KreisDatase
 	getLauTimeseriesData(h, c, cfg, filter, limitNull)
 }
 
-// getLauTimeseriesData liefert die lückenlose, interpolierte Zeitreihe aus
-// transformed_data.mart_lau_timeseries_interpolated statt der rohen
-// LAU-Tabelle (fill_gaps=true) - das LAU-Pendant zu getKreisTimeseriesData.
-// Unterstützt nur die Filter, die auf mart_lau_timeseries_interpolated
-// sinnvoll anwendbar sind (geodata_id_nuts als Kreis-Präfixfilter über
-// nuts_parent_id, year, from_year, to_year); geodata_name_contains- und
-// point-Filter erfordern die Originaldaten und werden abgelehnt.
+// getLauTimeseriesData returns the gap-free, interpolated time series from
+// transformed_data.mart_lau_timeseries_interpolated instead of the raw LAU
+// table (fill_gaps=true) - the LAU counterpart of getKreisTimeseriesData.
+// Supports only the filters that are meaningful on
+// mart_lau_timeseries_interpolated (geodata_id_nuts as a Kreis prefix filter
+// via nuts_parent_id, year, from_year, to_year); geodata_name_contains and
+// point filters need the original data and are rejected.
 func getLauTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetConfig, filter models.SozioKreisFilter, limitNull bool) {
 	if !cfg.IsHarmonizedLau {
 		respondBadRequest(c, fmt.Sprintf(
@@ -97,9 +97,9 @@ func getLauTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetCon
 	}
 
 	if filter.NutsParentID != "" {
-		// nuts_parent_id filtert hier über die kanonische LAU->NUTS-3-
-		// Verlinkung aus lau_integrated (nuts3_id) statt über einen
-		// gisco_id-Präfix - LAU-IDs haben keine hierarchische Struktur.
+		// nuts_parent_id filters here via the canonical LAU->NUTS-3 link from
+		// lau_integrated (nuts3_id) instead of a gisco_id prefix - LAU IDs have no
+		// hierarchical structure.
 		normalizedParent := strings.ToUpper(strings.TrimSpace(filter.NutsParentID))
 		query += fmt.Sprintf(
 			" AND gisco_id IN (SELECT gisco_id FROM transformed_data.lau_integrated WHERE nuts3_id IS NOT NULL AND nuts3_id LIKE $%d)",

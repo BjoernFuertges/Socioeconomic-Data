@@ -8,11 +8,11 @@ import type { CustomRegionDataset, DatasetCatalogEntry, GeoRegionSummary } from 
 import CombineRegionsPicker from "./CombineRegionsPicker.vue";
 import DatasetPicker from "./DatasetPicker.vue";
 
-// "Eigene Region": Nutzer fügt ein GeoJSON (Polygon/MultiPolygon) ein oder lädt
-// es hoch und bekommt die Zeitreihen der gewählten Datensätze aggregiert über
-// diese Region (POST /custom-regions/dataset-aggregate). Die Region wird nur pro
-// Anfrage gesendet und nicht gespeichert; zuletzt genutztes GeoJSON merkt sich
-// der Browser lokal (localStorage), rein als Komfort.
+// "Eigene Region": the user pastes or uploads a GeoJSON (Polygon/MultiPolygon) and
+// gets the time series of the selected datasets aggregated over that region
+// (POST /custom-regions/dataset-aggregate). The region is only sent per request
+// and not stored; the browser remembers the last used GeoJSON locally
+// (localStorage), purely as a convenience.
 
 const STORAGE_KEY = "customRegion.geojson";
 
@@ -22,7 +22,7 @@ const geojsonGeometry = ref<RegionGeometry | null>(null);
 const combinedGeometry = ref<RegionGeometry | null>(null);
 const combinePicker = ref<InstanceType<typeof CombineRegionsPicker> | null>(null);
 
-// Beide Eingabemodi liefern dieselbe Geometrie; das Ergebnis-UI ist geteilt.
+// Both input modes yield the same geometry; the result UI is shared.
 const geometry = computed(() => (mode.value === "combine" ? combinedGeometry.value : geojsonGeometry.value));
 
 const geojsonText = ref("");
@@ -38,8 +38,8 @@ const mapContainer = ref<HTMLElement | null>(null);
 let map: L.Map | null = null;
 let regionLayer: L.GeoJSON | null = null;
 
-// Für den DatasetPicker: ein Eintrag je Datensatz, bei mehreren Indikatoren
-// (Agenturbezirke) je Indikator "slug::indikator".
+// For the DatasetPicker: one entry per dataset, "slug::indikator" per indicator
+// when there are several (Agenturbezirke).
 const pickerDatasets = computed<DatasetCatalogEntry[]>(() => {
   const perSlug = new Map<string, string[]>();
   for (const d of datasets.value) (perSlug.get(d.dataset_slug) ?? perSlug.set(d.dataset_slug, []).get(d.dataset_slug)!).push(d.indicator);
@@ -64,7 +64,7 @@ function applyText(text: string) {
   try {
     localStorage.setItem(STORAGE_KEY, text);
   } catch {
-    // localStorage kann gesperrt sein (privates Fenster) - nur Komfortfunktion.
+    // localStorage may be blocked (private window) - convenience only.
   }
 }
 
@@ -74,8 +74,8 @@ async function onFileChange(event: Event) {
   applyText(await file.text());
 }
 
-// Staats- und Bundeslandgrenzen als Orientierung (die Karte hat keine
-// Kachel-Ebene. Sollte die Vorschau nicht funktionieren, ist das halt so
+// Country and Bundesland borders for orientation (the map has no tile layer).
+// If the preview fails, so be it.
 async function loadBoundaries() {
   if (!map) return;
   try {
@@ -115,7 +115,7 @@ async function loadBoundaries() {
     ).addTo(map);
     regionLayer?.bringToFront();
   } catch {
-    // nur Orientierungshilfe
+    // orientation aid only
   }
 }
 
@@ -127,8 +127,8 @@ function drawRegion() {
   }
   if (!geometry.value) return;
   regionLayer = L.geoJSON(geometry.value as any, { style: { color: "#2a6fdb", weight: 2, fillOpacity: 0.25 } }).addTo(map);
-  // Bei Größe 0 (versteckter Tab) nicht fitten - Zoom würde ungültig; das
-  // Nachholen übernimmt der mode-Watcher beim Zurückwechseln.
+  // Don't fit at size 0 (hidden tab) - the zoom would be invalid; the mode
+  // watcher catches up on switching back.
   const size = map.getSize();
   if (size.x && size.y) map.fitBounds(regionLayer.getBounds(), { padding: [16, 16], animate: false });
   regionLayer.bringToFront();
@@ -145,8 +145,8 @@ watch(mode, () => {
   });
 });
 
-// Die Abfrage läuft erst nach Klick (nicht bei jeder Änderung der Auswahl auf der
-// Karte); der DatasetPicker lädt dann pro gewähltem Datensatz selbst.
+// The query only runs after a click (not on every selection change on the
+// map); the DatasetPicker then loads each selected dataset itself.
 const queryGeometry = ref<RegionGeometry | null>(null);
 const queryId = ref(0);
 const canRun = computed(() => !!geometry.value && pickerDatasets.value.length > 0);
@@ -200,7 +200,7 @@ onMounted(async () => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) applyText(saved);
   } catch {
-    // s. o.
+    // see above
   }
 
   try {

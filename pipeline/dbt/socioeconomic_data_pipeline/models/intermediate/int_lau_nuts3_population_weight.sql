@@ -10,36 +10,33 @@
 }}
 
 /*
-  Populationsbasiertes Rohgewicht je NUTS-3-Versionspaar, ermittelt über die
-  tatsächliche Gemeinde(LAU)-Bevölkerung.
+  Population-based raw weight per NUTS-3 version pair, derived from the
+  actual Gemeinde (LAU) population.
 
-  Warum nicht die Gesamt-Bevölkerung der NUTS-3-Quellregion (wie zuvor in
-  einer früheren Version dieses Crosswalks)? Weil dieser Wert für alle
-  Zielregionen einer Quellregion identisch ist und sich daher bei der
-  Normierung (Division durch die Summe je Quellregion) vollständig
-  herauskürzt — das Ergebnis wäre rein flächenbasiert, obwohl es als
-  "populationsgewichtet" bezeichnet würde.
+  Why not the total population of the NUTS-3 source region? That value is
+  identical for all target regions of a source region and cancels out
+  completely in the normalization (division by the per-source-region sum),
+  so the result would be purely area-based despite being called
+  "population-weighted".
 
-  Stattdessen wird jede Gemeinde (LAU) einzeln sowohl der Quell- als auch
-  der Zielregion zugeordnet (int_lau_nuts3_membership) und ihre Bevölkerung
-  vollständig dem jeweiligen (Quell-, Ziel-)-Paar zugeschlagen. Dadurch
-  variiert das Gewicht tatsächlich je Zielregion, abhängig davon, wo
-  innerhalb der Quellregion die Bevölkerung wirklich lebt.
+  Instead, each Gemeinde (LAU) is assigned to both the source and the
+  target region (int_lau_nuts3_membership) and its full population is
+  attributed to that (source, target) pair. The weight thus varies per
+  target region, depending on where within the source region the
+  population actually lives.
 
-  Referenzjahr je Versionspaar: das jeweils jüngere der beiden beteiligten
-  NUTS-Versionsjahre minus 1 (Bevölkerungsstand kurz vor Inkrafttreten der
-  neueren Version) - ref_year = GREATEST(source_version, target_version) - 1.
-  Gilt unabhängig von der Richtung (vorwärts/rückwärts) und generalisiert
-  automatisch auf jedes Versionspaar, nicht nur benachbarte Vintages, z. B.:
-    2013 → 2016 : 2015        2016 → 2013 : 2015
-    2016 → 2021 : 2020        2021 → 2016 : 2020
-    2021 → 2024 : 2023        2024 → 2021 : 2023
-    2003 → 2024 : 2023        2024 → 2003 : 2023
+  Reference year per version pair: the younger of the two NUTS version
+  years minus 1 (population just before the newer version took effect),
+  i.e. ref_year = GREATEST(source_version, target_version) - 1. This holds
+  regardless of direction and generalizes to any version pair, e.g.:
+    2013 -> 2016 : 2015        2016 -> 2013 : 2015
+    2016 -> 2021 : 2020        2021 -> 2016 : 2020
+    2021 -> 2024 : 2023        2024 -> 2021 : 2023
+    2003 -> 2024 : 2023        2024 -> 2003 : 2023
 
-  Tatsächlich verwendet wird davon ausgehend das nächstgelegene *verfügbare*
-  LAU-Bevölkerungsjahr (siehe resolved unten) - aktuell ist nur 2024 geladen,
-  sodass jedes Paar de facto mit der 2024er-Bevölkerungsverteilung gewichtet
-  wird, bis weitere historische LAU-Bevölkerungsjahre geladen werden.
+  The closest *available* LAU population year is used (see resolved below).
+  The Eurostat population snapshots for 2018-2025 are loaded, so pairs with
+  an earlier reference year fall back to the 2018 snapshot.
 */
 
 with available_years as (
@@ -50,8 +47,8 @@ nuts_version_years as (
     select distinct version_year from {{ ref('int_lau_nuts3_membership') }}
 ),
 
--- Alle gerichteten Versionspaare (jedes Jahr → jedes andere Jahr), nicht nur
--- benachbarte Vintages - analog zu int_nuts_spatial_crosswalk.
+-- All directed version pairs (every year -> every other year), not just
+-- adjacent vintages - analogous to int_nuts_spatial_crosswalk.
 version_pairs as (
     select
         a.version_year                                  as source_version,
@@ -62,7 +59,7 @@ version_pairs as (
     where a.version_year != b.version_year
 ),
 
--- Nächstgelegenes tatsächlich verfügbares LAU-Bevölkerungsjahr je Referenzjahr
+-- Closest actually available LAU population year per reference year
 resolved as (
     select
         vp.source_version,

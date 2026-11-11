@@ -33,9 +33,9 @@ source_rows as (
     from {{ ref(stage_model) }} src
 ),
 
--- Regionsnamen je NUTS-Zielversion - eine Region kann in unterschiedlichen
--- Versionen unterschiedliche valid_from/valid_to-Perioden (und damit ggf.
--- einen anderen Namen) haben, daher Join über beides statt nur nuts_id.
+-- Region names per NUTS target version - a region can have different
+-- valid_from/valid_to periods (and thus possibly a different name) in
+-- different versions, hence the join on both instead of nuts_id alone.
 target_regions as (
     select
         nuts_id,
@@ -47,10 +47,10 @@ target_regions as (
 )
 
 select
-    -- original_id_1 ist in den Kreis-Staging-Modellen double precision
-    -- (numerische Kennziffer, führende Nullen bereits beim Einlesen
-    -- verloren - z.B. 1001 statt "01001"), ts.nuts3_id dagegen text.
-    -- Cast nötig, damit COALESCE beide Typen vereinen kann.
+    -- original_id_1 is double precision in the Kreis staging models (numeric
+    -- code, leading zeros already lost on load - e.g. 1001 instead of
+    -- "01001"), whereas ts.nuts3_id is text. The cast lets COALESCE unify
+    -- both types.
     coalesce(src.original_id_1::text, ts.nuts3_id) as original_id_1,
     coalesce(src.original_name, geo.region_name, ts.nuts3_id) as original_name,
     coalesce(src.geodata_name, geo.region_name, ts.nuts3_id) as geodata_name,
@@ -61,10 +61,10 @@ select
     coalesce(src.parameter, 'geodata_id_nuts') as parameter,
     coalesce(src.geodata_level, 'NUTS_3') as geodata_level,
     coalesce(src.geodata_year, ts.target_version) as geodata_year,
-    -- NUTS-Zielversion dieser Zeile - macht die View konsistent mit dem
-    -- nuts_version-Parameter von /{slug}/timeseries (beide lesen jetzt
-    -- dieselben, mehrere Zielversionen führenden mart_nuts3_*-Modelle,
-    -- statt die fill_gaps-Seite auf eine dbt-Build-Zeit-Version zu fixieren).
+    -- NUTS target version of this row - keeps the view consistent with the
+    -- nuts_version parameter of /{slug}/timeseries (both read the same
+    -- mart_nuts3_* models carrying several target versions, instead of
+    -- pinning the fill_gaps side to a dbt build-time version).
     ts.target_version as nuts_version,
     ts.year,
     coalesce(src.observation_date, make_date(ts.year, 1, 1)) as observation_date,

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Stellt ein Backup von backup_db.sh in eine FRISCHE Datenbank wieder her
-# (Disaster Recovery, z. B. neuer Server). Ablauf danach: Pipeline laufen lassen,
-# dbt-Snapshots setzen die Historie fort.
+# Restores a backup from backup_db.sh into a FRESH database
+# (disaster recovery, e.g. new server). Afterwards: run the pipeline,
+# dbt snapshots continue the history.
 #
-#   restore_db.sh [latest|<dateiname>]      Snapshots wiederherstellen
-#   RESTORE_METADATA=1 restore_db.sh ...    zusätzlich loaded_data.dataset_metadata
+#   restore_db.sh [latest|<filename>]      Restore snapshots
+#   RESTORE_METADATA=1 restore_db.sh ...    additionally loaded_data.dataset_metadata
 #
-# Auf einer Datenbank mit vorhandenen Snapshots bricht das Skript ab: dbt-Views hängen an den
-# Snapshot-Tabellen, ein Überschreiben würde scheitern oder Historie verlieren
+# The script aborts on a database that already has snapshots: dbt views depend on the
+# snapshot tables, so overwriting would fail or lose history
 set -euo pipefail
 
 export RCLONE_LOG_LEVEL=ERROR
@@ -63,7 +63,7 @@ restore() {
   docker exec -i "${container}" pg_restore -U "${db_user}" -d "${db_name}" --no-owner --exit-on-error "$@" < "${tmp}"
 }
 
-# Das Archiv enthält nur Tabellen (pg_dump --table), keine Schema-Definitionen
+# The archive contains only tables (pg_dump --table), no schema definitions
 psql_q "create schema if not exists snapshots" > /dev/null
 restore --schema=snapshots
 

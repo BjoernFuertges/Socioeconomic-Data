@@ -45,8 +45,7 @@ Enable the pre-commit hook (repo root: `git config core.hooksPath backend/githoo
 ## Architecture
 
 - `cmd/soziodata/main.go` is the actual API entrypoint (Gin router, loads
-  config, mounts routes). The `backend/soziodata` file in this directory is
-  a stray compiled binary, not source — ignore it.
+  config, mounts routes).
 - `cmd/gen-models/main.go` is a code generator, not a runtime service. It
   reads `pipeline/dbt/socioeconomic_data_pipeline/models/staging/*_schema.yml` and
   emits `internal/models/*_generated.go`,
@@ -118,21 +117,19 @@ Enable the pre-commit hook (repo root: `git config core.hooksPath backend/githoo
 - `internal/routes/routes.go` wires the hand-written routes;
   `routes_soziodata_generated.go` wires the generated per-dataset routes.
   Both are mounted together in `cmd/soziodata/main.go`.
-- `configs/metrics_catalog.yaml` is hand-maintained metadata (display
-  labels/units/descriptions per metric) served by
-  `internal/handlers/metrics_catalog.go` — independent of the
-  dbt-schema-driven codegen, so it does not get regenerated and must be
-  updated manually when a dataset is added or changes.
+- `configs/metrics_catalog.yaml` is hand-maintained metadata (formulas/
+  labels for the *derived* metrics, e.g. `bevoelkerungsdichte`) served by
+  `internal/handlers/metrics_catalog.go` — independent of the codegen, so
+  it is edited by hand when a derived metric is added or changes.
 - `api/bruno/` is a Bruno HTTP-request collection for manually exercising
   the API against a running instance.
 - `deployments/` holds the production `docker-compose.yml`
   (Traefik-fronted); see the root [README.md](../README.md) for the
   operational runbooks (image updates, pipeline container restarts).
-- `README.md`, `project-layout-master/`, and the per-directory
-  `cmd/README.md` / `pkg/README.md` / `api/README.md` / etc. are the
-  unmodified `golang-standards/project-layout` template boilerplate, not
-  project-specific documentation — for real docs see
-  [docs/backend/](../docs/backend/index.md).
-- `pkg/_your_public_lib_/` and `internal/pkg/_your_private_lib_/` are
-  unused template scaffolding (`.keep` files only); nothing in this
-  project currently lives there.
+- `README.md` plus the per-directory `cmd/README.md` / `api/README.md` /
+  `scripts/README.md` / `init/README.md` / `internal/README.md` are mostly
+  `golang-standards/project-layout` template boilerplate; the project-specific
+  docs are [docs/backend/](../docs/backend/index.md). `scripts/` holds the
+  deploy/backup scripts (`deploy_remote.sh`, `backup_db.sh`, `restore_db.sh`)
+  `sync_nextcloud_data_exchange.sh` (timer in `init/systemd/`), and
+  `check_swagger_router_annotations.sh` (run in CI after `go test`).

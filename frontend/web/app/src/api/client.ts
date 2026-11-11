@@ -47,9 +47,9 @@ export async function apiPost<T>(path: string, body: unknown): Promise<ApiRespon
   return parsed;
 }
 
-// Die Go-API serialisiert einige nullable Felder (LAU-Metadaten) als
-// database/sql.Null*-Structs ({"Int64":1,"Valid":true}) statt schlichter
-// Skalare. Beide Formen entpacken, damit die UI unabhängig vom Shape läuft.
+// The Go API serializes some nullable fields (LAU metadata) as
+// database/sql.Null* structs ({"Int64":1,"Valid":true}) instead of plain
+// scalars. Unwrap both forms so the UI doesn't depend on the shape.
 export function unwrapNull<T>(field: Nullable<T>): T | null {
   if (field && typeof field === "object" && "Valid" in field) {
     const wrapped = field as SqlNull;

@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -33,7 +35,7 @@ func nutsLevelDetailsFromLevel(level int) (nutsLevelDetails, error) {
 	}
 }
 
-// nutsLevelDetailsFromID normalisiert eine NUTS-ID und liefert explizite Level-Informationen.
+// nutsLevelDetailsFromID normalizes a NUTS ID and returns explicit level information.
 func nutsLevelDetailsFromID(nutsID string) (nutsLevelDetails, error) {
 	normalizedID := strings.ToUpper(strings.TrimSpace(nutsID))
 
@@ -71,8 +73,8 @@ func (h *Handler) lookupNutsGeometry(nutsID string, geometryYear *int) (json.Raw
 		WHERE nuts_id = $1`
 	args := []interface{}{nutsID}
 
-	// In der historisierten Tabelle ist die Geometrie eines Jahres eindeutig:
-	// "exact" und "latest-before" fallen zusammen auf die Periode, die das Jahr abdeckt.
+	// In the historized table a year's geometry is unambiguous: "exact" and
+	// "latest-before" coincide on the period covering that year.
 	if geometryYear != nil {
 		query += ` AND valid_from <= $2 AND (valid_to IS NULL OR valid_to >= $2)`
 		args = append(args, *geometryYear)
@@ -83,7 +85,7 @@ func (h *Handler) lookupNutsGeometry(nutsID string, geometryYear *int) (json.Raw
 		LIMIT 1`
 
 	if err := h.DB.Get(&row, query, args...); err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, false, nil
 		}
 		return nil, false, err
@@ -105,7 +107,7 @@ func normalizeNutsResponsePart(part string) (string, error) {
 	}
 }
 
-// GetAllNutsRegions gibt alle NUTS-Regionen zurück (optional gefiltert nach Level)
+// GetAllNutsRegions returns all NUTS regions (optionally filtered by level)
 // @Summary Liste aller NUTS-Regionen
 // @Description Gibt alle NUTS-Regionen zurück. Mit ?level=0..3 auf ein bestimmtes Level einschränken. Ohne ?level werden alle Levels zusammengefasst.
 // @Tags NUTS
@@ -121,7 +123,17 @@ func normalizeNutsResponsePart(part string) (string, error) {
 func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 	levelStr := c.Query("level")
 	limitNull := normalizeNullableLimitQuery(c)
-	limit, offset, err := resolvePagination(c, 100, 0, 0, limitNull)
+	requestedLimit, err := parseOptionalIntQuery(c, "limit")
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	requestedOffset, err := parseOptionalIntQuery(c, "offset")
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	limit, offset, err := resolvePagination(c, 100, derefInt(requestedLimit), derefInt(requestedOffset), limitNull)
 	if err != nil {
 		respondBadRequest(c, err.Error())
 		return
@@ -207,7 +219,7 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 	})
 }
 
-// GetNutsRegionData gibt alle Indikatoren für eine NUTS-Region zurück (Level 0–3)
+// GetNutsRegionData returns all indicators for a NUTS region (levels 0-3)
 // @Summary Alle Indikatoren für eine NUTS-Region (Level 0–3)
 // @Description Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen Daten.
 // @Tags NUTS
@@ -228,7 +240,11 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 // @Router /nuts/{nuts_id} [get]
 func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	nutsID := c.Param("nuts_id")
-	yearStr := c.Query("year")
+	year, err := parseOptionalIntQuery(c, "year")
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
 	allStr := c.Query("all")
 	partStr := c.Query("part")
 	includeDatasets := c.Query("include_datasets") == "true"
@@ -343,16 +359,16 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 
 	query := `SELECT ` + selectCols + fromClause
 	args := []interface{}{levelDetails.NormalizedID}
-	if yearStr != "" {
+	if year != nil {
 		query += ` AND year = $2`
-		args = append(args, yearStr)
+		args = append(args, *year)
 	} else {
 		query += ` ORDER BY year DESC LIMIT 1`
 	}
 
 	var row models.NutsRegionData
 	if err := h.DB.Get(&row, query, args...); err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			c.JSON(http.StatusNotFound, models.APIResponse{
 				Success: false,
 				Error:   "Keine Daten für diese NUTS-Region gefunden",
@@ -402,7 +418,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: response})
 }
 
-// GetNutsRegionVersions gibt alle Geometrie-Perioden einer NUTS-Region zurück
+// GetNutsRegionVersions returns all geometry periods of a NUTS region
 // @Summary Geometrie-Perioden einer NUTS-Region
 // @Description Gibt alle Geometrie-Perioden (valid_from/valid_to) einer NUTS-Region aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null bedeutet noch aktuell.
 // @Tags NUTS
@@ -465,7 +481,7 @@ func (h *Handler) GetNutsRegionVersions(c *gin.Context) {
 	})
 }
 
-// GetNutsLauAggregate gibt die auf NUTS-3-Ebene hochaggregierten LAU-Werte (Gemeinden) einer Kreis-Region zurück
+// GetNutsLauAggregate returns the LAU values (Gemeinden) of a Kreis region aggregated to NUTS-3 level
 // @Summary Auf NUTS-3-Ebene aggregierte LAU-Werte (Gemeinden)
 // @Description Gibt eine Zeitreihe der auf diesen Kreis hochaggregierten Gemeinde-Werte zurück (Bevölkerungssumme, Anzahl zugeordneter Gemeinden, bevölkerungsgewichtete Beschäftigungsquote) - als Ergänzung/Cross-Check zu den nativen Kreis-Werten aus GET /nuts/{nuts_id}. Nur für NUTS-3-IDs (5 Zeichen) gültig.
 // @Tags NUTS
@@ -518,7 +534,7 @@ func (h *Handler) GetNutsLauAggregate(c *gin.Context) {
 	}, series, nil)
 }
 
-// GetNutsDatasetAggregateTimeseries gibt eine auf NUTS-0/1/2-Ebene hochaggregierte Zeitreihe eines Kreis-grain-Datensatzes zurück
+// GetNutsDatasetAggregateTimeseries returns a Kreis-grain dataset's time series aggregated to NUTS-0/1/2 level
 // @Summary Auf NUTS-0/1/2-Ebene aggregierte Datensatz-Zeitreihe
 // @Description Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) auf Land-/Bundesland-/Regierungsbezirksebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_nuts012_dataset_aggregate). Pendant zu GET /{slug}/timeseries für NUTS-3, das für Level 0-2 keine Kreis-Zeilen findet. Nur für NUTS-0/1/2-IDs (2-4 Zeichen) gültig; für Kreise (NUTS-3) GET /{slug}/timeseries verwenden.
 // @Tags NUTS

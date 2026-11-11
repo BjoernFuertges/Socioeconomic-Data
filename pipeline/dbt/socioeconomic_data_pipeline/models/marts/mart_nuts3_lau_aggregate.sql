@@ -6,26 +6,26 @@
 }}
 
 /*
-  Aggregiert LAU-Werte (Gemeinden) auf NUTS-3-Ebene (Kreise) hoch - als
-  Ergänzung/Cross-Check zu den nativen Kreis-Werten in mart_nuts3_summary
-  (die Bevölkerung z. B. direkt auf Kreisebene ausweisen, nicht aus den
-  zugehörigen Gemeinden aufsummiert).
+  Aggregates LAU values (Gemeinden) up to NUTS-3 level (Kreise) - as a
+  complement/cross-check to the native Kreis values in mart_nuts3_summary
+  (which report e.g. population directly at Kreis level, not summed from
+  the Gemeinden).
 
-  Bevölkerung: Summe von lau_integrated.population_count je (nuts3_id, year),
-  zusammen mit der Anzahl zugeordneter Gemeinden (lau_region_count) und der
-  Anzahl davon mit einem tatsächlichen Bevölkerungswert
+  Population: sum of lau_integrated.population_count per (nuts3_id, year),
+  together with the number of assigned Gemeinden (lau_region_count) and how
+  many of them have an actual population value
   (lau_region_count_with_population).
 
-  Beschäftigungsquote: bevölkerungsgewichteter Durchschnitt aus
+  Beschäftigungsquote: population-weighted average from
   mart_lau_sociodata_harmonized (dataset_slug='beschaeftigungsquote-gemeinden'),
-  fixiert auf target_version 2024 (analog zur festen reference_nuts_version in
-  mart_agentur_nuts3_crosswalk.sql), gewichtet mit der Gemeinde-Bevölkerung im
-  selben Jahrgang aus lau_integrated.
+  fixed to target_version 2024 (analogous to the fixed reference_nuts_version
+  in mart_agentur_nuts3_crosswalk.sql), weighted by the Gemeinde population
+  of the same year from lau_integrated.
 
-  Hinweis: setzt wie mart_lau_sociodata_harmonized.sql voraus, dass
-  loaded_data.lau_population über fetch_lau_population.py befüllt wurde -
-  fehlt das, führt stg_lau_population keine gisco_id-Werte und dieser
-  Mart baut, liefert aber überwiegend NULL/0 (siehe dortigen Kommentar).
+  Note: like mart_lau_sociodata_harmonized.sql this requires
+  loaded_data.lau_population to be filled via fetch_lau_population.py -
+  otherwise stg_lau_population carries no gisco_id values and this mart
+  builds but mostly yields NULL/0 (see the comment there).
 */
 
 with lau_population as (

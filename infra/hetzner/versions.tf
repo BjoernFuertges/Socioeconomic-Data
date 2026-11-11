@@ -8,12 +8,12 @@ terraform {
     }
   }
 
-  # Bucket, Region und Endpoint kommen per `terraform init -backend-config=backend.hcl`
-  # (siehe infra/README.md); der Bucket wird von infra/bootstrap angelegt.
+  # Bucket, region and endpoint are passed via `terraform init -backend-config=backend.hcl`
+  # (see infra/README.md); the bucket is created by infra/bootstrap.
   backend "s3" {
     key = "hetzner/terraform.tfstate"
 
-    # Hetzner Object Storage ist S3-kompatibel, aber kein AWS
+    # Hetzner Object Storage is S3-compatible, but not AWS
     skip_credentials_validation = true
     skip_requesting_account_id  = true
     skip_metadata_api_check     = true

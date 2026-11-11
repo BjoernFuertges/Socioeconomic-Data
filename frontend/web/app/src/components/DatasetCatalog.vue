@@ -32,8 +32,8 @@ function geodataLevelLabel(level: string | null | undefined): string {
   return GEODATA_LEVEL_LABELS[level] ?? level;
 }
 
-// Nur für den Rohdaten-Link: begrenzt die Anfrage, weil manche Datensätze
-// (z.B. beschaeftigungsquote-gemeinden) weit über 100.000 Zeilen haben.
+// Only for the raw-data link: caps the request because some datasets
+// (e.g. beschaeftigungsquote-gemeinden) have well over 100,000 rows.
 const DATA_LINK_LIMIT = 100;
 
 function dataHref(e: DatasetMetadataEntry): string {
@@ -41,15 +41,15 @@ function dataHref(e: DatasetMetadataEntry): string {
   return API_BASE + path;
 }
 
-// Pfad des vollständigen Datensatzes - dieselbe Route wie die Vorschau,
-// aber ohne limit: limit=null hebt die Obergrenze im Backend auf (siehe
-// normalizeNullableLimitQuery in common.go). Der Agenturbezirk-Datensatz hat
-// keine generische /{slug}-Route (siehe constants.ts).
+// Path of the full dataset - same route as the preview, but without limit:
+// limit=null lifts the backend cap (see normalizeNullableLimitQuery in
+// common.go). The Agenturbezirk dataset has no generic /{slug} route
+// (see constants.ts).
 function dataPath(e: DatasetMetadataEntry): string {
   return e.dataset_slug === AGENTUR_DATASET_SLUG ? AGENTUR_DATA_PATH : `/${e.dataset_slug}`;
 }
 
-// Format je Karte; CSV ist für einen Download der plausiblere Default.
+// Format per card; CSV is the more plausible default for a download.
 const downloadFormats = ref<Map<string, DownloadFormat>>(new Map());
 function downloadFormat(slug: string): DownloadFormat {
   return downloadFormats.value.get(slug) ?? "csv";
@@ -58,17 +58,17 @@ function setDownloadFormat(slug: string, format: DownloadFormat) {
   downloadFormats.value = new Map(downloadFormats.value).set(slug, format);
 }
 
-// Für curl/Skripte: ohne format=, das Format kommt dort über den Accept-Header.
+// For curl/scripts: without format=, the format comes via the Accept header.
 function fullDataApiUrl(e: DatasetMetadataEntry): string {
   return absoluteApiUrl(dataPath(e), { limit: "null" });
 }
 
-// Für den Browser-Download: <a href> kann keinen Accept-Header setzen.
+// For the browser download: <a href> can't set an Accept header.
 function fullDataDownloadUrl(e: DatasetMetadataEntry): string {
   return absoluteApiUrl(dataPath(e), { limit: "null", format: downloadFormat(e.dataset_slug), download: 1 });
 }
 
-// Metadaten separat mit exportieren; Default an, je Karte umschaltbar.
+// Also export metadata separately; on by default, toggleable per card.
 const includeMetadata = ref<Map<string, boolean>>(new Map());
 function metadataIncluded(slug: string): boolean {
   return includeMetadata.value.get(slug) ?? true;
@@ -94,11 +94,10 @@ function startDatasetDownload(e: DatasetMetadataEntry) {
   triggerDownloads(urls);
 }
 
-// Statt den Link direkt auf die rohe JSON-API zeigen zu lassen (unformatiert,
-// neuer Tab), zeigt eine aufklappbare Vorschau dieselben Zeilen als Tabelle
-// im Katalog selbst - der reine JSON-Link bleibt als kleiner, sekundärer
-// "API-Antwort"-Link erhalten (siehe Footer im Template) für alle, die
-// tatsächlich die Rohantwort brauchen.
+// Instead of linking straight to the raw JSON API (unformatted, new tab), a
+// collapsible preview shows the same rows as a table inside the catalog. The
+// plain JSON link remains as a small secondary "API-Antwort" link (see footer in
+// the template) for those who actually need the raw response.
 type PreviewState =
   | { kind: "loading" }
   | { kind: "loaded"; rows: GenericDatasetRow[] }
@@ -127,12 +126,11 @@ function onPreviewToggle(e: DatasetMetadataEntry, evt: Event) {
   if ((evt.target as HTMLDetailsElement).open) loadPreview(e);
 }
 
-// Cross-Link "Datenkatalog -> Regionen": springt in die passende Gebietsebene
-// und (für die slug-basierten Kreis-/Gemeinden-Datensätze) wählt den
-// Datensatz vor, sobald dort eine Region gewählt wird (siehe
-// RegionBrowser.vue: nutsDatasetInitialSlug/lauDatasetInitialSlug via
-// ?dataset=). Agenturbezirke haben keinen Datensatz-Picker - dort reicht der
-// Sprung in den Gebietstyp.
+// Cross-link "Datenkatalog -> Regionen": jumps to the matching area level and (for
+// the slug-based Kreis/Gemeinden datasets) preselects the dataset once a region
+// is chosen there (see RegionBrowser.vue: nutsDatasetInitialSlug/
+// lauDatasetInitialSlug via ?dataset=). Agenturbezirke have no dataset picker,
+// so jumping to the area type is enough.
 function regionsLinkFor(e: DatasetMetadataEntry): RouteLocationRaw | null {
   if (e.geodata_level === "NUTS_3") return { name: "regionen", params: { regionType: "nuts" }, query: { dataset: e.dataset_slug } };
   if (e.geodata_level === "LAU") return { name: "regionen", params: { regionType: "lau" }, query: { dataset: e.dataset_slug } };
@@ -147,9 +145,9 @@ const entries = ref<DatasetMetadataEntry[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
-// Aus der Route vorbefüllt (Deep-Link/geteilter Link), danach per Debounce
-// synchron zur Route gehalten (router.replace statt push, damit Tippen keine
-// Chronik-Einträge erzeugt) - macht Suche/Filter teilbar/bookmarkbar.
+// Prefilled from the route (deep link/shared link), then kept in sync with the
+// route via debounce (router.replace instead of push so typing creates no history
+// entries) - makes search/filter shareable and bookmarkable.
 const search = ref((route.query.q as string) ?? "");
 const geodataLevelFilter = ref((route.query.level as string) ?? "");
 const licenseFilter = ref((route.query.license as string) ?? "");
@@ -170,8 +168,8 @@ watch([search, geodataLevelFilter, licenseFilter], () => {
   }, 300);
 });
 
-// Slug aus /katalog/:slug (Deep-Link, z.B. von der Karte oder von außen) -
-// scrollt zum passenden Katalogeintrag und hebt ihn hervor.
+// Slug from /katalog/:slug (deep link, e.g. from the map or externally) -
+// scrolls to the matching catalog entry and highlights it.
 const highlightedSlug = computed(() => (route.params.slug as string | undefined) || null);
 
 async function scrollToHighlighted() {
@@ -227,8 +225,8 @@ function formatCoverage(e: DatasetMetadataEntry): string {
   return e.min_year === e.max_year ? `${e.min_year}` : `${e.min_year}–${e.max_year}`;
 }
 
-// Für Excel unter deutscher Locale: Semikolon statt Komma als Trenner, sonst
-// wird die Datei beim Doppelklick-Öffnen als eine einzige Spalte interpretiert.
+// For Excel under a German locale: semicolon instead of comma as separator,
+// otherwise the file opens as a single column on double-click.
 const CSV_DELIMITER = ";";
 
 function toCsvField(value: string | number | null | undefined): string {
@@ -270,7 +268,7 @@ function exportCsv() {
     e.dataset_uri,
   ]);
   const csv = [header, ...rows].map((row) => row.map(toCsvField).join(CSV_DELIMITER)).join("\r\n");
-  // BOM voranstellen, damit Excel die Datei als UTF-8 statt Systemcodepage liest (wichtig für Umlaute).
+  // Prepend a BOM so Excel reads the file as UTF-8 instead of the system code page (matters for umlauts).
   const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

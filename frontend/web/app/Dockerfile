@@ -1,5 +1,5 @@
 # =============================================================================
-# Stage 1: Build der Vue-SPA
+# Stage 1: Build the Vue SPA
 # =============================================================================
 FROM node:22-alpine AS builder
 
@@ -12,10 +12,11 @@ COPY . .
 RUN npm run build
 
 # =============================================================================
-# Stage 2: Minimaler Static-File-Server
+# Stage 2: Minimal static file server
 # =============================================================================
 FROM nginx:1.27-alpine
 
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 EXPOSE 80

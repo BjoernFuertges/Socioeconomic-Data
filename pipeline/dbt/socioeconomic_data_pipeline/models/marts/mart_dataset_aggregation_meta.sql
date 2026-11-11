@@ -6,29 +6,28 @@
 }}
 
 /*
-  Aggregationsmetadaten je Indikator für die Custom-Region-Abfrage
-  (POST /custom-regions/dataset-aggregate). Eine Zeile je (dataset_slug,
+  Aggregation metadata per indicator for the custom-region query
+  (POST /custom-regions/dataset-aggregate). One row per (dataset_slug,
   indicator):
 
-    level        - Ebene der Quelldaten: 'lau' | 'nuts3' | 'agentur'
-    measure_type - 'sum' (Zählgröße) | 'weighted_avg' (Quote/Durchschnitt)
-    kind         - 'count' | 'rate' | 'mean' | 'median' (Kennzeichnung der
-                   Näherung, gleiche Bedeutung wie in
+    level        - level of the source data: 'lau' | 'nuts3' | 'agentur'
+    measure_type - 'sum' (count) | 'weighted_avg' (ratio/average)
+    kind         - 'count' | 'rate' | 'mean' | 'median' (labels the
+                   approximation, same meaning as in
                    mart_agentur_dataset_aggregate)
-    finer_slug   - Slug desselben Indikators auf feinerer Ebene, falls es
-                   einen gibt (nuts3 -> lau). Das Backend nimmt die feinere
-                   Variante, sofern sie für die Region Daten hat, sonst diese.
+    finer_slug   - slug of the same indicator at a finer level, if there is
+                   one (nuts3 -> lau). The backend uses the finer variant if
+                   it has data for the region, otherwise this one.
 
-  Die NUTS-3-Liste muss inhaltlich mit den source_datasets in
+  The NUTS-3 list must match the source_datasets in
   mart_nuts3_sociodata_harmonized.sql / mart_agentur_dataset_aggregate.sql
-  übereinstimmen (dort autoritativ, hier dupliziert - gleiches Muster wie
-  in den anderen Aggregat-Marts). Die LAU-Zeile mit
-  mart_lau_sociodata_harmonized.sql.
+  (authoritative there, duplicated here - same pattern as in the other
+  aggregate marts). The LAU row mirrors mart_lau_sociodata_harmonized.sql.
 
-  Agenturbezirke sind nur in Berlin feiner als NUTS-3. Die monatlichen
-  BA-Zahlen existieren aber ausschließlich auf Agenturbezirks-Ebene (keine
-  NUTS-3-Entsprechung), deshalb ist 'agentur' hier deren einzige Quelle -
-  unabhängig vom Bundesland.
+  Agenturbezirke are only finer than NUTS-3 in Berlin. The monthly BA
+  figures, however, exist only at Agenturbezirk level (no NUTS-3
+  counterpart), so 'agentur' is their only source here - regardless of
+  Bundesland.
 */
 
 {% set nuts3_datasets = [

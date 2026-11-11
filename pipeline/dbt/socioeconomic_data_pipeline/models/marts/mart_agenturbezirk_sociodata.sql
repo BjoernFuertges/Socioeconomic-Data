@@ -10,19 +10,18 @@
 }}
 
 /*
-  Agenturbezirke sind eine eigenständige Gebietsgliederung der
-  Bundesagentur für Arbeit - nicht deckungsgleich mit NUTS-3/LAU/ARS und
-  deshalb kein weiterer Eintrag in mart_nuts3_sociodata_harmonized. Da nur
-  eine aktuelle Grenzen-Vintage verwendet wird, ist hier (anders als bei
-  NUTS/LAU) kein Versions-Crosswalk nötig - einfacher Join von Geometrie
-  und Werten über ba_schl. Dient sowohl der Agenturbezirk-Liste (distinct
-  ba_schl/name/geometry) als auch der Monatszeitreihe pro Bezirk.
+  Agenturbezirke are an independent territorial division of the
+  Bundesagentur für Arbeit - not congruent with NUTS-3/LAU/ARS, hence not
+  another entry in mart_nuts3_sociodata_harmonized. Since only one current
+  boundary vintage is used, no version crosswalk is needed (unlike NUTS/LAU)
+  - a simple join of geometry and values on ba_schl. Serves both the
+  Agenturbezirk list (distinct ba_schl/name/geometry) and the monthly time
+  series per district.
 
-  Die Verknüpfung zu NUTS-3 (Agenturbezirke bestehen i.d.R. aus einem oder
-  mehreren ganzen Kreisen, Ausnahme Berlin: 3 Agenturbezirke teilen sich
-  einen Kreis) ist n:m mit Flächen-/Bevölkerungsanteilen - siehe
-  mart_agentur_nuts3_crosswalk.sql, nicht hier als einzelne Spalte
-  abgebildet.
+  The link to NUTS-3 (Agenturbezirke usually consist of one or more whole
+  Kreise, exception Berlin: 3 Agenturbezirke share one Kreis) is n:m with
+  area/population shares - see mart_agentur_nuts3_crosswalk.sql, not
+  modelled here as a single column.
 */
 
 with geometry as (

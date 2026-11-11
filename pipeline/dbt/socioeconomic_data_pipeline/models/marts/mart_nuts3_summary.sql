@@ -6,13 +6,13 @@
 }}
 
 /*
-  Aggregiert alle verfügbaren sozioökonomischen Indikatoren je NUTS-3-Region und Jahr.
+  Aggregates all available socioeconomic indicators per NUTS-3 region and year.
 
-  Basis: FULL OUTER JOIN zwischen Bevölkerung und Schuldnerquote (beide NUTS-nativ,
-  vollständig und qualitätssicher). Weitere Indikatoren werden per LEFT JOIN ergänzt,
-  da die zeitliche Abdeckung variiert.
+  Base: FULL OUTER JOIN between population and Schuldnerquote (both
+  NUTS-native, complete and reliable). Further indicators are added via
+  LEFT JOIN, since their temporal coverage varies.
 
-  Nur Datensätze mit has_valid_value = true werden einbezogen.
+  Only records with has_valid_value = true are included.
 */
 
 with bevoelkerung as (
@@ -101,13 +101,13 @@ beschaeftigungsquote as (
     where has_valid_value = true
 ),
 
--- Basis: FULL OUTER JOIN der beiden NUTS-nativen Datensätze
+-- Base: FULL OUTER JOIN of the two NUTS-native datasets
 nuts_base as (
     select
         coalesce(b.geodata_id_nuts, s.geodata_id_nuts) as nuts_id,
         coalesce(b.geodata_name,    s.geodata_name)    as region_name,
         coalesce(b.year,            s.year)             as year,
-        -- ARS kann null sein (~20% der Kreise), daher coalesce aus beiden Quellen
+        -- ARS can be null (~20% of Kreise), hence coalesce from both sources
         nullif(
             coalesce(
                 nullif(cast(b.geodata_id_ars as text), ''),
@@ -132,12 +132,11 @@ joined as (
         n.bevoelkerung,
         n.schuldnerquote_prozent,
         ak.arbeitslose_kreise,
-        -- arbeitslose ist ein Alias von arbeitslose_kreise (nicht dessen
-        -- Ersatz - siehe mart_nuts0/1/2_summary.sql, die weiterhin
-        -- arbeitslose_kreise referenzieren): GetNutsRegionData (backend/
-        -- internal/handlers/nuts.go) nutzt dieselbe selectCols-Spaltenliste
-        -- für alle vier NUTS-Ebenen und erwartet dort den Spaltennamen
-        -- "arbeitslose", nicht "arbeitslose_kreise".
+        -- arbeitslose is an alias of arbeitslose_kreise (not a replacement,
+        -- see mart_nuts0/1/2_summary.sql, which still reference
+        -- arbeitslose_kreise): GetNutsRegionData (backend/internal/handlers/
+        -- nuts.go) uses the same selectCols list for all four NUTS levels
+        -- and expects the column name "arbeitslose", not "arbeitslose_kreise".
         ak.arbeitslose_kreise::numeric as arbeitslose,
         av.arbeitsvolumen,
         bv.bruttoverdienst,
@@ -170,10 +169,9 @@ joined as (
         and bq.year            = n.year
 )
 
--- yoy_change_percent fehlte bisher komplett auf Kreisebene (anders als bei
--- mart_nuts0/1/2_summary, die es aus ihrer eigenen Aggregation neu
--- berechnen) - GetNutsRegionData griff dadurch für NUTS-3 (einzelnes Jahr
--- wie auch ?all=true-Zeitreihe) mit "column ... does not exist" ins Leere.
+-- yoy_change_percent is computed here (as mart_nuts0/1/2_summary do from
+-- their own aggregation); GetNutsRegionData selects it for NUTS-3 as well
+-- (single year and ?all=true series).
 select
     *,
     round(

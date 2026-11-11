@@ -3,9 +3,9 @@
 This file provides guidance to AI coding agents and contributors working in this part of the repository.
 
 Scope: this file covers the `pipeline/dlt/` directory only. See the repository
-root [AGENTS.md](../AGENTS.md) for cross-component architecture and the
+root [AGENTS.md](../../AGENTS.md) for cross-component architecture and the
 "dlt never historizes" rule, and
-[docs/pipeline/dlt.md](../docs/pipeline/dlt.md) for the per-script writeup.
+[docs/pipeline/dlt.md](../../docs/pipeline/dlt.md) for the per-script writeup.
 
 ## Commands
 
@@ -13,22 +13,23 @@ To run the pipeline together with the database, backend, and frontend in
 one go instead of setting each up by hand, use `compose.local.yml` at the
 repo root (`docker compose -f compose.local.yml up --build`, then
 `docker compose -f compose.local.yml exec pipeline bash /app/dlt/run_all_pipelines.sh`)
-— see the root [README.md](../README.md#lokal-testen-docker-compose). The
+— see the root [README.md](../../README.md#lokal-testen-docker-compose). The
 commands below are for running dlt scripts standalone against an
 already-running/external Postgres.
 
 ```bash
-# Needs pipeline/dlt/.dlt/secrets.toml (copy from .secrets.toml.example) and a
-# reachable Postgres; loads always target the loaded_data schema
-# (config.toml: destination.postgres.schema = "store" is the dlt pipeline
-# working schema, not the target — check individual scripts/config for the
-# actual destination schema before assuming).
+# Needs pipeline/dlt/.dlt/secrets.toml (copy .secrets.toml.example, which
+# sits in pipeline/dlt/) and a reachable Postgres. Every script sets
+# dataset_name="loaded_data" in code, so loads land in the loaded_data
+# schema (config.toml's `schema = "store"` is not the target).
 python load_arbeitslosenzahlen_afa.py
+python fetch_lau_population.py       # before load_geodata_to_postgis.py
 python load_geodata_to_postgis.py
+python load_agenturbezirke_geodata.py
 python load_soziodata_generic.py <dataset>/results_<dataset>_kreise
 
-# Run every load script + dbt deps/snapshot/run in sequence (used in the
-# deployed pipeline container, paths assume /app/dbt inside that container):
+# Run all loaders except load_beschaeftigungsquote.py, then dbt deps/snapshot/run
+# (deployed pipeline container; dbt dir defaults to /app/dbt/..., override via DBT_PROJECT_DIR):
 ./run_all_pipelines.sh
 ```
 
@@ -43,17 +44,18 @@ python load_soziodata_generic.py <dataset>/results_<dataset>_kreise
   this script with the new path — not writing a new loader script (see
   `run_all_pipelines.sh` for the full list of currently registered
   datasets, and the "Adding a new Kreis-level dataset" recipe in
-  [AGENTS.md](../AGENTS.md)). It also upserts (`write_disposition="merge"`
-  on `dataset_slug`, unlike the data resource's `"append"`) one row per
+  [AGENTS.md](../../AGENTS.md)); a new dataset also needs a line in
+  `run_all_pipelines.sh`. It also upserts (`write_disposition="merge"`
+  on `dataset_slug`, unlike the data resource's `"replace"`) one row per
   dataset into the shared `loaded_data.dataset_metadata` table from
   `meta.yaml`'s provenance/license/description fields — downstream in
   dbt: `stg_dataset_metadata` / `mart_dataset_catalog`, exposed via the
   backend's `GET /datasets`.
 - `load_arbeitslosenzahlen_afa.py`, `load_beschaeftigungsquote.py`,
-  `load_geodata_to_postgis.py` are one-off loaders for sources that don't
-  fit the generic `mapped_pairs.csv`/`meta.yaml` shape (unemployment
-  figures directly from the Arbeitsagentur API, employment-quota data,
-  and geodata/geometry into PostGIS respectively).
+  `load_geodata_to_postgis.py` are special-purpose loaders for sources that
+  don't fit the generic `mapped_pairs.csv`/`meta.yaml` shape (Arbeitsagentur
+  API, employment-quota data, geodata into PostGIS).
+  `load_beschaeftigungsquote.py` is not called by `run_all_pipelines.sh`.
 - `load_arbeitslosenzahlen_afa.py` pulls monthly unemployment figures per
   **Agenturbezirk** (Bundesagentur-für-Arbeit-internal district partition,
   not NUTS-3/LAU/ARS) from the official, auth-free "Lange Zeitreihen" REST
@@ -79,7 +81,7 @@ python load_soziodata_generic.py <dataset>/results_<dataset>_kreise
   `--force` to redo) and part of `run_all_pipelines.sh`, run before
   `load_geodata_to_postgis.py` - without it (e.g. on a fresh checkout with
   no cached downloads), `load_geodata_to_postgis.py` silently falls back
-  to a `geo-importer`-sourced CSV that only has `ID,Name` columns, leaving
+  to a `geo-importer`-sourced CSV (external sibling repo, not part of this repo) that only has `ID,Name` columns, leaving
   `gisco_id`/`nuts_3_code`/`population` NULL for every LAU row.
 - `load_agenturbezirke_geodata.py` loads the official BA-Gebietsstruktur
   shapefile (all ~146 Agenturbezirke, same source ZIP as
@@ -87,10 +89,13 @@ python load_soziodata_generic.py <dataset>/results_<dataset>_kreise
   proof of concept) into `loaded_data.agenturbezirk_geometry`, reprojected
   to WGS84 at load time (unlike `load_geodata_to_postgis.py`'s NUTS/LAU
   geometry, which stays in EPSG:3035 and is transformed in dbt staging).
-- `write_disposition` varies per resource — see [AGENTS.md](../AGENTS.md)'s
-  "dlt never historizes" rule for the current per-script breakdown and why
-  `load_soziodata_generic.py`'s `"append"` mode is a bug to fix, not a
-  pattern to copy into a new loader.
+- `write_disposition` is `"replace"` for all data resources and `"merge"`
+  (key `dataset_slug`) for `dataset_metadata`; `"append"` is a bug, not a
+  pattern (see [AGENTS.md](../../AGENTS.md), "dlt never historizes"). Because
+  `"replace"` swaps the whole table, loaders must fail (not skip) on
+  missing/partial input, otherwise a partial extract overwrites good data.
+  A missing `mapped_pairs.csv`/`meta.yaml` makes `load_soziodata_generic.py`
+  exit 1.
 - `bbsr_license.py` supplies `license`/`license_url` for the metadata
   resource automatically — no meta.yaml maintenance needed. Every BBSR-
   sourced dataset (currently all of them, detected via `source` mentioning

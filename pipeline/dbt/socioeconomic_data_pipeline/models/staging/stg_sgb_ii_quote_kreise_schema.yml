@@ -1,69 +1,59 @@
 version: 2
 
 models:
+
   - name: stg_sgb_ii_quote_kreise
-    description: "Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag"
+    description: Cleaned SGB II quota per district (Kreis), with derived observation date and quality flag.
     columns:
       - name: sgb_ii_quote_pk
-        description: "Surrogate Key aus geodata_id_nuts und year"
+        description: Surrogate key built from geodata_id_nuts and year
         data_type: text
         tests:
           - unique
           - not_null
-
       - name: original_id_1
-        description: "Amtlicher Regionalschlüssel aus der Quelldatei"
+        description: Official regional key from the source file
         data_type: text
         tests:
           - not_null
-
       - name: original_name
-        description: "Regionsname aus der Quelldatei"
+        description: Region name from the source file
         data_type: text
         tests:
           - not_null
-
       - name: geodata_name
-        description: "Gemappter Geodata-Name"
+        description: Mapped geodata name
         data_type: text
-
       - name: geodata_id_nuts
-        description: "NUTS-3-Code der Region"
+        description: NUTS-3 code of the region
         data_type: text
         tests:
           - not_null
-
       - name: geodata_id_ars
-        description: "Amtlicher Regionalschlüssel nach Mapping"
+        description: Official regional key (ARS) after mapping
         data_type: text
-
       - name: mapper
-        description: "Mapping-Methode"
+        description: Mapping method
         data_type: text
-
       - name: parameter
-        description: "Mapping-Parameter"
+        description: Mapping parameter
         data_type: text
-
       - name: geodata_level
-        description: "Geodata-Ebene (NUTS_3)"
+        description: Geodata level (NUTS_3)
         data_type: text
-
       - name: geodata_year
-        description: "Referenzjahr der Geodaten"
+        description: Reference year of the geodata
         data_type: integer
-
       - name: year
-        description: "Jahr der Beobachtung"
+        description: Year of observation
         data_type: integer
         tests:
           - not_null
           - dbt_utils.accepted_range:
               min_value: 2005
               max_value: 2030
-
       - name: sgb_ii_quote_prozent
-        description: "Anteil der SGB-II-Leistungsempfänger an der Bevölkerung in Prozent"
+        description: Share of SGB II benefit recipients in the population, in percent
         data_type: numeric
         tests:
           - not_null
@@ -71,13 +61,11 @@ models:
               min_value: 0
               max_value: 100
               inclusive: true
-
       - name: observation_date
-        description: "Beobachtungsdatum (01.01. des jeweiligen Jahres)"
+        description: Observation date (1 January of the year)
         data_type: date
         tests:
           - not_null
-
       - name: has_valid_value
-        description: "True wenn die SGB-II-Quote plausibel ist (0–100 %)"
+        description: True if the SGB II quota is plausible (0-100 %)
         data_type: boolean

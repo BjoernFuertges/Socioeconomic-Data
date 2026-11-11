@@ -1,0 +1,52 @@
+version: 2
+
+models:
+  - name: stg_nuts_geometry
+    description: "NUTS region boundaries per year, with EPSG:3035 and WGS84 geometries."
+    columns:
+      - name: nuts_id
+        description: "NUTS identifier of the region"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: levl_code
+        description: "NUTS level (0-3)"
+
+      - name: country_code
+        description: "Country code (2-letter ISO)"
+        data_type: text
+
+      - name: region_name
+        description: "Region name (falls back to the NUTS ID if no name is available)"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: year
+        description: "Boundary vintage year"
+        data_type: integer
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2000
+              max_value: 2030
+
+      - name: geometry_3035
+        description: "Geometry in EPSG:3035 (Lambert Azimuthal Equal-Area)"
+        tests:
+          - not_null
+
+      - name: geometry_wgs84
+        description: "Geometry in WGS84 (EPSG:4326)"
+        tests:
+          - not_null
+
+      - name: has_valid_geometry
+        description: "True if a non-empty geometry is present"
+        data_type: boolean
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "Timestamp of the staging run"

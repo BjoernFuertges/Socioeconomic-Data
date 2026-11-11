@@ -116,7 +116,7 @@ pkgsite -http=:8080   # then open http://localhost:8080/github.com/BjoernFuertge
     A dedicated, CI-published godoc/pkgsite site was considered but is not
     set up, since it would add limited value here: almost all backend code
     lives under `internal/` (not importable outside this module anyway),
-    the module isn't published to `pkg.go.dev` (private GitLab instance),
+    the module isn't published to `pkg.go.dev`,
     and the actual API contract that matters to consumers is already fully
     documented via Swagger. If doc comments on exported Go symbols become
     more extensive, `pkgsite` can always be run locally as shown above

@@ -1,10 +1,9 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 
-// regionId ist über alle Gebietstypen hinweg eindeutig (NUTS-Codes, LAU
-// gisco_ids und Agentur ba_schl haben disjunkte Formate), der Typ selbst
-// steht explizit in ?type= statt als Pfadsegment - RegionBrowser.vue zeigt
-// alle drei Gebietstypen in einer kombinierten, per ?types= filterbaren
-// Liste, keine Typ-Tabs mehr.
+// regionId is unique across all area types (NUTS codes, LAU gisco_ids and Agentur
+// ba_schl have disjoint formats); the type itself is explicit in ?type= rather than a
+// path segment. RegionBrowser.vue shows all three area types in one combined list
+// filterable via ?types=, no type tabs anymore.
 const routes: RouteRecordRaw[] = [
   { path: "/", redirect: "/regionen" },
   {

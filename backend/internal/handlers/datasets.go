@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -9,13 +11,13 @@ import (
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
-// regionNutsDatasets gibt die verfügbaren Soziodata-Datensätze für eine NUTS-ID zurück.
-// Für Kreise (level 3) aus mart_region_datasets (Kreis-grain, ein einzelner
-// indizierter DB-Zugriff statt N Einzelabfragen); für Land/Bundesland/
-// Regierungsbezirk (level 0-2) aus mart_nuts012_dataset_aggregate, das
-// dieselben Kreis-grain-Datensätze bereits auf diese Ebenen hochaggregiert
-// (siehe dortigen Modellkommentar) - beide liefern dieselbe (dataset_slug,
-// year)-Zeilenform, weshalb die Gruppierung unten für beide Ebenen gilt.
+// regionNutsDatasets returns the available Soziodata datasets for a NUTS ID.
+// For Kreise (level 3) from mart_region_datasets (Kreis grain, a single
+// indexed DB access instead of N individual queries); for Land/Bundesland/
+// Regierungsbezirk (levels 0-2) from mart_nuts012_dataset_aggregate, which
+// already aggregates the same Kreis-grain datasets up to these levels (see
+// the model comment there). Both return the same (dataset_slug, year) row
+// shape, so the grouping below applies to both.
 func (h *Handler) regionNutsDatasets(nutsID string, level int) ([]models.RegionDataset, error) {
 	type row struct {
 		DatasetSlug string `db:"dataset_slug"`
@@ -32,13 +34,13 @@ func (h *Handler) regionNutsDatasets(nutsID string, level int) ([]models.RegionD
 		return nil, err
 	}
 
-	// Jahre je Slug gruppieren
+	// Group years per slug
 	yearsBySlug := make(map[string][]int, len(rows))
 	for _, r := range rows {
 		yearsBySlug[r.DatasetSlug] = append(yearsBySlug[r.DatasetSlug], r.Year)
 	}
 
-	// Ergebnis in der Reihenfolge von AllSoziodataConfigs aufbauen (RouteSlug → Table-Name)
+	// Build the result in the order of AllSoziodataConfigs (RouteSlug -> table name)
 	result := make([]models.RegionDataset, 0, len(yearsBySlug))
 	for _, cfg := range models.AllSoziodataConfigs() {
 		years, ok := yearsBySlug[cfg.RouteSlug]
@@ -54,7 +56,7 @@ func (h *Handler) regionNutsDatasets(nutsID string, level int) ([]models.RegionD
 	return result, nil
 }
 
-// GetNutsDatasets gibt verfügbare Soziodata-Datensätze für eine NUTS-Region zurück.
+// GetNutsDatasets returns the available Soziodata datasets for a NUTS region.
 // @Summary Verfügbare Datensätze für eine NUTS-Region
 // @Description Gibt alle Soziodata-Datensätze zurück, für die Daten zu dieser NUTS-Region vorhanden sind
 // @Tags NUTS
@@ -89,7 +91,7 @@ func (h *Handler) GetNutsDatasets(c *gin.Context) {
 	})
 }
 
-// GetLAUDatasets gibt verfügbare Soziodata-Datensätze für eine LAU-Region zurück.
+// GetLAUDatasets returns the available Soziodata datasets for a LAU region.
 // @Summary Verfügbare Datensätze für eine LAU-Region
 // @Description Gibt alle Soziodata-Datensätze zurück, für die Daten zu dieser LAU-Region vorhanden sind (via NUTS-3-Code)
 // @Tags LAU
@@ -104,17 +106,17 @@ func (h *Handler) GetNutsDatasets(c *gin.Context) {
 func (h *Handler) GetLAUDatasets(c *gin.Context) {
 	giscoID := strings.ToUpper(strings.TrimSpace(c.Param("gisco_id")))
 
-	// nuts3_id ist die kanonische LAU->NUTS-3-Verlinkung (deklarierte
-	// Quellspalte, sonst räumlich ermittelter Fallback - siehe
-	// int_lau_nuts3_spatial_link.sql / lau_integrated.sql), robuster als
-	// die oft NULLe nuts_3_code-Rohspalte.
+	// nuts3_id is the canonical LAU->NUTS-3 link (declared source column, else
+	// spatially derived fallback - see int_lau_nuts3_spatial_link.sql /
+	// lau_integrated.sql), more robust than the often-NULL raw nuts_3_code
+	// column.
 	var nuts3Code string
 	err := h.DB.Get(&nuts3Code,
 		`SELECT nuts3_id FROM transformed_data.lau_integrated WHERE gisco_id = $1 AND nuts3_id IS NOT NULL AND lau_name IS NOT NULL LIMIT 1`,
 		giscoID,
 	)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			respondNotFound(c, "LAU-Region nicht gefunden oder kein NUTS-3-Code vorhanden")
 			return
 		}

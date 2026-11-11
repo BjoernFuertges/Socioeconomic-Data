@@ -1,6 +1,6 @@
 package models
 
-// MetricsFilter sind die Query-Parameter für den Metriken-Endpunkt.
+// MetricsFilter holds the query parameters of the metrics endpoint.
 type MetricsFilter struct {
 	Year          *int   `form:"year"`
 	FromYear      *int   `form:"from_year"`
@@ -9,7 +9,7 @@ type MetricsFilter struct {
 	GeodataIDNUTS string `form:"geodata_id_nuts"`
 }
 
-// DatasetYearMetrics enthält statistische Kennzahlen für einen Datensatz in einem Jahr.
+// DatasetYearMetrics holds statistical figures for a dataset in one year.
 type DatasetYearMetrics struct {
 	Year              int      `json:"year" example:"2022"`
 	RegionCount       int      `json:"region_count" example:"400"`
@@ -25,7 +25,7 @@ type DatasetYearMetrics struct {
 	RegionalRankTotal *int     `json:"regional_rank_total,omitempty" example:"400"`
 }
 
-// DatasetMetricsResult enthält Metriken für einen Datensatz und eine Wertspalte über alle Jahre.
+// DatasetMetricsResult holds metrics for a dataset and a value column across all years.
 type DatasetMetricsResult struct {
 	Dataset string               `json:"dataset" example:"schuldnerquote"`
 	Column  string               `json:"column" example:"schuldnerquote_prozent"`

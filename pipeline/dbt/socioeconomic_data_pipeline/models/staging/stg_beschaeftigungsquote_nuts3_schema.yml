@@ -2,23 +2,23 @@ version: 2
 
 models:
   - name: stg_beschaeftigungsquote_nuts3
-    description: "Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung"
+    description: "Staging model for the employment rate per NUTS-3 region, aggregated from municipality level and weighted by population."
     columns:
       - name: beschaeftigungsquote_nuts3_pk
-        description: "Surrogate Key aus geodata_id_nuts und year"
+        description: "Surrogate key built from geodata_id_nuts and year"
         data_type: text
         tests:
           - unique
           - not_null
 
       - name: geodata_id_nuts
-        description: "NUTS-3-Code der Region"
+        description: "NUTS-3 code of the region"
         data_type: text
         tests:
           - not_null
 
       - name: year
-        description: "Jahr der Beobachtung"
+        description: "Year of observation"
         data_type: integer
         tests:
           - not_null
@@ -27,13 +27,13 @@ models:
               max_value: 2030
 
       - name: observation_date
-        description: "Beobachtungsdatum (01.01. des jeweiligen Jahres)"
+        description: "Observation date (1 January of the year)"
         data_type: date
         tests:
           - not_null
 
       - name: beschaeftigungsquote_prozent
-        description: "Beschäftigungsquote in Prozent – bevölkerungsgewichtet über Gemeinden (0–100)"
+        description: "Employment rate in percent, weighted by population across municipalities (0-100)"
         data_type: numeric
         tests:
           - not_null
@@ -43,13 +43,13 @@ models:
               inclusive: true
 
       - name: beschaeftigungsquote_median
-        description: "Median der Beschäftigungsquoten – 50. Perzentil über Gemeinden in der Region"
+        description: "Median of the municipal employment rates in the region (50th percentile)"
         data_type: numeric
 
       - name: beschaeftigungsquote_ungewichtet
-        description: "Ungewichteter Durchschnitt der Beschäftigungsquoten über Gemeinden"
+        description: "Unweighted mean of the municipal employment rates"
         data_type: numeric
 
       - name: gemeinden_count
-        description: "Anzahl der Gemeinden, die in die Aggregation eingegangen sind"
+        description: "Number of municipalities included in the aggregation"
         data_type: integer

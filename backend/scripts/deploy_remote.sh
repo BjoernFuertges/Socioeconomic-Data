@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# Läuft auf dem Hetzner-Server (Aufruf per SSH aus .github/workflows/main.yml).
+# Runs on the Hetzner server (invoked via SSH from .github/workflows/main.yml).
 #
-#   deploy_remote.sh apply <git-sha> [true|false]   Konfiguration ausrollen, Stack aktualisieren
-#                                                   (3. Argument = initialer Daten-Load im Hintergrund)
-#   deploy_remote.sh initial-load-status            Stand des Hintergrund-Loads anzeigen
-#   deploy_remote.sh mark-good <git-sha>            Stand nach grünem E2E als "letzter guter" merken
-#   deploy_remote.sh rollback                       Auf den letzten guten Stand zurücksetzen
+#   deploy_remote.sh apply <git-sha> [true|false]   Roll out configuration, update the stack
+#                                                   (3rd argument = initial data load in the background)
+#   deploy_remote.sh initial-load-status            Show the state of the background load
+#   deploy_remote.sh mark-good <git-sha>            Remember the state as "last good" after a green E2E
+#   deploy_remote.sh rollback                       Reset to the last good state
 #
-# Backups: siehe backup_db.sh / restore_db.sh (Cron wird von "apply" eingerichtet).
+# Backups: see backup_db.sh / restore_db.sh (cron is set up by "apply").
 #
-# Der Workflow legt die Konfiguration (.env, .env.nextcloud-sync, rclone.conf)
-# vorab in ${DEPLOY_INCOMING_DIR} ab; Secrets stehen so nie in Prozesslisten.
+# The workflow puts the configuration (.env, .env.nextcloud-sync, rclone.conf)
+# in ${DEPLOY_INCOMING_DIR} beforehand; this keeps secrets out of process lists.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -24,7 +24,7 @@ compose() {
   (cd "${deploy_dir}" && docker compose "$@")
 }
 
-# Nächtliches Backup (02:17 Uhr Serverzeit) per Cron des Deploy-Users; idempotent über den Marker.
+# Nightly backup (02:17 server time) via the deploy user's cron; idempotent via the marker.
 install_backup_cron() {
   local marker="# soziodata-backup"
   if ! command -v crontab > /dev/null 2>&1; then
@@ -59,7 +59,7 @@ install_config() {
     echo "Hinweis: .env.backup fehlt - nächtliches DB-Backup ist NICHT eingerichtet."
   fi
 
-  # Werte werden im Compose-Service per "environment:" überschrieben; die Datei muss nur existieren.
+  # Values are overridden in the compose service via "environment:"; the file only needs to exist.
   if [[ ! -f "${deploy_dir}/.env.backend" ]]; then
     install -m 600 "${deploy_dir}/.env.backend.example" "${deploy_dir}/.env.backend"
   fi
@@ -83,9 +83,9 @@ wait_for_pipeline_healthy() {
   return 1
 }
 
-# Initialer Daten-Load im Hintergrund (dlt + dbt, kann lange dauern): der Deploy-Job wartet nicht darauf und
-# verbraucht so keine Actions-Minuten. Der Scheduler wird währenddessen gestoppt, damit der stündliche Lauf nicht
-# parallel dieselben Tabellen beschreibt; der Wrapper startet ihn am Ende wieder.
+# Initial data load in the background (dlt + dbt, may take long): the deploy job does not wait for it
+# and so uses no Actions minutes. The scheduler is stopped meanwhile so the hourly run does not write
+# the same tables in parallel; the wrapper restarts it at the end.
 start_initial_load() {
   local status_file="${state_dir}/initial_load.status" log_file="${HOME}/initial_load.log"
   if [[ "$(cat "${status_file}" 2> /dev/null)" == running* ]]; then
@@ -94,7 +94,7 @@ start_initial_load() {
   fi
   echo "running since $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "${status_file}"
   compose stop scheduler
-  # shellcheck disable=SC2016 # Skript bewusst in einfachen Anführungszeichen, es wird erst im Wrapper-Shell ausgewertet
+  # shellcheck disable=SC2016 # script deliberately in single quotes, it is only evaluated in the wrapper shell
   DEPLOY_DIR="${deploy_dir}" setsid nohup bash -c '
     docker exec pipeline bash /app/dlt/run_all_pipelines.sh
     rc=$?
@@ -124,7 +124,7 @@ cmd_apply() {
 
   install_config
 
-  # Images zuerst holen: scheitert die Registry, bricht der Deploy ab, bevor am laufenden Stack etwas geändert wurde.
+  # Pull images first: if the registry fails, the deploy aborts before anything on the running stack was changed.
   compose pull
 
   if [[ -f "${deploy_dir}/.env.nextcloud-sync" ]]; then
@@ -133,11 +133,11 @@ cmd_apply() {
     echo "Hinweis: .env.nextcloud-sync fehlt, Nextcloud-Sync wird übersprungen."
   fi
 
-  # --wait: wartet auf die Healthchecks (backend, postgis, pipeline) und scheitert, wenn ein Container nicht gesund wird
+  # --wait: waits for the healthchecks (backend, postgis, pipeline) and fails if a container does not become healthy
   compose up -d --remove-orphans --wait --wait-timeout "${WAIT_TIMEOUT:-600}"
 
-  # Der pipeline-Container installiert seine Python-Pakete beim Start; Code-Änderungen
-  # sind über den Bind-Mount sofort sichtbar, nur neue Requirements brauchen einen Neustart.
+  # The pipeline container installs its Python packages on start; code changes
+  # are visible immediately via the bind mount, only new requirements need a restart.
   if [[ -n "${prev_sha}" ]] && git -C "${repo_root}" diff --name-only "${prev_sha}" "${sha}" 2>/dev/null \
       | grep -Eq '^pipeline/dlt/requirements\.txt$'; then
     echo "requirements.txt geändert -> pipeline-Container wird neu gestartet"

@@ -10,40 +10,37 @@
 }}
 
 /*
-  Harmonisierte LAU-Datensätze auf mehrere LAU-Zielversionen gleichzeitig
-  (target_version), analog zu mart_nuts3_sociodata_harmonized.sql - siehe
-  dortigen Kommentar für die grundsätzliche Strategie (direkt vs.
-  gecrosswalkt, Zusammenlegungen).
+  Harmonized LAU datasets for several LAU target versions at once
+  (target_version), analogous to mart_nuts3_sociodata_harmonized.sql - see
+  the comment there for the general strategy (direct vs. crosswalked,
+  merges).
 
-  measure_type je Datensatz (lau_source_datasets unten) steuert die
-  Aggregationsformel bei Zusammenlegungen mehrerer Quellregionen in eine
-  Zielregion:
-    - 'sum':          harmonized_value = Σ value_i * weight_i
-                       (richtig für Zählgrößen, z. B. Bevölkerung)
-    - 'weighted_avg':  harmonized_value = Σ value_i * absolute_weight_i
-                                            / Σ absolute_weight_i
-                       (richtig für Quoten/Durchschnitte - ein reines
-                       Aufsummieren würde hier falsche, zu kleine Werte
-                       erzeugen, siehe absolute_weight-Kommentar in
-                       mart_lau_version_crosswalk.sql)
+  measure_type per dataset (lau_source_datasets below) selects the
+  aggregation formula when several source regions merge into one target
+  region:
+    - 'sum':          harmonized_value = sum(value_i * weight_i)
+                       (correct for counts, e.g. population)
+    - 'weighted_avg':  harmonized_value = sum(value_i * absolute_weight_i)
+                                            / sum(absolute_weight_i)
+                       (correct for ratios/averages - plain summing would
+                       yield wrong, too small values, see the absolute_weight
+                       comment in mart_lau_version_crosswalk.sql)
 
-  Region-Key ist gisco_id (konsistent mit Geometrie-/Crosswalk-Seite).
-  stg_beschaeftigungsquote_gemeinden führt aktuell keine gisco_id, sondern
-  amtliche Gemeindeschlüssel (geodata_id_ars/geodata_id_lau) - die Auflösung
-  auf gisco_id erfolgt hier über stg_lau_population.lau_nat_code (dieselbe
-  Verknüpfung, die stg_beschaeftigungsquote_gemeinden.sql bereits nutzt, um
-  umgekehrt geodata_id_nuts/geodata_id_ars aus der Populationsquelle zu
-  befüllen). Setzt voraus, dass loaded_data.lau_population tatsächlich
-  gisco_id führt - dafür muss fetch_lau_population.py gelaufen sein
-  (Teil von run_all_pipelines.sh), sonst fällt load_geodata_to_postgis.py
-  auf einen Fallback ohne gisco_id/Bevölkerung zurück und dieser Mart
-  bleibt leer, obwohl er baut (siehe pipeline/dlt/AGENTS.md).
+  The region key is gisco_id (consistent with the geometry/crosswalk side).
+  stg_beschaeftigungsquote_gemeinden carries no gisco_id, only official
+  Gemeindeschlüssel (geodata_id_ars/geodata_id_lau); they are resolved to
+  gisco_id here via stg_lau_population.lau_nat_code. This requires
+  loaded_data.lau_population to actually carry gisco_id, i.e.
+  fetch_lau_population.py must have run (part of run_all_pipelines.sh);
+  otherwise load_geodata_to_postgis.py falls back to a variant without
+  gisco_id/population and this mart stays empty although it builds (see
+  pipeline/dlt/AGENTS.md).
 */
 
 {% set target_versions = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024] %}
 
--- Muss 1:1 mit harmonizedLauRouteSlugs in backend/cmd/gen-models/main.go
--- übereinstimmen (siehe Kommentar dort).
+-- Must match harmonizedLauRouteSlugs in backend/cmd/gen-models/main.go 1:1
+-- (see the comment there).
 {% set lau_source_datasets = [
     {'slug': 'beschaeftigungsquote-gemeinden', 'model': 'stg_beschaeftigungsquote_gemeinden', 'value_col': 'beschaeftigungsquote_prozent', 'measure_type': 'weighted_avg'},
 ] %}
@@ -82,7 +79,7 @@ crosswalk_{{ tv }} as (
 
 harmonized_{{ tv }} as (
 
-    -- Datensätze in der Zielversion → direkt übernehmen, kein Crosswalk
+    -- Datasets already in the target version -> take over directly, no crosswalk
     select
         s.dataset_slug,
         s.gisco_id     as target_gisco_id,
@@ -99,7 +96,7 @@ harmonized_{{ tv }} as (
 
     union all
 
-    -- Datensätze in anderen Versionen → über Crosswalk umrechnen
+    -- Datasets in other versions -> convert via crosswalk
     select
         s.dataset_slug,
         c.target_gisco_id,
@@ -119,8 +116,8 @@ harmonized_{{ tv }} as (
 
 ),
 
--- Zusammenlegungen aufsummieren bzw. gewichtet mitteln (siehe measure_type
--- oben; mehrere source-Zeilen → eine target-Zeile)
+-- Sum up (sum) or weighted-average (weighted_avg) merges, see measure_type
+-- above; several source rows -> one target row
 aggregated_{{ tv }} as (
     select
         dataset_slug,

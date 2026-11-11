@@ -3,17 +3,17 @@ import { computed } from "vue";
 import type { GenericDatasetRow, TimeseriesPoint } from "../types/api";
 import { formatCell, formatNumber } from "../format";
 
-// Entweder `points` (Jahreszeitreihe mit Interpolationsstatus, NUTS/LAU),
-// `periodRows` (Monats-/Periodenreihe ohne Interpolation, z.B.
-// Agenturbezirke) oder `rows` (generische Fallback-Tabelle für Datensätze
-// ohne /timeseries-Unterstützung) übergeben.
+// Pass either `points` (yearly series with interpolation status, NUTS/LAU),
+// `periodRows` (monthly/period series without interpolation, e.g.
+// Agenturbezirke) or `rows` (generic fallback table for datasets
+// without /timeseries support).
 const props = defineProps<{
   points?: TimeseriesPoint[];
   periodRows?: { label: string; arbeitslose: number | null; unterbeschaeftigung: number | null }[];
-  // Welche periodRows-Spalten angezeigt werden - z.B. nur "Unterbeschäftigung",
-  // wenn im RegionBrowser-Agenturpanel nur diese Metrik ausgewählt ist. Ohne
-  // Angabe (andere periodRows-Konsumenten, falls es sie künftig gibt) werden
-  // beide Spalten gezeigt.
+  // Which periodRows columns to show - e.g. only "Unterbeschäftigung" when the
+  // RegionBrowser Agentur panel has only that metric selected. Without it
+  // (other periodRows consumers, should there ever be any) both columns are
+  // shown.
   periodColumns?: { key: "arbeitslose" | "unterbeschaeftigung"; label: string }[];
   rows?: GenericDatasetRow[];
 }>();
@@ -28,8 +28,8 @@ const sortedPoints = computed(() =>
   (props.points ?? []).slice().sort((a, b) => a.year - b.year),
 );
 
-// Dritter Status neben beobachtet/interpoliert - siehe is_computed-Kommentar
-// auf TimeseriesPoint (types/api.ts).
+// Third status besides observed/interpolated - see the is_computed comment
+// on TimeseriesPoint (types/api.ts).
 function statusLabel(point: TimeseriesPoint): string {
   if (point.is_computed) return "berechnet";
   return point.is_interpolated ? "interpoliert" : "beobachtet";

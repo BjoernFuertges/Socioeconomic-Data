@@ -15,7 +15,7 @@ type socioeconomicInventoryFilter struct {
 	GeodataLevel string `form:"geodata_level"`
 }
 
-// GetSoziooekonomischesInventar gibt zurück, welche Soziodaten je Jahr und Geodatenebene verfügbar sind.
+// GetSoziooekonomischesInventar returns which Soziodata are available per year and geodata level.
 // @Summary Inventar verfügbarer Soziodaten
 // @Description Liefert pro Datensatz, Jahr und Geodatenebene die vorhandenen Datensätze inkl. Geodaten-Verweis-Abdeckung (NUTS/LAU/ARS).
 // @Tags Soziooekonomie

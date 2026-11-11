@@ -6,32 +6,31 @@
 }}
 
 /*
-  Aggregiert alle Kreis-grain-Soziodata-Datensätze (siehe source_datasets
-  unten) auf NUTS-0/1/2-Ebene hoch - analog zu mart_nuts0/1/2_summary.sql
-  (die dasselbe bisher nur für Bevölkerung/Schuldnerquote/Arbeitslose tun),
-  hier aber für den kompletten Datensatz-Katalog. Macht Auswahl/Chart/
-  Tabelle (DatasetPicker.vue) auch auf Land-/Bundesland-/
-  Regierungsbezirksebene nutzbar, nicht nur auf Kreisebene - siehe
-  GetNutsDatasetAggregateTimeseries (backend/internal/handlers/nuts.go).
+  Aggregates all Kreis-grain socioeconomic datasets (see source_datasets
+  below) up to NUTS-0/1/2 level - analogous to mart_nuts0/1/2_summary.sql
+  (which so far do the same only for population/Schuldnerquote/Arbeitslose),
+  but for the full dataset catalog. Makes selection/chart/table
+  (DatasetPicker.vue) usable at country/Bundesland/Regierungsbezirk level,
+  not just Kreis level - see GetNutsDatasetAggregateTimeseries
+  (backend/internal/handlers/nuts.go).
 
-  Quelle: mart_nuts3_sociodata_harmonized, fixiert auf target_version 2024
-  (aktuellste Kreis-Gebietsstruktur - analog zur festen target_version in
-  mart_nuts3_lau_aggregate.sql), NICHT die interpolierte/lückengefüllte
-  Version (mart_nuts3_timeseries_interpolated): Aggregate laufen also nur
-  über tatsächlich vorhandene Kreis-Werte, keine übernommenen
-  Imputationen. source_region_count zeigt, wie viele Kreise pro Jahr
-  tatsächlich beigetragen haben.
+  Source: mart_nuts3_sociodata_harmonized, fixed to target_version 2024
+  (latest Kreis territorial structure - analogous to the fixed
+  target_version in mart_nuts3_lau_aggregate.sql), NOT the
+  interpolated/gap-filled version (mart_nuts3_timeseries_interpolated):
+  aggregates run only over Kreis values that actually exist, no carried-over
+  imputations. source_region_count shows how many Kreise contributed per
+  year.
 
-  measure_type (source_datasets unten) muss inhaltlich mit der
-  gleichnamigen Liste in mart_nuts3_sociodata_harmonized.sql
-  übereinstimmen - dort die autoritative Quelle, hier dupliziert, weil dbt
-  Jinja-Variablen nicht modellübergreifend geteilt werden (gleiches Muster
-  wie mart_lau_sociodata_harmonized.sql vs. backend/cmd/gen-models/main.go).
-  'sum' summiert unverändert; 'weighted_avg' mittelt bevölkerungsgewichtet
-  (Gewicht: mart_nuts3_summary.bevoelkerung desselben Jahres, Kreise ohne
-  Bevölkerungswert werden ausgeschlossen statt mit Gewicht 0 verzerrend
-  einzufließen) - ein reiner Mittelwert würde große und kleine Kreise
-  gleich gewichten.
+  measure_type (source_datasets below) must match the list of the same name
+  in mart_nuts3_sociodata_harmonized.sql, which is authoritative; it is
+  duplicated here because dbt cannot share Jinja variables across models
+  (same pattern as mart_lau_sociodata_harmonized.sql vs.
+  backend/cmd/gen-models/main.go). 'sum' sums unchanged; 'weighted_avg'
+  averages population-weighted (weight: mart_nuts3_summary.bevoelkerung of
+  the same year; Kreise without a population value are excluded instead of
+  distorting with weight 0) - a plain mean would weight large and small
+  Kreise equally.
 */
 
 {% set source_datasets = [

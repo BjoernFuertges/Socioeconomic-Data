@@ -9,30 +9,20 @@
 }}
 
 /*
-  Räumliche Zuordnung jeder Gemeinde (LAU) zu ihrer NUTS-3-Region je
-  NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021, 2024).
+  Spatial assignment of each Gemeinde (LAU) to its NUTS-3 region per NUTS
+  version (2003, 2006, 2010, 2013, 2016, 2021, 2024).
 
-  Zuordnung über die größte Schnittfläche (statt reinem ST_Contains), um
-  numerische Ungenauigkeiten und Randberührungen an Gemeindegrenzen
-  abzufangen.
+  Assignment by largest intersection area (instead of plain ST_Contains) to
+  absorb numerical inaccuracies and boundary touches at Gemeinde borders.
 
-  Nur für die LAU-Bevölkerungsjahre berechnet, die in
-  int_lau_population_geo tatsächlich vorhanden sind (nicht für alle
-  verfügbaren LAU-Geometriejahre), um die räumliche Verschneidung nicht
-  unnötig aufzublähen.
+  Only computed for the LAU population years present in
+  int_lau_population_geo, to keep the spatial join small.
 
-  NUTS-3-Geometrien kommen bewusst aus mart_nuts_geometry_historized statt
-  direkt aus stg_nuts_geometry - gleicher Grund wie in
-  int_lau_nuts3_spatial_link.sql dokumentiert: stg_nuts_geometry ist eine
-  View, die geometry_3035 bei jeder Abfrage per ST_GeomFromText aus der
-  rohen loaded_data-Textspalte neu parst, ohne jede Möglichkeit eines
-  Geometrie-Index. Der Join der LAU-Bevölkerungsjahre (mehrere zehntausend
-  Zeilen) dagegen blieb dadurch zuletzt in der Praxis hängen (EXPLAIN-
-  Kosten im Milliarden-Bereich, dbt run kam über diesen Knoten nicht
-  hinaus). mart_nuts_geometry_historized speichert dieselbe Geometrie
-  bereits als echte, GiST-indizierte PostGIS-Spalte je Gültigkeitsperiode
-  (valid_from/valid_to) statt je Einzeljahr - version_year wird daher
-  gegen diesen Zeitraum gefiltert statt gegen ein einzelnes year-Feld.
+  NUTS-3 geometries come from mart_nuts_geometry_historized, not
+  stg_nuts_geometry: the staging view re-parses geometry_3035 via
+  ST_GeomFromText on every query and cannot be indexed, which made this
+  join hang. The mart stores a GiST-indexed geometry per validity period
+  (valid_from/valid_to), so version_year is filtered against that range.
 */
 
 with version_years as (

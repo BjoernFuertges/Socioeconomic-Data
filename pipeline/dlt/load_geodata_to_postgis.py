@@ -18,10 +18,10 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Base paths — GEODATA_BASE_PATH zeigt auf den Output des socioeconomic-data-parser
-BASE_PATH = Path(os.environ.get("GEODATA_BASE_PATH", str(Path(__file__).resolve().parents[2] / "socioeconomic-data-parser")))
+# Same default as fetch_lau_population.py, so a fresh checkout finds the CSVs it downloads.
+BASE_PATH = Path(os.environ.get("GEODATA_BASE_PATH", str(Path(__file__).resolve().parent / "eurostat_lau_population")))
 GEODATA_PATH = BASE_PATH / "geodata" / "lau" / "output" / "geojson"
-# Fallback: unkomprimierte GeoJSON-Dateien aus geo-mapper (lokal verfügbar)
+# Fallback: uncompressed GeoJSON from geo-mapper
 LAU_GEOJSON_FALLBACK_PATH = Path(
     os.environ.get(
         "LAU_GEODATA_PATH",
@@ -29,7 +29,7 @@ LAU_GEOJSON_FALLBACK_PATH = Path(
     )
 )
 POPULATION_PATH = BASE_PATH / "statistics" / "lokale_verwaltungseinheiten_eu" / "output"
-# Fallback: LAU-Bevölkerungsdaten aus geo-importer
+# Fallback: LAU names (no population) from geo-importer
 POPULATION_FALLBACK_PATH = Path(
     os.environ.get(
         "LAU_POPULATION_PATH",
@@ -55,9 +55,8 @@ def extract_year_from_filename(filename: str) -> int:
 def load_geodata() -> Iterator[Dict[str, Any]]:
     """Load all LAU geometry data from GeoJSON files.
 
-    Sucht zuerst nach komprimierten Dateien (*_cleaned.geojson.gz) im
-    GEODATA_BASE_PATH-Output; fällt zurück auf unkomprimierte .geojson-Dateien
-    im geo-mapper-Verzeichnis (lokal verfügbar).
+    Prefers compressed *_cleaned.geojson.gz under GEODATA_BASE_PATH, falls back
+    to uncompressed .geojson files from geo-mapper.
     """
     logger.info("Starting geodata extraction...")
 
@@ -91,19 +90,18 @@ def load_geodata() -> Iterator[Dict[str, Any]]:
                         record['geometry'] = None
                     yield record
             gc.collect()
-                
+
         except Exception as e:
+            # Re-raise: with "replace" a partial extract would wipe the good table.
             logger.error(f"Error processing {file_path.name}: {e}")
-            continue
+            raise
 
 @dlt.resource(
     name="lau_population",
     write_disposition="replace",
-    # gisco_id/nuts_3_code/lau_name_latin/population/country kommen nur aus dem
-    # primären GEODATA_BASE_PATH-Pfad; im Fallback (geo-importer LAU.csv) sind
-    # sie durchgehend NULL. Ohne expliziten Typ-Hint lässt dlt eine Spalte, die
-    # in allen Zeilen NULL ist, komplett weg (Typinferenz schlägt fehl), was
-    # stg_lau_population.sql mit "column does not exist" abbrechen lässt.
+    # These columns only exist in the primary path; in the fallback they are all
+    # NULL, and dlt drops all-NULL columns without a type hint, which would make
+    # stg_lau_population.sql fail with "column does not exist".
     columns={
         "gisco_id": {"data_type": "text", "nullable": True},
         "nuts_3_code": {"data_type": "text", "nullable": True},
@@ -115,8 +113,8 @@ def load_geodata() -> Iterator[Dict[str, Any]]:
 def load_population_data() -> Iterator[Dict[str, Any]]:
     """Load all LAU population data from CSV files.
 
-    Sucht zuerst nach lau_population_*.csv im GEODATA_BASE_PATH-Output;
-    fällt zurück auf die LAU-CSVs aus geo-importer (LAU<year>/LAU.csv).
+    Prefers lau_population_*.csv under GEODATA_BASE_PATH, falls back to
+    geo-importer's LAU<year>/LAU.csv.
     """
     logger.info("Starting population data extraction...")
 
@@ -133,7 +131,7 @@ def load_population_data() -> Iterator[Dict[str, Any]]:
                     yield {str(k): v for k, v in row.to_dict().items()}
             except Exception as e:
                 logger.error(f"Error processing {file_path.name}: {e}")
-                continue
+                raise
     else:
         # Fallback: geo-importer LAU<year>/LAU.csv  (Format: ID,Name)
         lau_dirs = sorted(POPULATION_FALLBACK_PATH.glob("LAU[0-9][0-9][0-9][0-9]"))
@@ -150,11 +148,9 @@ def load_population_data() -> Iterator[Dict[str, Any]]:
                 df['year'] = year
                 # Rename columns to match expected schema
                 df = df.rename(columns={'id': 'lau_nat_code', 'name': 'lau_name_national'})
-                # Fallback hat keine Bevölkerungszahlen/gisco_id (nur im primären
-                # GEODATA_BASE_PATH-Output vorhanden) — Spalten als NULL ergänzen,
-                # damit stg_lau_population.sql (erwartet diese Spalten) nicht mit
-                # "column does not exist" abbricht; nachgelagerte, populationsbasierte
-                # Marts bleiben dadurch leer statt den ganzen dbt-Lauf zu blockieren.
+                # Add the missing columns as NULL so stg_lau_population.sql still
+                # compiles; population-based marts end up empty instead of
+                # blocking the whole dbt run.
                 for col in ("gisco_id", "nuts_3_code", "lau_name_latin", "population", "country"):
                     if col not in df.columns:
                         df[col] = None
@@ -162,7 +158,7 @@ def load_population_data() -> Iterator[Dict[str, Any]]:
                     yield {str(k): v for k, v in row.to_dict().items()}
             except Exception as e:
                 logger.error(f"Error processing {lau_dir}: {e}")
-                continue
+                raise
 
 @dlt.resource(name="nuts_geometry", write_disposition="replace")
 def load_nuts_geodata() -> Iterator[Dict[str, Any]]:
@@ -194,8 +190,9 @@ def load_nuts_geodata() -> Iterator[Dict[str, Any]]:
             gc.collect()
 
         except Exception as e:
+            # Re-raise: with "replace" a partial extract would wipe the good table.
             logger.error(f"Error processing {file_path.name}: {e}")
-            continue
+            raise
 
 def create_pipeline():
     """Create and configure the DLT pipeline for geodata."""
@@ -221,7 +218,6 @@ def main():
         f"GEODATA_BASE_PATH={BASE_PATH}, GEODATA_PATH={GEODATA_PATH}, POPULATION_PATH={POPULATION_PATH}, NUTS_GEODATA_PATH={NUTS_GEODATA_PATH}"
     )
 
-    # Separate pipelines to avoid stale state cross-contamination
     pipeline = create_pipeline()
     pop_pipeline = create_population_pipeline()
 
@@ -251,7 +247,7 @@ def main():
                 table_name="nuts_geometry"
             )
             logger.info(f"NUTS geodata load completed: {nuts_geodata_info}")
-        
+
         # Load population data (primary path or fallback)
         csv_files = list(POPULATION_PATH.glob("lau_population_*.csv"))
         fallback_dirs = list(POPULATION_FALLBACK_PATH.glob("LAU[0-9][0-9][0-9][0-9]"))
@@ -265,9 +261,9 @@ def main():
                 table_name="lau_population"
             )
             logger.info(f"Population data load completed: {population_info}")
-        
+
         logger.info("Pipeline completed successfully!")
-        
+
         # Print summary
         print("\n" + "="*50)
         print("PIPELINE SUMMARY")
@@ -276,7 +272,7 @@ def main():
         print(f"NUTS Geodata: {nuts_geodata_info}")
         print(f"Population: {population_info}")
         print("="*50)
-        
+
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")
         raise

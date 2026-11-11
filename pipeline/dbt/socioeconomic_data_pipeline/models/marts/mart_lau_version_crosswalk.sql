@@ -10,50 +10,41 @@
 }}
 
 /*
-  Crosswalk zwischen LAU-Versionen (Deutschland), analog zu
-  mart_nuts_version_crosswalk.sql. Zwei Bestandteile:
+  Crosswalk between LAU versions (Germany), analogous to
+  mart_nuts_version_crosswalk.sql. Two parts:
 
-  1. identity_pairs: für jede Gemeinde ohne administrative Grenzänderung
-     zwischen Quell- und Zieljahr - der weitaus häufigste Fall - eine
-     triviale Selbstzuordnung mit weight = 1,0, ohne räumliche Berechnung.
-     Deckt bewusst den GESAMTEN Lebenszyklus einer gisco_id ab (von der
-     ersten bis zur letzten Vintage-Periode, über
-     min(valid_from)/max(coalesce(valid_to, max_vintage_year)) je
-     gisco_id), nicht nur Jahre innerhalb einer einzelnen Geometrie-
-     Periode: mart_lau_geometry_historized kollabiert über die 14
-     Vintage-Jahre bei Weitem nicht so stark wie bei NUTS (im Schnitt ~12
-     statt 1-3 Perioden je Gemeinde, weil GISCO die Grenzlinien jedes Jahr
-     neu generalisiert und dabei minimal andere Koordinaten erzeugt, auch
-     ohne echte Gebietsänderung). Diese Perioden-Fragmentierung bedeutet
-     aber praktisch nie eine echte administrative Änderung - die Gemeinde
-     bleibt dieselbe gisco_id. int_lau_spatial_crosswalk berechnet daher
-     bewusst NUR Paare mit source_gisco_id != target_gisco_id (echte
-     Fusionen/Teilungen); alle Jahres-Paare derselben gisco_id werden hier
-     günstig ohne jede räumliche Berechnung abgedeckt.
-  2. crosswalk_pairs: für Gemeinden mit tatsächlicher administrativer
-     Grenzänderung (Fusion, Teilung) die räumliche Verschneidung aus
-     int_lau_spatial_crosswalk, je Quellregion auf Summe ≈ 1,0 normiert.
+  1. identity_pairs: trivial self-mapping with weight = 1.0 for every
+     Gemeinde without an administrative boundary change between source and
+     target year (by far the most common case), no spatial computation.
+     Deliberately covers the WHOLE lifecycle of a gisco_id (first to last
+     vintage period, via min(valid_from)/max(coalesce(valid_to,
+     max_vintage_year))), not just years within one geometry period:
+     mart_lau_geometry_historized collapses far less than NUTS (~12 instead
+     of 1-3 periods per Gemeinde) because GISCO re-generalizes boundaries
+     every year. This fragmentation almost never means a real
+     administrative change, so int_lau_spatial_crosswalk computes ONLY
+     pairs with source_gisco_id != target_gisco_id (real mergers/splits);
+     all year pairs of the same gisco_id are covered cheaply here.
+  2. crosswalk_pairs: for Gemeinden with an actual administrative boundary
+     change (merger, split), the spatial intersection from
+     int_lau_spatial_crosswalk, normalized to sum ~ 1.0 per source region.
 
-  Beide Mengen sind auf Ebene (source_gisco_id, source_version,
-  target_version) disjunkt (identity_pairs hat immer target_gisco_id =
-  source_gisco_id, crosswalk_pairs nie) - daher genügt UNION ALL ohne
-  weitere Deduplizierung.
+  Both sets are disjoint at (source_gisco_id, source_version,
+  target_version) level (identity_pairs always has target_gisco_id =
+  source_gisco_id, crosswalk_pairs never), so UNION ALL suffices.
 
-  Anders als bei NUTS gibt es keinen Sub-LAU-Populationslayer (LAU ist die
-  feinste in diesem Projekt verfügbare Ebene) - das Gewicht ist daher eine
-  reine Flächengewichtung, kein Populations-Fallback nötig.
+  Unlike NUTS there is no sub-LAU population layer (LAU is the finest level
+  available), so the weight is purely area-based, no population fallback.
 
-  absolute_weight (= unnormiertes Gewicht vor der Normierung auf Summe 1,0)
-  wird zusätzlich zur normierten weight-Spalte geführt - gebraucht für die
-  gewichtete Mittelwertbildung bei Quoten/Durchschnitten in
-  mart_lau_sociodata_harmonized (measure_type = 'weighted_avg'), wo Werte
-  nicht aufsummiert, sondern gewichtet gemittelt werden müssen.
+  absolute_weight (the un-normalized weight before scaling to sum 1.0) is
+  kept next to the normalized weight column - needed for the weighted mean
+  of ratios/averages in mart_lau_sociodata_harmonized
+  (measure_type = 'weighted_avg'), where values are averaged, not summed.
 */
 
 with lau_de_lifespan as (
-    -- Gesamter Lebenszyklus je gisco_id über alle ihre Perioden hinweg
-    -- (siehe Kommentar oben) - keine räumliche Information nötig, nur
-    -- die Jahresspanne.
+    -- Whole lifecycle per gisco_id across all its periods (see comment
+    -- above) - only the year span is needed, no spatial information.
     select
         gisco_id,
         min(valid_from) as min_valid_from,
@@ -64,8 +55,8 @@ with lau_de_lifespan as (
     group by gisco_id
 ),
 
--- 1. Triviale Selbstzuordnung: alle Jahres-Paare über den gesamten
--- Lebenszyklus einer Gemeinde hinweg.
+-- 1. Trivial self-mapping: all year pairs across a Gemeinde's whole
+-- lifecycle.
 identity_pairs as (
     select
         sy.year    as source_version,
@@ -80,7 +71,7 @@ identity_pairs as (
     where sy.year != ty.year
 ),
 
--- 2. Echte Grenzänderungen, normiert je Quellregion auf Summe 1,0.
+-- 2. Real boundary changes, normalized to sum 1.0 per source region.
 spatial as (
     select * from {{ ref('int_lau_spatial_crosswalk') }}
 ),

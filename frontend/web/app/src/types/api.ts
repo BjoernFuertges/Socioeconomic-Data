@@ -1,5 +1,5 @@
-// Response-Shapes der Go-API (backend/internal/models). Nur die Felder, die
-// das Frontend tatsächlich verwendet.
+// Response shapes of the Go API (backend/internal/models). Only the fields the
+// frontend actually uses.
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -8,8 +8,8 @@ export interface ApiResponse<T> {
   meta?: { total?: number; offset?: number };
 }
 
-// database/sql.Null*-Struct-Shape, die die Go-API für einige nullable Felder
-// serialisiert, statt eines schlichten Skalars/`null`.
+// database/sql.Null* struct shape the Go API serializes some nullable fields as,
+// instead of a plain scalar/`null`.
 export interface SqlNull {
   Valid: boolean;
   Int64?: number;
@@ -44,18 +44,18 @@ export interface LauRegion {
   country?: Nullable<string>;
   population_count?: Nullable<number>;
   nuts_3_code?: Nullable<string>;
-  // nuts3_id ist die kanonische LAU->NUTS-3-Verlinkung (deklariert oder
-  // räumlich ermittelt) - robuster als nuts_3_code, das oft NULL ist.
+  // nuts3_id is the canonical LAU->NUTS-3 link (declared or spatially derived) -
+  // more robust than nuts_3_code, which is often NULL.
   nuts3_id?: Nullable<string>;
-  // 'declared' (aus Quelldaten) oder 'spatial_estimate' (räumlich
-  // ermittelt, keine amtliche Zuordnung) - siehe backend lau_integrated.sql.
+  // 'declared' (from source data) or 'spatial_estimate' (spatially derived, not an
+  // official assignment) - see backend lau_integrated.sql.
   nuts3_link_source?: Nullable<string>;
   geometry_wgs84?: GeoJSON.Geometry | null;
   has_valid_geometry?: boolean;
 }
 
-// Agenturbezirke sind eine eigenständige Gebietsgliederung der
-// Bundesagentur für Arbeit - nicht deckungsgleich mit NUTS-3/LAU/ARS.
+// Agenturbezirke are a separate area division of the Bundesagentur für Arbeit -
+// not congruent with NUTS-3/LAU/ARS.
 export interface AgenturbezirkSummary {
   ba_schl: string;
   name: string;
@@ -73,8 +73,8 @@ export interface AgenturbezirkArbeitslosigkeitPoint {
   unterbeschaeftigung?: Nullable<number>;
 }
 
-// Ein Agenturbezirk mit Geometrie und dem jeweils neuesten Berichtsmonat -
-// für die Kartendarstellung (GET /agenturbezirke/latest).
+// An Agenturbezirk with geometry and its latest reporting month -
+// for the map display (GET /agenturbezirke/latest).
 export interface AgenturbezirkLatestValue {
   ba_schl: string;
   name: string;
@@ -87,36 +87,33 @@ export interface AgenturbezirkLatestValue {
   unterbeschaeftigung?: Nullable<number>;
 }
 
-// Eine verfügbare (Jahr, Monat)-Kombination, für die Agenturbezirk-
-// Arbeitslosenzahlen vorliegen (GET /agenturbezirke/periods) - für die
-// Jahr/Monat-Auswahl in der Karte, analog zur Jahres-/Versionsauswahl bei
-// NUTS/LAU.
+// An available (year, month) combination for which Agenturbezirk Arbeitslosenzahlen
+// exist (GET /agenturbezirke/periods) - for the year/month selection on the map,
+// analogous to the year/version selection for NUTS/LAU.
 export interface AgenturbezirkPeriod {
   year: number;
   month: number;
   observation_date: string;
 }
 
-// n:m-Zuordnung Agenturbezirk <-> NUTS-3-Region mit Flächen-/
-// Bevölkerungsanteil in beide Richtungen (GET /agenturbezirke/{ba_schl}/nuts3).
-// Räumliche Schätzung, keine amtliche Zuordnung - Agenturbezirke bestehen
-// i.d.R. aus einem oder mehreren ganzen Kreisen
+// n:m mapping Agenturbezirk <-> NUTS-3 region with area/population share in both
+// directions (GET /agenturbezirke/{ba_schl}/nuts3). Spatial estimate, not an
+// official assignment - Agenturbezirke usually consist of one or more whole Kreise.
 export interface AgenturNuts3Share {
   nuts3_id: string;
   region_name?: string | null;
-  // Anteil der Agenturbezirksfläche, der auf diese NUTS-3-Region entfällt
-  // (Zeilen eines Agenturbezirks summieren sich näherungsweise auf 1.0).
+  // Share of the Agenturbezirk area that falls on this NUTS-3 region (rows of an
+  // Agenturbezirk sum approximately to 1.0).
   area_share_of_agentur: number;
-  // Anteil der NUTS-3-Fläche, der auf diesen Agenturbezirk entfällt (Zeilen
-  // einer NUTS-3-Region summieren sich näherungsweise auf 1.0).
+  // Share of the NUTS-3 area that falls on this Agenturbezirk (rows of a NUTS-3
+  // region sum approximately to 1.0).
   area_share_of_nuts3: number;
 }
 
-// Einordnung eines Agenturbezirks in eine überlappende NUTS-1/2/3-Region
-// (GET /agenturbezirke/{ba_schl}/nuts-hierarchy). is_parent: kleinste Ebene,
-// die den Agenturbezirk vollständig enthält (fehlt, wenn er über
-// Bundeslandgrenzen hinausreicht). Räumliche Schätzung, keine amtliche
-// Zuordnung.
+// Placement of an Agenturbezirk in an overlapping NUTS-1/2/3 region
+// (GET /agenturbezirke/{ba_schl}/nuts-hierarchy). is_parent: smallest level that
+// fully contains the Agenturbezirk (absent if it extends across Bundesland
+// borders). Spatial estimate, not an official assignment.
 export interface AgenturNutsMembership {
   nuts_id: string;
   nuts_level: number;
@@ -126,9 +123,9 @@ export interface AgenturNutsMembership {
   is_parent: boolean;
 }
 
-// Agenturbezirk, der eine NUTS-Region überlappt
-// (GET /nuts/{nuts_id}/agenturbezirke). is_fully_contained=false: nur
-// teilweise Überlappung.
+// Agenturbezirk overlapping a NUTS region
+// (GET /nuts/{nuts_id}/agenturbezirke). is_fully_contained=false: only partial
+// overlap.
 export interface NutsAgenturbezirk {
   ba_schl: string;
   name?: string | null;
@@ -136,8 +133,8 @@ export interface NutsAgenturbezirk {
   is_fully_contained: boolean;
 }
 
-// Ein Jahr der aggregierten sozioökonomischen Indikatoren einer NUTS-Region
-// (alle Level 0-3, siehe mart_nuts0/1/2/3_summary) - GET /nuts/{nuts_id}?all=true.
+// One year of the aggregated socioeconomic indicators of a NUTS region
+// (all levels 0-3, see mart_nuts0/1/2/3_summary) - GET /nuts/{nuts_id}?all=true.
 export interface NutsSocioeconomicPoint {
   year: number;
   bevoelkerung?: Nullable<number>;
@@ -151,9 +148,9 @@ export interface NutsRegionTimeSeries {
   socioeconomic?: NutsSocioeconomicPoint[];
 }
 
-// Ein Jahr der auf NUTS-3-Ebene hochaggregierten LAU-Werte (Gemeinden) -
-// Ergänzung/Cross-Check zu NutsSocioeconomicPoint.bevoelkerung, siehe
-// mart_nuts3_lau_aggregate. GET /nuts/{nuts_id}/lau-aggregate (nur NUTS-3).
+// One year of LAU values (Gemeinden) aggregated up to NUTS-3 level -
+// supplement/cross-check to NutsSocioeconomicPoint.bevoelkerung, see
+// mart_nuts3_lau_aggregate. GET /nuts/{nuts_id}/lau-aggregate (NUTS-3 only).
 export interface NutsLauAggregatePoint {
   year: number;
   lau_population_sum?: Nullable<number>;
@@ -195,12 +192,11 @@ export interface TimeseriesPoint {
   year: number;
   value: number;
   is_interpolated: boolean;
-  // true = Wert ist eine Aggregation über mehrere Regionen (siehe
-  // NutsDatasetAggregatePoint), keine an einer einzelnen Quelle abgelesene
-  // Einzelbeobachtung - TimeseriesChart.vue/DataTable.vue zeigen dafür den
-  // dritten Status "berechnet" statt "beobachtet"/"interpoliert". Fehlt bei
-  // allen anderen Zeitreihenpunkten (NUTS-3/LAU-Kreis-grain), dort gilt die
-  // bisherige Zweiteilung.
+  // true = value is an aggregation over several regions (see
+  // NutsDatasetAggregatePoint), not a single observation read from one source -
+  // TimeseriesChart.vue/DataTable.vue show the third status "berechnet" for it
+  // instead of "beobachtet"/"interpoliert". Absent on all other time-series points
+  // (NUTS-3/LAU Kreis-grain), where the previous two-way split applies.
   is_computed?: boolean;
   value_linear?: number | null;
   value_peer_trend?: number | null;
@@ -213,40 +209,40 @@ export interface NutsTimeseriesPoint extends TimeseriesPoint {
   nuts_version: number;
 }
 
-// Zeitreihenpunkt von GET /nuts/{nuts_id}/dataset-aggregate/{slug} - das
-// Pendant zu NutsTimeseriesPoint für NUTS-0/1/2 (siehe dortigen
-// Backend-Kommentar): is_interpolated ist hier immer false, dafür gibt es
-// source_region_count (Anzahl der Kreise, die zu diesem Jahr beigetragen haben).
+// Time-series point of GET /nuts/{nuts_id}/dataset-aggregate/{slug} - the
+// counterpart to NutsTimeseriesPoint for NUTS-0/1/2 (see the backend comment
+// there): is_interpolated is always false here; instead there is
+// source_region_count (number of Kreise that contributed to this year).
 export interface NutsDatasetAggregatePoint extends TimeseriesPoint {
   nuts_id: string;
   dataset_slug: string;
   source_region_count: number;
 }
 
-// Zeitreihenpunkt von GET /agenturbezirke/{ba_schl}/dataset-aggregate/{slug} -
-// das Agentur-Pendant zu NutsDatasetAggregatePoint (Summe bzw.
-// bevölkerungsgewichteter Durchschnitt, siehe mart_agentur_dataset_aggregate).
+// Time-series point of GET /agenturbezirke/{ba_schl}/dataset-aggregate/{slug} -
+// the Agentur counterpart to NutsDatasetAggregatePoint (sum or
+// population-weighted average, see mart_agentur_dataset_aggregate).
 export interface AgenturDatasetAggregatePoint extends TimeseriesPoint {
   ba_schl: string;
   dataset_slug: string;
   source_region_count: number;
-  // "sum" = Summe der Kreis-Werte; "weighted_avg_population" =
-  // bevölkerungsgewichteter Durchschnitt (Näherung); "weighted_avg_area" =
-  // flächengewichteter Rückfall, wenn Bevölkerung fehlt (Näherung).
+  // "sum" = sum of the Kreis values; "weighted_avg_population" =
+  // population-weighted average (approximation); "weighted_avg_area" =
+  // area-weighted fallback when population is missing (approximation).
   aggregation_method: "sum" | "weighted_avg_population" | "weighted_avg_area";
-  // "median" ist nur eine Schätzung (Mediane lassen sich nicht aggregieren).
+  // "median" is only an estimate (medians can't be aggregated).
   value_kind: "count" | "rate" | "mean" | "median";
 }
 
-// Zeile von GET /agenturbezirke/dataset-aggregate - eine (Datensatz, Jahr)-
-// Kombination, für die aggregierte Agenturbezirk-Werte vorliegen.
+// Row of GET /agenturbezirke/dataset-aggregate - a (dataset, year) combination
+// for which aggregated Agenturbezirk values exist.
 export interface AgenturDatasetAggregateYear {
   dataset_slug: string;
   year: number;
 }
 
-// Metadaten-Katalogeintrag von GET /datasets (backend models.DatasetCatalogEintrag) -
-// Herkunft/Lizenz/Beschreibung
+// Metadata catalog entry of GET /datasets (backend models.DatasetCatalogEintrag) -
+// origin/license/description
 export interface DatasetMetadataEntry {
   dataset_slug: string;
   dataset_uri: string;
@@ -279,9 +275,9 @@ export interface InventoryEntry {
   distinct_geodata_ars: number;
 }
 
-// Rohzeile eines generischen Datensatz-Endpoints (/<slug>), Struktur variiert
-// je Datensatz -> nur die für den Fallback-Tabellen-Renderer relevanten Keys
-// sind bekannt, alle weiteren werden generisch durchgereicht.
+// Raw row of a generic dataset endpoint (/<slug>), structure varies per dataset
+// -> only the keys relevant to the fallback table renderer are known, all others
+// are passed through generically.
 export type GenericDatasetRow = Record<string, unknown>;
 
 // GET /custom-regions/datasets (mart_dataset_aggregation_meta)
@@ -294,7 +290,7 @@ export interface CustomRegionDataset {
   finer_slug?: string | null;
 }
 
-// Zeile von POST /custom-regions/dataset-aggregate
+// Row of POST /custom-regions/dataset-aggregate
 export interface CustomRegionAggregateRow {
   dataset_slug: string;
   indicator: string;
@@ -306,7 +302,7 @@ export interface CustomRegionAggregateRow {
   aggregation_method: string;
   source_region_count: number;
   coverage: number;
-  // Gesetzt, wenn das Polygon exakt einer bestehenden Einheit entspricht.
+  // Set when the polygon matches an existing unit exactly.
   matched_unit?: string;
   is_crosswalked?: boolean;
 }

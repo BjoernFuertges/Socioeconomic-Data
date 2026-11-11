@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-// Kennzeichnet, wie ein auf Agenturbezirke aggregierter Kreis-Datensatz
-// entstanden ist und welche Grenzen das hat (aggregation_method/value_kind aus
-// GET /agenturbezirke/.../dataset-aggregate..., siehe mart_agentur_dataset_aggregate).
+// Describes how a Kreis dataset aggregated to Agenturbezirke came about and what
+// its limits are (aggregation_method/value_kind from
+// GET /agenturbezirke/.../dataset-aggregate..., see mart_agentur_dataset_aggregate).
 const props = defineProps<{
   points: { aggregation_method?: string; value_kind?: string }[];
 }>();

@@ -9,23 +9,21 @@ type PeriodSeries = {
   points: { label: string; value: number | null }[];
 };
 
-// Für den Vergleich mehrerer Datensätze mit unterschiedlichen Einheiten/
-// Skalen (kombinierte Ansicht im DatasetPicker) - jede Serie behält ihre
-// eigenen Jahre (keine gemeinsame Periodenraster-Länge wie bei
-// `periodSeries` nötig), die x-Achse positioniert über das tatsächliche
-// Jahr. Siehe drawIndexedChart(): Werte werden auf Basisjahr=100 indexiert,
-// weil ein gemeinsamer Wert-Y-Achse bei z.B. "Durchschnittsalter" (~40) vs.
-// "Arbeitslosenquote" (~5%) sonst irreführend wäre (kein Dual-Axis-Chart,
-// siehe dataviz-Skill: zwei Skalen -> ein Chart nur indexiert auf Basis).
+// For comparing several datasets with different units/scales (combined view in
+// DatasetPicker) - each series keeps its own years (no shared period-grid length as
+// with `periodSeries` needed); the x-axis positions by the actual year. See
+// drawIndexedChart(): values are indexed to base year = 100, because a shared value
+// y-axis would be misleading for e.g. "Durchschnittsalter" (~40) vs.
+// "Arbeitslosenquote" (~5%) (no dual-axis chart, see dataviz skill: two scales ->
+// one chart only indexed to a base).
 //
-// Punkte mit `month` (1-12) sind Monatswerte (z.B. BA-Arbeitslose eines
-// Agenturbezirks), Punkte ohne `month` Jahreswerte. Enthält mindestens eine
-// Serie Monatswerte, läuft die x-Achse zeitlich (Jahr + Monatsanteil): Monats-
-// werte liegen in der Mitte ihres Monats, Jahreswerte in der Mitte ihres
-// Jahres, und der Index-Basiswert ist der Jahresdurchschnitt (Monatsreihe)
-// bzw. Jahreswert im ersten Jahr, in dem ALLE Serien Daten haben - ein
-// "erster Wert"-Basispunkt je Serie wäre bei unterschiedlichem Start der
-// Reihen nicht vergleichbar.
+// Points with `month` (1-12) are monthly values (e.g. BA Arbeitslose of an
+// Agenturbezirk), points without `month` yearly values. If at least one series has
+// monthly values, the x-axis runs in time (year + month fraction): monthly values
+// sit in the middle of their month, yearly values in the middle of their year, and
+// the index base is the yearly average (monthly series) or yearly value in the first
+// year in which ALL series have data - a per-series "first value" base would not be
+// comparable when the series start at different times.
 type IndexedPoint = TimeseriesPoint & { month?: number };
 type IndexedSeries = {
   key: string;
@@ -33,23 +31,21 @@ type IndexedSeries = {
   points: IndexedPoint[];
 };
 
-// Entweder `points` (Jahreszeitreihe mit Interpolationsstatus, NUTS/LAU),
-// `periodSeries` (eine oder mehrere Monats-/Periodenreihen ohne
-// Interpolation, z.B. Agenturbezirk Arbeitslose/Unterbeschäftigung) oder
-// `indexedSeries` (mehrere Jahreszeitreihen unterschiedlicher Datensätze,
-// kombiniert/indexiert) übergeben. Alle Serien in `periodSeries` müssen
-// dieselbe Periodenraster-Länge/-Reihenfolge teilen (Werte dürfen `null`
-// sein, wo eine Serie an dieser Periode keinen Wert hat) - die x-Achse wird
-// über den Index positioniert, nicht über das Label.
+// Pass either `points` (yearly series with interpolation status, NUTS/LAU),
+// `periodSeries` (one or more monthly/period series without interpolation, e.g.
+// Agenturbezirk Arbeitslose/Unterbeschäftigung) or `indexedSeries` (several yearly
+// series of different datasets, combined/indexed). All series in `periodSeries`
+// must share the same period-grid length/order (values may be `null` where a series
+// has no value for that period) - the x-axis is positioned by index, not by label.
 const props = defineProps<{
   points?: TimeseriesPoint[];
   periodSeries?: PeriodSeries[];
   indexedSeries?: IndexedSeries[];
 }>();
 
-// Reihenfolge entspricht der validierten Slot-Reihenfolge des dataviz-Skills
-// (blau/orange/aqua/gelb) - feste kategoriale Zuordnung, nicht zyklisch neu
-// gemischt. Deckelt die kombinierte Ansicht auf 4 Serien (siehe DatasetPicker.vue).
+// Order matches the validated slot order of the dataviz skill (blue/orange/aqua/
+// yellow) - fixed categorical assignment, not cyclically reshuffled. Caps the
+// combined view at 4 series (see DatasetPicker.vue).
 const SERIES_COLORS = ["var(--series-1)", "var(--series-2)", "var(--series-3)", "var(--series-4)"];
 
 const svgRef = ref<SVGSVGElement | null>(null);
@@ -62,18 +58,17 @@ const tooltip = ref<{ visible: boolean; x: number; y: number; rows: [string, str
 
 const svgNS = "http://www.w3.org/2000/svg";
 
-// Dritter Status neben beobachtet/interpoliert - siehe is_computed-Kommentar
-// auf TimeseriesPoint (types/api.ts): hochaggregierte NUTS-0/1/2-Werte sind
-// weder eine Einzelbeobachtung noch eine Lückenfüllung, sondern eine Summe/
-// ein gewichteter Durchschnitt über mehrere Kreise.
+// Third status besides observed/interpolated - see the is_computed comment on
+// TimeseriesPoint (types/api.ts): NUTS-0/1/2 values aggregated up are neither a
+// single observation nor a gap fill, but a sum/weighted average over several Kreise.
 function statusLabel(point: TimeseriesPoint): string {
   if (point.is_computed) return "berechnet";
   return point.is_interpolated ? "interpoliert" : "beobachtet";
 }
 
-// Legende zeigt nur die Status, die in `points` tatsächlich vorkommen - eine
-// Aggregat-Zeitreihe (NUTS-0/1/2) besteht z.B. ausschließlich aus "berechnet"-
-// Punkten, "beobachtet"/"interpoliert" wären dort irreführend.
+// Legend shows only the statuses actually present in `points` - an aggregate series
+// (NUTS-0/1/2) consists e.g. solely of "berechnet" points, so "beobachtet"/
+// "interpoliert" would be misleading there.
 const legendItems = computed(() => {
   const pts = props.points ?? [];
   const items: { key: string; markerClass: string; label: string }[] = [];
@@ -89,9 +84,9 @@ const legendItems = computed(() => {
   return items;
 });
 
-// Status-Legende der kombinierten Ansicht (Form statt Farbe, da die Farbe die
-// Serie kennzeichnet): nur Status, die bei Jahreswerten tatsächlich vorkommen.
-// Monatswerte werden als Linie ohne Marker gezeichnet und zählen nicht mit.
+// Status legend of the combined view (shape instead of color, since color identifies
+// the series): only statuses that actually occur for yearly values.
+// Monthly values are drawn as a line without markers and don't count.
 const indexedLegendItems = computed(() => {
   const pts = (props.indexedSeries ?? []).flatMap((s) => s.points).filter((p) => p.month == null);
   const items: { key: string; markerClass: string; label: string }[] = [];
@@ -131,9 +126,9 @@ function hideTooltip() {
   tooltip.value.visible = false;
 }
 
-// Tooltip zeigt die Werte ALLER sichtbaren Serien an der gehoverten
-// Periode (nicht nur der Serie, deren Marker gehovert wurde) - so bleiben
-// z.B. Arbeitslose/Unterbeschäftigung an derselben Periode vergleichbar.
+// Tooltip shows the values of ALL visible series at the hovered period (not just
+// the series whose marker was hovered) - so e.g. Arbeitslose/Unterbeschäftigung
+// stay comparable at the same period.
 function showPeriodTooltip(evt: MouseEvent, idx: number, series: PeriodSeries[]) {
   const label = series[0]?.points[idx]?.label ?? "";
   const rows: [string, string | number][] = [["Periode", label]];
@@ -144,8 +139,8 @@ function showPeriodTooltip(evt: MouseEvent, idx: number, series: PeriodSeries[])
   tooltip.value = { visible: true, x: evt.clientX + 12, y: evt.clientY + 12, rows };
 }
 
-// Einfache, indexbasierte Linienchart-Variante für eine oder mehrere
-// Perioden-Reihen (z.B. Agenturbezirk-Monatswerte) ohne Interpolationsstatus.
+// Simple index-based line chart variant for one or more period series (e.g.
+// Agenturbezirk monthly values) without interpolation status.
 function drawPeriodChart(svg: SVGSVGElement, series: PeriodSeries[]) {
   const visible = series.filter((s) => s.points.length);
   if (!visible.length) return;
@@ -224,8 +219,8 @@ function drawPeriodChart(svg: SVGSVGElement, series: PeriodSeries[]) {
   visible.forEach((s, seriesIdx) => {
     const color = SERIES_COLORS[seriesIdx % SERIES_COLORS.length];
 
-    // Pfad überspringt null-Werte (Lücke in der Linie statt falscher
-    // Interpolation über eine fehlende Periode hinweg).
+    // Path skips null values (gap in the line instead of false interpolation
+    // across a missing period).
     let pathData = "";
     s.points.forEach((p, i) => {
       if (p.value === null) return;
@@ -268,7 +263,7 @@ function drawPeriodChart(svg: SVGSVGElement, series: PeriodSeries[]) {
   });
 }
 
-// Basisjahr des Index bei gemischten Monats-/Jahresserien (null sonst) - für die Bildunterschrift.
+// Base year of the index for mixed monthly/yearly series (null otherwise) - for the caption.
 const indexBaseYear = ref<number | null>(null);
 const hasMonthlySeries = computed(() => !!props.indexedSeries?.some((s) => s.points.some((p) => p.month !== undefined)));
 
@@ -287,10 +282,9 @@ function showIndexedTooltip(evt: MouseEvent, seriesLabel: string, point: Indexed
   tooltip.value = { visible: true, x: evt.clientX + 12, y: evt.clientY + 12, rows };
 }
 
-// Kombinierte Ansicht mehrerer Datensätze: jede Serie wird auf ihren ersten
-// vorhandenen Wert = 100 indexiert (Basisjahr-Index, wie bei
-// Aktienkurs-Vergleichen), damit unterschiedliche Einheiten/Skalen auf einer
-// gemeinsamen Y-Achse vergleichbar bleiben - siehe Typ-Kommentar oben.
+// Combined view of several datasets: each series is indexed to its first existing
+// value = 100 (base-year index, as in stock price comparisons), so different
+// units/scales stay comparable on a shared y-axis - see the type comment above.
 function drawIndexedChart(svg: SVGSVGElement, series: IndexedSeries[]) {
   const visible = series.filter((s) => s.points.length);
   if (!visible.length) return;
@@ -303,8 +297,8 @@ function drawIndexedChart(svg: SVGSVGElement, series: IndexedSeries[]) {
 
   const mixed = visible.some((s) => s.points.some((p) => p.month !== undefined));
 
-  // Jahres-Referenzwert je Serie und Jahr (Monatsreihe: Durchschnitt der
-  // vorhandenen Monate) - nur für die Wahl des gemeinsamen Basisjahrs.
+  // Yearly reference value per series and year (monthly series: average of the
+  // existing months) - only for choosing the shared base year.
   const annualByYear = visible.map((s) => {
     const acc = new Map<number, { sum: number; n: number }>();
     for (const p of s.points) {
@@ -324,8 +318,8 @@ function drawIndexedChart(svg: SVGSVGElement, series: IndexedSeries[]) {
   }
   indexBaseYear.value = commonBaseYear;
 
-  // Zeitposition: bei rein jährlichen Serien das Jahr selbst (unverändertes
-  // Verhalten), gemischt Jahr + Anteil (Monatsmitte bzw. Jahresmitte).
+  // Time position: for purely yearly series the year itself (unchanged behavior),
+  // mixed: year + fraction (month middle or year middle).
   const timeOf = (p: IndexedPoint) => (!mixed ? p.year : p.year + (p.month !== undefined ? (p.month - 0.5) / 12 : 0.5));
 
   const indexed = visible.map((s, i) => {
@@ -383,8 +377,8 @@ function drawIndexedChart(svg: SVGSVGElement, series: IndexedSeries[]) {
     svg.appendChild(label);
   }
 
-  // Basislinie bei Index 100 (gestrichelt) - Referenzpunkt "unverändert
-  // gegenüber dem ersten Jahr", auf den alle Serien normiert sind.
+  // Baseline at index 100 (dashed) - reference point "unchanged versus the first
+  // year" to which all series are normalized.
   const refLine = document.createElementNS(svgNS, "line");
   refLine.setAttribute("x1", String(padding.left));
   refLine.setAttribute("x2", String(width - padding.right));
@@ -404,8 +398,8 @@ function drawIndexedChart(svg: SVGSVGElement, series: IndexedSeries[]) {
   baseline.setAttribute("stroke-width", "1");
   svg.appendChild(baseline);
 
-  // Gemischt: Jahres-Ticks mittig unter dem jeweiligen Jahr (dort liegen
-  // auch die Jahreswerte); sonst wie bisher erster/mittlerer/letzter Wert.
+  // Mixed: year ticks centered under the respective year (where the yearly values
+  // also sit); otherwise first/middle/last value as before.
   const tickYears = mixed
     ? [minYear, Math.floor((minYear + maxYear - 1) / 2), maxYear - 1]
     : [0, Math.floor(allYears.length / 2), allYears.length - 1].filter((idx) => idx >= 0 && idx < allYears.length).map((idx) => allYears[idx]);
@@ -439,10 +433,10 @@ function drawIndexedChart(svg: SVGSVGElement, series: IndexedSeries[]) {
       const cx = xFor(year);
       const cy = yFor(index);
       const isMonthly = point.month !== undefined;
-      // Monatsreihen: nur Linie, keine Marker (hunderte Punkte wären
-      // unlesbar) - Hover-Ziel bleibt.
+      // Monthly series: line only, no markers (hundreds of points would be
+      // unreadable) - hover target remains.
       if (isMonthly) {
-        // kein sichtbarer Marker
+        // no visible marker
       } else if (point.is_computed) {
         const size = 6;
         const rect = document.createElementNS(svgNS, "rect");
@@ -528,7 +522,7 @@ function drawChart() {
     return padding.top + plotH - ((value - minValue) / (maxValue - minValue)) * plotH;
   }
 
-  // Gridlines + y-Ticks
+  // Gridlines + y-ticks
   const tickCount = 4;
   for (let i = 0; i <= tickCount; i++) {
     const value = minValue + ((maxValue - minValue) * i) / tickCount;
@@ -562,7 +556,7 @@ function drawChart() {
   baseline.setAttribute("stroke-width", "1");
   svg.appendChild(baseline);
 
-  // X-Achsen-Jahreslabels (erstes, mittleres, letztes)
+  // X-axis year labels (first, middle, last)
   [0, Math.floor(points.length / 2), points.length - 1].forEach((idx) => {
     if (idx < 0 || idx >= points.length) return;
     const p = points[idx];
@@ -576,7 +570,7 @@ function drawChart() {
     svg.appendChild(text);
   });
 
-  // Linie
+  // Line
   const pathData = points.map((p, i) => `${i === 0 ? "M" : "L"}${xFor(p.year)} ${yFor(p.value)}`).join(" ");
   const path = document.createElementNS(svgNS, "path");
   path.setAttribute("d", pathData);
@@ -587,7 +581,7 @@ function drawChart() {
   path.setAttribute("stroke-linejoin", "round");
   svg.appendChild(path);
 
-  // Marker + Hover-Ziele
+  // Markers + hover targets
   points.forEach((p) => {
     const cx = xFor(p.year);
     const cy = yFor(p.value);

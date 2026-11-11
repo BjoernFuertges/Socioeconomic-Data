@@ -11,23 +11,21 @@
 }}
 
 /*
-  Historisierte LAU-Geometrien (Local Administrative Units).
+  Historized LAU (Local Administrative Unit) geometries.
 
-  Jede Zeile repräsentiert eine Periode, in der eine Geometrie-Version für eine
-  LAU-Einheit gültig war. Vintages mit identischer Geometrie werden zu einer Zeile
-  zusammengefasst.
+  Each row is a period in which a geometry version was valid for a LAU.
+  Vintages with identical geometry are merged into one row.
 
-  valid_from  = erstes Vintage-Jahr, in dem diese Geometrie-Version erscheint
-  valid_to    = letztes Jahr, in dem diese Version gültig war (NULL = noch aktuell)
+  valid_from  = first vintage year in which this geometry version appears
+  valid_to    = last year this version was valid (NULL = still current)
 
-  Datenquelle: stg_lau_geometry (enthält eine Zeile je gisco_id und Vintage-Jahr)
-  Verfügbare Vintage-Jahre: 2011–2024
+  Source: stg_lau_geometry (one row per gisco_id and vintage year)
+  Available vintage years: 2011-2024
 */
 
 with source_geoms as (
-    -- Geometrie als kompakten Hash kodieren, damit der Vergleich zwischen
-    -- Vintages günstig ist (Window-Funktionen puffern nur den Hash statt der
-    -- vollständigen WKT-Strings).
+    -- Encode the geometry as a compact hash so the cross-vintage comparison
+    -- is cheap (window functions buffer only the hash, not the full WKT).
     select
         gisco_id,
         country_code,
@@ -43,9 +41,9 @@ with source_geoms as (
 ),
 
 flagged as (
-    -- Periodenwechsel markieren: 1, wenn sich die Geometrie gegenüber dem
-    -- vorherigen Vintage ändert (is distinct from deckt auch den ersten
-    -- Datensatz je Einheit ab, bei dem lag() NULL liefert).
+    -- Flag period changes: 1 if the geometry differs from the previous
+    -- vintage (is distinct from also covers a unit's first row, where
+    -- lag() is NULL).
     select
         *,
         case
@@ -59,8 +57,8 @@ flagged as (
 ),
 
 periods as (
-    -- Island-Technik: kumulierte Summe der Wechsel-Flags ergibt eine stabile
-    -- Perioden-ID je zusammenhängender Strecke mit identischer Geometrie.
+    -- Islands technique: the running sum of the change flags yields a stable
+    -- period ID per contiguous run of identical geometry.
     select
         *,
         sum(is_new_period) over (
@@ -72,9 +70,8 @@ periods as (
 ),
 
 period_bounds as (
-    -- Je LAU und Periode genau eine Zeile: die des ersten Vintages
-    -- (valid_from). Die Geometrie ist innerhalb der Periode identisch und wird
-    -- direkt mitgenommen – kein Rück-Join nötig.
+    -- One row per LAU and period: the first vintage (valid_from). The
+    -- geometry is identical within the period, so it is taken along directly.
     select distinct on (gisco_id, period_id)
         gisco_id,
         country_code,
@@ -83,9 +80,8 @@ period_bounds as (
         nuts_3,
         year as valid_from,
         max(year) over (partition by gisco_id, period_id) as max_vintage_year,
-        -- Letztes insgesamt verfügbares Vintage-Jahr über alle LAUs -
-        -- Referenz, um "noch aktuell" von "stillgelegt" zu unterscheiden
-        -- (siehe valid_to unten).
+        -- Last vintage year across all LAUs - reference to tell "still
+        -- current" from "discontinued" (see valid_to below).
         max(year) over () as global_max_vintage_year,
         geometry_3035,
         geometry_wgs84,
@@ -101,15 +97,12 @@ select
     lau_name,
     nuts_3,
     valid_from,
-    -- valid_to = Start der nächsten Periode - 1, falls eine existiert.
-    -- Gibt es keine nächste Periode (letzte bekannte Periode dieser LAU),
-    -- ist NULL nur dann korrekt "noch aktuell", wenn die LAU tatsächlich im
-    -- global letzten Vintage-Jahr noch erfasst wurde. Andernfalls wurde der
-    -- Code unter dieser gisco_id schlicht nicht mehr fortgeschrieben (z. B.
-    -- durch Gemeindefusion stillgelegt, siehe max_vintage_year) - ohne diese
-    -- Fallunterscheidung würde ein solcher Code für JEDES spätere
-    -- geometry_year (auch das aktuelle) fälschlich als gültig gematcht,
-    -- doppelt neben seinem Nachfolgecode.
+    -- valid_to = start of the next period - 1, if one exists. For a LAU's
+    -- last known period, NULL ("still current") is only correct if the LAU
+    -- was still present in the global last vintage year. Otherwise the code
+    -- was simply discontinued (e.g. retired by a Gemeinde merger, see
+    -- max_vintage_year); without this distinction such a code would
+    -- wrongly match EVERY later geometry_year, duplicating its successor.
     coalesce(
         lead(valid_from) over (partition by gisco_id order by valid_from) - 1,
         case when max_vintage_year < global_max_vintage_year then max_vintage_year end

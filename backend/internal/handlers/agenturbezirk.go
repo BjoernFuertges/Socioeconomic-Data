@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -9,7 +11,7 @@ import (
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
-// GetAgenturbezirke gibt alle Agenturbezirke der Bundesagentur für Arbeit zurück
+// GetAgenturbezirke returns all Agenturbezirke of the Bundesagentur für Arbeit.
 // @Summary Liste aller Agenturbezirke
 // @Description Gibt alle Agenturbezirke mit Geometrie zurück. Agenturbezirke sind eine eigenständige Gebietsgliederung, nicht deckungsgleich mit NUTS-3/LAU/ARS.
 // @Tags Agenturbezirke
@@ -40,7 +42,7 @@ func (h *Handler) GetAgenturbezirke(c *gin.Context) {
 	})
 }
 
-// GetAgenturbezirkByID gibt einen einzelnen Agenturbezirk zurück
+// GetAgenturbezirkByID returns a single Agenturbezirk.
 // @Summary Agenturbezirk-Details
 // @Description Gibt Details eines Agenturbezirks mit Geometrie zurück
 // @Tags Agenturbezirke
@@ -63,7 +65,7 @@ func (h *Handler) GetAgenturbezirkByID(c *gin.Context) {
 	var agenturbezirk models.AgenturbezirkSummary
 	err := h.DB.Get(&agenturbezirk, query, baSchl)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			respondNotFound(c, "Agenturbezirk nicht gefunden")
 			return
 		}
@@ -77,7 +79,7 @@ func (h *Handler) GetAgenturbezirkByID(c *gin.Context) {
 	})
 }
 
-// GetAgenturbezirkArbeitslosigkeit gibt die monatliche Arbeitslosenzahlen-Zeitreihe eines Agenturbezirks zurück
+// GetAgenturbezirkArbeitslosigkeit returns the monthly Arbeitslose time series of an Agenturbezirk.
 // @Summary Monatliche Arbeitslosenzahlen eines Agenturbezirks
 // @Description Gibt die monatliche Zeitreihe (Arbeitslose, Unterbeschäftigung) für einen Agenturbezirk zurück (AfA Lange Zeitreihen, ab Januar 2007)
 // @Tags Agenturbezirke
@@ -118,8 +120,8 @@ func (h *Handler) GetAgenturbezirkArbeitslosigkeit(c *gin.Context) {
 	respondList(c, points, nil)
 }
 
-// GetAgenturbezirkeLatest gibt alle Agenturbezirke mit Geometrie und dem
-// jeweils neuesten Berichtsmonat zurück - für die Kartendarstellung
+// GetAgenturbezirkeLatest returns all Agenturbezirke with geometry and their
+// latest reporting month, for map rendering.
 // @Summary Agenturbezirke mit neuestem Berichtsmonat (für die Karte)
 // @Description Gibt jeden Agenturbezirk mit Geometrie und dem jeweils neuesten verfügbaren Monatswert (Arbeitslose, Unterbeschäftigung) zurück.
 // @Tags Agenturbezirke
@@ -151,9 +153,9 @@ func (h *Handler) GetAgenturbezirkeLatest(c *gin.Context) {
 	})
 }
 
-// GetAgenturbezirkePeriods gibt alle Berichtsmonate zurück, für die
-// Agenturbezirk-Arbeitslosenzahlen vorliegen - für die Jahr/Monat-Auswahl in
-// der Karte (analog zur Jahres-/Versionsauswahl bei NUTS/LAU).
+// GetAgenturbezirkePeriods returns all reporting months with Agenturbezirk
+// Arbeitslose data, for the year/month picker on the map (analogous to the
+// year/version picker for NUTS/LAU).
 // @Summary Verfügbare Berichtsmonate der Agenturbezirke
 // @Description Gibt alle distinkten (Jahr, Monat)-Kombinationen zurück, für die Arbeitslosenzahlen vorliegen (neueste zuerst).
 // @Tags Agenturbezirke
@@ -183,10 +185,9 @@ func (h *Handler) GetAgenturbezirkePeriods(c *gin.Context) {
 	})
 }
 
-// GetAgenturbezirkeByPeriod gibt alle Agenturbezirke mit Geometrie und dem
-// Wert eines bestimmten Berichtsmonats zurück - für die Kartendarstellung
-// mit wählbarem Zeitpunkt (analog zur Jahresauswahl bei NUTS/LAU). Bezirke
-// ohne Wert für diesen Monat fehlen in der Antwort.
+// GetAgenturbezirkeByPeriod returns all Agenturbezirke with geometry and the
+// value of a given reporting month, for map rendering at a selectable point in
+// time. Districts without a value for that month are absent from the response.
 // @Summary Agenturbezirke zu einem gewählten Berichtsmonat (für die Karte)
 // @Description Gibt jeden Agenturbezirk mit Geometrie und dem Monatswert (Arbeitslose, Unterbeschäftigung) für das angegebene Jahr/Monat zurück.
 // @Tags Agenturbezirke
@@ -231,10 +232,9 @@ func (h *Handler) GetAgenturbezirkeByPeriod(c *gin.Context) {
 	})
 }
 
-// GetAgenturbezirkNuts3 gibt die n:m-Zuordnung eines Agenturbezirks zu
-// überlappenden NUTS-3-Regionen zurück, mit Flächenanteil in beide
-// Richtungen - verweist auf den ergänzenden Kreis-Level-Datensatz
-// "Arbeitslose" (INKAR/BBSR).
+// GetAgenturbezirkNuts3 returns the n:m mapping of an Agenturbezirk to
+// overlapping NUTS-3 regions, with area share in both directions. Points to the
+// complementary Kreis-level dataset "Arbeitslose" (INKAR/BBSR).
 // @Summary NUTS-3-Zuordnung eines Agenturbezirks (Flächenanteile)
 // @Description Gibt die überlappenden NUTS-3-Regionen eines Agenturbezirks zurück, mit Flächenanteil in beide Richtungen. Agenturbezirke bestehen i.d.R. aus einem oder mehreren ganzen Kreisen (Ausnahme Berlin: 3 Agenturbezirke teilen sich einen Kreis) - eine räumliche Schätzung, keine amtliche Zuordnung.
 // @Tags Agenturbezirke
@@ -279,8 +279,8 @@ func (h *Handler) GetAgenturbezirkNuts3(c *gin.Context) {
 	})
 }
 
-// GetAgenturbezirkNutsHierarchy gibt die Einordnung eines Agenturbezirks in
-// die NUTS-Hierarchie zurück.
+// GetAgenturbezirkNutsHierarchy returns where an Agenturbezirk sits in the
+// NUTS hierarchy.
 // @Summary NUTS-Hierarchie eines Agenturbezirks (Kreis/Regierungsbezirk/Bundesland)
 // @Description Gibt alle überlappenden NUTS-1/2/3-Regionen eines Agenturbezirks zurück. is_fully_contained markiert Regionen, die den Agenturbezirk vollständig enthalten (Flächenanteil >= 99 %); is_parent die kleinste davon (übergeordnete Region). Reicht ein Agenturbezirk über Bundeslandgrenzen hinaus, ist keine Zeile is_parent. Räumliche Schätzung, keine amtliche Zuordnung.
 // @Tags Agenturbezirke
@@ -322,8 +322,8 @@ func (h *Handler) GetAgenturbezirkNutsHierarchy(c *gin.Context) {
 	})
 }
 
-// GetNutsAgenturbezirke gibt die Agenturbezirke zurück, die eine NUTS-Region
-// (Ebene 1-3) überlappen.
+// GetNutsAgenturbezirke returns the Agenturbezirke that overlap a NUTS region
+// (levels 1-3).
 // @Summary Agenturbezirke einer NUTS-Region
 // @Description Gibt die Agenturbezirke zurück, die eine NUTS-1/2/3-Region überlappen. is_fully_contained=true: der Agenturbezirk liegt vollständig in der Region (untergeordneter Agenturbezirk); false: nur teilweise Überlappung. Die meisten Kreise haben keinen vollständig enthaltenen Agenturbezirk, weil sie nur Teil eines größeren Agenturbezirks sind. NUTS-0 wird nicht unterstützt. Räumliche Schätzung, keine amtliche Zuordnung.
 // @Tags NUTS
@@ -364,8 +364,8 @@ func (h *Handler) GetNutsAgenturbezirke(c *gin.Context) {
 	})
 }
 
-// GetAgenturbezirkDatasetAggregateTimeseries gibt eine auf Agenturbezirk-Ebene
-// hochaggregierte Zeitreihe eines Kreis-grain-Datensatzes zurück
+// GetAgenturbezirkDatasetAggregateTimeseries returns a Kreis-grain dataset's
+// time series aggregated up to Agenturbezirk level.
 // @Summary Auf Agenturbezirk-Ebene aggregierte Datensatz-Zeitreihe
 // @Description Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) über den Agentur<->NUTS-3-Flächenanteils-Crosswalk auf Agenturbezirk-Ebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_agentur_dataset_aggregate). Analog zu GET /nuts/{nuts_id}/dataset-aggregate/{slug} für NUTS-0/1/2. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.
 // @Tags Agenturbezirke
@@ -414,7 +414,7 @@ func (h *Handler) GetAgenturbezirkDatasetAggregateTimeseries(c *gin.Context) {
 	respondList(c, points, nil)
 }
 
-// GetAgenturbezirkDatasetAggregateYears listet die auf Agenturbezirk-Ebene aggregierten Datensätze mit ihren Jahren
+// GetAgenturbezirkDatasetAggregateYears lists the datasets aggregated at Agenturbezirk level, with their years.
 // @Summary Verfügbare aggregierte Datensätze/Jahre (Agenturbezirke)
 // @Description Gibt alle (Datensatz-Slug, Jahr)-Kombinationen zurück, für die mart_agentur_dataset_aggregate Werte enthält - Grundlage der Datensatz-/Jahresauswahl in der Karte.
 // @Tags Agenturbezirke
@@ -439,7 +439,7 @@ func (h *Handler) GetAgenturbezirkDatasetAggregateYears(c *gin.Context) {
 	respondList(c, rows, &models.MetaInfo{Total: len(rows)})
 }
 
-// GetAgenturbezirkeDatasetAggregateByYear gibt für ein Jahr die aggregierten Werte aller Agenturbezirke zurück
+// GetAgenturbezirkeDatasetAggregateByYear returns the aggregated values of all Agenturbezirke for one year.
 // @Summary Aggregierter Datensatz für alle Agenturbezirke (ein Jahr)
 // @Description Liefert für einen Kreis-grain-Datensatz und ein Jahr den auf Agenturbezirk-Ebene aggregierten Wert je Agenturbezirk (siehe mart_agentur_dataset_aggregate) - für die Kartendarstellung. Geometrien kommen weiterhin aus GET /agenturbezirke/period. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.
 // @Tags Agenturbezirke

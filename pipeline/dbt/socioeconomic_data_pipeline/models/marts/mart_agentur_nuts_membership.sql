@@ -13,30 +13,28 @@
 {% set containment_threshold = 0.99 %}
 
 /*
-  Einordnung der Agenturbezirke in die NUTS-Hierarchie (NUTS-1/2/3), damit
-  man zwischen Agenturbezirk und Kreis/Regierungsbezirk/Bundesland
-  navigieren kann.
+  Placement of Agenturbezirke in the NUTS hierarchy (NUTS-1/2/3), so one
+  can navigate between Agenturbezirk and Kreis/Regierungsbezirk/Bundesland.
 
-  Eine Zeile je (Agenturbezirk, NUTS-Region), für jede NUTS-Ebene 1-3, die
-  den Agenturbezirk überlappt. Abgeleitet aus mart_agentur_nuts3_crosswalk
-  über die präfixhierarchischen NUTS-Codes (DE300 -> DE30 -> DE3) - keine
-  zusätzliche Geometrieberechnung.
+  One row per (Agenturbezirk, NUTS region), for every NUTS level 1-3 that
+  overlaps the Agenturbezirk. Derived from mart_agentur_nuts3_crosswalk via
+  the prefix-hierarchical NUTS codes (DE300 -> DE30 -> DE3) - no additional
+  geometry computation.
 
-  area_share_of_agentur: Anteil der Agenturbezirksfläche in dieser Region.
-  Normiert auf die Summe der Crosswalk-Schnittflächen des Agenturbezirks,
-  damit weggefilterte Überlappungs-"Krümel" und Flächen außerhalb
-  Deutschlands den Anteil nicht unter die Schwelle drücken.
+  area_share_of_agentur: share of the Agenturbezirk's area in this region.
+  Normalized to the sum of the Agenturbezirk's crosswalk intersection
+  areas, so filtered-out overlap slivers and areas outside Germany do not
+  push the share below the threshold.
 
   is_fully_contained: area_share_of_agentur >= {{ containment_threshold }}
-  (Toleranz für Grenzungenauigkeiten zwischen BA- und NUTS-Geometrie).
+  (tolerance for boundary inaccuracies between BA and NUTS geometries).
 
-  is_parent: die kleinste (höchste levl_code) Ebene, die den Agenturbezirk
-  vollständig enthält. Höchstens eine Zeile je Agenturbezirk - fehlt, wenn
-  keine Ebene ihn vollständig enthält (Agenturbezirk über
-  Bundesländergrenzen hinweg).
+  is_parent: the smallest level (highest levl_code) that fully contains the
+  Agenturbezirk. At most one row per Agenturbezirk - missing if no level
+  contains it fully (Agenturbezirk spanning Bundesländer borders).
 
-  Berlin: die drei Agenturbezirke liegen alle vollständig im NUTS-3-Kreis
-  DE300, der ihr Parent ist.
+  Berlin: all three Agenturbezirke lie fully within the NUTS-3 Kreis DE300,
+  which is their parent.
 */
 
 with crosswalk as (

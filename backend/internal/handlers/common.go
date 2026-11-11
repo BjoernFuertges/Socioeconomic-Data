@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -37,6 +38,10 @@ func resolvePagination(c *gin.Context, defaultLimit int, requestedLimit int, req
 			}
 		}
 
+		// Guard against int overflow, which would yield a negative OFFSET (DB error -> 500).
+		if chunk > math.MaxInt/chunkSize {
+			return nil, 0, fmt.Errorf("chunk ist zu groß")
+		}
 		offset := chunk * chunkSize
 		return &chunkSize, offset, nil
 	}
@@ -93,6 +98,21 @@ func resolveAndApplyOrderedPagination(
 	query += fmt.Sprintf(" ORDER BY %s", orderByExpr)
 	paginationQuery, paginationArgs := applyPaginationClause(query, argPos, limit, offset)
 	return paginationQuery, append(args, paginationArgs...), offset, nil
+}
+
+// parseOptionalIntQuery reads an optional integer query parameter. Raw strings
+// must not reach the DB as query args: Postgres would reject them with a 500
+// instead of the 400 the caller deserves.
+func parseOptionalIntQuery(c *gin.Context, name string) (*int, error) {
+	raw := strings.TrimSpace(c.Query(name))
+	if raw == "" {
+		return nil, nil
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil {
+		return nil, fmt.Errorf("%s muss eine ganze Zahl sein", name)
+	}
+	return &v, nil
 }
 
 func parseLonLatPoint(rawPoint string) (float64, float64, error) {

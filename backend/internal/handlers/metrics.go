@@ -9,7 +9,7 @@ import (
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
-// metricsAggRow wird intern für den DB-Scan der Aggregations-Query verwendet.
+// metricsAggRow is used internally to scan the aggregation query.
 type metricsAggRow struct {
 	Year        int     `db:"year"`
 	RegionCount int     `db:"region_count"`
@@ -20,7 +20,7 @@ type metricsAggRow struct {
 	MedianVal   float64 `db:"median_val"`
 }
 
-// metricsRankRow wird intern für den DB-Scan der Ranking-Query verwendet.
+// metricsRankRow is used internally to scan the ranking query.
 type metricsRankRow struct {
 	Year  int     `db:"year"`
 	Value float64 `db:"value"`
@@ -28,7 +28,7 @@ type metricsRankRow struct {
 	Total int     `db:"total"`
 }
 
-// GetMetrics berechnet statistische Metriken für einen oder mehrere Soziodata-Datensätze.
+// GetMetrics computes statistical metrics for one or more Soziodata datasets.
 // @Summary Statistische Metriken für Soziodata-Datensätze
 // @Description Berechnet Min, Max, Mittelwert, Median und Standardabweichung je Jahr für einen oder mehrere Datensätze.
 // @Description Mehrere 'dataset'-Parameter kombinieren unterschiedliche Datensätze in einer Antwort.
@@ -89,11 +89,11 @@ func (h *Handler) GetMetrics(c *gin.Context) {
 	})
 }
 
-// computeColumnMetrics berechnet die Metriken für eine Datensatz-Spalte.
+// computeColumnMetrics computes the metrics for one dataset column.
 func (h *Handler) computeColumnMetrics(cfg models.KreisDatasetConfig, col string, filter models.MetricsFilter) (models.DatasetMetricsResult, error) {
 	quotedCol := fmt.Sprintf(`"%s"`, col)
 
-	// Aggregations-Query: Statistiken je Jahr über alle passenden Regionen
+	// Aggregation query: per-year statistics over all matching regions
 	aggWhere, aggArgs, _ := buildMetricsWhere(filter, false, 1, "")
 	aggQuery := fmt.Sprintf(
 		`SELECT year,`+
@@ -132,9 +132,9 @@ func (h *Handler) computeColumnMetrics(cfg models.KreisDatasetConfig, col string
 		yearIndex[row.Year] = i
 	}
 
-	// Ranking-Query: nur wenn eine spezifische Region abgefragt wird
+	// Ranking query: only when a specific region is requested
 	if filter.GeodataIDNUTS != "" {
-		// WHERE ohne geodata_id_nuts, damit das Ranking über alle Regionen des gefilterten Sets geht
+		// WHERE without geodata_id_nuts, so the ranking spans all regions of the filtered set
 		rankWhere, rankArgs, rankArgPos := buildMetricsWhere(filter, true, 1, "")
 		rankQuery := fmt.Sprintf(
 			`WITH ranked AS (`+
@@ -171,7 +171,7 @@ func (h *Handler) computeColumnMetrics(cfg models.KreisDatasetConfig, col string
 		}
 	}
 
-	// Year-over-Year-Berechnung in Go für konsekutive Jahrespaare
+	// Year-over-year calculation in Go for consecutive year pairs
 	for i := 1; i < len(byYear); i++ {
 		prev := byYear[i-1]
 		curr := &byYear[i]
@@ -195,11 +195,11 @@ func (h *Handler) computeColumnMetrics(cfg models.KreisDatasetConfig, col string
 	}, nil
 }
 
-// buildMetricsWhere baut die WHERE-Klausel für Metriken-Abfragen auf.
-// excludeNutsID: wenn true, wird geodata_id_nuts nicht als Filter eingebaut
-// (für Ranking-Abfragen, die über alle Regionen eines Sets ranken sollen).
-// tableAlias: optionaler Tabellen-Alias-Präfix für Spaltennamen (z.B. "n" → "n.geodata_id_nuts").
-// Leer lassen für einfache Abfragen ohne Alias.
+// buildMetricsWhere builds the WHERE clause for metrics queries.
+// excludeNutsID: if true, geodata_id_nuts is not added as a filter
+// (for ranking queries that must rank across all regions of a set).
+// tableAlias: optional table-alias prefix for column names (e.g. "n" -> "n.geodata_id_nuts").
+// Leave empty for simple queries without an alias.
 func buildMetricsWhere(filter models.MetricsFilter, excludeNutsID bool, argPos int, tableAlias string) (string, []interface{}, int) {
 	prefix := ""
 	if tableAlias != "" {

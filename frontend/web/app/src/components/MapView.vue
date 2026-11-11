@@ -33,26 +33,26 @@ import {
 const route = useRoute();
 const router = useRouter();
 
-// Kein externer Tile-Anbieter: statt Kacheln aus API, Bundeslandgrenzen aus der eigenen, historisierten NUTS-Geometrie gezeichnet
-// (NUTS-0 = Staatsgrenze, NUTS-1 = Bundesländer in Deutschland), keine Ortsnamen oder andere Kartenbeschriftungen
+// No external tile provider: instead of tiles from an API, Bundesland borders are drawn from our own historized NUTS geometry
+// (NUTS-0 = national border, NUTS-1 = Bundesländer in Germany), no place names or other map labels
 const BOUNDARY_COLOR_LIGHT = "#1a1a1a";
 const BOUNDARY_COLOR_DARK = "#f5f5f5";
 
-// Unterstützte NUTS-3-Zielversionen - muss mit supportedNutsVersions in
-// backend/internal/handlers/kreis_generic.go übereinstimmen. Entspricht den
-// in stg_nuts_geometry vorhandenen Vintage-Jahren; mart_nuts_version_crosswalk
-// berechnet für jedes Paar davon eine direkte (1-Hop) Abbildung.
+// Supported NUTS-3 target versions - must match supportedNutsVersions in
+// backend/internal/handlers/kreis_generic.go. Corresponds to the vintage years
+// present in stg_nuts_geometry; mart_nuts_version_crosswalk computes a direct
+// (1-hop) mapping for every pair of them.
 const NUTS_VERSIONS = [2003, 2006, 2010, 2013, 2016, 2021, 2024] as const;
 
-// Unterstützte LAU-Zielversionen - muss mit supportedLauVersions in
-// backend/internal/handlers/lau_generic.go übereinstimmen. Entspricht den
-// in mart_lau_geometry_historized vorhandenen Vintage-Jahren;
-// mart_lau_version_crosswalk berechnet für jedes Paar davon eine Abbildung.
+// Supported LAU target versions - must match supportedLauVersions in
+// backend/internal/handlers/lau_generic.go. Corresponds to the vintage years
+// present in mart_lau_geometry_historized; mart_lau_version_crosswalk computes a
+// mapping for every pair of them.
 const LAU_VERSIONS = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024] as const;
 
 type GeoType = "nuts" | "lau" | "agentur";
 
-// NUTS-Ebenen für den Ebenen-Umschalter der interaktiven Kartenebene
+// NUTS levels for the level switcher of the interactive map layer
 type NutsLevel = 0 | 1 | 2 | 3;
 const NUTS_LEVELS: readonly NutsLevel[] = [0, 1, 2, 3];
 const NUTS_LEVEL_LABELS: Record<NutsLevel, string> = {
@@ -62,59 +62,57 @@ const NUTS_LEVEL_LABELS: Record<NutsLevel, string> = {
   3: "Kreis",
 };
 
-// Agenturbezirke haben (anders als NUTS/LAU) keine Zeitreihen-/Interpolations-
-// Mart, keinen Datensatz-Slug und keine Geometrie-Versionen (nur eine
-// aktuelle Grenzen-Vintage) - statt Datensatz+Version wählt man hier direkt
-// zwischen den zwei verfügbaren Metriken sowie Jahr+Monat (monatliche
-// Berichtsdaten, siehe mart_agenturbezirk_sociodata.sql).
+// Unlike NUTS/LAU, Agenturbezirke have no time-series/interpolation mart, no
+// dataset slug and no geometry versions (only one current boundary vintage) - instead
+// of dataset+version one directly chooses between the two available metrics and
+// year+month (monthly reporting data, see mart_agenturbezirk_sociodata.sql).
 type AgenturMetric = "arbeitslose" | "unterbeschaeftigung";
 const AGENTUR_METRIC_LABELS: Record<AgenturMetric, string> = {
   arbeitslose: "Arbeitslose",
   unterbeschaeftigung: "Unterbeschäftigung",
 };
 const selectedAgenturMetric = ref<AgenturMetric>("arbeitslose");
-// Rohdaten von /agenturbezirke/period (Geometrie + beide Metriken für den
-// gewählten Berichtsmonat) - beim Metrik-Wechsel wird daraus nur
-// valuesByRegion neu abgeleitet, kein erneuter Request nötig.
+// Raw data from /agenturbezirke/period (geometry + both metrics for the chosen
+// reporting month) - on a metric switch only valuesByRegion is re-derived from it,
+// no new request needed.
 const agenturLatestRaw = ref<AgenturbezirkLatestValue[]>([]);
 
-// Alternativ zu den BA-Monatswerten (arbeitslose/unterbeschaeftigung) können
-// auch die auf Agenturbezirke aggregierten Kreis-Datensätze eingefärbt werden
-// (GET /agenturbezirke/dataset-aggregate[/{slug}], flächenanteilsgewichtet über
-// mart_agentur_dataset_aggregate). "" = BA-Monatswerte (Metrik + Jahr/Monat),
-// sonst der Slug des aggregierten Datensatzes (dann nur Jahr, kein Monat).
-// Die Geometrie stammt in beiden Fällen aus /agenturbezirke/period.
+// As an alternative to the BA monthly values (arbeitslose/unterbeschaeftigung), the
+// Kreis datasets aggregated to Agenturbezirke can be colored too
+// (GET /agenturbezirke/dataset-aggregate[/{slug}], area-share-weighted via
+// mart_agentur_dataset_aggregate). "" = BA monthly values (metric + year/month),
+// otherwise the slug of the aggregated dataset (then year only, no month).
+// In both cases the geometry comes from /agenturbezirke/period.
 const selectedAgenturDataset = ref<string>("");
 const selectedAgenturAggYear = ref<number | null>(null);
-// dataset-slug -> verfügbare Jahre (absteigend)
+// dataset slug -> available years (descending)
 const agenturAggYears = ref<Map<string, number[]>>(new Map());
 const agenturAggDatasetOptions = computed(() => Array.from(agenturAggYears.value.keys()).sort());
 const agenturAggError = ref<string | null>(null);
 const agenturAggYearOptions = computed(() => agenturAggYears.value.get(selectedAgenturDataset.value) ?? []);
 
-// Verfügbare Berichtsmonate (von /agenturbezirke/periods, neueste zuerst) -
-// füllt die Jahr/Monat-Auswahl für Agenturbezirke, analog zur Jahres-
-// /Versionsauswahl bei NUTS/LAU. Agenturbezirke führen nur eine aktuelle
-// Grenzen-Vintage (siehe mart_agenturbezirk_sociodata.sql), deshalb gibt es
-// hier - anders als NUTS-/LAU-Version - keine Versionsauswahl.
+// Available reporting months (from /agenturbezirke/periods, newest first) - fills
+// the year/month selection for Agenturbezirke, analogous to the year/version
+// selection for NUTS/LAU. Agenturbezirke only carry one current boundary vintage
+// (see mart_agenturbezirk_sociodata.sql), so unlike the NUTS/LAU version there is
+// no version selection here.
 const agenturPeriodsError = ref<string | null>(null);
 const agenturPeriods = ref<AgenturbezirkPeriod[]>([]);
 const selectedAgenturYear = ref<number | null>(null);
 const selectedAgenturMonth = ref<number | null>(null);
 let agenturPeriodsLoaded = false;
-// Verhindert, dass die Erstbefüllung von selectedAgenturYear/-Month (unten)
-// den watch([selectedAgenturYear, selectedAgenturMonth])-Handler zusätzlich
-// zum ohnehin laufenden loadGeometries()-Aufruf auslöst (der diese Werte
-// gerade erst über loadAgenturPeriods() gesetzt hat) - sonst liefe der
-// Period-Request beim ersten Wechsel auf "agentur" doppelt.
+// Prevents the initial population of selectedAgenturYear/-Month (below) from also
+// triggering the watch([selectedAgenturYear, selectedAgenturMonth]) handler on top
+// of the loadGeometries() call that is running anyway (and has just set these
+// values via loadAgenturPeriods()) - otherwise the period request would run twice
+// on the first switch to "agentur".
 let suppressAgenturPeriodWatch = false;
-// Analog zu suppressAgenturPeriodWatch: verhindert, dass initFromRoute()
-// (onMounted/onActivated) einen redundanten zweiten Reload über
-// watch(selectedGeoType)/watch(selectedNutsLevel) auslöst, wenn der jeweilige
-// Aufrufer den Reload wegen eines Cross-Link-Sprungs bereits selbst explizit
-// anstößt (siehe dort) - sonst könnte der verspätete, asynchrone Watcher-
-// Reload ein zuvor per focusOnRegion() gesetztes fitBounds() mit einem
-// buildLayer() über die volle Regionsmenge wieder überschreiben.
+// Analogous to suppressAgenturPeriodWatch: prevents initFromRoute() (onMounted/
+// onActivated) from triggering a redundant second reload via
+// watch(selectedGeoType)/watch(selectedNutsLevel) when the respective caller already
+// triggers the reload explicitly because of a cross-link jump (see there) -
+// otherwise the late, asynchronous watcher reload could overwrite a fitBounds() set
+// earlier by focusOnRegion() with a buildLayer() over the full set of regions.
 let suppressGeoTypeReload = false;
 let suppressNutsLevelReload = false;
 
@@ -146,9 +144,9 @@ async function loadAgenturPeriods() {
   }
 }
 
-// Minimale Teilmenge von GeoRegionSummary, die buildLayer()/styleForFeature()
-// tatsächlich brauchen - GeoRegionSummary[] (NUTS/LAU, aus /geo) ist
-// strukturell kompatibel und damit weiterhin direkt zuweisbar.
+// Minimal subset of GeoRegionSummary that buildLayer()/styleForFeature() actually
+// need - GeoRegionSummary[] (NUTS/LAU, from /geo) is structurally compatible and
+// thus still directly assignable.
 type MapRegion = { geo_id: string; region_name: string; geometry_wgs84?: GeoJSON.Geometry | null };
 
 const mapContainer = ref<HTMLDivElement | null>(null);
@@ -166,17 +164,16 @@ const boundaryError = ref<string | null>(null);
 const boundaries = ref<GeoRegionSummary[]>([]);
 
 const inventoryError = ref<string | null>(null);
-// dataset-slug -> verfügbare Jahre (absteigend, neuestes zuerst), getrennt je
-// Geo-Ebene (/socioeconomic/inventory liefert NUTS_3- und LAU-Einträge
-// getrennt, und /{slug}/timeseries erwartet je nach Ebene nuts_version oder
-// lau_version).
+// dataset slug -> available years (descending, newest first), separate per geo
+// level (/socioeconomic/inventory returns NUTS_3 and LAU entries separately, and
+// /{slug}/timeseries expects nuts_version or lau_version depending on the level).
 const datasetYearsNuts = ref<Map<string, number[]>>(new Map());
 const datasetYearsLau = ref<Map<string, number[]>>(new Map());
-// dataset-slug -> verfügbare Jahre für NUTS-0/1/2 einmalig, nicht neu geladen bei einem
-// Wechsel zwischen Land/Bundesland/Regierungsbezirk). Der Katalog kommt aus
-// der DE-Wurzel statt je Ebene/Region einzeln
+// dataset slug -> available years for NUTS-0/1/2, loaded once (not reloaded when
+// switching between Land/Bundesland/Regierungsbezirk). The catalog comes from the
+// DE root instead of per level/region
 const datasetYearsNuts012 = ref<Map<string, number[]>>(new Map());
-// "" = kein Datensatz gewählt -> Karte zeigt nur den Grenzverlauf, keine Werte.
+// "" = no dataset selected -> map shows only the borders, no values.
 const selectedDataset = ref<string>("");
 const selectedYear = ref<number | null>(null);
 const selectedNutsVersion = ref<number>(2024);
@@ -186,7 +183,7 @@ const selectedNutsLevel = ref<NutsLevel>(3);
 
 const valuesLoading = ref(false);
 const valuesError = ref<string | null>(null);
-// source_region_count nur bei aggregierten Agentur-Datensätzen gesetzt.
+// source_region_count is only set for aggregated Agentur datasets.
 type MapValue = TimeseriesPoint & {
   source_region_count?: number;
   aggregation_method?: string;
@@ -194,8 +191,8 @@ type MapValue = TimeseriesPoint & {
 };
 const valuesByRegion = ref<Map<string, MapValue>>(new Map());
 
-// NUTS-0/1/2 nutzen einen eigenen Katalog (datasetYearsNuts012) statt des
-// Kreis-Katalogs (datasetYearsNuts) - beide Mengen sind unterschiedlich, deshalb eigene Fallunterscheidung statt nur nuts/lau.
+// NUTS-0/1/2 use a catalog of their own (datasetYearsNuts012) instead of the Kreis
+// catalog (datasetYearsNuts) - the two sets differ, hence a separate case instead of just nuts/lau.
 const datasetYears = computed(() => {
   if (selectedGeoType.value === "lau") return datasetYearsLau.value;
   if (usesNutsAggregate.value) return datasetYearsNuts012.value;
@@ -204,10 +201,9 @@ const datasetYears = computed(() => {
 const datasetOptions = computed(() => Array.from(datasetYears.value.keys()).sort());
 const yearOptions = computed(() => datasetYears.value.get(selectedDataset.value) ?? []);
 
-// NUTS-0/1/2 haben keinen Bulk-Endpunkt über eine ganze Ebene, sondern nur
-// den Einzelregion-Endpunkt GET /nuts/{nuts_id}/dataset-aggregate/{slug}
-// (siehe loadNuts012Values()) - steuert, welchen der beiden Lade-/Anzeigepfade
-// loadValues()/datasetYears oben nehmen.
+// NUTS-0/1/2 have no bulk endpoint across a whole level, only the single-region
+// endpoint GET /nuts/{nuts_id}/dataset-aggregate/{slug} (see loadNuts012Values()) -
+// controls which of the two load/display paths loadValues()/datasetYears above take.
 const usesNutsAggregate = computed(() => selectedGeoType.value === "nuts" && selectedNutsLevel.value !== 3);
 
 const valueDomain = computed<[number, number] | null>(() => {
@@ -224,19 +220,17 @@ function colorForValue(value: number): string {
   return sequentialColor(t, isDark.value);
 }
 
-// Cross-Link "Regionen -> Karte" (RegionBrowser.vue: viewOnMap()): Region-ID
-// aus ?region=, um sie beim Ankommen anzufahren (siehe focusOnRegion()) und -
-// solange nichts gehovert/angeklickt ist - in der Seitenbox zu zeigen (siehe
-// sidebarRegionId).
+// Cross-link "Regionen -> Karte" (RegionBrowser.vue: viewOnMap()): region ID from
+// ?region=, to fly to it on arrival (see focusOnRegion()) and - as long as nothing
+// is hovered/clicked - show it in the sidebar box (see sidebarRegionId).
 const highlightedRegionId = computed(() => (route.query.region as string | undefined) || null);
 const HIGHLIGHT_COLOR = "#e8a33d";
 
-// Statt eines Leaflet-Hover-Tooltips (siehe Kommentar an buildLayer()) zeigt
-// eine Seitenbox die Daten der "aktiven" Region: live beim Hovern, sonst die
-// zuletzt angeklickte ("angepinnte") Region, sonst - direkt nach einem
-// Cross-Link-Sprung von Regionen -> Karte - die per ?region= angefahrene
-// Region. So bleibt die Box beim genauen Lesen/Verlinken stabil, statt beim
-// Wegbewegen der Maus sofort zu verschwinden.
+// Instead of a Leaflet hover tooltip (see comment at buildLayer()), a sidebar box
+// shows the data of the "active" region: live while hovering, otherwise the last
+// clicked ("pinned") region, otherwise - right after a Regionen -> Karte cross-link
+// jump - the region reached via ?region=. This keeps the box stable for careful
+// reading/linking instead of vanishing as soon as the mouse moves away.
 const hoveredRegionId = ref<string | null>(null);
 const pinnedRegionId = ref<string | null>(null);
 const sidebarRegionId = computed(() => hoveredRegionId.value ?? pinnedRegionId.value ?? highlightedRegionId.value);
@@ -248,14 +242,14 @@ function styleForFeature(feature?: GeoJSON.Feature): L.PathOptions {
   const isHighlighted = geoId !== undefined && geoId === sidebarRegionId.value;
 
   if (selectedGeoType.value !== "agentur" && !selectedDataset.value) {
-    // "Kein Datensatz (nur Karte)" bzw. LAU-Ansicht: eigener, kontrastreicher
-    // Stil statt des dezenten "keine Daten"-Grautons weiter unten - der wäre
-    // auf dem dunklen Kartenhintergrund kaum sichtbar, wenn ihn ausnahmslos
-    // jede Region bekommt (siehe MAP_ONLY_FILL_* in mapColor.ts).
-    // dashArray explizit zurücksetzen: Leaflet's setStyle() merged Optionen nur
-    // (setOptions kopiert per for...in nur vorhandene Keys) statt sie zu
-    // ersetzen - ohne diese Zeile bliebe der gestrichelte Rand von zuvor
-    // interpolierten Regionen (aus einem vorher gewählten Datensatz) hängen.
+    // "Kein Datensatz (nur Karte)" or LAU view: own high-contrast style instead of the
+    // subtle "no data" gray further below - that would be barely visible on the dark
+    // map background if literally every region gets it (see MAP_ONLY_FILL_* in
+    // mapColor.ts).
+    // Reset dashArray explicitly: Leaflet's setStyle() only merges options
+    // (setOptions copies existing keys via for...in) instead of replacing them -
+    // without this line the dashed border of previously interpolated regions (from
+    // an earlier dataset) would stick around.
     return {
       fillColor: isDark.value ? MAP_ONLY_FILL_DARK : MAP_ONLY_FILL_LIGHT,
       fillOpacity: 0.75,
@@ -290,14 +284,12 @@ function restyleLayer() {
   });
 }
 
-// "3D"-Hebe-Effekt für die aktive Region (siehe sidebarRegionId): zwei
-// gestapelte drop-shadows (eng+dunkel, weit+weich) lassen die Fläche wie eine
-// angehobene Karte wirken - veranschaulicht sowohl die Hover-Vorschau als
-// auch den Sprung über einen Cross-Link. L.PathOptions kennt kein
-// CSS-Filter, deshalb direkter Zugriff auf das von Leaflets SVG-Renderer
-// erzeugte <path>-Element (_path ist intern, aber wie an anderen
-// Leaflet-Interna in dieser Datei - siehe _tryAnimatedZoom-Kommentare - der
-// einzige Weg dafür).
+// "3D" lift effect for the active region (see sidebarRegionId): two stacked
+// drop-shadows (tight+dark, wide+soft) make the area look like a raised card -
+// illustrates both the hover preview and the jump via a cross-link. L.PathOptions
+// has no CSS filter, hence direct access to the <path> element created by
+// Leaflet's SVG renderer (_path is internal, but - like other Leaflet internals in
+// this file, see the _tryAnimatedZoom comments - the only way to do it).
 const LIFT_SHADOW_LIGHT = "drop-shadow(0 4px 4px rgba(0,0,0,0.3)) drop-shadow(0 10px 14px rgba(0,0,0,0.2))";
 const LIFT_SHADOW_DARK = "drop-shadow(0 4px 4px rgba(0,0,0,0.6)) drop-shadow(0 10px 14px rgba(0,0,0,0.4))";
 
@@ -312,9 +304,8 @@ function applyLiftEffect() {
   boundaryLayer?.bringToFront();
 }
 
-// Daten für die Seitenbox - dieselbe valuesByRegion-Map wie für die
-// Einfärbung, deshalb identisch für NUTS/LAU (gewählter Datensatz) und
-// Agentur (gewählte Metrik).
+// Data for the sidebar box - the same valuesByRegion map as for the coloring, so
+// identical for NUTS/LAU (selected dataset) and Agentur (selected metric).
 const sidebarRegion = computed(() => {
   const id = sidebarRegionId.value;
   if (!id) return null;
@@ -330,23 +321,21 @@ const sidebarValueLabel = computed(() => {
     : AGENTUR_METRIC_LABELS[selectedAgenturMetric.value];
 });
 
-// Beschriftung für die Legende, wenn mangels Datensatz-Auswahl noch keine
-// Einfärbung vorliegt.
+// Legend label for when no coloring exists yet because no dataset is selected.
 const mapOnlyLabel = computed(() => (selectedGeoType.value === "lau" ? "LAU-Gemeinden" : "Kein Datensatz ausgewählt"));
 
-// Cross-Link "Karte -> Regionen" (Umkehrung von RegionBrowser.vue: viewOnMap()) -
-// springt zur Detailansicht der in der Seitenbox gezeigten Region, mit dem
-// gerade auf der Karte gewählten Datensatz vorausgewählt (siehe
-// RegionBrowser.vue: nutsSelectedSlugs/lauSelectedSlugs via ?dataset=).
-// Agenturbezirke haben keinen Datensatz-Picker (siehe dort).
+// Cross-link "Karte -> Regionen" (reverse of RegionBrowser.vue: viewOnMap()) -
+// jumps to the detail view of the region shown in the sidebar box, with the dataset
+// currently selected on the map preselected (see RegionBrowser.vue:
+// nutsSelectedSlugs/lauSelectedSlugs via ?dataset=). Agenturbezirke have no
+// dataset picker (see there).
 const sidebarLinkTarget = computed<RouteLocationRaw | null>(() => {
   const id = sidebarRegionId.value;
   if (!id) return null;
   if (selectedGeoType.value === "agentur") {
-    // Analog zu unten (dataset=) - übernimmt die auf der Karte gerade
-    // gewählte Metrik, damit RegionBrowser.vue (agenturSelectedMetrics)
-    // dieselbe Ansicht zeigt statt auf die dortige Standardauswahl
-    // (beide Metriken) zurückzufallen.
+    // Analogous to dataset= below - carries over the metric currently selected on
+    // the map, so RegionBrowser.vue (agenturSelectedMetrics) shows the same view
+    // instead of falling back to its default selection (both metrics).
     return {
       name: "regionen",
       params: { regionType: "agentur", regionId: id },
@@ -377,9 +366,9 @@ function restyleBoundaryLayer() {
   });
 }
 
-// Staats- (NUTS-0) und Bundeslandgrenzen (NUTS-1) laden - unabhängig von der
-// gewählten Ebene (NUTS/LAU), damit die Karte auch in der LAU-Ansicht eine
-// geografische Orientierung ohne Ortsnamen bietet.
+// Load country (NUTS-0) and Bundesland (NUTS-1) borders - independent of the
+// selected level (NUTS/LAU), so the map offers geographic orientation without
+// place names in the LAU view too.
 async function loadBoundaries() {
   boundaryError.value = null;
   try {
@@ -421,8 +410,8 @@ function buildBoundaryLayer() {
     style: (feature) => styleForBoundary(feature),
     interactive: false,
   }).addTo(map);
-  // Muss über der (gefüllten) Regionen-Ebene liegen, sonst verschwinden die
-  // Grenzlinien unter deren Füllfarbe.
+  // Must sit above the (filled) region layer, otherwise the border lines vanish
+  // under its fill color.
   boundaryLayer.bringToFront();
 }
 
@@ -430,19 +419,17 @@ async function loadGeometries() {
   geoError.value = null;
   try {
     if (selectedGeoType.value === "agentur") {
-      // Jahr/Monat-Auswahl erst nach dem ersten Laden der verfügbaren
-      // Berichtsmonate möglich (siehe loadAgenturPeriods) - deshalb hier
-      // abwarten, bevor der gewählte (oder default: neueste) Zeitpunkt
-      // abgefragt wird.
+      // The year/month selection is only possible after the available reporting
+      // months have loaded (see loadAgenturPeriods) - so wait here before querying
+      // the chosen (or default: latest) point in time.
       await loadAgenturPeriods();
       if (selectedAgenturYear.value === null || selectedAgenturMonth.value === null) {
         agenturLatestRaw.value = [];
         regions.value = [];
         return;
       }
-      // Ein Request liefert Geometrie UND den Wert des gewählten
-      // Berichtsmonats in einem Schritt (anders als der getrennte /geo +
-      // /{dataset}/timeseries-Pfad bei NUTS/LAU).
+      // One request delivers geometry AND the value of the chosen reporting month in
+      // one step (unlike the separate /geo + /{dataset}/timeseries path for NUTS/LAU).
       const body = await apiGet<AgenturbezirkLatestValue[]>("/agenturbezirke/period", {
         year: selectedAgenturYear.value,
         month: selectedAgenturMonth.value,
@@ -457,10 +444,10 @@ async function loadGeometries() {
     }
 
     if (selectedGeoType.value === "lau") {
-      // geometry_year pinnt auf den Grenzverlauf der gewählten LAU-Version -
-      // /geo?geo_type=lau interpretiert geometry_year dabei als Jahresfilter
-      // auf lau_integrated (siehe backend/internal/handlers/geo.go).
-      // country_code grenzt auf Deutschland ein.
+      // geometry_year pins the boundaries of the chosen LAU version -
+      // /geo?geo_type=lau interprets geometry_year as a year filter on
+      // lau_integrated (see backend/internal/handlers/geo.go).
+      // country_code restricts to Germany.
       const body = await apiGet<GeoRegionSummary[]>("/geo", {
         geo_type: "lau",
         country_code: "DE",
@@ -472,12 +459,12 @@ async function loadGeometries() {
       return;
     }
 
-    // country_code wird laut API nur für geo_type=lau ausgewertet; für NUTS
-    // grenzt nuts_parent_id (Präfix-Filter) auf Deutschland ein.
-    // geometry_strategy=exact+geometry_year pinnt auf den Grenzverlauf der
-    // gewählten NUTS-Version (siehe mart_nuts_geometry_historized) - damit
-    // liefert /geo genau die Regionen der gewählten Ebene, die in dieser
-    // Version gültig waren (level über den Ebenen-Umschalter wählbar).
+    // Per the API, country_code is only evaluated for geo_type=lau; for NUTS,
+    // nuts_parent_id (prefix filter) restricts to Germany.
+    // geometry_strategy=exact+geometry_year pins the boundaries of the chosen NUTS
+    // version (see mart_nuts_geometry_historized) - so /geo returns exactly the
+    // regions of the chosen level that were valid in that version (level selectable
+    // via the level switcher).
     const body = await apiGet<GeoRegionSummary[]>("/geo", {
       geo_type: "nuts",
       level: selectedNutsLevel.value,
@@ -493,9 +480,9 @@ async function loadGeometries() {
   }
 }
 
-// Lädt die Datensatz-Übersicht für eine Geo-Ebene und wählt (falls noch
-// nichts gewählt ist oder die bisherige Auswahl in dieser Ebene nicht
-// existiert) den ersten verfügbaren Datensatz vor.
+// Loads the dataset overview for a geo level and preselects the first available
+// dataset (if nothing is selected yet or the previous selection doesn't exist in
+// this level).
 async function loadInventoryFor(geoType: GeoType) {
   const geodataLevel = geoType === "lau" ? "LAU" : "NUTS_3";
   const target = geoType === "lau" ? datasetYearsLau : datasetYearsNuts;
@@ -520,10 +507,10 @@ async function loadInventory() {
   }
 }
 
-// Nach dem Laden aller Kataloge (Kreis/LAU/NUTS-0-2): unbekannten Datensatz
-// durch den ersten verfügbaren ersetzen und ein fehlendes/ungültiges Jahr
-// (z.B. Deep-Link mit ?dataset= aber ohne ?year=) durch das neueste
-// verfügbare ersetzen - sonst bliebe die Karte trotz Datensatz ungefärbt.
+// After all catalogs (Kreis/LAU/NUTS-0-2) have loaded: replace an unknown dataset
+// with the first available one and a missing/invalid year (e.g. deep link with
+// ?dataset= but without ?year=) with the latest available - otherwise the map
+// would stay uncolored despite a dataset.
 function reconcileDatasetSelection() {
   if (selectedGeoType.value === "agentur") return;
   if (!selectedDataset.value || !datasetYears.value.has(selectedDataset.value)) {
@@ -538,8 +525,8 @@ function reconcileDatasetSelection() {
   }
 }
 
-// Datensatz-Katalog für NUTS-0/1/2 - siehe datasetYearsNuts012-Kommentar
-// oben (einmalig aus der DE-Wurzel, nicht je Ebene neu geladen).
+// Dataset catalog for NUTS-0/1/2 - see the datasetYearsNuts012 comment above
+// (loaded once from the DE root, not reloaded per level).
 async function loadNuts012Inventory() {
   try {
     const body = await apiGet<{ datasets: DatasetCatalogEntry[] }>("/nuts/DE/datasets");
@@ -553,17 +540,16 @@ async function loadNuts012Inventory() {
   }
 }
 
-// Leitet valuesByRegion aus dem gecachten /agenturbezirke/latest-Response
-// und der gewählten Metrik ab - kein Netzwerk-Request, damit ein reiner
-// Metrik-Wechsel sofort reagiert.
+// Derives valuesByRegion from the cached /agenturbezirke/latest response and the
+// chosen metric - no network request, so a mere metric switch reacts instantly.
 function applyAgenturValues() {
   valuesByRegion.value = new Map(
     agenturLatestRaw.value.flatMap((a) => {
       const raw = selectedAgenturMetric.value === "arbeitslose" ? a.arbeitslose : a.unterbeschaeftigung;
       const value = unwrapNull(raw);
       if (value === null) return [];
-      // is_interpolated ist für Agenturbezirke immer false: es gibt (anders
-      // als für NUTS/LAU) noch keine Gap-Filling-/Interpolations-Mart.
+      // is_interpolated is always false for Agenturbezirke: unlike NUTS/LAU there
+      // is no gap-filling/interpolation mart yet.
       const point: TimeseriesPoint = { year: a.year, value, is_interpolated: false };
       return [[a.ba_schl, point]] as [string, TimeseriesPoint][];
     }),
@@ -571,8 +557,8 @@ function applyAgenturValues() {
   restyleLayer();
 }
 
-// Verfügbare aggregierte Datensätze/Jahre für Agenturbezirke; wählt (falls
-// per Route ein Datensatz vorgegeben wurde) ein gültiges Jahr vor.
+// Available aggregated datasets/years for Agenturbezirke; preselects a valid year
+// (if a dataset was given via the route).
 async function loadAgenturAggInventory() {
   const body = await apiGet<AgenturDatasetAggregateYear[]>("/agenturbezirke/dataset-aggregate");
   const byDataset = new Map<string, number[]>();
@@ -585,8 +571,8 @@ async function loadAgenturAggInventory() {
   ensureAgenturAggSelection();
 }
 
-// Verwirft einen unbekannten Datensatz und ergänzt ein fehlendes/ungültiges
-// Jahr durch das neueste verfügbare.
+// Discards an unknown dataset and replaces a missing/invalid year with the latest
+// available one.
 function ensureAgenturAggSelection() {
   const slug = selectedAgenturDataset.value;
   if (!slug) return;
@@ -612,7 +598,7 @@ async function loadAgenturAggValues() {
   valuesError.value = null;
   try {
     const body = await apiGet<AgenturDatasetAggregatePoint[]>(`/agenturbezirke/dataset-aggregate/${slug}`, { year });
-    // Antwort könnte durch schnelle Auswahlwechsel überholt sein.
+    // Response may have been superseded by quick selection changes.
     if (slug !== selectedAgenturDataset.value || year !== selectedAgenturAggYear.value) return;
     valuesByRegion.value = new Map((body.data ?? []).map((p) => [p.ba_schl, p]));
     restyleLayer();
@@ -623,13 +609,12 @@ async function loadAgenturAggValues() {
   }
 }
 
-// NUTS-0/1/2: kein Bulk-Endpunkt über eine ganze Ebene (anders als /{slug}/
-// timeseries für Kreise/LAU) - stattdessen einmal pro sichtbarer Region
-// parallel abfragen (bei Land/Bundesland/Regierungsbezirk überschaubar
-// viele: 1/16/~30 Regionen). Jede Antwort enthält bereits alle Jahre dieser
-// Region (der Endpunkt kennt keinen year-Filter), ein reiner Jahreswechsel
-// fragt der Einfachheit halber trotzdem erneut ab statt die Rohdaten
-// gesondert zu cachen - bei dieser Regionenzahl vernachlässigbar.
+// NUTS-0/1/2: no bulk endpoint across a whole level (unlike /{slug}/timeseries for
+// Kreise/LAU) - instead query once per visible region in parallel (manageable at
+// Land/Bundesland/Regierungsbezirk: 1/16/~30 regions). Each response already
+// contains all years of that region (the endpoint has no year filter); a mere year
+// switch simply re-queries anyway rather than caching the raw data separately -
+// negligible at this region count.
 async function loadNuts012Values() {
   const slug = selectedDataset.value;
   if (!slug) {
@@ -649,7 +634,7 @@ async function loadNuts012Values() {
         return [r.geo_id, body.data ?? []] as const;
       }),
     );
-    // Antwort könnte durch einen schnellen Datensatz-/Ebenenwechsel überholt sein.
+    // Response may have been superseded by a quick dataset/level switch.
     if (slug !== selectedDataset.value) return;
     const year = selectedYear.value;
     valuesByRegion.value = new Map(
@@ -666,6 +651,9 @@ async function loadNuts012Values() {
   }
 }
 
+// Drops responses of superseded requests (fast year/dataset changes).
+let valuesSeq = 0;
+
 async function loadValues() {
   if (selectedGeoType.value === "agentur") {
     if (selectedAgenturDataset.value) await loadAgenturAggValues();
@@ -677,8 +665,8 @@ async function loadValues() {
     return;
   }
   if (!selectedDataset.value || selectedYear.value === null) {
-    // Kein Datensatz gewählt -> Karte bleibt ungefärbt, eventuell noch
-    // vorhandene Werte des zuvor gewählten Datensatzes verwerfen.
+    // No dataset selected -> map stays uncolored; discard any values left over
+    // from the previously selected dataset.
     valuesError.value = null;
     if (valuesByRegion.value.size > 0) {
       valuesByRegion.value = new Map();
@@ -686,6 +674,7 @@ async function loadValues() {
     }
     return;
   }
+  const seq = ++valuesSeq;
   valuesLoading.value = true;
   valuesError.value = null;
   try {
@@ -695,6 +684,7 @@ async function loadValues() {
         lau_version: selectedLauVersion.value,
         limit: "null",
       });
+      if (seq !== valuesSeq) return;
       valuesByRegion.value = new Map((body.data ?? []).map((p) => [p.gisco_id, p]));
     } else {
       const body = await apiGet<NutsTimeseriesPoint[]>(`/${selectedDataset.value}/timeseries`, {
@@ -702,21 +692,22 @@ async function loadValues() {
         nuts_version: selectedNutsVersion.value,
         limit: "null",
       });
+      if (seq !== valuesSeq) return;
       valuesByRegion.value = new Map((body.data ?? []).map((p) => [p.nuts_id, p]));
     }
     restyleLayer();
   } catch (err) {
-    valuesError.value = err instanceof Error ? err.message : String(err);
+    if (seq === valuesSeq) valuesError.value = err instanceof Error ? err.message : String(err);
   } finally {
-    valuesLoading.value = false;
+    if (seq === valuesSeq) valuesLoading.value = false;
   }
 }
 
 function buildLayer() {
   if (!map) return;
-  // Alte Ebene immer zuerst entfernen, auch wenn die neue Region-Liste leer
-  // ist - sonst bliebe bei einem Versions-/Ebenenwechsel ohne Treffer die
-  // vorherige Kartenebene (Grenzen + Einfärbung) fälschlich stehen.
+  // Always remove the old layer first, even if the new region list is empty -
+  // otherwise a version/level switch without matches would wrongly leave the
+  // previous map layer (borders + coloring) in place.
   if (geoJsonLayer) {
     map.removeLayer(geoJsonLayer);
     geoJsonLayer = null;
@@ -733,10 +724,9 @@ function buildLayer() {
 
   geoJsonLayer = L.geoJSON(featureCollection, {
     style: (feature) => styleForFeature(feature),
-    // Statt eines Leaflet-Tooltips (siehe sidebarRegionId-Kommentar oben)
-    // steuern Hover/Klick nur noch die Seitenbox; ein Klick "pinnt" die
-    // Region, damit die Box beim Lesen/Verlinken stabil bleibt, statt beim
-    // Verlassen der Fläche sofort zu verschwinden.
+    // Instead of a Leaflet tooltip (see sidebarRegionId comment above), hover/click
+    // now only drive the sidebar box; a click "pins" the region so the box stays
+    // stable while reading/linking instead of vanishing when leaving the area.
     onEachFeature: (feature, layer) => {
       const geoId = feature.properties?.geo_id as string | undefined;
       layer.on({
@@ -757,20 +747,18 @@ function buildLayer() {
   const bounds = geoJsonLayer.getBounds();
   if (bounds.isValid()) {
     lastBounds = bounds;
-    // Der Karten-Tab ist ggf. noch per v-show ausgeblendet (Container-Größe
-    // 0x0) - fitBounds() würde dann mit einer Zoomstufe rechnen, die die
-    // interne Kartenprojektion dauerhaft korrumpiert (SVG-Layer bleiben bei
-    // "M0 0" hängen, spätere invalidateSize()-Aufrufe werfen). Der
-    // ResizeObserver unten holt das fitBounds nach, sobald der Container
-    // sichtbar wird.
+    // The map tab may still be hidden via v-show (container size 0x0) - fitBounds()
+    // would then compute with a zoom level that permanently corrupts Leaflet's
+    // internal map projection (SVG layers get stuck at "M0 0", later
+    // invalidateSize() calls throw). The ResizeObserver below catches up on the
+    // fitBounds once the container becomes visible.
     const size = map.getSize();
     if (size.x > 0 && size.y > 0) {
-      // animate: false - siehe Kommentar in focusOnRegion(): läuft hier noch
-      // eine animierte Zoom-Transition von einem vorherigen fitBounds() (z.B.
-      // Ebenen-/Versionswechsel kurz hintereinander), würde Leaflet
-      // (_tryAnimatedZoom: `if (this._animatingZoom) return true`) diesen
-      // Aufruf sonst stillschweigend verwerfen, ohne die neue Ansicht je
-      // anzuwenden.
+      // animate: false - see comment in focusOnRegion(): if an animated zoom
+      // transition from a previous fitBounds() is still running (e.g. quick
+      // level/version switches in a row), Leaflet (_tryAnimatedZoom:
+      // `if (this._animatingZoom) return true`) would silently drop this call
+      // without ever applying the new view.
       map.fitBounds(bounds, { padding: [8, 8], animate: false });
     }
   }
@@ -782,20 +770,18 @@ function handleDarkModeChange(evt: MediaQueryListEvent) {
   isDark.value = evt.matches;
 }
 
-// Der Karten-Tab wird per v-show (nicht v-if) ein-/ausgeblendet, damit sein
-// Zustand beim Tab-Wechsel erhalten bleibt - das Container-Div hat beim
-// Leaflet-Init also ggf. noch Größe 0 (display:none). Ein ResizeObserver
-// stößt invalidateSize() an, sobald der Container tatsächlich sichtbare
-// Ausmaße bekommt (z.B. beim ersten Wechsel auf den Karte-Tab).
+// The map tab is shown/hidden via v-show (not v-if) so its state survives tab
+// switches - so the container div may still have size 0 (display:none) at Leaflet
+// init. A ResizeObserver triggers invalidateSize() as soon as the container gets
+// visible dimensions (e.g. on the first switch to the map tab).
 let resizeObserver: ResizeObserver | null = null;
 
-// Übernimmt Ebene/Datensatz/Jahr/Version/Metrik aus der Route in die lokalen
-// Refs, wenn ein Query-Parameter vorhanden ist (sonst bleibt der aktuelle
-// Wert unangetastet) - für den initialen Deep-Link (onMounted) UND für einen
-// erneuten Cross-Link-Sprung auf die bereits (via KeepAlive in App.vue)
-// gemountete Karte (onActivated). Die eigentlichen Reload-Reaktionen laufen
-// über die bestehenden watch(selected...)-Handler unten, sobald sich ein Ref
-// dadurch tatsächlich ändert.
+// Copies level/dataset/year/version/metric from the route into the local refs when
+// a query parameter is present (otherwise the current value is left untouched) -
+// for the initial deep link (onMounted) AND for a repeated cross-link jump to the
+// already mounted map (via KeepAlive in App.vue, onActivated). The actual reload
+// reactions run through the existing watch(selected...) handlers below as soon as a
+// ref actually changes as a result.
 function initFromRoute() {
   const q = route.query;
   const geo = q.geo as GeoType | undefined;
@@ -807,7 +793,7 @@ function initFromRoute() {
     if (typeof q.dataset === "string") selectedAgenturDataset.value = q.dataset;
     if (q.year) {
       const y = Number(q.year);
-      // Bei aggregiertem Datensatz bezeichnet ?year= das Datenjahr, sonst das Berichtsjahr.
+      // For an aggregated dataset ?year= denotes the data year, otherwise the reporting year.
       if (!Number.isNaN(y)) {
         if (typeof q.dataset === "string" && q.dataset) selectedAgenturAggYear.value = y;
         else selectedAgenturYear.value = y;
@@ -838,16 +824,16 @@ function initFromRoute() {
   }
 }
 
-// Zentriert die Karte auf eine per ?region= angesprungene Region (Cross-Link
-// "Regionen -> Karte") und öffnet deren Tooltip - die Hervorhebung selbst
-// übernimmt styleForFeature()/highlightedRegionId weiter oben.
+// Centers the map on a region reached via ?region= (cross-link "Regionen -> Karte")
+// and opens its tooltip - the highlighting itself is handled by
+// styleForFeature()/highlightedRegionId further up.
 function focusOnRegion(id: string) {
   if (!map || !geoJsonLayer) return;
-  // Container ggf. noch unsichtbar/größe 0x0 (z.B. beim allerersten
-  // KeepAlive-activated direkt nach dem Mount, bevor Vue das Layout gemalt
-  // hat) - ein fitBounds() darauf würde Leaflets interne Projektion dauerhaft
-  // korrumpieren (siehe buildLayer()). Der ResizeObserver holt den Fokus
-  // nach, sobald der Container eine echte Größe hat.
+  // Container may still be invisible/size 0x0 (e.g. on the very first KeepAlive
+  // activated right after mount, before Vue has painted the layout) - a fitBounds()
+  // on it would permanently corrupt Leaflet's internal projection (see
+  // buildLayer()). The ResizeObserver catches up on the focus once the container
+  // has a real size.
   const size = map.getSize();
   if (size.x === 0 || size.y === 0) return;
   geoJsonLayer.eachLayer((layer) => {
@@ -855,17 +841,14 @@ function focusOnRegion(id: string) {
     if (l.feature?.properties?.geo_id !== id) return;
     const bounds = l.getBounds?.();
     if (bounds && bounds.isValid()) {
-      // lastBounds auch hier aktualisieren, sonst würde der ResizeObserver
-      // oben (der bei einer späteren Größenänderung auf lastBounds re-fitted)
-      // den Fokus auf diese Region wieder auf die volle Kartenausdehnung
-      // zurücksetzen.
+      // Update lastBounds here too, otherwise the ResizeObserver above (which
+      // re-fits to lastBounds on a later size change) would reset the focus on this
+      // region back to the full map extent.
       lastBounds = bounds;
-      // animate: false - bei einem großen Zoomsprung (z.B. von der
-      // Deutschlandübersicht auf einen einzelnen Kreis) bleibt Leaflets
-      // animierter Zoom (_tryAnimatedZoom) hier gelegentlich hängen (Zoom/
-      // Center werden nie final gesetzt); ein sofortiger, unanimierter Sprung
-      // ist für diese programmatische Fokussierung ohnehin passender als eine
-      // Animation.
+      // animate: false - on a big zoom jump (e.g. from the Germany overview to a
+      // single Kreis) Leaflet's animated zoom (_tryAnimatedZoom) occasionally gets
+      // stuck here (zoom/center never finally set); an immediate, unanimated jump
+      // suits this programmatic focusing better than an animation anyway.
       map!.fitBounds(bounds, { padding: [40, 40], maxZoom: 10, animate: false });
     }
   });
@@ -875,18 +858,17 @@ watch(highlightedRegionId, (id) => {
   if (id) focusOnRegion(id);
 });
 
-// Hover/Pin/Cross-Link-Fokus ändern, welche Region als "aktiv" gilt (siehe
-// sidebarRegionId) - Rand-Hervorhebung und 3D-Hebe-Effekt neu anwenden, ohne
-// (anders als focusOnRegion() oben) den Kartenausschnitt zu verändern - ein
-// bloßes Hovern soll nicht wegzoomen.
+// Hover/pin/cross-link focus change which region counts as "active" (see
+// sidebarRegionId) - reapply border highlight and 3D lift effect without changing
+// the map view (unlike focusOnRegion() above) - mere hovering must not zoom away.
 watch(sidebarRegionId, () => {
   restyleLayer();
   applyLiftEffect();
 });
 
-// Spiegelt den aktuellen Auswahlzustand in die Route zurück (router.replace,
-// damit reine Auswahländerungen keine Chronik-Einträge erzeugen) - macht die
-// Karten-Ansicht deep-linkbar/teilbar, siehe F12.1.
+// Mirrors the current selection state back into the route (router.replace, so
+// pure selection changes create no history entries) - makes the map view
+// deep-linkable/shareable, see F12.1.
 const currentQuery = computed<Record<string, string>>(() => {
   const q: Record<string, string> = { geo: selectedGeoType.value };
   if (selectedGeoType.value === "agentur") {
@@ -912,13 +894,12 @@ const currentQuery = computed<Record<string, string>>(() => {
 });
 
 watch(currentQuery, (q) => {
-  // App.vue hält MapView über <KeepAlive> auch außerhalb der "karte"-Route
-  // aktiv, dieser Watcher läuft also z.B. auch weiter, während der Nutzer
-  // auf "regionen"/"katalog" ist. route (useRoute()) ist das global aktuelle
-  // Route-Objekt, nicht "die Route, mit der diese Komponente zuletzt aktiv
-  // war" - ohne diese Prüfung würde ein Query-Key, der zufällig mit einer
-  // anderen Ansicht kollidiert, hierher zurücknavigieren (siehe derselbe Bug
-  // in RegionBrowser.vue: applyRouteSelection()).
+  // App.vue keeps MapView alive via <KeepAlive> even outside the "karte" route, so
+  // this watcher keeps running e.g. while the user is on "regionen"/"katalog".
+  // route (useRoute()) is the globally current route object, not "the route this
+  // component was last active with" - without this check a query key that happens
+  // to collide with another view would navigate back here (see the same bug in
+  // RegionBrowser.vue: applyRouteSelection()).
   if (route.name !== "karte") return;
   router.replace({ name: "karte", query: q });
 });
@@ -927,11 +908,10 @@ onMounted(async () => {
   const prevGeoType = selectedGeoType.value;
   const prevNutsLevel = selectedNutsLevel.value;
   initFromRoute();
-  // Ein Deep-Link (?geo=/?nutsLevel=) kann selectedGeoType/selectedNutsLevel
-  // gegenüber ihrem Default ändern - den dadurch fälligen Reload übernimmt
-  // unten der explizite Promise.all(...)/buildLayer()-Block, die
-  // entsprechenden watch(...)-Handler also einmalig überspringen (siehe
-  // suppressGeoTypeReload/suppressNutsLevelReload-Kommentar oben).
+  // A deep link (?geo=/?nutsLevel=) can change selectedGeoType/selectedNutsLevel from
+  // their default - the reload this requires is handled by the explicit
+  // Promise.all(...)/buildLayer() block below, so skip the corresponding watch(...)
+  // handlers once (see suppressGeoTypeReload/suppressNutsLevelReload comment above).
   if (selectedGeoType.value !== prevGeoType) suppressGeoTypeReload = true;
   if (selectedGeoType.value === "nuts" && selectedNutsLevel.value !== prevNutsLevel) suppressNutsLevelReload = true;
 
@@ -962,12 +942,11 @@ onMounted(async () => {
   } catch (err) {
     agenturAggError.value = err instanceof Error ? err.message : String(err);
   }
-  // Direkt per Deep-Link auf einen aggregierten Agentur-/NUTS-0-1-2-Datensatz
-  // gelandet: Werte erst jetzt (nach Jahr-Validierung bzw. nach dem
-  // Geometrie-Load, den loadNuts012Values() für die Regionsliste braucht)
-  // laden - der reaktive watch([selectedDataset, selectedYear], loadValues)
-  // unten greift hier zu früh (bzw. bei einem reinen Datensatz-Deep-Link ganz
-  // ohne ?year= gar nicht, siehe dortigen Kommentar).
+  // Landed directly via deep link on an aggregated Agentur/NUTS-0-1-2 dataset: load
+  // the values only now (after year validation or after the geometry load that
+  // loadNuts012Values() needs for the region list) - the reactive
+  // watch([selectedDataset, selectedYear], loadValues) below fires too early here
+  // (or not at all for a pure dataset deep link without ?year=, see the comment there).
   if ((selectedGeoType.value === "agentur" && selectedAgenturDataset.value) || usesNutsAggregate.value) {
     await loadValues();
   }
@@ -980,31 +959,29 @@ onUnmounted(() => {
   map?.remove();
 });
 
-// App.vue hält die Karten-Ansicht per <KeepAlive> gemountet - ein erneuter
-// Sprung hierher (z.B. per Cross-Link aus Regionen) remountet die Komponente
-// also nicht, sondern reaktiviert sie nur. initFromRoute() übernimmt dabei
-// neue Query-Parameter aus dem Cross-Link; danach die Karte per
-// invalidateSize() neu vermessen (Container hatte während der Deaktivierung
-// ggf. Größe 0) und auf eine mitgegebene Region fokussieren.
+// App.vue keeps the map view mounted via <KeepAlive> - another jump here (e.g. via
+// cross-link from Regionen) doesn't remount the component but only reactivates it.
+// initFromRoute() picks up new query parameters from the cross-link; then the map
+// is re-measured via invalidateSize() (the container may have had size 0 while
+// deactivated) and focused on a region passed along.
 onActivated(async () => {
   const prevGeoType = selectedGeoType.value;
   const prevNutsLevel = selectedNutsLevel.value;
   initFromRoute();
-  // Bei der allerersten Aktivierung (direkt beim initialen Mount, noch vor
-  // dem ersten Layout) hat der Container ggf. noch Größe 0x0 - dann hier
-  // nichts tun und den ResizeObserver (s.o.) übernehmen lassen, statt mit
-  // invalidateSize()/fitBounds() auf einer 0x0-Größe Leaflets interne
-  // Projektion dauerhaft zu korrumpieren (siehe buildLayer()-Kommentar).
+  // On the very first activation (right at the initial mount, before the first
+  // layout) the container may still have size 0x0 - then do nothing here and let
+  // the ResizeObserver (see above) take over, instead of permanently corrupting
+  // Leaflet's internal projection with invalidateSize()/fitBounds() on a 0x0 size
+  // (see buildLayer() comment).
   const size = map?.getSize();
   if (!map || !size || size.x === 0 || size.y === 0) return;
   map.invalidateSize();
-  // Ein Cross-Link-Sprung (z.B. Regionen -> Karte auf ein Bundesland) kann
-  // selectedGeoType/selectedNutsLevel geändert haben - Geometrie/Werte dafür
-  // HIER erst neu laden (und die entsprechenden watch(...)-Handler dabei
-  // einmalig überspringen lassen, siehe suppressGeoTypeReload/
-  // suppressNutsLevelReload), bevor focusOnRegion() unten läuft. Sonst würde
-  // focusOnRegion() noch auf der alten (asynchron erst später neu geladenen)
-  // geoJsonLayer suchen und die Region nicht finden.
+  // A cross-link jump (e.g. Regionen -> Karte to a Bundesland) may have changed
+  // selectedGeoType/selectedNutsLevel - reload geometry/values for it HERE (and let
+  // the corresponding watch(...) handlers skip once, see
+  // suppressGeoTypeReload/suppressNutsLevelReload) before focusOnRegion() runs
+  // below. Otherwise focusOnRegion() would search the old geoJsonLayer (reloaded
+  // asynchronously only later) and not find the region.
   const typeChanged = selectedGeoType.value !== prevGeoType;
   const levelChanged = selectedGeoType.value === "nuts" && selectedNutsLevel.value !== prevNutsLevel;
   if (typeChanged || levelChanged) {
@@ -1022,8 +999,8 @@ watch([selectedDataset, selectedYear], loadValues);
 watch(selectedAgenturMetric, () => {
   if (selectedGeoType.value === "agentur" && !selectedAgenturDataset.value) applyAgenturValues();
 });
-// Datensatzwechsel (BA-Monatswerte <-> aggregierter Kreis-Datensatz): gültiges
-// Jahr sicherstellen und Werte neu laden; Geometrie bleibt unverändert.
+// Dataset switch (BA monthly values <-> aggregated Kreis dataset): ensure a valid
+// year and reload values; geometry stays unchanged.
 watch(selectedAgenturDataset, () => {
   ensureAgenturAggSelection();
   if (selectedGeoType.value === "agentur") loadValues();
@@ -1031,17 +1008,17 @@ watch(selectedAgenturDataset, () => {
 watch(selectedAgenturAggYear, () => {
   if (selectedGeoType.value === "agentur" && selectedAgenturDataset.value) loadValues();
 });
-// Wenn der gewählte Monat im neuen Jahr nicht existiert (unterschiedliche
-// Jahre können unterschiedliche Berichtsmonate abgedeckt haben), auf den
-// neuesten verfügbaren Monat des neuen Jahres springen.
+// If the chosen month doesn't exist in the new year (different years may have
+// covered different reporting months), jump to the latest available month of the
+// new year.
 watch(selectedAgenturYear, () => {
   const months = agenturMonthOptions.value;
   if (selectedAgenturMonth.value !== null && !months.includes(selectedAgenturMonth.value)) {
     selectedAgenturMonth.value = months[months.length - 1] ?? null;
   }
 });
-// Beim Wechsel des Berichtsmonats: neue Geometrie+Werte für diesen
-// Zeitpunkt laden (analog zum Versionswechsel bei NUTS/LAU).
+// On reporting-month change: load new geometry+values for this point in time
+// (analogous to the version switch for NUTS/LAU).
 watch([selectedAgenturYear, selectedAgenturMonth], async () => {
   if (suppressAgenturPeriodWatch) {
     suppressAgenturPeriodWatch = false;
@@ -1057,11 +1034,10 @@ watch(isDark, () => {
   restyleBoundaryLayer();
   applyLiftEffect();
 });
-// Beim Wechsel der NUTS-Version müssen sowohl der Grenzverlauf (andere
-// Vintage-Periode, ggf. andere Kreis-IDs) als auch die Werte (andere
-// target_version im harmonisierten Mart) neu geladen werden. Die Staats-/
-// Bundeslandgrenzen hängen an derselben Version und werden unabhängig von
-// der gewählten Ebene (NUTS/LAU) mit aktualisiert.
+// On a NUTS version switch both the boundaries (different vintage period,
+// possibly different Kreis IDs) and the values (different target_version in the
+// harmonized mart) must be reloaded. The country/Bundesland borders belong to the
+// same version and are updated too, independent of the chosen level (NUTS/LAU).
 watch(selectedNutsVersion, async () => {
   await loadBoundaries();
   buildBoundaryLayer();
@@ -1070,17 +1046,16 @@ watch(selectedNutsVersion, async () => {
   buildLayer();
   await loadValues();
 });
-// Analog für die LAU-Version (andere target_version im LAU-harmonisierten Mart).
+// Same for the LAU version (different target_version in the LAU-harmonized mart).
 watch(selectedLauVersion, async () => {
   if (selectedGeoType.value !== "lau") return;
   await loadGeometries();
   buildLayer();
   await loadValues();
 });
-// Beim Wechsel der Ebene: falls der bisher gewählte Datensatz in der neuen
-// Ebene nicht existiert (NUTS-3- und LAU-Datensätze sind getrennte Mengen),
-// auf den ersten verfügbaren Datensatz der neuen Ebene umschalten (oder
-// "" ohne Datensatz-Auswahl in dieser Ebene).
+// On a level switch: if the previously chosen dataset doesn't exist in the new
+// level (NUTS-3 and LAU datasets are separate sets), switch to the first available
+// dataset of the new level (or "" without dataset selection in this level).
 watch(selectedGeoType, async () => {
   if (suppressGeoTypeReload) {
     suppressGeoTypeReload = false;
@@ -1095,10 +1070,10 @@ watch(selectedGeoType, async () => {
   buildLayer();
   await loadValues();
 });
-// Beim Wechsel der NUTS-Ebene (Land/Bundesland/Regierungsbezirk/Kreis): neue
-// Geometrie laden (andere Regionen je Ebene) und - analog zum Ebenenwechsel
-// oben (Kreis-Katalog vs. NUTS-0/1/2-Katalog sind unterschiedliche Mengen,
-// siehe datasetYears) - eine nicht mehr gültige Datensatz-Auswahl umschalten.
+// On a NUTS level switch (Land/Bundesland/Regierungsbezirk/Kreis): load new
+// geometry (different regions per level) and - analogous to the level switch
+// above (Kreis catalog vs. NUTS-0/1/2 catalog are different sets, see
+// datasetYears) - switch a no longer valid dataset selection.
 watch(selectedNutsLevel, async () => {
   if (suppressNutsLevelReload) {
     suppressNutsLevelReload = false;
@@ -1298,10 +1273,10 @@ watch(selectedNutsLevel, async () => {
               <dd>{{ sidebarRegion.point.year }}</dd>
               <dt>{{ sidebarValueLabel }}</dt>
               <dd>{{ formatNumber(sidebarRegion.point.value) }}</dd>
-              <!-- source_region_count ist nur bei aggregierten Werten gesetzt (Agentur-
-                   Kreis-Aggregat oder NUTS-0/1/2-Kreis-Aggregat, siehe MapValue oben) -
-                   für beide dieselbe "aggregiert aus..."-Zeile statt der sonstigen
-                   beobachtet/interpoliert-Unterscheidung, die für Aggregate nicht gilt. -->
+              <!-- source_region_count is only set for aggregated values (Agentur
+                   Kreis aggregate or NUTS-0/1/2 Kreis aggregate, see MapValue above) -
+                   both get the same "aggregiert aus..." row instead of the usual
+                   observed/interpolated distinction, which doesn't apply to aggregates. -->
               <template v-if="sidebarRegion.point.source_region_count !== undefined">
                 <dt>Status</dt>
                 <dd>

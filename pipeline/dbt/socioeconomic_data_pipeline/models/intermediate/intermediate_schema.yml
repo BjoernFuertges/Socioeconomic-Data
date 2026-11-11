@@ -1,0 +1,203 @@
+version: 2
+
+models:
+  - name: int_lau_geometry_canonical
+    description: "One representative geometry per German LAU (municipality), taken from the most recent geometry period."
+    columns:
+      - name: gisco_id
+        description: "Unique LAU identifier from GISCO"
+        data_type: text
+        tests:
+          - unique
+          - not_null
+
+      - name: geometry_3035
+        description: "Geometry in EPSG:3035"
+        data_type: geometry
+
+  - name: int_lau_nuts3_membership
+    description: "Assignment of each German LAU to its NUTS-3 region per NUTS boundary version and population year."
+    columns:
+      - name: gisco_id
+        description: "Unique LAU identifier from GISCO"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: year
+        description: "Population year"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: version_year
+        description: "NUTS boundary version year (2003, 2006, 2010, 2013, 2016, 2021, 2024)"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: nuts_id
+        description: "NUTS-3 region the LAU is assigned to (largest area overlap)"
+        data_type: text
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - gisco_id
+            - year
+            - version_year
+
+  - name: int_lau_nuts3_population_weight
+    description: "Population-based weight for each NUTS-3 source/target region pair across NUTS boundary versions."
+    columns:
+      - name: source_version
+        description: "Source NUTS boundary version year"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: target_version
+        description: "Target NUTS boundary version year"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: source_nuts_id
+        description: "Source NUTS-3 region"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: target_nuts_id
+        description: "Target NUTS-3 region"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: lau_population
+        description: "Sum of LAU population that falls into this source/target pair"
+        data_type: numeric
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - source_version
+            - target_version
+            - source_nuts_id
+            - target_nuts_id
+
+  - name: int_lau_nuts3_spatial_link
+    description: "Spatial fallback that links each LAU to the NUTS-3 region with the largest area overlap in the reference NUTS version (2024)."
+    columns:
+      - name: gisco_id
+        description: "Unique LAU identifier from GISCO"
+        data_type: text
+        tests:
+          - unique
+          - not_null
+
+      - name: nuts_id
+        description: "Linked NUTS-3 region (estimate, not an official assignment)"
+        data_type: text
+        tests:
+          - not_null
+
+  - name: int_lau_population_geo
+    description: "LAU population joined with its geometry, for German municipalities with valid data."
+    columns:
+      - name: gisco_id
+        description: "Unique LAU identifier from GISCO"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: year
+        description: "Population year"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: population_count
+        description: "Population count"
+        data_type: bigint
+        tests:
+          - not_null
+
+      - name: geometry_3035
+        description: "Geometry in EPSG:3035"
+        data_type: geometry
+
+  - name: int_lau_spatial_crosswalk
+    description: "Spatial overlap between German LAU geometries of different geometry vintages, with the share of the source area that overlaps the target area."
+    columns:
+      - name: source_gisco_id
+        description: "Source LAU identifier from GISCO"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: source_version
+        description: "Source LAU version year"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: target_gisco_id
+        description: "Target LAU identifier from GISCO"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: target_version
+        description: "Target LAU version year"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: area_fraction
+        description: "Share of the source area that overlaps the target area (above 1 %)"
+        data_type: numeric
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - source_gisco_id
+            - source_version
+            - target_gisco_id
+            - target_version
+
+  - name: int_nuts_spatial_crosswalk
+    description: "Spatial overlap between German NUTS-3 regions of different boundary versions, with the share of the source area that overlaps the target area."
+    columns:
+      - name: source_version
+        description: "Source NUTS boundary version year"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: target_version
+        description: "Target NUTS boundary version year"
+        data_type: integer
+        tests:
+          - not_null
+
+      - name: source_nuts_id
+        description: "Source NUTS-3 region"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: target_nuts_id
+        description: "Target NUTS-3 region"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: area_fraction
+        description: "Share of the source area that overlaps the target area (above 1 %)"
+        data_type: numeric
+        tests:
+          - not_null

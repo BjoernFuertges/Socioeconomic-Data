@@ -25,8 +25,9 @@ elif [ -f "$(go env GOPATH)/bin/swag" ]; then
 fi
 
 if [ -n "$SWAG_CMD" ]; then
-    $SWAG_CMD init -g cmd/soziodata/main.go -o ./docs --parseDependency --parseInternal
-    if [ $? -eq 0 ]; then
+    # --parseDependency breaks on newer Go stdlib generics; fall back to the plain run
+    if $SWAG_CMD init -g cmd/soziodata/main.go -o ./docs --parseDependency --parseInternal \
+        || $SWAG_CMD init -g cmd/soziodata/main.go -o ./docs; then
         echo -e "${GREEN} Swagger documentation generated successfully${NC}"
         # Stage the generated files
         git add docs/docs.go docs/swagger.json docs/swagger.yaml
@@ -41,7 +42,7 @@ fi
 
 # 2. Regenerate Go models if dbt schema YAMLs changed
 echo -e "\n${YELLOW} Checking for dbt schema changes...${NC}"
-if git diff --cached --name-only | grep -qE "pipeline/dbt/socioeconomic_data_pipeline/models/staging/stg_.*_kreise_schema\.yml"; then
+if git diff --cached --name-only | grep -qE "pipeline/dbt/socioeconomic_data_pipeline/models/staging/stg_.*_kreise_schema\.yml|backend/cmd/gen-models/"; then
     echo -e "${YELLOW} dbt schema changes detected – regenerating Go models...${NC}"
     cd "$(git rev-parse --show-toplevel)/backend/internal/models" || exit 1
     go generate .
@@ -62,7 +63,7 @@ fi
 
 # 3. Run Go tests (after potential regeneration)
 echo -e "\n${YELLOW} Running Go tests...${NC}"
-go test ./... -v
+go test ./...
 if [ $? -eq 0 ]; then
     echo -e "${GREEN} All tests passed${NC}"
 else

@@ -18,8 +18,9 @@ Configuration (target DB connection, etc.) via `pipeline/dlt/config.toml` or
 |---|---|---|
 | [`load_arbeitslosenzahlen_afa.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/load_arbeitslosenzahlen_afa.py) | Monthly unemployment/underemployment figures per Agenturbezirk (Bundesagentur-für-Arbeit district partition, distinct from NUTS-3/LAU/Kreise), pulled live from the official "Lange Zeitreihen" REST API on every run | `results_arbeitslosenzahlen_afa_agenturbezirke`, `dataset_metadata` |
 | [`load_agenturbezirke_geodata.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/load_agenturbezirke_geodata.py) | Agenturbezirk boundaries (official BA-Gebietsstruktur shapefile, all ~146 districts) | `agenturbezirk_geometry` |
+| [`fetch_lau_population.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/fetch_lau_population.py) | Not a dlt pipeline: downloads Eurostat's yearly LAU-NUTS correspondence tables and writes the German sheet as `lau_population_<year>.csv` (input for the next script). One snapshot per publication year, used as LAU population weight, not as an official population series | – (files only) |
 | [`load_geodata_to_postgis.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/load_geodata_to_postgis.py) | LAU/NUTS geometries (GeoJSON) + LAU population (CSV) | `lau_geometry`, `lau_population`, `nuts_geometry` |
-| [`load_beschaeftigungsquote.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/load_beschaeftigungsquote.py) | Employment rate (special case: municipalities/LAU) | `results_beschaeftigungsquote_gemeinden` |
+| [`load_beschaeftigungsquote.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/load_beschaeftigungsquote.py) | Employment rate (municipalities/LAU), standalone alternative loader. `run_all_pipelines.sh` loads this dataset with `load_soziodata_generic.py` instead | `results_beschaeftigungsquote_gemeinden` |
 | [`load_soziodata_generic.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/load_soziodata_generic.py) | generic format `mapped_pairs.csv` + `meta.yaml` for all remaining county-level (Kreis) datasets (population, debtor quota, work volume, ...) | `results_<dataset>_kreise`, `dataset_metadata` |
 
 ### Generic format (`load_soziodata_generic.py`)
@@ -68,13 +69,17 @@ All datasets loaded in production are listed in
 
 `load_geodata_to_postgis.py` first looks for pre-processed files in the
 configured `GEODATA_BASE_PATH` output (compressed, `*.geojson.gz`) and
-otherwise falls back to uncompressed files from `geo-mapper/` or
-`geo-importer/` (environment variables `LAU_GEODATA_PATH`,
-`LAU_POPULATION_PATH`, `NUTS_GEODATA_PATH`). Geodata and population data run
+otherwise falls back to uncompressed files in local `geo-mapper/` or
+`geo-importer/` checkouts next to the repo (environment variables
+`LAU_GEODATA_PATH`, `LAU_POPULATION_PATH`, `NUTS_GEODATA_PATH`); these are
+external tools, not directories of this repository. Geodata and population data run
 as separate dlt pipelines to avoid stale state between runs.
 
 ## write_disposition
 
-All resources load with `write_disposition="replace"` – each run replaces
-the entire table content. Historization over time is handled by **dbt**
+All dataset-content resources load with `write_disposition="replace"` –
+each run replaces the entire table content. The only exception is the
+shared `dataset_metadata` table, which is upserted (`"merge"` on
+`dataset_slug`) by `load_soziodata_generic.py` and
+`load_arbeitslosenzahlen_afa.py`. Historization over time is handled by **dbt**
 via snapshots (see [dbt](dbt.md#snapshots)), not by dlt itself.

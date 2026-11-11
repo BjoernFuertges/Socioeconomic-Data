@@ -1,6 +1,6 @@
 #cloud-config
-# Läuft nur beim ersten Boot. Bereitet den Server für den Deploy-Job
-# (.github/workflows/main.yml) vor: Docker, rclone, Repo-Checkout, pgdata-Volume.
+# Runs only on first boot. Prepares the server for the deploy job
+# (.github/workflows/main.yml): Docker, rclone, repo checkout, pgdata volume.
 package_update: true
 package_upgrade: true
 packages:
@@ -24,8 +24,8 @@ users:
       - ${ssh_public_key}
 
 write_files:
-  # "00-" ist Absicht: sshd übernimmt pro Option den ERSTEN Treffer, und das Image bringt eigene
-  # Drop-ins mit (z. B. 50-cloud-init.conf), die sonst gewinnen würden.
+  # "00-" is intentional: sshd takes the FIRST match per option, and the image ships its own
+  # drop-ins (e.g. 50-cloud-init.conf) that would otherwise win.
   - path: /etc/ssh/sshd_config.d/00-hardening.conf
     permissions: "0644"
     content: |
@@ -55,7 +55,7 @@ write_files:
     permissions: "0755"
     content: |
       #!/usr/bin/env bash
-      # Wartet auf das angehängte Hetzner-Volume und mountet es nach /mnt/pgdata
+      # Waits for the attached Hetzner volume and mounts it at /mnt/pgdata
       set -euo pipefail
       dev=""
       for i in $(seq 1 60); do
@@ -67,11 +67,11 @@ write_files:
       mkdir -p /mnt/pgdata
       grep -q " /mnt/pgdata " /etc/fstab || echo "$dev /mnt/pgdata ext4 discard,nofail,defaults 0 0" >> /etc/fstab
       mount -a
-      # Unterverzeichnis, damit Postgres nicht am lost+found des Dateisystems scheitert
+      # Subdirectory so Postgres does not fail on the filesystem's lost+found
       mkdir -p /mnt/pgdata/data
 
 runcmd:
-  # 2-GB-Server: Swap als Puffer für Lastspitzen (dbt/dlt-Läufe neben Postgres)
+  # 2 GB server: swap as a buffer for load spikes (dbt/dlt runs alongside Postgres)
   - fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
   - echo "/swapfile none swap sw 0 0" >> /etc/fstab
   - systemctl enable --now docker
@@ -79,7 +79,7 @@ runcmd:
   - /usr/local/sbin/setup-pgdata.sh
   - install -d -o deploy -g deploy /opt/soziooekonomische-daten
   - sudo -u deploy env GIT_LFS_SKIP_SMUDGE=1 git clone ${repo_url} /opt/soziooekonomische-daten
-  # Erst als Letztes: bis hierhin ist der Zugang über den Deploy-User eingerichtet, ein Fehler in den
-  # sshd-Optionen (sshd -t) lässt den bisherigen Zugang unangetastet.
+  # Runs last: once it gets here, access for the deploy user is set up, so an error in the
+  # sshd options (sshd -t) leaves the existing access untouched.
   - systemctl enable --now fail2ban
   - sshd -t && systemctl restart ssh

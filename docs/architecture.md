@@ -28,8 +28,8 @@ flowchart LR
     subgraph sources["Source data"]
         direction TB
         src_arb[/"statistik.arbeitsagentur.de\n'Lange Zeitreihen' REST API\n(live, one call per Agenturbezirk)"/]
-        src_geo[/"data-exchange/1_friedrich-bjoern/\ngeodata/lau/LAU_RG_*.geojson.gz"/]
-        src_pop[/"data-exchange/1_friedrich-bjoern/\nstatistics/lau_population_*.csv"/]
+        src_geo[/"GISCO LAU/NUTS GeoJSON\n(data-exchange/, GEODATA_BASE_PATH)"/]
+        src_pop[/"Eurostat LAU-NUTS correspondence tables\n(fetch_lau_population.py → lau_population_*.csv)"/]
         src_bev[/"data-exchange/1_friedrich-bjoern/\nbevoelkerung/results_*/mapped_pairs.csv + meta.yaml"/]
         src_sq[/"data-exchange/1_friedrich-bjoern/\nschuldnerquote/results_*/mapped_pairs.csv + meta.yaml"/]
     end
@@ -108,23 +108,27 @@ Details on each step:
 
 ## Other modules
 
-These modules prepare data *before* dlt runs and are only briefly placed in
-context here (details in the respective READMEs in the repository):
+Data is prepared *before* dlt runs by tools that are **not part of this
+repository**:
 
-- **`geo-importer/`** – downloads and cleans official NUTS/LAU geodata
-  (GeoJSON, population statistics) as input for `geo-mapper/` and the
-  dlt geodata pipeline.
-- **`geo-mapper/`** – matches the socioeconomic raw datasets (from
-  `data-exchange/`) to geodata IDs (LAU/NUTS) and produces the
+- **[`geo-mapper`](https://pypi.org/project/geo-mapper/)** (external Python
+  package) – matches the socioeconomic raw datasets (region names/IDs as
+  published, e.g. by BBSR) to geodata IDs (LAU/NUTS) and produces the
   `mapped_pairs.csv`/`meta.yaml` files consumed by
   `pipeline/dlt/load_soziodata_generic.py`.
+- **Geodata preparation** – the cleaned GISCO NUTS/LAU GeoJSON files are
+  produced outside this repo and dropped into `data-exchange/`
+  (`GEODATA_BASE_PATH`). `load_geodata_to_postgis.py` can also fall back to
+  local `geo-mapper/`/`geo-importer/` checkouts next to the repo
+  (`LAU_GEODATA_PATH`, `NUTS_GEODATA_PATH`, `LAU_POPULATION_PATH`); those
+  directories do not exist in this repository.
 - **`data-exchange/`** – exchange directory for intermediate raw-data
-  states between project contributors; no code of its own, only data.
+  states between project contributors; no code of its own, only data
+  (synced from Nextcloud in production).
 
 ```mermaid
 flowchart LR
-    raw["Raw data from\ndomain teams"] --> gi["geo-importer\n(prepare geodata)"]
-    gi --> gm["geo-mapper\n(socioeconomic raw data ↔ geodata ID)"]
+    raw["Raw data\n(e.g. BBSR INKAR exports)"] --> gm["geo-mapper (external)\n(raw region ↔ geodata ID)"]
     gm --> de["data-exchange/\n(staging area)"]
     de --> dltp["dlt pipelines"]
 ```

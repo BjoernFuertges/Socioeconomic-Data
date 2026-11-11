@@ -2,30 +2,30 @@ version: 2
 
 models:
   - name: mart_region_datasets
-    description: "Vorberechnete Tabelle: verfügbare (geodata_id_nuts, dataset_slug, year)-Kombinationen aus allen Staging-Modellen. Dient als Index für den /datasets-Endpunkt."
+    description: "Precomputed index of available (geodata_id_nuts, dataset_slug, year) combinations across all datasets."
     columns:
       - name: geodata_id_nuts
-        description: "NUTS-Code der Region (z.B. DEF01)"
+        description: "NUTS code of the region (e.g. DEF01)"
         tests:
           - not_null
       - name: dataset_slug
-        description: "Datensatz-Slug (entspricht RouteSlug in der Go-API, z.B. bevoelkerung)"
+        description: "Dataset slug, matches the route slug of the API (e.g. bevoelkerung)"
         tests:
           - not_null
       - name: year
-        description: "Datenjahr"
+        description: "Year of data"
         tests:
           - not_null
 
   - name: lau_integrated
-    description: "Integrated LAU dataset combining geometry and population data for all available years"
+    description: "Integrated LAU dataset combining geometry and population data for all available years."
     columns:
       - name: gisco_id
         description: "Unique LAU identifier from GISCO (Eurostat)"
         tests:
           - not_null
       - name: year
-        description: "Data year"
+        description: "Year of data"
         tests:
           - not_null
       - name: lau_name_national
@@ -39,72 +39,48 @@ models:
       - name: nuts_id
         description: "NUTS region identifier"
       - name: nuts3_id
-        description: "Kanonischer NUTS-3-Parent: deklarierte Quellspalte (nuts_3_code/nuts_3), sonst räumlich ermittelter Fallback über int_lau_nuts3_spatial_link (größte Flächenüberlappung gegen die aktuelle NUTS-3-Version)"
+        description: "Canonical NUTS-3 parent: the declared source column if present, otherwise a spatial estimate (largest area overlap with the current NUTS-3 version)"
       - name: nuts3_link_source
-        description: "'declared' (aus Quelldaten) oder 'spatial_estimate' (räumlich ermittelt, keine amtliche Zuordnung)"
+        description: "'declared' (from source data) or 'spatial_estimate' (estimated spatially, not an official assignment)"
       - name: geometry
-        description: "PostGIS geometry (polygon) in EPSG:3035"
+        description: "Geometry (polygon) in EPSG:3035"
       - name: population
         description: "Population count for the year"
       - name: missing_population_data
-        description: "Flag indicating if population data is missing for this LAU/year"
+        description: "True if population data is missing for this LAU and year"
       - name: year_match
-        description: "Flag indicating if geometry and population year match"
+        description: "True if geometry and population year match"
       - name: total_years_available
         description: "Total number of years available for this LAU"
       - name: years_with_population
         description: "Number of years with population data for this LAU"
 
   - name: mart_nuts3_summary
-    description: "Alle verfügbaren sozioökonomischen Indikatoren je NUTS-3-Region und Jahr. Basis ist ein FULL OUTER JOIN zwischen Bevölkerung und Schuldnerquote; weitere Indikatoren werden per LEFT JOIN ergänzt."
+    description: "All available socioeconomic indicators per NUTS-3 region and year."
     columns:
       - name: nuts_id
-        description: "NUTS-3-Code der Region (z.B. DE111)"
+        description: "NUTS-3 code of the region (e.g. DE111)"
         tests:
           - not_null
       - name: region_name
-        description: "Name der Region"
+        description: "Region name"
       - name: year
-        description: "Datenjahr"
+        description: "Year of data"
         tests:
           - not_null
       - name: bevoelkerung
-        description: "Bevölkerungszahl (null wenn keine Daten für dieses Jahr)"
+        description: "Population count (null if no data for this year)"
       - name: schuldnerquote_prozent
-        description: "Schuldnerquote in Prozent (null wenn keine Daten für dieses Jahr)"
+        description: "Debtor quota in percent (null if no data for this year)"
       - name: arbeitslose_kreise
-        description: "Zahl der Arbeitslosen je Kreis (INKAR/BBSR, Jahresdurchschnitt). Für Agenturbezirk-Arbeitslosenzahlen (AfA, monatlich) siehe stattdessen mart_agenturbezirk_sociodata - andere, nicht deckungsgleiche Gebietsgliederung."
+        description: "Unemployment count per district (INKAR/BBSR, annual average). For employment agency district figures (monthly, AfA) see mart_agenturbezirk_sociodata; these use a different, non-congruent district structure."
       - name: arbeitslose
-        description: "Alias von arbeitslose_kreise unter dem Spaltennamen, weil er einheitlich über alle vier NUTS-Ebenen hinweg erwartet wird. Also kein eigenständiger Wert."
+        description: "Alias of arbeitslose_kreise, provided under this name so the column is consistent across all four NUTS levels."
       - name: yoy_change_percent
-        description: "Prozentuale Veränderung von arbeitslose gegenüber dem Vorjahr derselben Region (null ohne Vorjahreswert)."
-
-  - name: mart_nuts_geometry
-    description: "NUTS-Geometrien mit GeoJSON-Ausgabe und Geometrie-Metadaten für verfügbare Referenzjahre"
-    columns:
-      - name: nuts_id
-        description: "NUTS-Code der Region"
-        tests:
-          - not_null
-      - name: levl_code
-        description: "NUTS-Level (0-3)"
-      - name: country_code
-        description: "ISO-Ländercode"
-      - name: region_name
-        description: "Regionsname"
-      - name: year
-        description: "Referenzjahr der Geometrie"
-        tests:
-          - not_null
-      - name: geometry_3035
-        description: "PostGIS-Geometrie in EPSG:3035"
-      - name: geometry_wgs84
-        description: "GeoJSON-Geometrie in WGS84"
-      - name: has_valid_geometry
-        description: "Flag für valide Geometrie"
+        description: "Percentage change of arbeitslose compared with the previous year of the same region (null without a previous-year value)"
 
   - name: lau_data_quality
-    description: "Data quality metrics and issue tracking for LAU integration"
+    description: "Data quality metrics and issue tracking for the LAU integration."
     columns:
       - name: report_type
         description: "Type of report: summary, missing_data, or year_mismatch"
@@ -113,451 +89,443 @@ models:
           - accepted_values:
               values: ['summary', 'missing_data', 'year_mismatch']
       - name: year
-        description: "Data year"
+        description: "Year of data"
         tests:
           - not_null
       - name: population_coverage_percent
         description: "Percentage of LAUs with population data for the year"
       - name: issue_type
-        description: "Description of data quality issue"
+        description: "Description of the data quality issue"
 
   - name: mart_nuts_geometry_historized
-    description: "Historisierte NUTS-Geometrien. Eine Zeile je Region und Geometrie-Periode. Vintages mit identischer Geometrie werden zusammengefasst. Datenquelle: stg_nuts_geometry."
+    description: "Historised NUTS geometries: one row per region and geometry period. Vintages with identical geometry are merged."
     columns:
       - name: nuts_id
-        description: "NUTS-Code der Region (z.B. DE111)"
+        description: "NUTS code of the region (e.g. DE111)"
         tests:
           - not_null
       - name: levl_code
-        description: "NUTS-Level (0–3)"
+        description: "NUTS level (0-3)"
       - name: country_code
-        description: "ISO-Ländercode (2-stellig)"
+        description: "Country code (2-letter ISO)"
       - name: region_name
-        description: "Regionsname"
+        description: "Region name"
       - name: valid_from
-        description: "Erstes Vintage-Jahr, in dem diese Geometrie-Version erscheint"
+        description: "First vintage year in which this geometry version appears"
         tests:
           - not_null
       - name: valid_to
-        description: "Letztes Jahr, in dem diese Version gültig war. NULL bedeutet noch aktuell."
+        description: "Last year in which this version was valid; null = still current"
       - name: max_vintage_year
-        description: "Letztes Vintage-Jahr, in dem diese Geometrie-Version vorlag"
+        description: "Last vintage year in which this geometry version was available"
       - name: geometry_3035
-        description: "PostGIS-Geometrie in EPSG:3035 (Lambert Azimuthal Equal-Area)"
+        description: "Geometry in EPSG:3035 (Lambert Azimuthal Equal-Area)"
       - name: geometry_wgs84
-        description: "GeoJSON-Geometrie in WGS84 (EPSG:4326)"
+        description: "Geometry in WGS84 (EPSG:4326)"
       - name: has_valid_geometry
-        description: "Flag: true wenn geometry_3035 nicht null und nicht leer"
+        description: "True if geometry_3035 is not null and not empty"
 
   - name: mart_lau_geometry_historized
-    description: "Historisierte LAU-Geometrien (Local Administrative Units). Eine Zeile je LAU-Einheit und Geometrie-Periode. Vintages mit identischer Geometrie werden zusammengefasst. Datenquelle: stg_lau_geometry."
+    description: "Historised LAU geometries (Local Administrative Units): one row per LAU unit and geometry period. Vintages with identical geometry are merged."
     columns:
       - name: gisco_id
-        description: "Eindeutiger LAU-Identifier aus GISCO (Eurostat)"
+        description: "Unique LAU identifier from GISCO (Eurostat)"
         tests:
           - not_null
       - name: country_code
-        description: "ISO-Ländercode (2-stellig)"
+        description: "Country code (2-letter ISO)"
       - name: lau_id
-        description: "LAU-Identifier (national)"
+        description: "National LAU identifier"
       - name: lau_name
-        description: "Name der LAU-Einheit"
+        description: "Name of the LAU unit"
       - name: nuts_3
-        description: "NUTS-3-Code der übergeordneten Region (nullable)"
+        description: "NUTS-3 code of the parent region (nullable)"
       - name: valid_from
-        description: "Erstes Vintage-Jahr, in dem diese Geometrie-Version erscheint"
+        description: "First vintage year in which this geometry version appears"
         tests:
           - not_null
       - name: valid_to
-        description: "Letztes Jahr, in dem diese Version gültig war. NULL bedeutet noch aktuell."
+        description: "Last year in which this version was valid; null = still current"
       - name: max_vintage_year
-        description: "Letztes Vintage-Jahr, in dem diese Geometrie-Version vorlag"
+        description: "Last vintage year in which this geometry version was available"
       - name: geometry_3035
-        description: "PostGIS-Geometrie in EPSG:3035 (Lambert Azimuthal Equal-Area)"
+        description: "Geometry in EPSG:3035 (Lambert Azimuthal Equal-Area)"
       - name: geometry_wgs84
-        description: "GeoJSON-Geometrie in WGS84 (EPSG:4326)"
+        description: "Geometry in WGS84 (EPSG:4326)"
       - name: has_valid_geometry
-        description: "Flag: true wenn geometry_3035 nicht null und nicht leer"
+        description: "True if geometry_3035 is not null and not empty"
 
   - name: mart_socioeconomic_inventory
-    description: "Voraggregiertes Inventar der verfügbaren Soziodaten je Datensatz, Jahr und Geodatenebene"
+    description: "Pre-aggregated inventory of the available socioeconomic data per dataset, year and geodata level."
     columns:
       - name: dataset
-        description: "Dataset-Slug (API-Route, z.B. arbeitslose oder beschaeftigungsquote-gemeinden)"
+        description: "Dataset slug (API route, e.g. arbeitslose or beschaeftigungsquote-gemeinden)"
         tests:
           - not_null
       - name: year
-        description: "Jahr der Beobachtung"
+        description: "Year of observation"
         tests:
           - not_null
       - name: geodata_level
-        description: "Geodatenebene (z.B. NUTS_3, LAU)"
+        description: "Geodata level (e.g. NUTS_3, LAU)"
         tests:
           - not_null
       - name: records
-        description: "Anzahl Datensätze in der Kombination aus dataset, year und geodata_level"
+        description: "Number of records for the combination of dataset, year and geodata_level"
       - name: distinct_geodata_nuts
-        description: "Anzahl unterschiedlicher geodata_id_nuts"
+        description: "Number of distinct geodata_id_nuts"
       - name: distinct_geodata_lau
-        description: "Anzahl unterschiedlicher geodata_id_lau"
+        description: "Number of distinct geodata_id_lau"
       - name: distinct_geodata_ars
-        description: "Anzahl unterschiedlicher geodata_id_ars"
+        description: "Number of distinct geodata_id_ars"
 
   - name: mart_dataset_source
-    description: "Quelldaten der meta.yaml-basierten Datensätze im Long-Format, unverändert wie aus dem geo-mapper-Teilprojekt geliefert (nur Regionsnamen auf Geodaten-IDs gemappt). Grundlage für GET /datasets/{slug}/source."
+    description: "Source values of the generic Kreis/Gemeinden datasets in long format, as delivered by the geo-mapping step (only region names mapped to geodata IDs). Unharmonised and not interpolated."
     columns:
       - name: dataset_slug
-        description: "Dataset-Slug, identisch zu mart_dataset_catalog"
+        description: "Dataset slug, same as in mart_dataset_catalog"
         tests:
           - not_null
       - name: original_id_1
-        description: "Regions-ID aus der Quelldatei"
+        description: "Region ID from the source file"
       - name: original_name
-        description: "Regionsname aus der Quelldatei"
+        description: "Region name from the source file"
       - name: geodata_name
-        description: "Gemappter Geodata-Name"
+        description: "Mapped geodata name"
       - name: geodata_id_nuts
-        description: "Gemappte NUTS-ID (Bezugsjahr geodata_year)"
+        description: "Mapped NUTS ID (reference year geodata_year)"
       - name: geodata_id_lau
-        description: "Gemappte LAU-ID (nur Gemeinde-Datensätze)"
+        description: "Mapped LAU ID (municipality datasets only)"
       - name: geodata_id_ars
-        description: "Gemappter Amtlicher Regionalschlüssel"
+        description: "Mapped official regional key (ARS)"
       - name: mapper
-        description: "Mapping-Methode des geo-mapper"
+        description: "Mapping method of the geo-mapping step"
       - name: parameter
-        description: "Mapping-Parameter des geo-mapper"
+        description: "Mapping parameter of the geo-mapping step"
       - name: geodata_level
-        description: "Geodaten-Ebene (NUTS_3, LAU, ...)"
+        description: "Geodata level (NUTS_3, LAU, ...)"
       - name: geodata_year
-        description: "Bezugsjahr der Geodaten"
+        description: "Reference year of the geodata"
       - name: year
-        description: "Jahr der Beobachtung"
+        description: "Year of observation"
         tests:
           - not_null
       - name: value
-        description: "Unveränderter Quellwert"
+        description: "Unchanged source value"
         tests:
           - not_null
 
   - name: mart_dataset_catalog
-    description: "Ein Katalog-Eintrag pro Datensatz mit Herkunft, Lizenz, Beschreibung und persistenter URI (F09/F10/F11/F15/F16). Umfasst die meta.yaml-basierten Kreis-/Gemeinden-Datensätze sowie arbeitslosenzahlen-afa-agenturbezirke."
+    description: "One catalog entry per dataset with provenance, license, description and a persistent URI. Covers the generic Kreis/Gemeinden datasets and arbeitslosenzahlen-afa-agenturbezirke."
     columns:
       - name: dataset_slug
-        description: "Dataset-Slug, identisch zu dataset in mart_socioeconomic_inventory"
+        description: "Dataset slug, same as dataset in mart_socioeconomic_inventory"
         tests:
           - unique
           - not_null
       - name: dataset_uri
-        description: "Persistente, aus dataset_slug abgeleitete URI (urn:soziodata:dataset:<slug>), keine künstliche Zufalls-ID"
+        description: "Persistent URI derived from dataset_slug (urn:soziodata:dataset:<slug>)"
         tests:
           - unique
           - not_null
       - name: name
-        description: "Kurzer Anzeigename"
+        description: "Short display name"
       - name: description
-        description: "Kurzbeschreibung"
+        description: "Short description"
       - name: description_long
-        description: "Ausführliche methodische Beschreibung"
+        description: "Long-form methodological description"
       - name: unit
-        description: "Einheit des value-Feldes"
+        description: "Unit of the value field"
       - name: provenance
-        description: "Herkunft/Publisher/Quellenreihe"
+        description: "Publisher and source series"
       - name: license
-        description: "Lizenz; 'unbekannt' solange nicht recherchiert"
+        description: "License; 'unbekannt' (unknown) until researched"
         tests:
           - not_null
       - name: license_url
-        description: "URL zum Lizenztext, null solange nicht recherchiert"
+        description: "URL to the license text; null until researched"
       - name: algorithm
-        description: "Freitext-Hinweis zur Berechnung/Ableitung des Wertes, falls zutreffend"
+        description: "Free-text note on how the value is computed or derived, if applicable"
       - name: number_type
-        description: "absolute oder relative"
+        description: "absolute or relative"
       - name: geodata_level
-        description: "Geodatenebene, auf die der Datensatz gemappt ist"
+        description: "Geodata level the dataset is mapped to"
       - name: geodata_year
-        description: "Referenzjahr der für das Mapping verwendeten Geodaten"
+        description: "Reference year of the geodata used for mapping"
       - name: min_year
-        description: "Frühestes verfügbares Beobachtungsjahr (aus mart_socioeconomic_inventory)"
+        description: "Earliest available year of observation (from mart_socioeconomic_inventory)"
       - name: max_year
-        description: "Spätestes verfügbares Beobachtungsjahr (aus mart_socioeconomic_inventory)"
+        description: "Latest available year of observation (from mart_socioeconomic_inventory)"
       - name: total_records
-        description: "Gesamtzahl der Datensätze über alle Jahre/Geodatenebenen"
+        description: "Total number of records across all years and geodata levels"
       - name: updated_at
-        description: "Zeitpunkt des letzten Metadaten-Upserts"
+        description: "Time of the last metadata update"
       - name: license_tracked_since
-        description: "Datum, seit dem die Lizenz dieses Datensatzes per snap_dataset_license beobachtet wird; null falls noch kein dbt snapshot gelaufen ist"
+        description: "Date since which the license of this dataset has been tracked; null if no license snapshot has been taken yet"
       - name: license_backfilled
-        description: "true, wenn der Datensatz Jahre vor license_tracked_since enthält - die aktuelle Lizenz wurde dann rückwirkend auf diese älteren Jahre angewendet, ohne für sie unabhängig verifiziert zu sein"
+        description: "True if the dataset has data years before license_tracked_since. The current license was then applied to those older years retroactively, without independent verification for them."
         tests:
           - not_null
 
   - name: mart_nuts3_sociodata_harmonized
     description: >
-      Sozioökonomische Kreis-Datensätze, umgerechnet auf mehrere gemeinsame
-      NUTS-3-Zielversionen gleichzeitig (target_version), über den
-      bevölkerungsgewichteten Crosswalk aus mart_nuts_version_crosswalk.
-      Siehe Kommentar in mart_nuts3_sociodata_harmonized.sql für Details und
-      die Liste der unterstützten Zielversionen.
+      Socioeconomic Kreis (district) datasets, converted to several common
+      NUTS-3 target versions at the same time (target_version), using the
+      population-weighted crosswalk between NUTS boundary versions.
     columns:
       - name: dataset_slug
-        description: "Dataset-Slug (z.B. bevoelkerung, schuldnerquote)"
+        description: "Dataset slug (e.g. bevoelkerung, schuldnerquote)"
         tests:
           - not_null
       - name: target_nuts_id
-        description: "NUTS-3-Code der Zielregion in der jeweiligen target_version"
+        description: "NUTS-3 code of the target region in the respective target_version"
         tests:
           - not_null
       - name: year
-        description: "Jahr der Beobachtung"
+        description: "Year of observation"
         tests:
           - not_null
       - name: target_version
-        description: "NUTS-3-Zielversion dieser Zeile (2003, 2006, 2010, 2013, 2016, 2021 oder 2024)"
+        description: "NUTS-3 target version of this row (2003, 2006, 2010, 2013, 2016, 2021 or 2024)"
         tests:
           - not_null
       - name: harmonized_value
-        description: "Wert, umgerechnet auf target_version (bei Zusammenlegungen anteilig aufsummiert über mehrere Quellregionen)"
+        description: "Value converted to target_version; summed proportionally when several source regions merge into one"
         tests:
           - not_null
       - name: is_crosswalked
-        description: "true = Wert wurde über eine Versionsgrenze umgerechnet, false = geodata_year der Quelle entsprach bereits target_version"
+        description: "True if the value was converted across a boundary version; false if the source geodata_year already matched target_version"
         tests:
           - not_null
       - name: source_version
-        description: "Ursprüngliche NUTS-3-Version der Quelldaten (geodata_year); bei Zusammenlegungen die kleinste beteiligte Quellversion"
+        description: "Original NUTS-3 version of the source data (geodata_year); the smallest involved source version when regions merge"
       - name: n_hops
-        description: "Anzahl Crosswalk-Hops zwischen source_version und target_version (0 = kein Crosswalk nötig)"
+        description: "Number of crosswalk steps between source_version and target_version (0 = no crosswalk needed)"
 
   - name: mart_nuts3_timeseries_interpolated
     description: >
-      Lückenlose Zeitreihen je (NUTS-3-Region, Dataset, target_version) mit
-      zwei alternativen Imputationsmethoden für fehlende Jahre: lineare
-      Interpolation (Methode 1, value_linear) und peer-basierte
-      Fortschreibung über den Durchschnitt der relativen Veränderung anderer
-      Regionen derselben NUTS-2-Gruppe (Methode 3, value_peer_trend). Kein
-      Extrapolieren über den bekannten Jahresbereich hinaus. Siehe Kommentar
-      in mart_nuts3_timeseries_interpolated.sql und docs/pipeline/dbt.md für
-      Details und Evaluationsergebnisse.
+      Gap-free time series per (NUTS-3 region, dataset, target_version). Missing
+      years are filled with two alternative methods: linear interpolation
+      (method 1, value_linear) and peer-based trend, applying the average
+      relative change of other regions in the same NUTS-2 group (method 3,
+      value_peer_trend). No extrapolation beyond the known range of years.
     columns:
       - name: nuts3_id
-        description: "NUTS-3-Code der Zielregion (harmonisierte Zielversion, siehe mart_nuts3_sociodata_harmonized)"
+        description: "NUTS-3 code of the target region (harmonised target version, see mart_nuts3_sociodata_harmonized)"
         tests:
           - not_null
       - name: dataset_slug
-        description: "Dataset-Slug (z.B. bevoelkerung, schuldnerquote)"
+        description: "Dataset slug (e.g. bevoelkerung, schuldnerquote)"
         tests:
           - not_null
       - name: target_version
-        description: "NUTS-3-Zielversion dieser Zeile (2003, 2006, 2010, 2013, 2016, 2021 oder 2024) - Gap-Filling läuft je Zielversion unabhängig"
+        description: "NUTS-3 target version of this row (2003, 2006, 2010, 2013, 2016, 2021 or 2024); gap filling runs independently per target version"
         tests:
           - not_null
       - name: year
-        description: "Jahr der Beobachtung"
+        description: "Year of observation"
         tests:
           - not_null
       - name: value
-        description: "Ausgabewert: Originalwert falls vorhanden, sonst die lineare Interpolation (Methode 1). Aus Gründen der Abwärtskompatibilität immer befüllt (kein Extrapolieren, daher keine Randjahre außerhalb der bekannten Spanne)."
+        description: "Output value: the original value if available, otherwise the linear interpolation (method 1). Always populated for backward compatibility; no values outside the known year range."
         tests:
           - not_null
       - name: is_interpolated
-        description: "true = Wert wurde imputiert (kein Originalwert vorhanden), false = Originalwert aus mart_nuts3_sociodata_harmonized"
+        description: "True if the value was imputed (no original value); false if it is the original value from mart_nuts3_sociodata_harmonized"
         tests:
           - not_null
       - name: value_linear
-        description: "Methode-1-Schätzung (lineare Interpolation zwischen letztem bekannten Vor- und nächstem bekannten Nachjahr). Nur befüllt wenn is_interpolated = true, sonst NULL."
+        description: "Method 1 estimate (linear interpolation between the nearest known years before and after). Only populated if is_interpolated = true, otherwise null."
       - name: value_peer_trend
-        description: "Methode-3-Schätzung (Fortschreibung des Vorjahreswerts mit der durchschnittlichen relativen Veränderung anderer Regionen derselben NUTS-2-Gruppe). Nur befüllt wenn is_interpolated = true UND sowohl der eigene Vorjahreswert als auch mindestens ein Peer-Wert bekannt sind, sonst NULL."
+        description: "Method 3 estimate (previous year's value trended by the average relative change of other regions in the same NUTS-2 group). Only populated if is_interpolated = true and both the previous year's value and at least one peer value are known; otherwise null."
       - name: n_peer_regions
-        description: "Anzahl der Peer-Regionen (gleiche NUTS-2-Gruppe), die zur Berechnung von value_peer_trend beigetragen haben. NULL wenn is_interpolated = false oder value_peer_trend nicht berechenbar war."
+        description: "Number of peer regions (same NUTS-2 group) that contributed to value_peer_trend. Null if is_interpolated = false or value_peer_trend could not be computed."
 
   - name: mart_lau_sociodata_harmonized
     description: >
-      LAU-Pendant zu mart_nuts3_sociodata_harmonized: sozioökonomische
-      Gemeinde(LAU)-Datensätze, umgerechnet auf mehrere gemeinsame
-      LAU-Zielversionen gleichzeitig (target_version), über den
-      Crosswalk aus mart_lau_version_crosswalk. Siehe Kommentar in
-      mart_lau_sociodata_harmonized.sql für Details, measure_type-
-      Aggregationslogik und die Liste der unterstützten Zielversionen.
+      LAU (municipality) counterpart of mart_nuts3_sociodata_harmonized:
+      municipality datasets converted to several common LAU target versions at
+      the same time (target_version), using the crosswalk between LAU versions.
     columns:
       - name: dataset_slug
-        description: "Dataset-Slug (z.B. beschaeftigungsquote-gemeinden)"
+        description: "Dataset slug (e.g. beschaeftigungsquote-gemeinden)"
         tests:
           - not_null
       - name: target_gisco_id
-        description: "GISCO-ID der Zielregion in der jeweiligen target_version"
+        description: "GISCO ID of the target region in the respective target_version"
         tests:
           - not_null
       - name: year
-        description: "Jahr der Beobachtung"
+        description: "Year of observation"
         tests:
           - not_null
       - name: target_version
-        description: "LAU-Zielversion dieser Zeile (2011-2024)"
+        description: "LAU target version of this row (2011-2024)"
         tests:
           - not_null
       - name: harmonized_value
-        description: "Wert, umgerechnet auf target_version - je measure_type entweder anteilig aufsummiert ('sum') oder gewichtet gemittelt ('weighted_avg') über mehrere Quellregionen"
+        description: "Value converted to target_version. Depending on measure_type, either summed proportionally ('sum') or averaged with weights ('weighted_avg') across several source regions."
         tests:
           - not_null
       - name: is_crosswalked
-        description: "true = Wert wurde über eine Versionsgrenze umgerechnet, false = geodata_year der Quelle entsprach bereits target_version"
+        description: "True if the value was converted across a boundary version; false if the source geodata_year already matched target_version"
         tests:
           - not_null
       - name: source_version
-        description: "Ursprüngliche LAU-Version der Quelldaten (geodata_year); bei Zusammenlegungen die kleinste beteiligte Quellversion"
+        description: "Original LAU version of the source data (geodata_year); the smallest involved source version when regions merge"
       - name: n_hops
-        description: "0 = kein Crosswalk nötig, 1 = über mart_lau_version_crosswalk umgerechnet"
+        description: "0 = no crosswalk needed, 1 = converted via the LAU version crosswalk"
 
   - name: mart_lau_timeseries_interpolated
     description: >
-      LAU-Pendant zu mart_nuts3_timeseries_interpolated: lückenlose
-      Zeitreihen je (Gemeinde, Dataset, target_version) mit denselben zwei
-      Imputationsmethoden (linear / peer_trend), aber mit dem Kreis (erste
-      5 Stellen des Amtlichen Gemeindeschlüssels) statt der NUTS-2-Gruppe
-      als Peer-Gruppe. Siehe Kommentar in mart_lau_timeseries_interpolated.sql.
+      LAU (municipality) counterpart of mart_nuts3_timeseries_interpolated:
+      gap-free time series per (municipality, dataset, target_version) with the
+      same two imputation methods (linear / peer trend). The peer group is the
+      district (first five digits of the official municipality key) instead of
+      the NUTS-2 group.
     columns:
       - name: gisco_id
-        description: "GISCO-ID der Zielregion (harmonisierte Zielversion, siehe mart_lau_sociodata_harmonized)"
+        description: "GISCO ID of the target region (harmonised target version, see mart_lau_sociodata_harmonized)"
         tests:
           - not_null
       - name: dataset_slug
-        description: "Dataset-Slug (z.B. beschaeftigungsquote-gemeinden)"
+        description: "Dataset slug (e.g. beschaeftigungsquote-gemeinden)"
         tests:
           - not_null
       - name: target_version
-        description: "LAU-Zielversion dieser Zeile (2011-2024) - Gap-Filling läuft je Zielversion unabhängig"
+        description: "LAU target version of this row (2011-2024); gap filling runs independently per target version"
         tests:
           - not_null
       - name: year
-        description: "Jahr der Beobachtung"
+        description: "Year of observation"
         tests:
           - not_null
       - name: value
-        description: "Ausgabewert: Originalwert falls vorhanden, sonst die lineare Interpolation (Methode 1)."
+        description: "Output value: the original value if available, otherwise the linear interpolation (method 1)."
         tests:
           - not_null
       - name: is_interpolated
-        description: "true = Wert wurde imputiert (kein Originalwert vorhanden), false = Originalwert aus mart_lau_sociodata_harmonized"
+        description: "True if the value was imputed (no original value); false if it is the original value from mart_lau_sociodata_harmonized"
         tests:
           - not_null
       - name: value_linear
-        description: "Methode-1-Schätzung (lineare Interpolation). Nur befüllt wenn is_interpolated = true, sonst NULL."
+        description: "Method 1 estimate (linear interpolation). Only populated if is_interpolated = true, otherwise null."
       - name: value_peer_trend
-        description: "Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen Veränderung anderer Gemeinden desselben Kreises). Nur befüllt wenn is_interpolated = true UND sowohl der eigene Vorjahreswert als auch mindestens ein Peer-Wert bekannt sind, sonst NULL."
+        description: "Method 3 estimate (previous year's value trended by the average relative change of other municipalities in the same district). Only populated if is_interpolated = true and both the previous year's value and at least one peer value are known; otherwise null."
       - name: n_peer_regions
-        description: "Anzahl der Peer-Gemeinden (gleicher Kreis), die zur Berechnung von value_peer_trend beigetragen haben. NULL wenn is_interpolated = false oder value_peer_trend nicht berechenbar war."
+        description: "Number of peer municipalities (same district) that contributed to value_peer_trend. Null if is_interpolated = false or value_peer_trend could not be computed."
 
   - name: mart_agenturbezirk_sociodata
-    description: "Monatliche Arbeitslosen-/Unterbeschäftigungszahlen je Agenturbezirk, verknüpft mit der Agenturbezirk-Geometrie. Agenturbezirke sind eine eigenständige Gebietsgliederung (nicht NUTS-3/LAU/ARS)."
+    description: "Monthly unemployment and underemployment counts per employment agency district, joined with its boundary geometry. Employment agency districts form their own geographic structure (not NUTS-3, LAU or ARS)."
     columns:
       - name: ba_schl
-        description: "Amtlicher BA-Schlüssel des Agenturbezirks"
+        description: "Official BA key of the employment agency district"
         tests:
           - not_null
       - name: name
-        description: "Name des Agenturbezirks"
+        description: "Name of the employment agency district"
       - name: geometry_wgs84
-        description: "PostGIS-Geometrie in WGS84 (EPSG:4326)"
+        description: "Geometry in WGS84 (EPSG:4326)"
       - name: has_valid_geometry
-        description: "true, wenn eine nicht-leere Geometrie vorhanden ist"
+        description: "True if a non-empty geometry is present"
       - name: valid_from
-        description: "Gültig-ab-Datum der Grenzen laut Shapefile"
+        description: "Valid-from date of the boundaries from the shapefile"
       - name: valid_to
-        description: "Gültig-bis-Datum der Grenzen laut Shapefile"
+        description: "Valid-to date of the boundaries from the shapefile"
       - name: year
-        description: "Jahr des Berichtsmonats (null, falls für diesen Bezirk keine Werte geladen werden konnten)"
+        description: "Year of the reporting month (null if no values could be loaded for this district)"
       - name: month
-        description: "Monat des Berichtsmonats (1-12)"
+        description: "Month of the reporting period (1-12)"
       - name: observation_date
-        description: "Beobachtungsdatum (01. des jeweiligen Berichtsmonats)"
+        description: "Observation date (1st of the reporting month)"
       - name: arbeitslose
-        description: "Anzahl Arbeitsloser im Berichtsmonat, null wenn statistisch gesperrt"
+        description: "Number of unemployed persons in the reporting month; null if statistically suppressed"
       - name: unterbeschaeftigung
-        description: "Unterbeschäftigung (ohne Kurzarbeit) im Berichtsmonat, null wenn statistisch gesperrt"
+        description: "Underemployment (excluding short-time work) in the reporting month; null if statistically suppressed"
 
   - name: mart_agenturbezirk_latest
-    description: "Eine Zeile je Agenturbezirk mit dem jeweils neuesten Berichtsmonat (arbeitslose/unterbeschaeftigung) - für die Kartendarstellung, da es (anders als für NUTS/LAU) noch keine Zeitreihen-/Interpolations-Mart für Agenturbezirke gibt."
+    description: "One row per employment agency district with its most recent reporting month. Intended for map display; there is no time-series or interpolation mart for employment agency districts yet."
     columns:
       - name: ba_schl
-        description: "Amtlicher BA-Schlüssel des Agenturbezirks"
+        description: "Official BA key of the employment agency district"
         tests:
           - not_null
           - unique
       - name: name
-        description: "Name des Agenturbezirks"
+        description: "Name of the employment agency district"
       - name: geometry_wgs84
-        description: "GeoJSON-Geometrie in WGS84 (EPSG:4326)"
+        description: "GeoJSON geometry in WGS84 (EPSG:4326)"
       - name: has_valid_geometry
-        description: "true, wenn eine nicht-leere Geometrie vorhanden ist"
+        description: "True if a non-empty geometry is present"
       - name: valid_from
-        description: "Gültig-ab-Datum der Grenzen laut Shapefile"
+        description: "Valid-from date of the boundaries from the shapefile"
       - name: valid_to
-        description: "Gültig-bis-Datum der Grenzen laut Shapefile"
+        description: "Valid-to date of the boundaries from the shapefile"
       - name: year
-        description: "Jahr des neuesten Berichtsmonats"
+        description: "Year of the most recent reporting month"
         tests:
           - not_null
       - name: month
-        description: "Monat des neuesten Berichtsmonats (1-12)"
+        description: "Most recent reporting month (1-12)"
       - name: observation_date
-        description: "Beobachtungsdatum (01. des neuesten Berichtsmonats)"
+        description: "Observation date (1st of the most recent reporting month)"
       - name: arbeitslose
-        description: "Anzahl Arbeitsloser im neuesten Berichtsmonat, null wenn statistisch gesperrt"
+        description: "Number of unemployed persons in the most recent reporting month; null if statistically suppressed"
       - name: unterbeschaeftigung
-        description: "Unterbeschäftigung (ohne Kurzarbeit) im neuesten Berichtsmonat, null wenn statistisch gesperrt"
+        description: "Underemployment (excluding short-time work) in the most recent reporting month; null if statistically suppressed"
 
   - name: mart_agentur_nuts_membership
-    description: "Einordnung der Agenturbezirke in die NUTS-Hierarchie: eine Zeile je (Agenturbezirk, überlappende NUTS-1/2/3-Region), abgeleitet über NUTS-Code-Präfixe. is_fully_contained (Flächenanteil >= 99 %) markiert Regionen, die den Agenturbezirk vollständig enthalten; is_parent die kleinste davon. Räumliche Schätzung, keine amtliche Zuordnung."
+    description: "Placement of employment agency districts in the NUTS hierarchy: one row per (district, overlapping NUTS-1/2/3 region), derived from NUTS code prefixes. is_fully_contained (area share >= 99 %) marks regions that fully contain the district; is_parent marks the smallest such region. Spatial estimate, not an official assignment."
     columns:
       - name: ba_schl
-        description: "Amtlicher BA-Schlüssel des Agenturbezirks"
+        description: "Official BA key of the employment agency district"
         tests:
           - not_null
       - name: nuts_id
-        description: "NUTS-Code (Ebene 1, 2 oder 3) der überlappenden Region"
+        description: "NUTS code (level 1, 2 or 3) of the overlapping region"
         tests:
           - not_null
       - name: nuts_level
-        description: "NUTS-Ebene (1 = Bundesland, 2 = Regierungsbezirk, 3 = Kreis)"
+        description: "NUTS level (1 = federal state, 2 = government district, 3 = district)"
         tests:
           - accepted_values:
               values: [1, 2, 3]
               quote: false
       - name: region_name
-        description: "Name der NUTS-Region (Vintage 2024)"
+        description: "Name of the NUTS region (2024 vintage)"
       - name: area_share_of_agentur
-        description: "Anteil der Agenturbezirksfläche, der in dieser Region liegt (0..1)"
+        description: "Share of the district's area that lies in this region (0..1)"
       - name: is_fully_contained
-        description: "true, wenn der Agenturbezirk (mit Toleranz) vollständig in dieser Region liegt"
+        description: "True if the district lies entirely within this region (with tolerance)"
       - name: is_parent
-        description: "true für die kleinste NUTS-Ebene, die den Agenturbezirk vollständig enthält; höchstens eine Zeile je Agenturbezirk"
+        description: "True for the smallest NUTS level that fully contains the district; at most one row per district"
 
   - name: mart_agentur_nuts3_crosswalk
-    description: "n:m-Zuordnung Agenturbezirk <-> NUTS-3-Region mit Flächenanteil in beide Richtungen (Agenturbezirke bestehen i.d.R. aus einem oder mehreren ganzen Kreisen, Ausnahme Berlin: 3 Agenturbezirke teilen sich einen Kreis). Räumliche Schätzung, keine amtliche Zuordnung. Es wird nur nach Fläche und nicht nach Bevölkerung zugeordnet. Verweist auf den ergänzenden Kreis-Level-Datensatz 'Arbeitslose'."
+    description: "Many-to-many assignment between employment agency districts and NUTS-3 regions, with area shares in both directions. Districts usually consist of one or more whole districts (Kreise); exception: Berlin, where three agency districts share one Kreis. Spatial estimate by area only, not by population, not an official assignment. Complements the Kreis-level unemployment dataset."
     columns:
       - name: ba_schl
-        description: "Amtlicher BA-Schlüssel des Agenturbezirks"
+        description: "Official BA key of the employment agency district"
         tests:
           - not_null
       - name: nuts_id
-        description: "NUTS-3-Code der überlappenden Region"
+        description: "NUTS-3 code of the overlapping region"
         tests:
           - not_null
       - name: region_name
-        description: "Name der NUTS-3-Region"
+        description: "Name of the NUTS-3 region"
       - name: intersection_area_m2
-        description: "Geometrische Schnittfläche zwischen Agenturbezirk und NUTS-3-Region in m² (EPSG:3035)"
+        description: "Geometric intersection area of the employment agency district and the NUTS-3 region in m² (EPSG:3035)"
       - name: agentur_area_m2
-        description: "Gesamtfläche des Agenturbezirks in m²"
+        description: "Total area of the employment agency district in m²"
       - name: nuts3_area_m2
-        description: "Gesamtfläche der NUTS-3-Region in m²"
+        description: "Total area of the NUTS-3 region in m²"
       - name: area_share_of_agentur
-        description: "Anteil der Agenturbezirksfläche, der auf diese NUTS-3-Region entfällt (Zeilen eines Agenturbezirks summieren sich näherungsweise auf 1.0)"
+        description: "Share of the district's area that falls into this NUTS-3 region (rows per district sum to approximately 1.0)"
       - name: area_share_of_nuts3
-        description: "Anteil der NUTS-3-Fläche, der auf diesen Agenturbezirk entfällt (Zeilen einer NUTS-3-Region summieren sich näherungsweise auf 1.0)"
+        description: "Share of the NUTS-3 region's area that falls into this district (rows per NUTS-3 region sum to approximately 1.0)"
 
   - name: mart_dataset_aggregation_meta
-    description: "Aggregationsmetadaten je Indikator (Ebene, sum vs. weighted_avg, Kennzeichnung der Näherung, feinerer Slug).."
+    description: "Aggregation metadata per indicator: level, measure type (sum vs. weighted_avg), kind, and whether the aggregation is an approximation."
     columns:
       - name: dataset_slug
         tests:
@@ -579,7 +547,7 @@ models:
               values: ['count', 'rate', 'mean', 'median']
 
   - name: mart_custom_region_unit_values
-    description: "Einheitliche Werte je Ebene (LAU/NUTS-3/Agenturbezirk) inkl. Bevölkerung als Gewicht, Grundlage der Custom-Region-Aggregation. NUTS-3/LAU fixiert auf Zielversion 2024."
+    description: "Harmonised values per level (LAU, NUTS-3, employment agency district), including population as weight. Basis for custom region aggregation. NUTS-3 and LAU are fixed to target version 2024."
     columns:
       - name: level
         tests:
@@ -598,6 +566,6 @@ models:
         tests:
           - not_null
       - name: is_crosswalked
-        description: "true = Wert wurde über eine NUTS-/LAU-Versionsgrenze umgerechnet, false = Direktwert"
+        description: "True if the value was converted across a NUTS or LAU version boundary; false for a direct value"
         tests:
           - not_null

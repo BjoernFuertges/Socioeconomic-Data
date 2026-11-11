@@ -2,10 +2,8 @@
 
 {% set source_relation = source('loaded_data', 'agenturbezirk_geometry') %}
 
--- Der dlt-Loader (load_agenturbezirke_geodata.py) reprojiziert bereits nach
--- WGS84, anders als nuts_geometry/lau_geometry (dort liegt das Rohmaterial
--- in EPSG:3035 vor) - deshalb hier nur ein einfaches ST_GeomFromText ohne
--- ST_Transform.
+-- Source is already in WGS84 (unlike nuts/lau geometry, which arrive in
+-- EPSG:3035), so no ST_Transform is needed here.
 SELECT
     ba_schl,
     name,

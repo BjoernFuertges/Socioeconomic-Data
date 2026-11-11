@@ -86,7 +86,7 @@ def _load_meta(dataset_dir: Path) -> Dict[str, Any]:
     if not meta_path.exists():
         raise FileNotFoundError(f"meta.yaml not found at {meta_path}")
     with open(meta_path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        return yaml.safe_load(f) or {}
 
 
 def _derive_slug(table_name: str) -> str:
@@ -267,15 +267,11 @@ def main() -> None:
     meta_path = dataset_dir / "meta.yaml"
     csv_path = dataset_dir / "mapped_pairs.csv"
 
-    missing_inputs = False
-    if not meta_path.exists():
-        logger.warning(f"Skipping dataset '{dataset_name}': required metadata file is missing: {meta_path}")
-        missing_inputs = True
-    if not csv_path.exists():
-        logger.warning(f"Skipping dataset '{dataset_name}': required data file is missing: {csv_path}")
-        missing_inputs = True
-    if missing_inputs:
-        return
+    # Fail loudly: a silent skip would let dbt run on a stale or missing table.
+    missing = [p for p in (meta_path, csv_path) if not p.exists()]
+    if missing:
+        logger.error(f"Dataset '{dataset_name}': required file(s) missing: {', '.join(map(str, missing))}")
+        sys.exit(1)
 
     meta = _load_meta(dataset_dir)
     logger.info(f"Metadata: geodata_level={meta.get('geodata_level')}, geodata_year={meta.get('geodata_year')}")

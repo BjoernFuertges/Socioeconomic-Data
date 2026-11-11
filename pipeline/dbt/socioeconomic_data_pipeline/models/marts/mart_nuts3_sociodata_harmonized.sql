@@ -8,49 +8,43 @@
         ]
     )
 }}
-
 /*
-  Harmonisierte sozioökonomische Daten auf mehrere NUTS-3-Zielversionen
-  gleichzeitig (siehe target_versions unten), unterscheidbar über die Spalte
-  target_version.
+  Harmonized socioeconomic data for several NUTS-3 target versions at once
+  (see target_versions below), distinguished by the column target_version.
 
-  mart_nuts_version_crosswalk berechnet mittlerweile für JEDES Paar der in
-  stg_nuts_geometry vorhandenen Vintage-Jahre eine direkte (1-Hop)
-  Abbildung (siehe int_nuts_spatial_crosswalk) - jede dort vorhandene
-  Version ist daher von jeder anderen aus direkt erreichbar, unabhängig vom
-  geodata_year der Quelldaten. target_versions listet deshalb einfach alle
-  aktuell verfügbaren NUTS-3-Vintage-Jahre.
+  mart_nuts_version_crosswalk provides a direct (1-hop) mapping for EVERY
+  pair of vintage years in stg_nuts_geometry (see
+  int_nuts_spatial_crosswalk), so every version is reachable from every
+  other regardless of the source data's geodata_year. target_versions
+  therefore simply lists all available NUTS-3 vintage years.
 
-  Strategie je Zielversion:
-  - Regionen, deren geodata_year bereits der Zielversion entspricht → weight = 1,0
-  - Alle anderen → Crosswalk aus mart_nuts_version_crosswalk
-  - Bei Zusammenlegungen (merge): Werte mehrerer Quell-Regionen werden
-    anteilig summiert (harmonized_value = Σ value_i × weight_i)
+  Strategy per target version:
+  - Regions whose geodata_year already equals the target version -> weight = 1.0
+  - All others -> crosswalk from mart_nuts_version_crosswalk
+  - On merges: values of several source regions are summed proportionally
+    (harmonized_value = sum(value_i * weight_i))
 
-  is_crosswalked = true   → Wert wurde über Versionsgrenze umgerechnet
-  is_crosswalked = false  → Direktwert, kein Umrechnen nötig
+  is_crosswalked = true   -> value was converted across a version boundary
+  is_crosswalked = false  -> direct value, no conversion needed
 
-  measure_type je Datensatz (source_datasets unten, plus
-  beschaeftigungsquote-nuts3 separat) steuert die Aggregationsformel bei
-  Zusammenlegungen mehrerer Quellregionen in eine Zielregion:
-    - 'sum':          harmonized_value = Σ value_i * weight_i
-                       (richtig für Zählgrößen, z. B. Bevölkerung)
-    - 'weighted_avg':  harmonized_value = Σ value_i * absolute_weight_i
-                                            / Σ absolute_weight_i
-                       (richtig für Quoten/Durchschnitte - ein reines
-                       Aufsummieren würde hier falsche, zu kleine Werte
-                       erzeugen, siehe absolute_weight-Kommentar in
-                       mart_nuts_version_crosswalk.sql)
+  measure_type per dataset (source_datasets below, plus
+  beschaeftigungsquote-nuts3 separately) selects the aggregation formula when
+  several source regions merge into one target region:
+    - 'sum':          harmonized_value = sum(value_i * weight_i)
+                       (correct for counts, e.g. population)
+    - 'weighted_avg':  harmonized_value = sum(value_i * absolute_weight_i)
+                                            / sum(absolute_weight_i)
+                       (correct for ratios/averages - plain summing would
+                       yield wrong, too small values, see the absolute_weight
+                       comment in mart_nuts_version_crosswalk.sql)
 */
 
 {% set target_versions = [2003, 2006, 2010, 2013, 2016, 2021, 2024] %}
 
--- Slugs entsprechen bewusst 1:1 den RouteSlugs der generierten Kreis-API-
--- Endpoints (backend/internal/models/models_soziodata_generated.go), damit
--- das Backend beide Seiten ohne Mapping-Tabelle zusammenführen kann
--- (siehe kreis_generic.go, fill_gaps-Query-Parameter). measure_type wurde
--- anhand der Spaltenbeschreibungen/meta.yaml je Datensatz eingeordnet
--- (Zählgröße = 'sum', Quote/Durchschnitt = 'weighted_avg').
+-- Slugs deliberately match the RouteSlugs of the generated Kreis API
+-- endpoints 1:1 so the backend can join both sides without a mapping table.
+-- measure_type is derived from the column descriptions/meta.yaml per
+-- dataset (count = 'sum', ratio/average = 'weighted_avg').
 {% set source_datasets = [
     {'slug': 'arbeitslose',        'table': 'results_arbeitslose_kreise', 'measure_type': 'sum'},
     {'slug': 'arbeitsvolumen',     'table': 'results_arbeitsvolumen_kreise', 'measure_type': 'sum'},
@@ -70,12 +64,10 @@
 
 with all_source_data as (
 
-    -- Alle Kreis-Rohdatensätze vereinen. Sources werden mit
-    -- write_disposition=replace geladen (siehe pipeline/dlt/load_soziodata_generic.py),
-    -- daher keine Duplikate je (geodata_id_nuts, year) zu erwarten - DISTINCT
-    -- ist trotzdem defensiv gesetzt: sum()-Measure-Types (siehe measure_type
-    -- unten) würden jede versehentlich erneut geladene Dopplung stillschweigend
-    -- mitaufsummieren, ohne dass das an falsch hohen Werten offensichtlich wäre.
+    -- Union of all Kreis raw datasets. Loaded with write_disposition=replace,
+    -- so no duplicates per (geodata_id_nuts, year) are expected; DISTINCT is
+    -- a defensive guard because sum() measure types would silently add up
+    -- any accidentally reloaded duplicate into inflated values.
     {% for ds in source_datasets %}
     select distinct
         '{{ ds.slug }}'       as dataset_slug,
@@ -90,10 +82,10 @@ with all_source_data as (
     union all
     {% endfor %}
 
-    -- beschaeftigungsquote-nuts3 kommt nicht aus einer rohen loaded_data-
-    -- Quelle, sondern ist bereits über die Gemeinde(LAU)-Bevölkerung auf
-    -- NUTS-3 (2024) aggregiert (siehe stg_beschaeftigungsquote_nuts3.sql /
-    -- mart_beschaeftigungsquote_nuts3.sql) - daher ref() statt source().
+    -- beschaeftigungsquote-nuts3 is not a raw loaded_data source but already
+    -- aggregated to NUTS-3 (2024) via the Gemeinde (LAU) population (see
+    -- stg_beschaeftigungsquote_nuts3.sql / mart_beschaeftigungsquote_nuts3.sql),
+    -- hence ref() instead of source().
     select
         'beschaeftigungsquote-nuts3' as dataset_slug,
         geodata_id_nuts,
@@ -116,7 +108,7 @@ crosswalk_{{ tv }} as (
 
 harmonized_{{ tv }} as (
 
-    -- Datensätze in der Zielversion → direkt übernehmen, kein Crosswalk
+    -- Datasets already in the target version -> take over directly, no crosswalk
     select
         s.dataset_slug,
         s.geodata_id_nuts   as target_nuts_id,
@@ -133,7 +125,7 @@ harmonized_{{ tv }} as (
 
     union all
 
-    -- Datensätze in anderen Versionen → über Crosswalk umrechnen
+    -- Datasets in other versions -> convert via crosswalk
     select
         s.dataset_slug,
         c.target_nuts_id,
@@ -153,8 +145,8 @@ harmonized_{{ tv }} as (
 
 ),
 
--- Zusammenlegungen aufsummieren bzw. gewichtet mitteln (siehe measure_type
--- oben; mehrere source-Zeilen → eine target-Zeile)
+-- Sum up (sum) or weighted-average (weighted_avg) merges, see measure_type
+-- above; several source rows -> one target row
 aggregated_{{ tv }} as (
     select
         dataset_slug,

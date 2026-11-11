@@ -9,22 +9,22 @@
 }}
 
 /*
-  Einheitliche Werte-Sicht je Ebene (LAU / NUTS-3 / Agenturbezirk) für die
-  Custom-Region-Abfrage (POST /custom-regions/dataset-aggregate). Das
-  Backend verschneidet nur noch das Nutzer-Polygon mit den Geometrien und
-  gewichtet diese Werte - es transformiert selbst keine Daten.
+  Unified values view per level (LAU / NUTS-3 / Agenturbezirk) for the
+  custom-region query (POST /custom-regions/dataset-aggregate). The backend
+  only intersects the user polygon with the geometries and weights these
+  values - it does not transform any data itself.
 
-  Eine Zeile je (level, unit_id, dataset_slug, indicator, year, month):
-    - nuts3: mart_nuts3_sociodata_harmonized, fixiert auf target_version 2024
-             (wie mart_agentur_dataset_aggregate). population = 'bevoelkerung'
-             desselben Jahres.
+  One row per (level, unit_id, dataset_slug, indicator, year, month):
+    - nuts3: mart_nuts3_sociodata_harmonized, fixed to target_version 2024
+             (like mart_agentur_dataset_aggregate). population = 'bevoelkerung'
+             of the same year.
     - lau:   mart_lau_sociodata_harmonized, target_version 2024.
-             population = lau_integrated.population_count desselben Jahres.
-    - agentur: monatliche BA-Zahlen (mart_agenturbezirk_sociodata), ohne
-             population - Zählgrößen werden flächenanteilig verteilt.
-  month ist nur bei 'agentur' gesetzt. is_crosswalked: Wert wurde über eine
-  Versionsgrenze umgerechnet (sonst Direktwert) - Grundlage für die Kennzeichnung
-  "berechnet" bei exakt passenden Regionen.
+             population = lau_integrated.population_count of the same year.
+    - agentur: monthly BA figures (mart_agenturbezirk_sociodata), without
+             population - counts are distributed by area share.
+  month is only set for 'agentur'. is_crosswalked: value was converted
+  across a version boundary (otherwise a direct value) - basis for the
+  "calculated" flag on exactly matching regions.
 */
 
 with nuts3_population as (
@@ -96,7 +96,7 @@ agentur as (
     where year is not null
 )
 
--- Zeilen ohne Wert (z.B. Monate ohne Meldung) tragen nichts zur Aggregation bei.
+-- Rows without a value (e.g. months without a report) do not contribute to the aggregation.
 select *
 from (
     select * from nuts3

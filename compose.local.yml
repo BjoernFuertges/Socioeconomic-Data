@@ -1,30 +1,27 @@
-# Lokaler Testaufbau für die gesamte Anwendung (Pipeline, Datenbank, Backend,
-# Frontend) auf einer Dev-Maschine. Kein Traefik/TLS, keine produktiven
-# Domains/Images — Ports werden direkt auf den Host gemappt und Backend/
-# Frontend werden aus den lokalen Quellen gebaut.
+# Local test setup for the whole application (pipeline, database, backend,
+# frontend) on a dev machine. No Traefik/TLS and no production domains/images:
+# ports are mapped directly to the host and backend/frontend are built from local sources.
 #
-# Nutzung:
+# Usage:
 #   docker compose -f compose.local.yml up --build
 #
 #   Backend:  http://localhost:8081/api/v1  (Swagger: /api/docs/index.html)
-#   Frontend: http://localhost:5174 (Container-intern läuft Vite auf 5173;
-#             Port 5174 vermeidet Kollisionen mit lokal laufenden
-#             Vite-Dev-Servern anderer Projekte — bei Bedarf in der
-#             "ports:"-Zeile des frontend-Service anpassen)
-#   Adminer:  http://localhost:8082 (Server: postgis, User/Passwort s.u.)
+#   Frontend: http://localhost:5174 (Vite listens on 5173 inside the container;
+#             port 5174 avoids clashes with Vite dev servers of other projects;
+#             adjust the "ports:" line of the frontend service if needed)
+#   Adminer:  http://localhost:8082 (server: postgis, user/password see below)
 #
-# Die transformed_data-Schicht ist zu Beginn leer. Pipeline einmalig
-# ausführen, sobald postgis/pipeline laufen:
+# The transformed_data layer starts out empty. Run the pipeline once as soon as
+# postgis/pipeline are up:
 #   docker compose -f compose.local.yml exec pipeline \
 #     bash /app/dlt/run_all_pipelines.sh
 #
-# Hinweis: load_geodata_to_postgis.py findet seine Geodaten lokal über die
-# im Repo vorhandenen Fallback-Pfade (geo-mapper/, geo-importer/) und
-# funktioniert daher ohne weiteres Zutun. Die übrigen Kreis-Datensätze
-# (arbeitslose, bevoelkerung, ...) lesen aus data-exchange/1_friedrich-bjoern,
-# das lokal standardmäßig leer ist (wird produktiv per Nextcloud-Sync
-# befüllt, siehe backend/scripts/sync_nextcloud_data_exchange.sh) — ohne
-# eigene Testdaten dort bleiben diese Datensätze leer.
+# Note: load_geodata_to_postgis.py finds its geodata via the fallback paths in the
+# repo (geo-mapper/, geo-importer/), so it works without extra setup. The other Kreis
+# datasets (arbeitslose, bevoelkerung, ...) read from data-exchange/1_friedrich-bjoern,
+# which is empty locally by default (in production it is filled by the Nextcloud sync,
+# see backend/scripts/sync_nextcloud_data_exchange.sh). Without your own test data
+# there, these datasets stay empty.
 
 name: sozio-local
 
@@ -60,12 +57,11 @@ services:
       LAU_GEODATA_PATH: /app/geo-mapper/geo_mapper/geodata_raw/lau
       NUTS_GEODATA_PATH: /app/geo-mapper/geo_mapper/geodata_raw/nuts
       LAU_POPULATION_PATH: /app/geo-importer/src/geodata/LAU
-      # Von pipeline/dlt/fetch_lau_population.py befuellt (Eurostat LAU-NUTS-
-      # Korrespondenztabellen) - ohne echte lau_population_*.csv hier faellt
-      # load_geodata_to_postgis.py auf LAU_POPULATION_PATH zurueck, das nur
-      # ID/Name ohne gisco_id/nuts_3_code/population liefert (siehe dortigen
-      # Kommentar) und z.B. die LAU->NUTS-3-Aufloesung fuer
-      # beschaeftigungsquote-gemeinden lahmlegt.
+      # Filled by pipeline/dlt/fetch_lau_population.py (Eurostat LAU-NUTS correspondence
+      # tables). Without a real lau_population_*.csv here, load_geodata_to_postgis.py falls
+      # back to LAU_POPULATION_PATH, which only provides ID/name without gisco_id/nuts_3_code/
+      # population (see the comment there). This breaks e.g. the LAU->NUTS-3 resolution for
+      # beschaeftigungsquote-gemeinden.
       GEODATA_BASE_PATH: /app/data-exchange/eurostat_lau_population
       DB_HOST: postgis
       DB_PORT: 5432

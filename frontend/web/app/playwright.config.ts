@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// E2E läuft gegen eine bereits deployte Instanz (Produktion in CI, lokal z. B. compose.local.yml),
-// startet also keinen eigenen Dev-Server. Ziel-URL per E2E_BASE_URL.
+// E2E runs against an already deployed instance (production in CI, locally e.g. compose.local.yml),
+// so it starts no dev server of its own. Target URL via E2E_BASE_URL.
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,

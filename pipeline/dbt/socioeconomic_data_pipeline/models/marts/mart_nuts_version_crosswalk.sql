@@ -10,45 +10,40 @@
 }}
 
 /*
-  Bevölkerungsgewichteter Crosswalk zwischen NUTS-3-Versionen (Deutschland).
+  Population-weighted crosswalk between NUTS-3 versions (Germany).
 
-  Direkte (1-hop) Abbildung für JEDES Versionspaar - int_nuts_spatial_crosswalk
-  berechnet die räumliche Schnittmenge bereits für alle Kombinationen der
-  vorhandenen Vintage-Jahre (aktuell 2003, 2006, 2010, 2013, 2016, 2021,
-  2024), nicht nur für benachbarte Versionen. Eine Hop-Verkettung über
-  Zwischenversionen (z. B. 2003 → 2013 → 2021) ist dadurch nicht mehr nötig
-  und würde nur unnötig Rundungs-/Gewichtungsfehler pro Zwischenschritt
-  aufsummieren - jedes Paar hat hier bereits eine einzige, direkte
-  räumliche Schnittmenge zugrunde liegen. n_hops ist daher immer 1; die
-  Spalte bleibt zur Abwärtskompatibilität der Konsumenten erhalten.
+  Direct (1-hop) mapping for EVERY version pair - int_nuts_spatial_crosswalk
+  already computes the spatial intersection for all combinations of the
+  available vintage years (currently 2003, 2006, 2010, 2013, 2016, 2021,
+  2024), so chaining over intermediate versions would only accumulate
+  rounding/weighting errors. n_hops is therefore always 1; the column is
+  kept for backward compatibility of consumers.
 
-  population_weight gibt an, welcher Anteil des Indikatorwerts einer Quell-Region
-  auf die jeweilige Ziel-Region entfällt. Die Summe aller Gewichte je
-  (source_nuts_id, source_version, target_version) ergibt ≈ 1,0.
+  population_weight is the share of a source region's indicator value that
+  goes to the respective target region. The weights per (source_nuts_id,
+  source_version, target_version) sum to ~ 1.0.
 
-  Die eigentliche Populationsgewichtung erfolgt über die Gemeinde(LAU)-Ebene
-  (int_lau_nuts3_population_weight): Nur dort kann sich die Bevölkerung
-  innerhalb einer Quellregion tatsächlich unterschiedlich auf mehrere
-  Zielregionen verteilen. Eine Gewichtung mit der Gesamt-Bevölkerung der
-  Quellregion selbst würde sich bei der Normierung immer herauskürzen und
-  wäre de facto nur eine Flächengewichtung.
+  The population weighting itself comes from the Gemeinde (LAU) level
+  (int_lau_nuts3_population_weight): only there can the population within a
+  source region be distributed unevenly across target regions. Weighting
+  with the source region's total population would cancel out in the
+  normalization and be a pure area weighting.
 
-  Fallback auf reinen Flächenanteil (int_nuts_spatial_crosswalk), falls für
-  ein Regionenpaar keine LAU-Bevölkerung ermittelt werden konnte (z. B.
-  unbewohnte Fläche oder fehlende LAU-Daten).
+  Falls back to the plain area share (int_nuts_spatial_crosswalk) if no LAU
+  population could be determined for a region pair (e.g. uninhabited area
+  or missing LAU data).
 
-  absolute_weight (= raw_weight vor der Normierung auf Summe 1,0) wird
-  zusätzlich zur normierten population_weight-Spalte geführt - gebraucht
-  für die gewichtete Mittelwertbildung bei Quoten/Durchschnitten in
-  mart_nuts3_sociodata_harmonized (measure_type = 'weighted_avg'): dort
-  darf eine Zusammenlegung mehrerer Quellregionen den Wert nicht aufsummieren
-  (das wäre nur für Zählgrößen richtig), sondern muss ihn gewichtet mitteln.
+  absolute_weight (= raw_weight before normalization to sum 1.0) is kept
+  next to the normalized population_weight - needed for the weighted mean of
+  ratios/averages in mart_nuts3_sociodata_harmonized
+  (measure_type = 'weighted_avg'): merging several source regions must not
+  sum such values (only correct for counts) but average them weighted.
 
-  Beispiel Gebietsreform:
-    Kreis A (2016) überlappt räumlich mit Kreis X und Kreis Y (2021).
-    Leben 70 % der Einwohner von A auf dem Gebietsteil, der zu X wird, und
-    30 % auf dem Teil, der zu Y wird, ergibt sich weight(A→X) = 0,70 und
-    weight(A→Y) = 0,30 — unabhängig vom reinen Flächenverhältnis.
+  Example boundary reform:
+    Kreis A (2016) spatially overlaps Kreis X and Kreis Y (2021). If 70 % of
+    A's inhabitants live in the part that becomes X and 30 % in the part
+    that becomes Y, weight(A->X) = 0.70 and weight(A->Y) = 0.30,
+    independent of the plain area ratio.
 */
 
 with spatial as (
@@ -59,8 +54,8 @@ lau_pop_weight as (
     select * from {{ ref('int_lau_nuts3_population_weight') }}
 ),
 
--- Rohgewicht: echte Gemeinde(LAU)-Bevölkerung je (Quell-, Ziel-)-Regionenpaar.
--- Fallback auf Flächenanteil, falls keine LAU-Bevölkerung vorhanden ist.
+-- Raw weight: actual Gemeinde (LAU) population per (source, target) region
+-- pair. Falls back to area share if no LAU population is available.
 raw_weights as (
     select
         s.source_version,
@@ -76,7 +71,7 @@ raw_weights as (
         and lpw.target_nuts_id = s.target_nuts_id
 )
 
--- Normierung: Gewichte je Quell-Region auf Summe = 1,0 bringen
+-- Normalization: scale weights to sum 1.0 per source region
 select
     source_version,
     target_version,

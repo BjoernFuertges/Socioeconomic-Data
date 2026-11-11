@@ -27,6 +27,15 @@ curl -H 'Accept: text/csv' '<host>/api/v1/bevoelkerung/timeseries?geodata_id_nut
   cannot send headers); `?download=1` adds `Content-Disposition:
   attachment`. `?limit=null` lifts the row limit for a full export.
 
+### Pagination
+
+- `limit` / `offset`: default `limit` is 1000 on the generated dataset
+  routes and 100 on the region lists (`/lau`, `/nuts`, `/geo`). There is no
+  server-side maximum; `limit=null` returns all rows.
+- `chunk_size` + `chunk` (0-based) is an alternative to `limit`/`offset`
+  and takes precedence when set.
+- JSON responses carry pagination info in `meta`.
+
 Implemented once in
 [`internal/handlers/negotiate.go`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/backend/internal/handlers/negotiate.go)
 (`respondList`/`respondNegotiated`), so no endpoint carries its own CSV code.
@@ -97,8 +106,10 @@ files only carry the placeholder `dev`.
 |---|---|---|
 | GET | `/nuts` | List of all NUTS regions |
 | GET | `/nuts/{nuts_id}` | All indicators for a NUTS region |
-| GET | `/nuts/{nuts_id}/versions` | Available NUTS versions (2013/2016/2021/2024) of a region |
+| GET | `/nuts/{nuts_id}/versions` | Geometry periods of a region (NUTS vintages 2003/2006/2010/2013/2016/2021/2024) |
 | GET | `/nuts/{nuts_id}/datasets` | Datasets available for the region |
+| GET | `/nuts/{nuts_id}/lau-aggregate` | NUTS-3 only: values aggregated from its municipalities (LAU) |
+| GET | `/nuts/{nuts_id}/dataset-aggregate/{slug}` | NUTS-0/1/2 only: time series of a Kreis dataset aggregated from NUTS-3 (version 2024) |
 
 ## Geodata (generic, LAU + NUTS)
 
@@ -113,7 +124,11 @@ files only carry the placeholder `dev`.
 
 | Method | Path | Purpose |
 |---|---|---|
+| GET | `/custom-regions/datasets` | Datasets that can be queried for a custom region |
 | POST | `/custom-regions/dataset-aggregate` | Time series of the requested datasets for a user-defined Polygon/MultiPolygon (GeoJSON, WGS84) |
+
+Request body: `geometry` (GeoJSON), `datasets` (slugs, max. 30), optional
+`from_year`, `to_year`, `min_share`. Limits: 5 MiB body, 200,000 vertices.
 
 The region is sent per request and never stored. The polygon is intersected
 with the source geometries (reference state 2024) and the values are
@@ -136,8 +151,15 @@ the generic socioeconomic-data routes below.
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/agenturbezirke` | List of all Agenturbezirke, with geometry |
+| GET | `/agenturbezirke/latest` | All Agenturbezirke with their latest reporting month (map view) |
+| GET | `/agenturbezirke/periods` | Available reporting months |
+| GET | `/agenturbezirke/period?year=&month=` | All Agenturbezirke for one reporting month |
+| GET | `/agenturbezirke/dataset-aggregate` | Kreis datasets/years available aggregated to Agenturbezirke |
+| GET | `/agenturbezirke/dataset-aggregate/{slug}?year=` | One Kreis dataset aggregated to all Agenturbezirke for one year |
 | GET | `/agenturbezirke/{ba_schl}` | A single Agenturbezirk |
 | GET | `/agenturbezirke/{ba_schl}/arbeitslosigkeit` | Monthly unemployment/underemployment series (since Jan 2007) |
+| GET | `/agenturbezirke/{ba_schl}/nuts3` | Overlapping NUTS-3 regions with area shares |
+| GET | `/agenturbezirke/{ba_schl}/dataset-aggregate/{slug}` | Time series of a Kreis dataset aggregated to this Agenturbezirk |
 | GET | `/agenturbezirke/{ba_schl}/nuts-hierarchy` | Overlapping NUTS-1/2/3 regions; `is_parent` marks the smallest one that fully contains the Agenturbezirk (none if it spans several Bundesländer) |
 | GET | `/nuts/{nuts_id}/agenturbezirke` | Reverse direction (NUTS-1 to 3): Agenturbezirke in a region, `is_fully_contained` separates real children from partial overlaps |
 
@@ -194,7 +216,7 @@ persistent `dataset_uri` of the form `urn:soziodata:dataset:<slug>`).
 `license` is the literal string `"unbekannt"` rather than a bare `null`
 for any dataset whose usage terms couldn't be determined — see
 [`stg_dataset_metadata.sql`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dbt/socioeconomic_data_pipeline/models/staging/stg_dataset_metadata.sql).
-For BBSR-sourced datasets (currently all of them) the license is looked
+For BBSR-sourced datasets (currently all `meta.yaml`-driven ones) the license is looked
 up automatically and kept up to date by
 [`pipeline/dlt/bbsr_license.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/bbsr_license.py)
 — no manual research needed, see [dlt.md](../pipeline/dlt.md).

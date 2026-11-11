@@ -52,7 +52,7 @@ cleaned as (
         year::integer as year,
         value::numeric as beschaeftigungsquote_prozent,
 
-        -- Derived date (Jahreswert → 1. Januar des Jahres)
+        -- Derived observation date: 1 January of the year
         make_date(year::integer, 1, 1) as observation_date,
 
         -- Data quality flag: percentage must be 0-100

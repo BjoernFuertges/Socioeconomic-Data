@@ -9,7 +9,7 @@ import (
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
-// GetDerivedMetricsCatalog gibt alle abgeleiteten Metriken-Definitionen zurück.
+// GetDerivedMetricsCatalog returns all derived-metric definitions.
 // @Summary Abgeleitete Metriken-Definitionen
 // @Description Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,
 // @Description Ausbildungsquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.
@@ -26,7 +26,7 @@ func (h *Handler) GetDerivedMetricsCatalog(c *gin.Context) {
 	})
 }
 
-// GetDerivedMetricsCatalogEntry berechnet Statistiken für eine abgeleitete Metrik.
+// GetDerivedMetricsCatalogEntry computes statistics for a derived metric.
 // @Summary Statistiken für eine abgeleitete Metrik
 // @Description Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine
 // @Description abgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²).
@@ -73,8 +73,8 @@ func (h *Handler) GetDerivedMetricsCatalogEntry(c *gin.Context) {
 	})
 }
 
-// columnAllowed prüft ob eine Spalte in den ValueColumns eines Datasets erlaubt ist.
-// Verhindert das Einschleusen beliebiger Spaltennamen in SQL-Abfragen.
+// columnAllowed checks whether a column is allowed in a dataset's ValueColumns.
+// Prevents injection of arbitrary column names into SQL queries.
 func columnAllowed(cfg models.KreisDatasetConfig, col string) bool {
 	for _, c := range cfg.ValueColumns {
 		if c == col {
@@ -84,15 +84,15 @@ func columnAllowed(cfg models.KreisDatasetConfig, col string) bool {
 	return false
 }
 
-// computeDerivedMetric berechnet Statistiken für eine abgeleitete Metrik per SQL-JOIN.
-// Unterstützt aktuell: type=ratio (Zähler/Nenner × Scale).
-// Nenner-Quellen: dataset (RouteSlug+Spalte) oder builtin "nuts_geometry_area_sqkm".
+// computeDerivedMetric computes statistics for a derived metric via SQL JOIN.
+// Currently supports type=ratio (numerator/denominator x Scale).
+// Denominator sources: dataset (RouteSlug + column) or the builtin "nuts_geometry_area_sqkm".
 func (h *Handler) computeDerivedMetric(entry models.DerivedMetricEntry, filter models.MetricsFilter) (models.DatasetMetricsResult, error) {
 	if entry.Formula.Type != "ratio" {
 		return models.DatasetMetricsResult{}, fmt.Errorf("unbekannter Formeltyp: %q (unterstützt: ratio)", entry.Formula.Type)
 	}
 
-	// Zähler validieren
+	// Validate numerator
 	numCfg, ok := models.DatasetConfigBySlug(entry.Formula.Numerator.Dataset)
 	if !ok {
 		return models.DatasetMetricsResult{}, fmt.Errorf("unbekannter Datensatz im Zähler: %q", entry.Formula.Numerator.Dataset)
@@ -102,7 +102,7 @@ func (h *Handler) computeDerivedMetric(entry models.DerivedMetricEntry, filter m
 	}
 	numCol := fmt.Sprintf(`"%s"`, entry.Formula.Numerator.Column)
 
-	// Nenner auflösen
+	// Resolve denominator
 	var denomCTE, denomJoin, denomExpr string
 	switch {
 	case entry.Formula.Denominator.Builtin == "nuts_geometry_area_sqkm":
@@ -137,10 +137,10 @@ func (h *Handler) computeDerivedMetric(entry models.DerivedMetricEntry, filter m
 	scaleLiteral := strconv.FormatFloat(scale, 'f', -1, 64)
 	valueExpr := fmt.Sprintf(`(n.%s / NULLIF(%s, 0)) * %s`, numCol, denomExpr, scaleLiteral)
 
-	// WHERE-Filter für den Zähler (mit Alias "n.")
+	// WHERE filter for the numerator (with alias "n.")
 	numWhere, numArgs, _ := buildMetricsWhere(filter, false, 1, "n")
 
-	// Aggregations-Query mit CTE
+	// Aggregation query with CTE
 	aggQuery := fmt.Sprintf(
 		`WITH %sjoined AS (
 		SELECT n.year, n.geodata_id_nuts, %s AS value
@@ -185,7 +185,7 @@ func (h *Handler) computeDerivedMetric(entry models.DerivedMetricEntry, filter m
 		yearIndex[row.Year] = i
 	}
 
-	// Ranking-Query: nur wenn eine spezifische Region abgefragt wird
+	// Ranking query: only when a specific region is requested
 	if filter.GeodataIDNUTS != "" {
 		rankWhere, rankArgs, rankArgPos := buildMetricsWhere(filter, true, 1, "n")
 
@@ -230,7 +230,7 @@ func (h *Handler) computeDerivedMetric(entry models.DerivedMetricEntry, filter m
 		}
 	}
 
-	// Year-over-Year-Berechnung in Go für konsekutive Jahrespaare
+	// Year-over-year calculation in Go for consecutive year pairs
 	for i := 1; i < len(byYear); i++ {
 		prev := byYear[i-1]
 		curr := &byYear[i]

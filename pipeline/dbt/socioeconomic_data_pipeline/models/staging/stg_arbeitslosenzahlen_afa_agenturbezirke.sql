@@ -8,10 +8,8 @@
     )
 }}
 
--- Kein dbt snapshot (anders als stg_arbeitslose_kreise): die Quelle liefert
--- bei jedem Lauf bereits die volle Monatsreihe neu (write_disposition=
--- replace), Historisierung der jüngsten "vorläufigen" Revisionen ist
--- bewusst spätere Erweiterung (siehe Planung, Phase 2).
+-- No snapshot, unlike the Kreis models: the source reloads the full monthly
+-- series on every run, so revisions are not historized (yet).
 
 with source_data as (
     select * from {{ source('loaded_data', 'results_arbeitslosenzahlen_afa_agenturbezirke') }}

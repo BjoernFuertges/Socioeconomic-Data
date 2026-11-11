@@ -13,36 +13,32 @@
 {% set min_share = var('crosswalk_min_share', 0.10) %}
 
 /*
-  n:m-Zuordnung Agenturbezirk <-> NUTS-3-Region mit Flächenanteil in beide
-  Richtungen. Ersetzt eine frühere Version dieses Crosswalks, die pro
-  Agenturbezirk nur die eine NUTS-3-Region mit der größten Schnittfläche
-  behielt - das unterschlug, dass Agenturbezirke in aller Regel aus
-  MEHREREN ganzen Kreisen bestehen (und umgekehrt, Ausnahme Berlin: 3
-  Agenturbezirke teilen sich den einzigen NUTS-3-Kreis Berlin).
+  n:m mapping Agenturbezirk <-> NUTS-3 region with area shares in both
+  directions. Agenturbezirke usually consist of SEVERAL whole Kreise (and
+  vice versa; exception Berlin: 3 Agenturbezirke share the single NUTS-3
+  Kreis Berlin), so keeping only the largest-overlap region would be wrong.
 
-  area_share_of_agentur: welcher Anteil dieses Agenturbezirks (Fläche) auf
-  diese NUTS-3-Region entfällt - Zeilen eines Agenturbezirks summieren
-  sich näherungsweise auf 1.0 ("woraus besteht dieser Agenturbezirk").
+  area_share_of_agentur: share of this Agenturbezirk's area falling into
+  this NUTS-3 region - rows of one Agenturbezirk sum to ~1.0 ("what does
+  this Agenturbezirk consist of").
 
-  area_share_of_nuts3: umgekehrt, welcher Anteil dieser NUTS-3-Region auf
-  diesen Agenturbezirk entfällt - Zeilen einer NUTS-3-Region summieren
-  sich näherungsweise auf 1.0 (relevant für Berlin: je Agenturbezirk hier
-  deutlich unter 1.0).
+  area_share_of_nuts3: conversely, share of this NUTS-3 region falling into
+  this Agenturbezirk - rows of one NUTS-3 region sum to ~1.0 (relevant for
+  Berlin: well below 1.0 per Agenturbezirk).
 
-  Da nicht ausreichend Bevölkerungsdaten vorhanden sind, geht es nur nach Fläche.
+  Population data is insufficient, so weighting is by area only.
 
-  Kleine geometrische Überlappungs-"Krümel" durch Grenzungenauigkeiten
-  werden über einen Schwellwert (10% Flächenanteil, mindestens einer der
-  beiden Anteile muss darüber liegen) herausgefiltert. Empirisch ermittelt
-  (siehe analysis/data-analysis/agentur_nuts3_crosswalk_shares.ipynb): der jeweils
-  größere der beiden Anteile liegt bei Krümeln höchstens bei ~6% (bei
-  kleinen Kreisfreien Städten kann ein Krümel von ~1-2 km² schon mehrere %
-  der Stadtfläche ausmachen, z.B. 0.7% bei Stuttgart), echte Bestandteile
-  liegen bei >= ~28%. 10% liegt sicher in dieser Lücke, ohne dass ein
-  Agenturbezirk oder Kreis seine Zuordnung komplett verliert (auch nicht
-  in Berlin). Für die Analyse im Notebook lässt sich der Filter mit
-  `--vars '{crosswalk_min_share: 0}'` abschalten. Frühere Schwellen von 0.2% / 0.5% ließen noch sichtbare
-  Krümel durch (Anzeige "0 %" im Frontend).
+  Small geometric overlap slivers caused by boundary inaccuracies are
+  filtered out via a threshold (10% area share; at least one of the two
+  shares must exceed it). Determined empirically (see
+  analysis/data-analysis/agentur_nuts3_crosswalk_shares.ipynb): the larger
+  of the two shares is at most ~6% for slivers (for small kreisfreie Städte
+  a ~1-2 km2 sliver can already be several % of the city area, e.g. 0.7% for
+  Stuttgart), while real components are >= ~28%. 10% lies safely in that
+  gap without any Agenturbezirk or Kreis losing its assignment entirely
+  (not even in Berlin). For notebook analysis the filter can be disabled
+  with `--vars '{crosswalk_min_share: 0}'`. Earlier thresholds of 0.2% /
+  0.5% still let visible slivers through (shown as "0 %" in the frontend).
 */
 
 with agentur_geom as (

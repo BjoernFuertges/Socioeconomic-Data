@@ -2,9 +2,9 @@
 import { computed } from "vue";
 import { formatPercent } from "../format";
 
-// Kennzeichnet, wie ein Datensatz über eine eigene Region aggregiert wurde
-// (Felder aus POST /custom-regions/dataset-aggregate): genutzte Ebene,
-// Methode, Näherungen und Abdeckung.
+// Describes how a dataset was aggregated over a custom region
+// (fields from POST /custom-regions/dataset-aggregate): level used,
+// method, approximations and coverage.
 type NotePoint = {
   aggregation_method?: string;
   value_kind?: string;
@@ -26,7 +26,7 @@ const notes = computed(() => {
   const levels = [...new Set(pts.map((p) => p.level_used).filter(Boolean))] as string[];
   const levelText = levels.map((l) => LEVEL_LABEL[l] ?? l).join(", ");
   if (matched) {
-    // Exakter Treffer: keine Gewichtung, der Einheitenwert wird 1:1 übernommen.
+    // Exact match: no weighting, the unit's value is taken as-is.
     out.push(
       `Die Region entspricht exakt der Einheit ${matched} (${levelText}) – dargestellt sind deren Werte, ohne Anteile von Nachbareinheiten.` +
         (pts.some((p) => p.is_crosswalked) ? " Teilweise über Gebietsstände umgerechnet." : ""),

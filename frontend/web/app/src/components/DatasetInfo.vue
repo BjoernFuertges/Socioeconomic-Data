@@ -3,8 +3,8 @@ import { computed } from "vue";
 import type { DatasetMetadataEntry } from "../types/api";
 import { formatDateDE } from "../format";
 
-// Zeigt Herkunft/Lizenz/Beschreibung eines Datensatzes sowie die persistente URI. Lizenz "unbekannt" wird bewusst sichtbar
-// dargestellt statt versteckt.
+// Shows origin/license/description of a dataset and its persistent URI. License "unbekannt" is shown
+// visibly on purpose rather than hidden.
 const props = defineProps<{
   metadata: DatasetMetadataEntry;
 }>();

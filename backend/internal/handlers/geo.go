@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -41,12 +43,12 @@ var baSchlPattern = regexp.MustCompile(`^\d+$`)
 
 func detectGeoType(geoID string) string {
 	trimmed := strings.TrimSpace(geoID)
-	// ba_schl-Werte sind rein numerisch (z. B. "962") - das unterscheidet sie
-	// eindeutig von NUTS-Codes (immer mit 2-stelligem Ländercode-Präfix,
-	// z. B. "DE111"). LAU gisco_ids haben zwar auch ein <Ländercode>_-Präfix,
-	// sind aber nicht auf DE beschränkt und der Teil nach dem "_" ist nicht
-	// immer rein numerisch (z. B. "CH_CH6194", "BG_VRC32") - deshalb bleibt
-	// "lau" hier der Default-Fall statt einem eigenen Pattern-Check.
+	// ba_schl values are purely numeric (e.g. "962") - this distinguishes them
+	// unambiguously from NUTS codes (always with a 2-letter country prefix,
+	// e.g. "DE111"). LAU gisco_ids also carry a <country>_ prefix, but are not
+	// limited to DE and the part after the "_" is not always purely numeric
+	// (e.g. "CH_CH6194", "BG_VRC32") - so "lau" stays the default case here
+	// instead of a dedicated pattern check.
 	if baSchlPattern.MatchString(trimmed) {
 		return "agentur"
 	}
@@ -131,7 +133,7 @@ func spatialPredicateSQL(operation string, geomColumn string, geoJSONParam int) 
 	return fmt.Sprintf("ST_Intersects(%s, ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($%d), 4326), 3035))", geomColumn, geoJSONParam)
 }
 
-// GetGeoRegions gibt eine einheitliche Liste von NUTS-, LAU- oder Agentur-Regionen zurück
+// GetGeoRegions returns a unified list of NUTS, LAU or Agentur regions
 // @Summary Liste allgemeiner Geo-Regionen
 // @Description Gibt eine einheitliche Liste für NUTS-, LAU- oder Agenturbezirk-Regionen zurück. Standard ist NUTS. Mit geo_type=lau bzw. geo_type=agentur werden LAU- bzw. Agenturbezirk-Regionen geliefert.
 // @Tags Geo
@@ -307,9 +309,9 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 		argPos++
 	}
 	if filter.NutsParentID != "" {
-		// nuts3_id ist die kanonische LAU->NUTS-3-Verlinkung (deklariert oder
-		// räumlich ermittelt, siehe lau_integrated.sql) - robuster als die oft
-		// NULLe nuts_3_code-Rohspalte.
+		// nuts3_id is the canonical LAU->NUTS-3 link (declared or spatially
+		// derived, see lau_integrated.sql) - more robust than the often-NULL raw
+		// nuts_3_code column.
 		query += fmt.Sprintf(" AND nuts3_id IS NOT NULL AND nuts3_id LIKE $%d", argPos)
 		args = append(args, strings.ToUpper(strings.TrimSpace(filter.NutsParentID))+"%")
 		argPos++
@@ -336,9 +338,9 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 		argPos++
 		yearFilterApplied = true
 	} else if filter.IncludeGeometry && filter.GeometryYear != nil {
-		// Wenn kein Datenjahr gesetzt ist, aber eine explizite Geometrieversion
-		// angefordert wird, wird geometry_year als Jahresfilter auf lau_integrated
-		// verwendet (year-Spalte entspricht dort dem Vintage-Jahr der Geometrie).
+		// If no data year is set but an explicit geometry version is requested,
+		// geometry_year is used as the year filter on lau_integrated (its year
+		// column is the geometry's vintage year).
 		query += fmt.Sprintf(" AND year = $%d", argPos)
 		args = append(args, *filter.GeometryYear)
 		argPos++
@@ -357,13 +359,12 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 		yearFilterApplied = true
 	}
 	if !yearFilterApplied {
-		// Ohne jeglichen Jahresfilter nur den aktuellsten Vintage-Jahrgang
-		// berücksichtigen. lau_integrated hat (anders als die valid_from/
-		// valid_to-Perioden in mart_lau_geometry_historized) keinen Konzept
-		// von "noch aktuell" - DISTINCT ON (gisco_id) ... ORDER BY year DESC
-		// würde sonst auch stillgelegte/fusionierte gisco_ids mit ihrer
-		// letzten bekannten (alten) Zeile durchlassen, doppelt neben ihrem
-		// Nachfolgecode (analog zum NUTS-valid_to-Bug).
+		// Without any year filter, consider only the latest vintage. Unlike the
+		// valid_from/valid_to periods in mart_lau_geometry_historized,
+		// lau_integrated has no notion of "still current" - DISTINCT ON (gisco_id)
+		// ... ORDER BY year DESC would otherwise let retired/merged gisco_ids through
+		// with their last known (old) row, duplicated next to their successor code
+		// (analogous to the NUTS valid_to bug).
 		query += " AND year = (SELECT MAX(year) FROM transformed_data.lau_integrated)"
 	}
 
@@ -461,12 +462,10 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 		argPos++
 	}
 	if filter.IncludeGeometry {
-		// In der historisierten Tabelle deckt genau eine Periode ein Jahr ab;
-		// "exact" und "latest-before" fallen daher zusammen.
-		// geometry_year wird nur angewendet, wenn year nicht gesetzt ist –
-		// andernfalls würden zwei überschneidungsfreie Perioden-Filter zu 0
-		// Ergebnissen führen, wenn geometry_year und year auf verschiedene
-		// Perioden zeigen.
+		// In the historized table exactly one period covers a year, so "exact" and
+		// "latest-before" coincide. geometry_year is applied only when year is not
+		// set - otherwise two non-overlapping period filters would yield 0 results
+		// if geometry_year and year point to different periods.
 		if filter.GeometryYear != nil && filter.Year == nil {
 			query += fmt.Sprintf(" AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d)", argPos, argPos)
 			args = append(args, *filter.GeometryYear)
@@ -543,10 +542,10 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 	for _, r := range rows {
 		level := r.NutsLevel
 		code := r.NutsLevelCode
-		// Wenn ein konkretes Jahr abgefragt wurde, wird es direkt zurückgegeben
-		// (analog zu LAU, das den tatsächlichen Jahreswert aus der DB liefert).
-		// Ohne Jahresfilter kommt max_vintage_year: das neueste Vintage-Jahr
-		// der gültigen Periode – ebenfalls konsistent mit LAUs letztem verfügbaren Jahr.
+		// If a concrete year was requested it is returned directly (like LAU, which
+		// returns the actual year value from the DB). Without a year filter,
+		// max_vintage_year is returned: the latest vintage year of the valid period -
+		// likewise consistent with LAU's latest available year.
 		year := r.Year
 		if filter.Year != nil {
 			year = *filter.Year
@@ -573,7 +572,7 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 	})
 }
 
-// GetGeoRegionByID gibt eine einzelne Geo-Region (NUTS oder LAU) zurück
+// GetGeoRegionByID returns a single geo region (NUTS or LAU)
 // @Summary Allgemeine Geo-Region nach ID
 // @Description Gibt Details für eine Geo-Region zurück. Mit geo_type=auto wird der Typ aus der ID erkannt (rein numerisch: Agentur; NUTS: 2-5 Zeichen; sonst LAU).
 // @Tags Geo
@@ -622,7 +621,7 @@ func (h *Handler) GetGeoRegionByID(c *gin.Context) {
 	h.GetLAURegionByID(c)
 }
 
-// GetGeoRegionVersions gibt alle Geometrie-Perioden für eine Geo-Region zurück
+// GetGeoRegionVersions returns all geometry periods for a geo region
 // @Summary Geometrie-Perioden einer Geo-Region
 // @Description Gibt alle Geometrie-Perioden (valid_from/valid_to) für eine Geo-Region zurück.
 // Jede Periode repräsentiert eine Geometrie-Version; valid_to=null bedeutet noch aktuell.
@@ -699,7 +698,7 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 			WHERE ba_schl = $1
 			LIMIT 1`
 		if err := h.DB.Get(&period, query, geoID); err != nil {
-			if err.Error() == "sql: no rows in result set" {
+			if errors.Is(err, sql.ErrNoRows) {
 				respondNotFound(c, "Keine Versionsdaten für diese Geo-Region gefunden")
 				return
 			}
@@ -712,9 +711,9 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 			validFrom = *period.ValidFrom
 		}
 
-		// Agenturbezirke haben bewusst keinen Versions-Crosswalk (nur eine
-		// aktuelle Grenzen-Vintage, siehe mart_agenturbezirk_sociodata.sql) -
-		// daher immer genau eine Periode statt mehrerer wie bei NUTS/LAU.
+		// Agenturbezirke deliberately have no version crosswalk (only one current
+		// boundary vintage, see mart_agenturbezirk_sociodata.sql) - hence always
+		// exactly one period instead of several as for NUTS/LAU.
 		c.JSON(http.StatusOK, models.APIResponse{
 			Success: true,
 			Data: models.GeoRegionVersions{
@@ -751,7 +750,7 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 	})
 }
 
-// QueryGeoRegionsByGeometry ermöglicht räumliche Gebietsanfragen per GeoJSON.
+// QueryGeoRegionsByGeometry enables spatial region queries via GeoJSON.
 // @Summary Räumliche Geo-Abfrage via GeoJSON
 // @Description Führt eine räumliche Abfrage (intersects/contains) gegen NUTS oder LAU Geometrien aus.
 // @Tags Geo
@@ -831,11 +830,11 @@ func (h *Handler) queryGeoRegionsAgentur(c *gin.Context, filter models.GeoSpatia
 		geometrySelect = `ST_AsGeoJSON(geometry_wgs84)::json AS geometry_wgs84, has_valid_geometry`
 	}
 
-	// stg_agenturbezirk_geometry statt der bereits GeoJSON-serialisierten
-	// mart_agenturbezirk_sociodata - Agenturbezirke sind mit nur ~150
-	// Regionen klein genug, dass der fehlende Geometrie-Index (View ohne
-	// materialisierte geometry_3035-Spalte) hier nicht ins Gewicht fällt,
-	// anders als beim LAU-NUTS-3-Join (siehe int_lau_nuts3_membership.sql).
+	// stg_agenturbezirk_geometry instead of the already GeoJSON-serialized
+	// mart_agenturbezirk_sociodata - with only ~150 regions, Agenturbezirke are
+	// small enough that the missing geometry index (view without a materialized
+	// geometry_3035 column) does not matter here, unlike the LAU-NUTS-3 join
+	// (see int_lau_nuts3_membership.sql).
 	query := `SELECT
 		ba_schl AS geo_id,
 		'Agentur' AS geo_type,
@@ -938,9 +937,9 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 		argPos++
 		yearFilterApplied = true
 	} else if filter.IncludeGeometry && filter.GeometryYear != nil {
-		// Wenn kein Datenjahr gesetzt ist, aber eine explizite Geometrieversion
-		// angefordert wird, wird geometry_year als Jahresfilter auf lau_integrated
-		// verwendet (year-Spalte entspricht dort dem Vintage-Jahr der Geometrie).
+		// If no data year is set but an explicit geometry version is requested,
+		// geometry_year is used as the year filter on lau_integrated (its year
+		// column is the geometry's vintage year).
 		query += fmt.Sprintf(" AND year = $%d", argPos)
 		args = append(args, *filter.GeometryYear)
 		argPos++
@@ -959,9 +958,9 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 		yearFilterApplied = true
 	}
 	if !yearFilterApplied {
-		// Ohne jeglichen Jahresfilter nur den aktuellsten Vintage-Jahrgang
-		// berücksichtigen - siehe getGeoRegionsLAU für die ausführliche
-		// Begründung (analog zum NUTS-valid_to-Bug).
+		// Without any year filter, consider only the latest vintage - see
+		// getGeoRegionsLAU for the detailed rationale (analogous to the NUTS
+		// valid_to bug).
 		query += " AND year = (SELECT MAX(year) FROM transformed_data.lau_integrated)"
 	}
 
@@ -1063,12 +1062,10 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 		WHERE has_valid_geometry`
 
 	args := make([]interface{}, 0)
-	// In der historisierten Tabelle deckt genau eine Periode ein Jahr ab;
-	// "exact" und "latest-before" fallen daher zusammen.
-	// geometry_year wird nur angewendet, wenn year nicht gesetzt ist –
-	// andernfalls würden zwei überschneidungsfreie Perioden-Filter zu 0
-	// Ergebnissen führen, wenn geometry_year und year auf verschiedene
-	// Perioden zeigen.
+	// In the historized table exactly one period covers a year, so "exact" and
+	// "latest-before" coincide. geometry_year is applied only when year is not
+	// set - otherwise two non-overlapping period filters would yield 0 results
+	// if geometry_year and year point to different periods.
 	if filter.GeometryYear != nil && filter.Year == nil {
 		query += fmt.Sprintf(" AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d)", argPos, argPos)
 		args = append(args, *filter.GeometryYear)

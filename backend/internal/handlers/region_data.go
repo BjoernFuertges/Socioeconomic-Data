@@ -10,10 +10,10 @@ import (
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
-// Slugs der Agentur-Rohwerte (mart_agenturbezirk_sociodata) und der
-// LAU->NUTS-3-Aggregate (mart_nuts3_lau_aggregate) im kombinierten Export.
-// Sie sind keine Kreis-Datensätze; "ba_" trennt die BA-Rohwerte vom
-// gleichnamigen, auf Agenturbezirke aggregierten Kreis-Datensatz "arbeitslose".
+// Slugs of the raw Agentur values (mart_agenturbezirk_sociodata) and of the
+// LAU->NUTS-3 aggregates (mart_nuts3_lau_aggregate) in the combined export.
+// They are not Kreis datasets; "ba_" separates the BA raw values from the
+// same-named Kreis dataset "arbeitslose" aggregated to Agenturbezirke.
 const (
 	slugBAArbeitslose         = "ba_arbeitslose"
 	slugBAUnterbeschaeftigung = "ba_unterbeschaeftigung"
@@ -28,7 +28,7 @@ type regionDataFilter struct {
 	ToYear   *int   `form:"to_year"`
 }
 
-// regionScope beschreibt, welche Wertearten ausgeliefert werden.
+// regionScope describes which kinds of values are delivered.
 type regionScope struct {
 	Raw        bool
 	Aggregated bool
@@ -56,7 +56,7 @@ func parseRegionScope(raw string) (regionScope, error) {
 	return scope, nil
 }
 
-// parseDatasetList zerlegt ?datasets=a,b; leer = alle verfügbaren.
+// parseDatasetList splits ?datasets=a,b; empty = all available.
 func parseDatasetList(raw string) []string {
 	var slugs []string
 	seen := map[string]bool{}
@@ -71,8 +71,8 @@ func parseDatasetList(raw string) []string {
 	return slugs
 }
 
-// validateRegionDatasets lehnt Slugs ab, die weder ein bekannter Kreis-
-// Datensatz noch einer der region-spezifischen Sonder-Slugs sind.
+// validateRegionDatasets rejects slugs that are neither a known Kreis
+// dataset nor one of the region-specific special slugs.
 func validateRegionDatasets(slugs []string) error {
 	special := map[string]bool{
 		slugBAArbeitslose: true, slugBAUnterbeschaeftigung: true,
@@ -89,8 +89,8 @@ func validateRegionDatasets(slugs []string) error {
 	return nil
 }
 
-// pickSlugs liefert die aus slugs anwendbaren Slugs (Filter: allowed). Ohne
-// Auswahl (slugs leer) => nil und all=true, also "alle verfügbaren".
+// pickSlugs returns the applicable slugs from slugs (filter: allowed). Without
+// a selection (slugs empty) => nil and all=true, i.e. "all available".
 func pickSlugs(slugs []string, allowed func(string) bool) (picked []string, all bool) {
 	if len(slugs) == 0 {
 		return nil, true
@@ -113,8 +113,8 @@ func isLauHarmonizedSlug(slug string) bool {
 	return ok && cfg.IsHarmonizedLau
 }
 
-// addYearRange hängt from_year/to_year-Bedingungen an und gibt die neue
-// Query und nächste Argumentposition zurück.
+// addYearRange appends from_year/to_year conditions and returns the new
+// query and the next argument position.
 func addYearRange(query string, args []interface{}, yearCol string, filter regionDataFilter) (string, []interface{}) {
 	if filter.FromYear != nil {
 		args = append(args, *filter.FromYear)
@@ -127,8 +127,8 @@ func addYearRange(query string, args []interface{}, yearCol string, filter regio
 	return query, args
 }
 
-// GetRegionData liefert Rohwerte und/oder aggregierte Werte einer Region als
-// eine Long-Format-Tabelle
+// GetRegionData returns raw and/or aggregated values of a region as a
+// long-format table
 // @Summary Kombinierter Daten-Export einer Region (roh und/oder aggregiert)
 // @Description Stellt die gewünschten Datensätze einer Region (NUTS, LAU oder Agenturbezirk) aus den bestehenden Marts zusammen und liefert sie in einem einheitlichen Long-Format (region_type, region_id, dataset_slug, year, month, value, is_computed, is_interpolated, aggregation_method, value_kind, source_region_count). scope=raw liefert die Ursprungswerte der Region (NUTS-3: interpolierte Kreis-Zeitreihe; LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung), scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert). NUTS-0/1/2 haben keine Rohwerte, LAU keine aggregierten Werte. Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.
 // @Tags Regionen
@@ -251,7 +251,7 @@ func (h *Handler) regionDataNuts(regionID string, scope regionScope, slugs []str
 		return rows, nil
 	}
 
-	// NUTS-0/1/2: nur aggregierte Werte (aus Kreisen), keine Rohwerte.
+	// NUTS-0/1/2: aggregated values only (from Kreise), no raw values.
 	if !scope.Aggregated {
 		return rows, nil
 	}
@@ -276,8 +276,8 @@ func (h *Handler) regionDataNuts(regionID string, scope regionScope, slugs []str
 	return rows, nil
 }
 
-// lauAggregateRows bringt die beiden Spalten von mart_nuts3_lau_aggregate in
-// das Long-Format (je Jahr eine Zeile pro Kennzahl).
+// lauAggregateRows converts the two columns of mart_nuts3_lau_aggregate into
+// long format (one row per indicator per year).
 func (h *Handler) lauAggregateRows(nuts3ID string, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
 	wantPop, wantQuote := len(slugs) == 0, len(slugs) == 0
 	for _, slug := range slugs {
@@ -323,7 +323,7 @@ func (h *Handler) lauAggregateRows(nuts3ID string, slugs []string, filter region
 
 func (h *Handler) regionDataLau(regionID string, scope regionScope, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
 	rows := []models.RegionDataRow{}
-	// LAU hat keine aggregierten Werte - nur Rohwerte.
+	// LAU has no aggregated values - raw values only.
 	if !scope.Raw {
 		return rows, nil
 	}

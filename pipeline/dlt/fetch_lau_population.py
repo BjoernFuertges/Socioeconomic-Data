@@ -73,7 +73,9 @@ def _download(url: str, dest: Path, force: bool) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=180)
     resp.raise_for_status()
-    dest.write_bytes(resp.content)
+    tmp = dest.with_suffix(".xlsx.tmp")
+    tmp.write_bytes(resp.content)
+    tmp.replace(dest)
 
 
 def _column_map(header_row: tuple) -> dict[str, int]:
@@ -100,8 +102,11 @@ def extract_de_sheet(xlsx_path: Path, out_csv: Path) -> int:
         cols = _column_map(next(rows))
 
         out_csv.parent.mkdir(parents=True, exist_ok=True)
+        # Write to a temp file first: a half-written CSV would otherwise be
+        # treated as done by the "already exists" check on the next run.
+        tmp_csv = out_csv.with_suffix(".csv.tmp")
         count = 0
-        with open(out_csv, "w", newline="", encoding="utf-8") as f:
+        with open(tmp_csv, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f, delimiter=";")
             writer.writerow(
                 [
@@ -140,6 +145,7 @@ def extract_de_sheet(xlsx_path: Path, out_csv: Path) -> int:
                     ]
                 )
                 count += 1
+        tmp_csv.replace(out_csv)
         return count
     finally:
         wb.close()

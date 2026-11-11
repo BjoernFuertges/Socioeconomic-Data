@@ -6,10 +6,10 @@ import { apiGet } from "../api/client";
 import type { RegionGeometry } from "../customRegion";
 import type { GeoRegionSummary } from "../types/api";
 
-// Eigene Region aus bestehenden Regionen kombinieren: Einheiten (Länder, Kreise,
-// Agenturbezirke, Gemeinden) auf der Karte anklicken; die Auswahl bleibt beim
-// Ebenenwechsel erhalten (Ebenen dürfen gemischt werden). Nach außen geht nur ein
-// MultiPolygon - Überlappungen vereinigt das Backend (ST_UnaryUnion).
+// Combine a custom region from existing regions: click units (Länder, Kreise,
+// Agenturbezirke, Gemeinden) on the map; the selection persists across level
+// switches (levels may be mixed). Only a MultiPolygon is sent out - the backend
+// unions overlaps (ST_UnaryUnion).
 
 type LevelKey = "nuts1" | "nuts3" | "agentur" | "lau";
 type Entry = { key: string; id: string; name: string; level: LevelKey; geometry: GeoJSON.Geometry };
@@ -48,8 +48,8 @@ const filteredCurrent = computed(() => {
   return current.value.filter((e) => e.name.toLowerCase().includes(q) || e.id.toLowerCase().includes(q));
 });
 
-// Kartenhintergrund ist var(--page-plane) (keine Kacheln) - im Dunkelmodus
-// brauchen die Umrisse deshalb hellere Farben.
+// Map background is var(--page-plane) (no tiles), so outlines need lighter
+// colors in dark mode.
 const dark = window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
 
 function styleFor(selected: boolean): L.PathOptions {
@@ -60,8 +60,8 @@ function styleFor(selected: boolean): L.PathOptions {
 
 function fitToData() {
   if (!map) return;
-  // Im versteckten Tab hat der Container Größe 0 - fitBounds würde dann einen
-  // ungültigen Zoom setzen (Karte bleibt leer/schwarz). invalidate() holt es nach.
+  // In a hidden tab the container has size 0 - fitBounds would then set an
+  // invalid zoom (map stays empty/black). invalidate() catches up later.
   const size = map.getSize();
   if (!size.x || !size.y) return;
   const layer = selection.value.size && otherLayer ? otherLayer : levelLayer;
@@ -145,7 +145,7 @@ function drawLevel() {
   if (!selection.value.size) fitToData();
 }
 
-// Auswahl anderer Ebenen als nicht klickbare Überlagerung, damit sie sichtbar bleibt.
+// Selection of other levels as a non-clickable overlay so it stays visible.
 function drawOthers() {
   if (!map) return;
   otherLayer?.remove();
@@ -190,7 +190,7 @@ onMounted(async () => {
       .map((r) => ({ id: r.geo_id, name: r.region_name }))
       .sort((a, b) => a.name.localeCompare(b.name, "de"));
   } catch {
-    // Kreisliste wird nur für die Gemeinde-Ebene gebraucht
+    // The Kreis list is only needed for the Gemeinde level
   }
   loadLevel();
 });
@@ -200,11 +200,11 @@ onBeforeUnmount(() => {
   map = null;
 });
 
-// Beim Einblenden des Tabs (v-show) muss Leaflet die Größe neu bestimmen.
+// When the tab is shown (v-show), Leaflet must recompute its size.
 defineExpose({
   invalidate() {
-    // Die Karte wird im versteckten Tab initialisiert (Größe 0) - nach dem
-    // Einblenden Größe neu bestimmen und Ausschnitt erneut setzen.
+    // The map is initialized in the hidden tab (size 0) - after it is shown,
+    // recompute the size and re-apply the view.
     map?.invalidateSize();
     fitToData();
   },

@@ -1,4 +1,4 @@
-# Gate -> Tests -> Semantic-Release-Dry-Run -> Image-Builds (GHCR) -> Release -> Deploy (Hetzner) -> E2E.
+# Gate -> tests -> semantic-release dry run -> image builds (GHCR) -> release -> deploy (Hetzner) -> E2E.
 name: "CI, Release und Deployment"
 
 on:
@@ -52,8 +52,8 @@ jobs:
 
           if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
             run_tests=true
-            # github.actor ist wer auf "Merge" geklickt hat, nicht der PR-Autor.
-            # Ein gemergter Dependabot-PR wird deshalb über den PR des Head-Commits erkannt.
+            # github.actor is whoever clicked "Merge", not the PR author.
+            # A merged Dependabot PR is therefore detected via the PR of the head commit.
             pr_author=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" --jq '.[0].user.login // empty')
             if [[ "$pr_author" != "dependabot[bot]" ]]; then
               run_build=true
@@ -64,7 +64,7 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             run_tests=true
             run_build=true
-            # Deploy nur vom Default-Branch, andere Branches bauen nur Images
+            # Deploy only from the default branch; other branches only build images
             if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
               run_deploy=true
             fi
@@ -124,7 +124,7 @@ jobs:
 
       - run: npm ci
 
-      # vue-tsc -b + vite build; einzige statische Prüfung des Frontends
+      # vue-tsc -b + vite build; the only static check of the frontend
       - run: npm run build
 
   test-docs:
@@ -157,7 +157,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      # dlt/dbt brauchen eine Datenbank; ohne Postgres prüfen wir nur, dass alle Skripte kompilieren.
+      # dlt/dbt need a database; without Postgres we only check that all scripts compile.
       - run: python -m compileall -q pipeline/dlt
 
   validate-compose:
@@ -180,13 +180,13 @@ jobs:
           docker compose -f docker-compose.yml config --quiet
 
   # ---------------------------------------------------------------------------
-  # Release-Version ermitteln (Dry-Run) und Images bauen
+  # Determine release version (dry run) and build images
   # ---------------------------------------------------------------------------
   semantic-release-dry:
     name: Semantic Release Dry Run
     if: needs.should-run.outputs.run_build == 'true'
     runs-on: ubuntu-latest
-    # Nichts wird gebaut, solange ein Test fehlschlägt.
+    # Nothing is built while a test fails.
     needs: [should-run, test-backend, test-frontend, test-docs, test-pipeline, validate-compose]
     outputs:
       nextReleaseVersion: ${{ steps.semantic.outputs.new_release_version }}
@@ -249,7 +249,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0 # Tags für die Fallback-Version (siehe unten)
+          fetch-depth: 0 # tags needed for the fallback version (see below)
 
       - uses: docker/setup-buildx-action@v4
 
@@ -259,7 +259,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # GHCR verlangt einen kleingeschriebenen Namespace
+      # GHCR requires a lowercase namespace
       - name: Determine image name and tags
         id: meta
         run: |
@@ -276,8 +276,8 @@ jobs:
           fi
           echo "tags=${tags}" >> "$GITHUB_OUTPUT"
 
-          # Version, die das Backend meldet (OpenAPI info.version, /health): bei neuem Release dessen Version,
-          # sonst der letzte Release-Tag plus Commit als SemVer-Build-Metadata, z. B. 1.4.2+sha.abc1234
+          # Version reported by the backend (OpenAPI info.version, /health): the new release's version when there is one,
+          # otherwise the last release tag plus commit as SemVer build metadata, e.g. 1.4.2+sha.abc1234
           if [[ -z "$version" ]]; then
             last_tag="$(git describe --tags --abbrev=0 2>/dev/null || true)"
             version="${last_tag#v}"
@@ -294,11 +294,11 @@ jobs:
           push: true
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
-          # Build-Args, die ein Dockerfile nicht deklariert, werden von Docker ignoriert
+          # Build args a Dockerfile does not declare are ignored by Docker
           build-args: |
             VERSION=${{ steps.meta.outputs.version }}
             BUILD_TIME=${{ needs.semantic-release-dry.outputs.build_time }}
-          # verknüpft das GHCR-Package mit diesem Repo (Berechtigungen werden vererbt)
+          # links the GHCR package to this repo (permissions are inherited)
           labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           tags: ${{ steps.meta.outputs.tags }}
 
@@ -334,7 +334,7 @@ jobs:
         run: echo "Released ${{ steps.semantic.outputs.new_release_version }}"
 
   # ---------------------------------------------------------------------------
-  # Deployment nach Hetzner + E2E gegen die deployte Instanz
+  # Deployment to Hetzner + E2E against the deployed instance
   # ---------------------------------------------------------------------------
   deploy-hetzner:
     name: Deploy to Hetzner
@@ -349,7 +349,7 @@ jobs:
     env:
       REMOTE_REPO: /opt/soziooekonomische-daten
     steps:
-      # Nur für den lokalen Composite-Action-Pfad; ausgecheckt wird der Commit, der getestet und gebaut wurde.
+      # Only for the local composite-action path; checks out the commit that was tested and built.
       - uses: actions/checkout@v7
 
       - name: Check DNS of APP_HOST
@@ -452,8 +452,8 @@ jobs:
           curl -fsS --retry 30 --retry-delay 10 --retry-all-errors --max-time 15 \
             "https://${APP_HOST}/api/v1/health"
 
-      # Nur wenn der Rollout selbst begonnen hat (Fehler davor, z. B. DNS/SSH, ändern den Server nicht).
-      # Ohne gespeicherten guten Stand (allererster Deploy) schlägt der Rollback mit klarer Meldung fehl.
+      # Only if the rollout itself started (earlier failures, e.g. DNS/SSH, do not change the server).
+      # Without a saved good state (very first deploy) the rollback fails with a clear message.
       - name: Roll back after failed rollout
         if: always() && (steps.rollout.outcome == 'failure' || steps.health.outcome == 'failure')
         run: |
@@ -484,7 +484,7 @@ jobs:
       - name: Run E2E tests
         env:
           E2E_BASE_URL: https://${{ vars.APP_HOST }}
-          # Beim Initial-Load laufen dlt/dbt noch im Hintergrund, die Datenbank ist dann noch leer
+          # During the initial load dlt/dbt still run in the background, so the database is still empty
           E2E_EXPECT_DATA: ${{ inputs.initial_load == true && 'false' || 'true' }}
         run: npm run test:e2e
 

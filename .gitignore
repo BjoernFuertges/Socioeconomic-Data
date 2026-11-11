@@ -19,14 +19,14 @@
 /site/
 /public/
 
-# Frontend-Laufzeitkonfiguration (API-/Docs-URL), pro Umgebung anders
+# Frontend runtime config (API/docs URL), differs per environment
 /backend/web/static/config.js
 
 /.vscode/
-# Kompiliertes Backend-Binary (go build)
+# Compiled backend binary (go build)
 /backend/soziodata
 
-# Deploy-Zustand auf dem Server (letzter/guter Commit)
+# Deploy state on the server (last good commit)
 /.deploy-state/
 
 # Terraform

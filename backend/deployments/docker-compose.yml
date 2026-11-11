@@ -22,7 +22,7 @@ services:
     networks:
       - backend-net
 
-  # DB_PASSWORD kommt aus backend/deployments/.env (Vorlage: .env.example, nicht committen).
+  # DB_PASSWORD comes from backend/deployments/.env (template: .env.example, do not commit).
   postgis:
     image: postgis/postgis:17-3.5
     container_name: postgis
@@ -31,11 +31,11 @@ services:
       POSTGRES_USER: sozio_data_compose_user
       POSTGRES_PASSWORD: ${DB_PASSWORD:?}
     ports:
-      # nur lokal erreichbar (z. B. per SSH-Tunnel), nie öffentlich
+      # reachable locally only (e.g. via SSH tunnel), never public
       - "127.0.0.1:5432:5432"
     volumes:
-      # PGDATA_DIR (absoluter Pfad, z. B. das Hetzner-Volume) ist optional;
-      # ohne Angabe greift das benannte Volume "pgdata".
+      # PGDATA_DIR (absolute path, e.g. the Hetzner volume) is optional;
+      # without it the named volume "pgdata" applies.
       - ${PGDATA_DIR:-pgdata}:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sozio_data_compose_user -d soziooekonomische-daten"]
@@ -60,7 +60,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?}
       DB_NAME: soziooekonomische-daten
     restart: always
-    # Von "docker compose up --wait" (deploy_remote.sh) ausgewertet: schlägt der Check fehl, scheitert der Deploy
+    # Evaluated by "docker compose up --wait" (deploy_remote.sh): if the check fails, the deploy fails
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/api/v1/health"]
       interval: 10s
@@ -118,7 +118,7 @@ services:
       - backend-net
     labels:
       ofelia.enabled: "true"
-      # dlt + dbt jede Stunde zur vollen Stunde
+      # dlt + dbt every hour on the hour
       ofelia.job-exec.pipeline.schedule: "0 0 * * * *"
       ofelia.job-exec.pipeline.command: "bash /app/dlt/run_all_pipelines.sh"
 
@@ -135,9 +135,9 @@ services:
     networks:
       - backend-net
 
-  # Nicht öffentlich: startet nur auf Anforderung (`docker compose up -d adminer`, Profil "tools")
-  # und lauscht ausschließlich auf 127.0.0.1 des Servers. Zugriff per SSH-Tunnel:
-  #   ssh -L 8083:localhost:8083 deploy@<SSH_HOST>  ->  http://localhost:8083 (Server: postgis)
+  # Not public: starts only on demand (`docker compose up -d adminer`, profile "tools")
+  # and listens only on the server's 127.0.0.1. Access via SSH tunnel:
+  #   ssh -L 8083:localhost:8083 deploy@<SSH_HOST>  ->  http://localhost:8083 (server: postgis)
   adminer:
     image: adminer
     profiles: ["tools"]

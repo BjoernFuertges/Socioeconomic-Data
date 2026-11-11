@@ -30,7 +30,7 @@ echo "=== dlt: Arbeitslosenzahlen (Agenturbezirke, AfA Lange Zeitreihen) ==="
 python load_arbeitslosenzahlen_afa.py
 
 echo "=== dbt ==="
-cd /app/dbt/socioeconomic_data_pipeline
+cd "${DBT_PROJECT_DIR:-/app/dbt/socioeconomic_data_pipeline}"
 dbt deps
 dbt snapshot
 

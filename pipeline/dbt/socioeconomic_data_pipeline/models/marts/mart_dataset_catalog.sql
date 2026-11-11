@@ -12,44 +12,42 @@
 }}
 
 /*
-  Ein Katalog-Eintrag pro Datensatz- (Herkunft, Lizenz, Metadaten, persistente ID):
+  One catalog entry per dataset (provenance, license, metadata, persistent ID):
 
-  - Provenance/Lizenz/Beschreibung kommt aus stg_dataset_metadata (dort
-    aus meta.yaml über den dlt-Loader befüllt, siehe
-    load_soziodata_generic.py).
-  - coverage_* kommt aggregiert aus mart_socioeconomic_inventory, damit
-    Konsumenten (API/Frontend) nicht zusätzlich dorthin joinen müssen.
-  - dataset_uri ist eine deterministisch aus dataset_slug abgeleitete,
-    stabile Kennung nach dem Schema `urn:soziodata:dataset:<slug>` -
-    bewusst KEINE neue künstliche Zufalls-/Sequence-ID. Sie ändert sich nur,
-    wenn der Slug selbst umbenannt wird.
+  - Provenance/license/description come from stg_dataset_metadata (filled
+    from meta.yaml by the dlt loader, see load_soziodata_generic.py).
+  - coverage_* is aggregated from mart_socioeconomic_inventory so consumers
+    (API/frontend) need not join there as well.
+  - dataset_uri is a stable identifier derived deterministically from
+    dataset_slug as `urn:soziodata:dataset:<slug>` - deliberately NOT a new
+    synthetic random/sequence ID. It only changes if the slug is renamed.
 
-  Enthält jeden Datensatz, dessen Loader eine loaded_data.dataset_metadata-
-  Zeile upserted - das schließt neben den meta.yaml-basierten Kreis-/
-  Gemeinden-Datensätzen (load_soziodata_generic.py) auch
-  arbeitslosenzahlen-afa-agenturbezirke ein (eigener Upsert in
-  load_arbeitslosenzahlen_afa.py, gleicher Mechanismus, siehe stg_dataset_metadata.sql).
+  Contains every dataset whose loader upserts a loaded_data.dataset_metadata
+  row - besides the meta.yaml-based Kreis/Gemeinden datasets
+  (load_soziodata_generic.py) this includes
+  arbeitslosenzahlen-afa-agenturbezirke (own upsert in
+  load_arbeitslosenzahlen_afa.py, same mechanism, see stg_dataset_metadata.sql).
 
-  Zusätzlich vier synthetische Zeilen (analog zu beschaeftigungsquote-
-  nuts3 unten) für Slugs, die nur im kombinierten Regions-Export
-  auftauchen
+  Plus synthetic rows for slugs without an own loader: beschaeftigungsquote-
+  nuts3 and four slugs that only appear in the combined region export
+  (ba_arbeitslose, ba_unterbeschaeftigung,
+  lau_beschaeftigungsquote_weighted_avg, lau_population_sum).
 */
 
 with metadata as (
     select * from {{ ref('stg_dataset_metadata') }}
 ),
 
--- beschaeftigungsquote-nuts3 hat (anders als alle anderen Datensätze hier)
--- keinen eigenen Loader/keine eigene meta.yaml - es ist ein reiner
--- dbt-Aggregations-Wrapper über beschaeftigungsquote-gemeinden (siehe
--- stg_beschaeftigungsquote_nuts3.sql -> mart_beschaeftigungsquote_nuts3.sql)
--- und bekäme daher nie eine eigene loaded_data.dataset_metadata-Zeile.
--- Ohne diesen synthetischen Eintrag bliebe der Slug für GET /datasets (und
--- damit den Datenkatalog im Frontend) dauerhaft unsichtbar, obwohl er über
--- die dbt-Graph-Discovery in mart_region_datasets.sql/
--- mart_socioeconomic_inventory.sql längst als eigener dataset_slug
--- existiert und dort Daten hat. Übernimmt Provenance/Lizenz 1:1 vom
--- Gemeinden-Quelldatensatz (dieselbe Quelle, nur auf NUTS-3 aggregiert).
+-- Unlike all other datasets here, beschaeftigungsquote-nuts3 has no loader
+-- or meta.yaml of its own - it is a pure dbt aggregation wrapper over
+-- beschaeftigungsquote-gemeinden (see stg_beschaeftigungsquote_nuts3.sql ->
+-- mart_beschaeftigungsquote_nuts3.sql) and would never get its own
+-- loaded_data.dataset_metadata row. Without this synthetic entry the slug
+-- would stay invisible in GET /datasets (and the frontend data catalog)
+-- although it exists as a dataset_slug via dbt graph discovery in
+-- mart_region_datasets.sql/mart_socioeconomic_inventory.sql. Provenance and
+-- license are taken 1:1 from the Gemeinden source dataset (same source,
+-- just aggregated to NUTS-3).
 synthetic_nuts3_metadata as (
     select
         'beschaeftigungsquote-nuts3'::text as dataset_slug,
@@ -70,8 +68,8 @@ synthetic_nuts3_metadata as (
     where dataset_slug = 'beschaeftigungsquote-gemeinden'
 ),
 
--- Vier weitere Slugs, die nur im kombinierten Regions-Export auftauchen
--- Lizenz werden 1:1 von dort übernommen.
+-- BA slugs from the combined region export; provenance/license are
+-- borrowed 1:1 from arbeitslosenzahlen-afa-agenturbezirke.
 synthetic_ba_metadata as (
     select
         s.slug::text as dataset_slug,
@@ -97,8 +95,8 @@ synthetic_ba_metadata as (
     where m.dataset_slug = 'arbeitslosenzahlen-afa-agenturbezirke'
 ),
 
--- lau_beschaeftigungsquote_weighted_avg: bevölkerungsgewichteter
--- Durchschnitt aus beschaeftigungsquote-gemeinden
+-- lau_beschaeftigungsquote_weighted_avg: population-weighted average of
+-- beschaeftigungsquote-gemeinden
 synthetic_lau_quote_metadata as (
     select
         'lau_beschaeftigungsquote_weighted_avg'::text as dataset_slug,
@@ -119,7 +117,7 @@ synthetic_lau_quote_metadata as (
     where dataset_slug = 'beschaeftigungsquote-gemeinden'
 ),
 
--- lau_population_sum: Summe von lau_integrated.population_count je NUTS-3-Region 
+-- lau_population_sum: sum of lau_integrated.population_count per NUTS-3 region
 synthetic_lau_population_metadata as (
     select
         'lau_population_sum'::text as dataset_slug,
@@ -160,7 +158,7 @@ coverage as (
     group by dataset
 ),
 
--- Wann wurde die Lizenz dieses Datensatzes erstmals per snap_dataset_license beobachtet?
+-- When was this dataset's license first observed via snap_dataset_license?
 license_tracking as (
     select
         dataset_slug,
@@ -189,8 +187,9 @@ final as (
         c.total_records,
         m.updated_at,
         lt.license_tracked_since,
-        -- true, wenn der Datensatz Jahre enthält, die älter sind als der Beginn des Lizenz-Trackings (license_tracked_since). Fehlt license_tracked_since
-        -- (z. B. dbt run ohne vorherigen dbt snapshot) --> false (sicher ist sicher).
+        -- true if the dataset has years older than the start of license
+        -- tracking (license_tracked_since). If that is missing (e.g. dbt run
+        -- without a prior dbt snapshot) -> false.
         coalesce(
             c.min_year is not null
             and lt.license_tracked_since is not null

@@ -3,31 +3,28 @@ package routes
 import (
 	"fmt"
 
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/handlers"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/handlers"
 )
 
-// SetupRoutes konfiguriert alle API-Routen
+// SetupRoutes registers all API routes.
 func SetupRoutes(handler *handlers.Handler) *gin.Engine {
-	// Gin im Release-Modus für Produktion
 	gin.SetMode(gin.ReleaseMode)
 
-	// Gin-Router erstellen
-	router := gin.Default()
-
-	// Middleware hinzufügen
+	// gin.New instead of gin.Default: Default adds its own logger, which would duplicate loggingMiddleware.
+	router := gin.New()
+	router.Use(gin.Recovery())
 	router.Use(corsMiddleware())
 	router.Use(loggingMiddleware())
 
-	// API-Versionsgruppe
 	v1 := router.Group("/api/v1")
 	{
-		// Health Check
+		// Health check
 		v1.GET("/health", handler.HealthCheck)
 
-		// LAU-Regionen (Local Administrative Units)
+		// LAU regions (Local Administrative Units)
 		lau := v1.Group("/lau")
 		{
 			lau.GET("", handler.GetLAURegions)
@@ -36,8 +33,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			lau.GET("/:gisco_id", handler.GetLAURegionByID)
 		}
 
-		// NUTS-Regionen (alle Indikatoren je Verwaltungsbezirk)
-		// NUTS-Regionen (alle Indikatoren je Verwaltungsbezirk)
+		// NUTS regions (all indicators per administrative district)
 		nutsGroup := v1.Group("/nuts")
 		{
 			nutsGroup.GET("", handler.GetAllNutsRegions)
@@ -57,16 +53,16 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			geoGroup.POST("/query", handler.QueryGeoRegionsByGeometry)
 		}
 
-		// Custom-Regionen (GeoJSON pro Anfrage, nichts wird gespeichert)
+		// Custom regions (GeoJSON per request, nothing is stored)
 		customRegionsGroup := v1.Group("/custom-regions")
 		{
 			customRegionsGroup.GET("/datasets", handler.ListCustomRegionDatasets)
 			customRegionsGroup.POST("/dataset-aggregate", handler.QueryCustomRegionDatasetAggregate)
 		}
 
-		// Agenturbezirke (eigenständige Gebietsgliederung der Bundesagentur
-		// für Arbeit, nicht deckungsgleich mit NUTS/LAU/ARS) mit monatlichen
-		// Arbeitslosenzahlen (AfA Lange Zeitreihen)
+		// Agenturbezirke (distinct territorial division of the Bundesagentur für
+		// Arbeit, not congruent with NUTS/LAU/ARS) with monthly Arbeitslose figures
+		// (AfA long time series)
 		agenturbezirkeGroup := v1.Group("/agenturbezirke")
 		{
 			agenturbezirkeGroup.GET("", handler.GetAgenturbezirke)
@@ -82,7 +78,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			agenturbezirkeGroup.GET("/:ba_schl/dataset-aggregate/:slug", handler.GetAgenturbezirkDatasetAggregateTimeseries)
 		}
 
-		// Kombinierter Export einer Region (roh und/oder aggregiert, JSON/CSV)
+		// Combined export of a region (raw and/or aggregated, JSON/CSV)
 		v1.GET("/regions/:region_type/:region_id/data", handler.GetRegionData)
 
 		socioeconomic := v1.Group("/socioeconomic")
@@ -90,7 +86,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			socioeconomic.GET("/inventory", handler.GetSoziooekonomischesInventar)
 		}
 
-		// Datensatz-Katalog: Herkunft, Lizenz, Beschreibung
+		// Dataset catalog: origin, license, description
 		datasetsGroup := v1.Group("/datasets")
 		{
 			datasetsGroup.GET("", handler.GetDatasetCatalog)
@@ -98,7 +94,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			datasetsGroup.GET("/:slug/source", handler.GetDatasetSource)
 		}
 
-		// Metriken-Endpunkte: statistische Aggregationen über Soziodata-Datensätze
+		// Metrics endpoints: statistical aggregations over Soziodata datasets
 		metricsGroup := v1.Group("/metrics")
 		{
 			metricsGroup.GET("", handler.GetMetrics)
@@ -106,25 +102,26 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 			metricsGroup.GET("/derived/:slug", handler.GetDerivedMetricsCatalogEntry)
 		}
 
-		// Generierte Soziodata-Routen (aus dbt-Schema-YAML-Dateien)
+		// Generated Soziodata routes (from dbt schema YAML files)
 		RegisterSoziodataRoutes(v1, handler)
 	}
 
-	// Swagger-Dokumentation
+	// Swagger documentation
 	router.GET("/api/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return router
 }
 
-// corsMiddleware fügt CORS-Header hinzu
+// corsMiddleware allows any origin (public, read-only API). No credentials: the
+// wildcard origin is invalid together with Allow-Credentials.
 func corsMiddleware() gin.HandlerFunc {
 	return gin.HandlerFunc(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Credentials", "true")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Header("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-		// Damit Cross-Origin-fetch den Dateinamen von ?download=1-Antworten lesen kann
+		c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		// Lets cross-origin fetch read the filename of ?download=1 responses.
 		c.Header("Access-Control-Expose-Headers", "Content-Disposition")
+		c.Header("Access-Control-Max-Age", "600")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -135,7 +132,7 @@ func corsMiddleware() gin.HandlerFunc {
 	})
 }
 
-// loggingMiddleware fügt Logging hinzu
+// loggingMiddleware logs one access line per request.
 func loggingMiddleware() gin.HandlerFunc {
 	return gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
