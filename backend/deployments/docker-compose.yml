@@ -24,7 +24,7 @@ services:
 
   # DB_PASSWORD kommt aus backend/deployments/.env (Vorlage: .env.example, nicht committen).
   postgis:
-    image: postgis/postgis:17-3.5
+    image: postgis/postgis:18-3.6
     container_name: postgis
     environment:
       POSTGRES_DB: soziooekonomische-daten
