@@ -27,10 +27,17 @@ nvm use && npm install   # Node version pinned in .nvmrc
 npm run dev       # Vite dev server, default http://localhost:5173
 npm run build     # type-check (vue-tsc -b) then production build to dist/
 npm run preview   # serve the built dist/ locally
+npm run test:e2e  # Playwright smoke test (e2e/) against a running instance
 ```
 
-There is no lint/test script configured. `npm run build` is the only
-verification step (fails on TypeScript errors via `vue-tsc -b`). If a
+There is no lint or unit-test script. `npm run build` is the only static
+verification step (fails on TypeScript errors via `vue-tsc -b`). The
+Playwright E2E test (`e2e/smoke.spec.ts`, read-only, no mocks) runs against
+an already deployed instance given by `E2E_BASE_URL` (default
+`http://localhost:5174`, i.e. `compose.local.yml`); CI runs it after every
+deployment against production (set `E2E_EXPECT_DATA=false` to skip the
+"region list has entries" check on a server that has no data yet). First
+local run: `npx playwright install chromium`. If a
 previous production-image build (e.g. a plain `docker build` of
 `frontend/web/app/`, run as root, outside of `compose.local.yml`) ever
 wrote into this `dist/`, a later local `npm run build` can fail with

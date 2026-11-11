@@ -1,0 +1,48 @@
+name: SSH-Zugang zum Server einrichten
+description: Legt Deploy-Key und known_hosts an und schreibt eine ssh-Konfiguration für den Host "hetzner".
+
+inputs:
+  host:
+    description: Hostname oder IP des Servers
+    required: true
+  user:
+    description: SSH-User (Deploy-User)
+    required: true
+  private-key:
+    description: Privater Deploy-Key
+    required: true
+  known-hosts:
+    description: Inhalt der known_hosts-Datei (Ausgabe von ssh-keyscan)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Configure SSH
+      shell: bash
+      env:
+        SSH_HOST: ${{ inputs.host }}
+        SSH_USER: ${{ inputs.user }}
+        SSH_PRIVATE_KEY: ${{ inputs.private-key }}
+        SSH_KNOWN_HOSTS: ${{ inputs.known-hosts }}
+      run: |
+        set -euo pipefail
+        : "${SSH_HOST:?SSH_HOST (Repo-Variable) ist nicht gesetzt}"
+        : "${SSH_USER:?SSH_USER (Repo-Variable) ist nicht gesetzt}"
+        : "${SSH_PRIVATE_KEY:?SSH_PRIVATE_KEY (Secret) ist nicht gesetzt}"
+        : "${SSH_KNOWN_HOSTS:?SSH_KNOWN_HOSTS (Secret) ist nicht gesetzt}"
+        install -m 700 -d ~/.ssh
+        printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_deploy
+        chmod 600 ~/.ssh/id_deploy
+        printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
+        cat > ~/.ssh/config <<EOF
+        Host hetzner
+          HostName ${SSH_HOST}
+          User ${SSH_USER}
+          IdentityFile ~/.ssh/id_deploy
+          IdentitiesOnly yes
+          StrictHostKeyChecking yes
+          ServerAliveInterval 30
+          ServerAliveCountMax 20
+        EOF

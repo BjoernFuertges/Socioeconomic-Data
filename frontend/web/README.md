@@ -36,7 +36,7 @@ unabhängig vom Go-Server.
    `http://localhost:8081/api/v1`, passend zu `cmd/soziodata/main.go`).
    Für abweichende lokale Werte eine `.env.local` (gitignored) anlegen.
    Optional kann `VITE_DOCS_URL` gesetzt werden (Link zur veröffentlichten
-   mkdocs-Doku, z.B. GitLab Pages) – ohne die Variable bleibt der
+   mkdocs-Doku, z.B. `https://<APP_HOST>/docs/`) – ohne die Variable bleibt der
    Dokumentations-Link im Header ausgeblendet.
 
 ### Produktions-Build

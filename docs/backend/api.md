@@ -73,7 +73,14 @@ combined one.
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/health` | Health check |
+| GET | `/health` | Health check; also returns `version` and `build_time` of the running build |
+
+The release version (from Semantic Release, e.g. `1.4.2`; builds without a new
+release report `<last tag>+sha.<commit>`, local builds `dev`) is also the
+`info.version` of the OpenAPI spec and is shown next to the title in the
+Swagger UI (`/api/docs/index.html`). It is injected at build time via
+`-ldflags` into `backend/internal/version`; the committed `docs/swagger.*`
+files only carry the placeholder `dev`.
 
 ## LAU regions (municipalities)
 

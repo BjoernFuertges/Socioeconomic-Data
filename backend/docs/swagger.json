@@ -11,7 +11,7 @@
             "name": "API Support",
             "email": "Socioeconomic-Data@b.sgtrf.de"
         },
-        "version": "1.0"
+        "version": "dev"
     },
     "basePath": "/api/v1",
     "paths": {

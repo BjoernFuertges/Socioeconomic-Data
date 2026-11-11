@@ -25,3 +25,12 @@
 /.vscode/
 # Kompiliertes Backend-Binary (go build)
 /backend/soziodata
+
+# Deploy-Zustand auf dem Server (letzter/guter Commit)
+/.deploy-state/
+
+# Terraform
+/infra/**/.terraform/
+/infra/**/*.tfstate
+/infra/**/*.tfstate.*
+/infra/**/*.tfvars

@@ -31,26 +31,42 @@ services:
       POSTGRES_USER: sozio_data_compose_user
       POSTGRES_PASSWORD: ${DB_PASSWORD:?}
     ports:
-      - "5432:5432"
+      # nur lokal erreichbar (z. B. per SSH-Tunnel), nie öffentlich
+      - "127.0.0.1:5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # PGDATA_DIR (absoluter Pfad, z. B. das Hetzner-Volume) ist optional;
+      # ohne Angabe greift das benannte Volume "pgdata".
+      - ${PGDATA_DIR:-pgdata}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sozio_data_compose_user -d soziooekonomische-daten"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     networks:
       - backend-net
 
   backend:
-    image: ${DOCKER_HUB_USERNAME}/backend:latest
+    image: ghcr.io/${GHCR_OWNER:?}/soziodata-backend:${IMAGE_TAG:-latest}
     container_name: backend
     env_file: ".env.backend"
     environment:
       PORT: 8080
       API_HOST: 0.0.0.0
-      SWAGGER_HOST: fp-icw-soziooekonomische-daten.f4.htw-berlin.de
+      SWAGGER_HOST: ${APP_HOST:?}
       DB_HOST: postgis
       DB_PORT: 5432
       DB_USER: sozio_data_compose_user
       DB_PASSWORD: ${DB_PASSWORD:?}
       DB_NAME: soziooekonomische-daten
     restart: always
+    # Von "docker compose up --wait" (deploy_remote.sh) ausgewertet: schlägt der Check fehl, scheitert der Deploy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
     depends_on:
       - postgis
       - traefik
@@ -58,7 +74,7 @@ services:
       - backend-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`fp-icw-soziooekonomische-daten.f4.htw-berlin.de`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.rule=Host(`${APP_HOST:?}`) && PathPrefix(`/api`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls=true"
       - "traefik.http.routers.backend.tls.certresolver=le_http"
@@ -73,12 +89,10 @@ services:
     volumes:
       - ../../pipeline/dlt:/app/dlt
       - ../../pipeline/dbt:/app/dbt
-      - ../../geo-mapper/scripts:/app/geo-mapper-scripts:ro
       - ../../data-exchange:/app/data-exchange:rw
-      - ../../socioeconomic-data-parser:/app/socioeconomic-data-parser:ro
     environment:
       DATA_EXCHANGE_PATH: /app/data-exchange/1_friedrich-bjoern
-      GEODATA_BASE_PATH: /app/socioeconomic-data-parser
+      GEODATA_BASE_PATH: /app/data-exchange/geodata
       DB_HOST: postgis
       DB_PORT: 5432
       DB_USER: sozio_data_compose_user
@@ -91,7 +105,7 @@ services:
       DESTINATION__POSTGRES__CREDENTIALS__PASSWORD: ${DB_PASSWORD:?}
       DBT_PROFILES_DIR: /app/dbt/socioeconomic_data_pipeline
     command: >
-      bash -c "python -m pip install -q -r /app/dlt/requirements.txt 'dlt[postgres]' dbt-postgres geo-mapper-htw==0.1.0b10 && python -c 'import dlt, pandas, shapely' && echo 'Pipeline image ready' && tail -f /dev/null"
+      bash -c "python -m pip install -q -r /app/dlt/requirements.txt 'dlt[postgres]' dbt-postgres && python -c 'import dlt, pandas, shapely' && echo 'Pipeline image ready' && tail -f /dev/null"
     healthcheck:
       test: ["CMD-SHELL", "python -c 'import dlt, pandas, shapely'"]
       interval: 30s
@@ -108,11 +122,6 @@ services:
       ofelia.job-exec.pipeline.schedule: "0 0 * * * *"
       ofelia.job-exec.pipeline.command: "bash /app/dlt/run_all_pipelines.sh"
 
-      # geo-mapper runs every hour at minute 15
-      ofelia.job-exec.geo-mapper.schedule: "0 15 * * * *"
-      ofelia.job-exec.geo-mapper.command: >
-        bash -c "bash /app/geo-mapper-scripts/run_geo_mapper.sh"
-
   scheduler:
     image: mcuadros/ofelia:0.3.21
     container_name: scheduler
@@ -126,38 +135,25 @@ services:
     networks:
       - backend-net
 
+  # Nicht öffentlich: startet nur auf Anforderung (`docker compose up -d adminer`, Profil "tools")
+  # und lauscht ausschließlich auf 127.0.0.1 des Servers. Zugriff per SSH-Tunnel:
+  #   ssh -L 8083:localhost:8083 deploy@<SSH_HOST>  ->  http://localhost:8083 (Server: postgis)
   adminer:
     image: adminer
-    restart: always
+    profiles: ["tools"]
+    restart: unless-stopped
     command: php -S 0.0.0.0:8080 -t /var/www/html
     environment:
       ADMINER_DEFAULT_SERVER: postgis
+    ports:
+      - "127.0.0.1:8083:8080"
     depends_on:
-      - traefik
+      - postgis
     networks:
       - backend-net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.adminer.rule=Host(`${ADMINER_HOST:-fp-icw-soziooekonomische-daten.f4.htw-berlin.de}`) && PathPrefix(`/adminer/`)"
-      - "traefik.http.routers.adminer.entrypoints=websecure"
-      - "traefik.http.routers.adminer.tls=true"
-      - "traefik.http.routers.adminer.tls.certresolver=le_http"
-      - "traefik.http.routers.adminer.priority=90"
-      - "traefik.http.routers.adminer.middlewares=adminer-strip-prefix@docker"
-      - "traefik.http.middlewares.adminer-strip-prefix.stripprefix.prefixes=/adminer"
-      - "traefik.http.routers.adminer-slash.rule=Host(`${ADMINER_HOST:-fp-icw-soziooekonomische-daten.f4.htw-berlin.de}`) && Path(`/adminer`)"
-      - "traefik.http.routers.adminer-slash.entrypoints=websecure"
-      - "traefik.http.routers.adminer-slash.tls=true"
-      - "traefik.http.routers.adminer-slash.tls.certresolver=le_http"
-      - "traefik.http.routers.adminer-slash.priority=91"
-      - "traefik.http.routers.adminer-slash.middlewares=adminer-add-trailing-slash@docker"
-      - "traefik.http.middlewares.adminer-add-trailing-slash.redirectregex.regex=^https?://([^/]+)/adminer$"
-      - "traefik.http.middlewares.adminer-add-trailing-slash.redirectregex.replacement=https://$${1}/adminer/"
-      - "traefik.http.middlewares.adminer-add-trailing-slash.redirectregex.permanent=true"
-      - "traefik.http.services.adminer.loadbalancer.server.port=8080"
 
   frontend:
-    image: ${DOCKER_HUB_USERNAME}/soziodata-frontend:latest
+    image: ghcr.io/${GHCR_OWNER:?}/soziodata-frontend:${IMAGE_TAG:-latest}
     container_name: frontend
     restart: always
     depends_on:
@@ -166,7 +162,7 @@ services:
       - backend-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`fp-icw-soziooekonomische-daten.f4.htw-berlin.de`)"
+      - "traefik.http.routers.frontend.rule=Host(`${APP_HOST:?}`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.routers.frontend.tls.certresolver=le_http"
@@ -174,7 +170,7 @@ services:
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
   docs:
-    image: ${DOCKER_HUB_USERNAME}/soziodata-docs:latest
+    image: ghcr.io/${GHCR_OWNER:?}/soziodata-docs:${IMAGE_TAG:-latest}
     container_name: docs
     restart: always
     depends_on:
@@ -183,14 +179,14 @@ services:
       - backend-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.docs.rule=Host(`fp-icw-soziooekonomische-daten.f4.htw-berlin.de`) && PathPrefix(`/docs/`)"
+      - "traefik.http.routers.docs.rule=Host(`${APP_HOST:?}`) && PathPrefix(`/docs/`)"
       - "traefik.http.routers.docs.entrypoints=websecure"
       - "traefik.http.routers.docs.tls=true"
       - "traefik.http.routers.docs.tls.certresolver=le_http"
       - "traefik.http.routers.docs.priority=90"
       - "traefik.http.routers.docs.middlewares=docs-strip-prefix@docker"
       - "traefik.http.middlewares.docs-strip-prefix.stripprefix.prefixes=/docs"
-      - "traefik.http.routers.docs-slash.rule=Host(`fp-icw-soziooekonomische-daten.f4.htw-berlin.de`) && Path(`/docs`)"
+      - "traefik.http.routers.docs-slash.rule=Host(`${APP_HOST:?}`) && Path(`/docs`)"
       - "traefik.http.routers.docs-slash.entrypoints=websecure"
       - "traefik.http.routers.docs-slash.tls=true"
       - "traefik.http.routers.docs-slash.tls.certresolver=le_http"

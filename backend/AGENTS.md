@@ -24,6 +24,11 @@ go run cmd/soziodata/main.go
 go build ./...
 go test ./...   # currently covers internal/handlers (content negotiation, CSV encoding, export params)
 
+# Release version: internal/version (Version/BuildTime, default "dev") is set via -ldflags
+# (Dockerfile build args VERSION/BUILD_TIME, filled by CI) and copied into
+# docs.SwaggerInfo.Version at startup (OpenAPI info.version) and GET /health.
+# The `@version dev` annotation in cmd/soziodata/main.go is only the placeholder.
+
 # Regenerate Swagger docs (writes into docs/)
 swag init -g cmd/soziodata/main.go -o docs
 # NOTE: the pre-commit hook adds --parseDependency --parseInternal, which

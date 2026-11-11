@@ -1,0 +1,85 @@
+#cloud-config
+# Läuft nur beim ersten Boot. Bereitet den Server für den Deploy-Job
+# (.github/workflows/main.yml) vor: Docker, rclone, Repo-Checkout, pgdata-Volume.
+package_update: true
+package_upgrade: true
+packages:
+  - ca-certificates
+  - curl
+  - git
+  - docker.io
+  - docker-compose-v2
+  - rclone
+  - cron
+  - unattended-upgrades
+  - fail2ban
+  - python3-systemd
+
+users:
+  - default
+  - name: deploy
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+write_files:
+  # "00-" ist Absicht: sshd übernimmt pro Option den ERSTEN Treffer, und das Image bringt eigene
+  # Drop-ins mit (z. B. 50-cloud-init.conf), die sonst gewinnen würden.
+  - path: /etc/ssh/sshd_config.d/00-hardening.conf
+    permissions: "0644"
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PubkeyAuthentication yes
+      AllowUsers deploy
+      MaxAuthTries 3
+      LoginGraceTime 30
+      X11Forwarding no
+  - path: /etc/fail2ban/jail.d/sshd.local
+    permissions: "0644"
+    content: |
+      [sshd]
+      enabled = true
+      backend = systemd
+      maxretry = 5
+      findtime = 10m
+      bantime = 1h
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    permissions: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+  - path: /usr/local/sbin/setup-pgdata.sh
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      # Wartet auf das angehängte Hetzner-Volume und mountet es nach /mnt/pgdata
+      set -euo pipefail
+      dev=""
+      for i in $(seq 1 60); do
+        dev="$(ls /dev/disk/by-id/scsi-0HC_Volume_* 2>/dev/null | head -n1 || true)"
+        [ -n "$dev" ] && break
+        sleep 5
+      done
+      [ -n "$dev" ] || { echo "Volume nicht gefunden" >&2; exit 1; }
+      mkdir -p /mnt/pgdata
+      grep -q " /mnt/pgdata " /etc/fstab || echo "$dev /mnt/pgdata ext4 discard,nofail,defaults 0 0" >> /etc/fstab
+      mount -a
+      # Unterverzeichnis, damit Postgres nicht am lost+found des Dateisystems scheitert
+      mkdir -p /mnt/pgdata/data
+
+runcmd:
+  # 2-GB-Server: Swap als Puffer für Lastspitzen (dbt/dlt-Läufe neben Postgres)
+  - fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+  - echo "/swapfile none swap sw 0 0" >> /etc/fstab
+  - systemctl enable --now docker
+  - usermod -aG docker deploy
+  - /usr/local/sbin/setup-pgdata.sh
+  - install -d -o deploy -g deploy /opt/soziooekonomische-daten
+  - sudo -u deploy env GIT_LFS_SKIP_SMUDGE=1 git clone ${repo_url} /opt/soziooekonomische-daten
+  # Erst als Letztes: bis hierhin ist der Zugang über den Deploy-User eingerichtet, ein Fehler in den
+  # sshd-Optionen (sshd -t) lässt den bisherigen Zugang unangetastet.
+  - systemctl enable --now fail2ban
+  - sshd -t && systemctl restart ssh
