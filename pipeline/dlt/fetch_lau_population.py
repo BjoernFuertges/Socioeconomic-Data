@@ -125,14 +125,15 @@ def extract_de_sheet(xlsx_path: Path, out_csv: Path) -> int:
                     continue
                 lau_code = str(lau_code).strip()
                 gisco_cell = row[cols["gisco_id"]] if "gisco_id" in cols else None
-                gisco_id = str(gisco_cell).strip() if gisco_cell is not None else f"DE_{lau_code}"
-                # stg_beschaeftigungsquote_gemeinden.sql's original_id_1 lost its
-                # leading zero in an earlier float round-trip (pandas inferred the
-                # AGS column as numeric; the model only strips a trailing ".0", see
-                # its cleaned CTE) - lau_nat_code must match that same lossy
-                # convention, or the LAU->NUTS-3 join there never hits for any
-                # AGS starting with 0 (state codes 01-09, i.e. most of Germany).
-                lau_nat_code = str(int(lau_code))
+                gisco_id = (
+                    str(gisco_cell).strip()
+                    if gisco_cell is not None
+                    else f"DE_{str(int(float(lau_code))).zfill(8)}"
+                )
+                # Official 8-digit AGS as text. Eurostat's AGS column can come
+                # back numeric, so strip the float artifacts and restore the
+                # leading zero of states 01-09.
+                lau_nat_code = str(int(float(lau_code))).zfill(8)
                 writer.writerow(
                     [
                         gisco_id,

@@ -40,8 +40,11 @@ const notes = computed(() => {
   if (methods.has("weighted_avg_population")) {
     out.push("Quoten/Durchschnitte sind bevölkerungsgewichtete Mittel der Einheitenwerte – eine Näherung.");
   }
+  if (methods.has("weighted_avg_employees")) {
+    out.push("Werte je Erwerbstätigen sind nach der Zahl der Erwerbstätigen gewichtete Mittel der Einheitenwerte – eine Näherung.");
+  }
   if (methods.has("weighted_avg_area")) {
-    out.push("Teilweise flächengewichtet (für mindestens eine Einheit fehlt die Bevölkerung) – Näherung.");
+    out.push("Teilweise flächengewichtet (für mindestens eine Einheit fehlt die Gewichtung) – Näherung.");
   }
   if (pts.some((p) => p.value_kind === "median")) {
     out.push("Mediane lassen sich nicht aus Einheitenwerten zusammensetzen – der Wert ist nur eine Schätzung.");

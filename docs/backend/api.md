@@ -136,7 +136,10 @@ aggregated per dataset on the finest available level: LAU before NUTS-3;
 the monthly Agentur figures exist only per Agenturbezirk and are always
 aggregated on that level. Counts (`sum`) are distributed by area share,
 rates/means (`weighted_avg`) are population-weighted where every
-contributing unit has a population, otherwise area-weighted. Every row
+contributing unit has a population, otherwise area-weighted; values per
+employed person (`weighted_avg_employees`, e.g. `arbeitsvolumen`,
+`bruttoverdienst`) are weighted by the number of employed persons, with the
+same area fallback. Every row
 carries `level_used`, `aggregation_method`, `value_kind` (approximation
 flag, e.g. medians) and `coverage` (share of the polygon area that has
 data). Supports JSON/CSV like the other endpoints. Details in Swagger.

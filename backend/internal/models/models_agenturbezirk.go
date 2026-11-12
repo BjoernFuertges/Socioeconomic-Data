@@ -92,9 +92,11 @@ type AgenturDatasetAggregatePoint struct {
 	// "sum" = sum of the Kreis values; "weighted_avg_population" =
 	// population-weighted average of the Kreis values; "weighted_avg_area" =
 	// area-weighted average (fallback when population is missing for a
-	// contributing Kreis). The two averages are an approximation, not an exact
+	// contributing Kreis); "weighted_avg_employees" = average weighted by the
+	// number of employed persons (for values per employed person, e.g.
+	// arbeitsvolumen). The averages are an approximation, not an exact
 	// recomputation.
-	AggregationMethod string `db:"aggregation_method" json:"aggregation_method" example:"weighted_avg_population" enums:"sum,weighted_avg_population,weighted_avg_area"`
+	AggregationMethod string `db:"aggregation_method" json:"aggregation_method" example:"weighted_avg_population" enums:"sum,weighted_avg_population,weighted_avg_employees,weighted_avg_area"`
 	// Kind of quantity: "count", "rate", "mean" or "median". Medians cannot be
 	// composed from Kreis medians - the value is then only an estimate.
 	ValueKind string `db:"value_kind" json:"value_kind" example:"rate" enums:"count,rate,mean,median"`

@@ -76,6 +76,9 @@ type customRegionAggRow struct {
 	PopNum            sql.NullFloat64 `db:"pop_num"`
 	PopDen            sql.NullFloat64 `db:"pop_den"`
 	PopComplete       bool            `db:"pop_complete"`
+	EmpNum            sql.NullFloat64 `db:"emp_num"`
+	EmpDen            sql.NullFloat64 `db:"emp_den"`
+	EmpComplete       bool            `db:"emp_complete"`
 	Coverage          float64         `db:"coverage"`
 	IsCrosswalked     bool            `db:"is_crosswalked"`
 }
@@ -133,7 +136,7 @@ kept AS (
 	   OR ($8::text IS NULL AND (share_of_unit >= $2::float8 OR share_of_poly >= $2::float8))
 ),
 vals AS (
-	SELECT k.share_of_unit, k.share_of_poly, v.year, v.month, v.value, v.population, v.is_crosswalked
+	SELECT k.share_of_unit, k.share_of_poly, v.year, v.month, v.value, v.population, v.employees, v.is_crosswalked
 	FROM kept k
 	JOIN transformed_data.mart_custom_region_unit_values v
 		ON  v.level = $3 AND v.unit_id = k.unit_id
@@ -152,6 +155,10 @@ SELECT
 	sum(population * share_of_unit)                        AS pop_den,
 	(count(population) = count(*)
 		AND coalesce(sum(population * share_of_unit), 0) > 0) AS pop_complete,
+	sum(value * employees * share_of_unit)                 AS emp_num,
+	sum(employees * share_of_unit)                         AS emp_den,
+	(count(employees) = count(*)
+		AND coalesce(sum(employees * share_of_unit), 0) > 0) AS emp_complete,
 	least(1.0, sum(share_of_poly))::float8                 AS coverage,
 	bool_or(is_crosswalked)                                AS is_crosswalked
 FROM vals
@@ -224,17 +231,21 @@ func customRegionLevelChain(requested customRegionMeta, bySlug map[string][]cust
 // computeCustomRegionValue derives the final value of a row. Formulas as in
 // mart_agentur_dataset_aggregate.sql: 'sum' distributes the unit value by area
 // share; 'weighted_avg' weights by the population of the overlapping part if
-// available, else by the area share of the region, else unweighted. Medians
-// are only approximations (see value_kind).
+// available, else by the area share of the region, else unweighted;
+// 'weighted_avg_employees' (values per employed person) weights by the number
+// of employed persons of the overlapping part, with the same fallbacks.
+// Medians are only approximations (see value_kind).
 func computeCustomRegionValue(measureType string, r customRegionAggRow) (value float64, method string, ok bool) {
-	if measureType != "weighted_avg" {
+	if measureType != "weighted_avg" && measureType != "weighted_avg_employees" {
 		if !r.SumValue.Valid {
 			return 0, "", false
 		}
 		return r.SumValue.Float64, "sum", true
 	}
 	switch {
-	case r.PopComplete && r.PopDen.Valid && r.PopDen.Float64 > 0 && r.PopNum.Valid:
+	case measureType == "weighted_avg_employees" && r.EmpComplete && r.EmpDen.Valid && r.EmpDen.Float64 > 0 && r.EmpNum.Valid:
+		return r.EmpNum.Float64 / r.EmpDen.Float64, "weighted_avg_employees", true
+	case measureType == "weighted_avg" && r.PopComplete && r.PopDen.Valid && r.PopDen.Float64 > 0 && r.PopNum.Valid:
 		return r.PopNum.Float64 / r.PopDen.Float64, "weighted_avg_population", true
 	case r.AreaDen.Valid && r.AreaDen.Float64 > 0 && r.AreaNum.Valid:
 		return r.AreaNum.Float64 / r.AreaDen.Float64, "weighted_avg_area", true
@@ -275,7 +286,7 @@ func customRegionRows(m customRegionMeta, agg []customRegionAggRow, matchedUnit 
 
 // ListCustomRegionDatasets lists the datasets that can be queried for custom regions
 // @Summary Für Custom-Regionen abfragbare Datensätze
-// @Description Gibt je Datensatz/Indikator die Quellebene (lau, nuts3, agentur), die Aggregationsart (sum, weighted_avg) und die Kennzeichnung der Näherung (kind) zurück. Namen und Lizenz: GET /datasets/{slug}.
+// @Description Gibt je Datensatz/Indikator die Quellebene (lau, nuts3, agentur), die Aggregationsart (sum, weighted_avg, weighted_avg_employees) und die Kennzeichnung der Näherung (kind) zurück. Namen und Lizenz: GET /datasets/{slug}.
 // @Tags Geo
 // @Produce json
 // @Success 200 {object} models.APIResponse{data=[]handlers.customRegionMeta}
@@ -301,7 +312,7 @@ func (h *Handler) loadCustomRegionMetas() ([]customRegionMeta, error) {
 
 // QueryCustomRegionDatasetAggregate aggregates datasets over a freely defined region
 // @Summary Datensätze für eine Custom-Region (GeoJSON)
-// @Description Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt. Näherungswerte (z. B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet. Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: Version 2024.
+// @Description Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt, Werte je Erwerbstätigen (weighted_avg_employees) erwerbstätigengewichtet. Näherungswerte (z. B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet. Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: Version 2024.
 // @Tags Geo
 // @Accept json
 // @Produce json

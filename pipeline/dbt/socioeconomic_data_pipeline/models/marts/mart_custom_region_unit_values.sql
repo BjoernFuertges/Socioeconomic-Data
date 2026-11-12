@@ -17,9 +17,12 @@
   One row per (level, unit_id, dataset_slug, indicator, year, month):
     - nuts3: mart_nuts3_sociodata_harmonized, fixed to target_version 2024
              (like mart_agentur_dataset_aggregate). population = 'bevoelkerung'
-             of the same year.
+             of the same year; employees = number of employed persons (dataset
+             erwerbstaetige_pro_1000_einwohner, absolute count in thousands) of
+             the same year - weight for 'weighted_avg_employees' indicators.
     - lau:   mart_lau_sociodata_harmonized, target_version 2024.
-             population = lau_integrated.population_count of the same year.
+             population = lau_integrated.population_count of the same year;
+             employees is NULL (no employee figures on LAU level).
     - agentur: monthly BA figures (mart_agenturbezirk_sociodata), without
              population - counts are distributed by area share.
   month is only set for 'agentur'. is_crosswalked: value was converted
@@ -34,6 +37,13 @@ with nuts3_population as (
       and dataset_slug = 'bevoelkerung'
 ),
 
+nuts3_employees as (
+    select target_nuts_id as unit_id, year, harmonized_value as employees
+    from {{ ref('mart_nuts3_sociodata_harmonized') }}
+    where target_version = 2024
+      and dataset_slug = 'erwerbstaetige_pro_1000_einwohner'
+),
+
 nuts3 as (
     select
         'nuts3'::text                as level,
@@ -44,11 +54,15 @@ nuts3 as (
         null::int                    as month,
         h.harmonized_value::numeric  as value,
         p.population::numeric        as population,
+        e.employees::numeric         as employees,
         h.is_crosswalked
     from {{ ref('mart_nuts3_sociodata_harmonized') }} h
     left join nuts3_population p
         on  p.unit_id = h.target_nuts_id
         and p.year    = h.year
+    left join nuts3_employees e
+        on  e.unit_id = h.target_nuts_id
+        and e.year    = h.year
     where h.target_version = 2024
 ),
 
@@ -69,6 +83,7 @@ lau as (
         null::int                    as month,
         h.harmonized_value::numeric  as value,
         p.population::numeric        as population,
+        null::numeric                as employees,
         h.is_crosswalked
     from {{ ref('mart_lau_sociodata_harmonized') }} h
     left join lau_population p
@@ -90,6 +105,7 @@ agentur as (
             when 'unterbeschaeftigung' then unterbeschaeftigung
         end::numeric                                       as value,
         null::numeric                                      as population,
+        null::numeric                                      as employees,
         false                                              as is_crosswalked
     from {{ ref('mart_agenturbezirk_sociodata') }}
     cross join (values ('arbeitslose'), ('unterbeschaeftigung')) as i(indicator)

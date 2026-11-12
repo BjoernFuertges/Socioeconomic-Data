@@ -60,6 +60,29 @@ _META_COLS = {
 }
 
 
+# Official key width per geodata level (AGS for LAU, Kreisschlüssel for NUTS-3).
+_ID_WIDTH = {"LAU": 8, "NUTS_3": 5}
+
+
+def _normalize_id(raw: Any, geodata_level: str) -> str | None:
+    """
+    Normalize an official region key read from mapped_pairs.csv.
+
+    pandas reads the key column as float ("10041.0", "1001000.0"), and the
+    leading zero of states 01-09 is lost. Strip the ".0" and pad to the
+    official width. Non-numeric keys are returned unchanged.
+    """
+    if pd.isna(raw):
+        return None
+    s = str(raw).strip()
+    if s.endswith(".0"):
+        s = s[:-2]
+    width = _ID_WIDTH.get(geodata_level)
+    if width and s.isdigit():
+        return s.zfill(width)
+    return s
+
+
 def _parse_german_number(raw: Any) -> float | None:
     """
     Parse a German-formatted number string to float.
@@ -202,7 +225,11 @@ def make_resource(dataset_dir: Path, dataset_name: str, meta: Dict[str, Any]):
             raise FileNotFoundError(f"mapped_pairs.csv not found at {csv_path}")
 
         logger.info(f"Loading CSV: {csv_path}")
-        df = pd.read_csv(csv_path)
+        # Read the key as text: as float it loses the leading zero of states 01-09.
+        df = pd.read_csv(csv_path, dtype={"original_id_1": str})
+        df["original_id_1"] = df["original_id_1"].map(
+            lambda v: _normalize_id(v, geodata_level)
+        )
         logger.info(f"Shape: {df.shape}")
 
         year_cols = _year_columns(df)

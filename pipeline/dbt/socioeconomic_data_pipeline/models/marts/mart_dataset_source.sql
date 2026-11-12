@@ -50,7 +50,7 @@
 {% set cols = adapter.get_columns_in_relation(rel) | map(attribute='name') | map('lower') | list %}
 select
     '{{ ds.slug }}'::text as dataset_slug,
-    regexp_replace(cast(original_id_1 as text), '\\.0+$', '') as original_id_1,
+    regexp_replace(cast(original_id_1 as text), '\.0+$', '') as original_id_1,
     original_name,
     geodata_name,
     {% if 'geodata_id_nuts' in cols %}nullif(cast(geodata_id_nuts as text), ''){% else %}null::text{% endif %} as geodata_id_nuts,

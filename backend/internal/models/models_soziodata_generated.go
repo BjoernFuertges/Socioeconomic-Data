@@ -166,7 +166,7 @@ var DurchschnittsalterConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// ErwerbstaetigePro1000EinwohnerData represents Cleaned employed persons per 1,000 inhabitants per district (Kreis), with derived observation date and quality flag.
+// ErwerbstaetigePro1000EinwohnerData represents Cleaned number of employed persons in thousands (absolute count, not a rate) per district (Kreis), with derived observation date and quality flag.
 type ErwerbstaetigePro1000EinwohnerData struct {
 	SozioBaseData
 	ErwerbstaetigePro1000Einwohner float64 `json:"erwerbstaetige_pro_1000_einwohner" db:"erwerbstaetige_pro_1000_einwohner" example:"0"`

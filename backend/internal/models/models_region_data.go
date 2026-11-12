@@ -15,7 +15,7 @@ type RegionDataRow struct {
 	IsComputed bool `db:"is_computed" json:"is_computed"`
 	// true = not an original value but imputed (NUTS-3/LAU raw values only).
 	IsInterpolated bool `db:"is_interpolated" json:"is_interpolated"`
-	// Only for aggregated values: sum, weighted_avg_population, weighted_avg_area.
+	// Only for aggregated values: sum, weighted_avg_population, weighted_avg_employees, weighted_avg_area.
 	AggregationMethod *string `db:"aggregation_method" json:"aggregation_method" example:"weighted_avg_population"`
 	// Only for Agentur aggregates: count, rate, mean, median.
 	ValueKind *string `db:"value_kind" json:"value_kind" example:"rate"`

@@ -92,7 +92,12 @@ flowchart TB
   intensive measures are weighted-averaged (`Σ value_i × absolute_weight_i
   / Σ absolute_weight_i`, using the crosswalk's pre-normalization weight) –
   summing a percentage/average across a merge would otherwise silently
-  shrink it.
+  shrink it. When aggregating to NUTS-0/1/2, Agenturbezirke or custom regions
+  a third type, `weighted_avg_employees`, is used for values per employed
+  person (`arbeitsvolumen`, `bruttoverdienst`): they are averaged weighted by
+  the number of employed persons. That count is the dataset
+  `erwerbstaetige_pro_1000_einwohner` – despite its (historical, public) slug
+  the absolute number of employed persons in thousands, hence a `sum`.
 - **`mart_nuts3_timeseries_interpolated`** – fills missing years per region
   and dataset with two alternative imputation methods (no extrapolation
   beyond the known time range), see below.
@@ -222,13 +227,15 @@ flowchart TB
 polygon intersection, so the values it weights are prepared in two marts:
 
 - **`mart_dataset_aggregation_meta`** – per (dataset, indicator): source
-  level (`lau`/`nuts3`/`agentur`), `measure_type` (`sum`/`weighted_avg`),
+  level (`lau`/`nuts3`/`agentur`), `measure_type` (`sum`/`weighted_avg`/
+  `weighted_avg_employees`),
   `kind` and an optional finer slug (NUTS-3 employment rate → LAU). The
   NUTS-3 list duplicates the `source_datasets` of
   `mart_nuts3_sociodata_harmonized`; keep them in sync.
 - **`mart_custom_region_unit_values`** – one long table of unit values
   (NUTS-3 / LAU pinned to target version 2024, Agenturbezirke monthly) plus
-  the population used as weight.
+  the population and (NUTS-3 only) the number of employed persons used as
+  weights.
 
 The weighting formulas mirror `mart_agentur_dataset_aggregate`. Agenturbezirke
 are only finer than NUTS-3 in Berlin, but their monthly figures have no

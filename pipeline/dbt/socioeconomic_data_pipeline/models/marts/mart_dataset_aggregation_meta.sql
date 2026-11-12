@@ -32,18 +32,18 @@
 
 {% set nuts3_datasets = [
     {'slug': 'arbeitslose', 'measure_type': 'sum', 'kind': 'count'},
-    {'slug': 'arbeitsvolumen', 'measure_type': 'sum', 'kind': 'count'},
-    {'slug': 'auszubildende', 'measure_type': 'sum', 'kind': 'count'},
+    {'slug': 'arbeitsvolumen', 'measure_type': 'weighted_avg_employees', 'kind': 'mean'},
+    {'slug': 'auszubildende', 'measure_type': 'weighted_avg', 'kind': 'rate'},
     {'slug': 'bevoelkerung', 'measure_type': 'sum', 'kind': 'count'},
-    {'slug': 'bruttoverdienst', 'measure_type': 'weighted_avg', 'kind': 'mean'},
+    {'slug': 'bruttoverdienst', 'measure_type': 'weighted_avg_employees', 'kind': 'mean'},
     {'slug': 'durchschnittsalter', 'measure_type': 'weighted_avg', 'kind': 'mean'},
-    {'slug': 'erwerbstaetige_pro_1000_einwohner', 'measure_type': 'weighted_avg', 'kind': 'rate'},
+    {'slug': 'erwerbstaetige_pro_1000_einwohner', 'measure_type': 'sum', 'kind': 'count'},
     {'slug': 'kinderarmut', 'measure_type': 'weighted_avg', 'kind': 'rate'},
     {'slug': 'medianeinkommen', 'measure_type': 'weighted_avg', 'kind': 'median'},
     {'slug': 'schuldnerquote', 'measure_type': 'weighted_avg', 'kind': 'rate'},
     {'slug': 'sgb_ii_quote', 'measure_type': 'weighted_avg', 'kind': 'rate'},
-    {'slug': 'studierende', 'measure_type': 'sum', 'kind': 'count'},
-    {'slug': 'wohngeldhaushalte', 'measure_type': 'sum', 'kind': 'count'},
+    {'slug': 'studierende', 'measure_type': 'weighted_avg', 'kind': 'rate'},
+    {'slug': 'wohngeldhaushalte', 'measure_type': 'weighted_avg', 'kind': 'rate'},
     {'slug': 'beschaeftigungsquote-nuts3', 'measure_type': 'weighted_avg', 'kind': 'rate', 'finer_slug': 'beschaeftigungsquote-gemeinden'},
 ] %}
 

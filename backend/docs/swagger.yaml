@@ -1,93 +1,6 @@
 basePath: /api/v1
 definitions:
-  handlers.CustomRegionAggregateRequest:
-    properties:
-      datasets:
-        example:
-        - bevoelkerung
-        - schuldnerquote
-        items:
-          type: string
-        type: array
-      from_year:
-        example: 2015
-        type: integer
-      geometry:
-        type: object
-      min_share:
-        example: 0.01
-        type: number
-      to_year:
-        example: 2024
-        type: integer
-    type: object
-  handlers.CustomRegionAggregateRow:
-    properties:
-      aggregation_method:
-        example: weighted_avg_population
-        type: string
-      coverage:
-        example: 0.98
-        type: number
-      dataset_slug:
-        example: schuldnerquote
-        type: string
-      indicator:
-        example: schuldnerquote
-        type: string
-      is_crosswalked:
-        description: |-
-          IsCrosswalked: mindestens ein beteiligter Einheitenwert wurde über eine
-          Versionsgrenze umgerechnet (kein Direktwert).
-        example: false
-        type: boolean
-      level_used:
-        example: nuts3
-        type: string
-      matched_unit:
-        description: |-
-          MatchedUnit ist gesetzt, wenn das Polygon exakt einer bestehenden Einheit
-          der genutzten Ebene entspricht (nuts_id, gisco_id bzw. ba_schl); die Werte
-          sind dann die Werte dieser Einheit, ohne Beiträge benachbarter Einheiten.
-        example: DE300
-        type: string
-      month:
-        example: 6
-        type: integer
-      source_region_count:
-        example: 3
-        type: integer
-      value:
-        example: 7.4
-        type: number
-      value_kind:
-        example: rate
-        type: string
-      year:
-        example: 2023
-        type: integer
-    type: object
-  handlers.customRegionMeta:
-    properties:
-      dataset_slug:
-        example: schuldnerquote
-        type: string
-      finer_slug:
-        type: string
-      indicator:
-        example: schuldnerquote
-        type: string
-      kind:
-        example: rate
-        type: string
-      level:
-        example: nuts3
-        type: string
-      measure_type:
-        example: weighted_avg
-        type: string
-    type: object
-  models.APIResponse:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse:
     properties:
       data: {}
       error:
@@ -97,24 +10,27 @@ definitions:
         example: Operation erfolgreich
         type: string
       meta:
-        $ref: '#/definitions/models.MetaInfo'
+        $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.MetaInfo'
       success:
         example: true
         type: boolean
     type: object
-  models.AgenturDatasetAggregatePoint:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturDatasetAggregatePoint:
     properties:
       aggregation_method:
         description: |-
-          Wie der Wert entstanden ist (siehe mart_agentur_dataset_aggregate):
-          "sum" = Summe der Kreis-Werte; "weighted_avg_population" =
-          bevölkerungsgewichteter Durchschnitt der Kreis-Werte;
-          "weighted_avg_area" = flächengewichteter Durchschnitt (Rückfall, wenn
-          für einen beteiligten Kreis die Bevölkerung fehlt). Die beiden
-          Durchschnitte sind eine Näherung, keine exakte Neuberechnung.
+          How the value was derived (see mart_agentur_dataset_aggregate):
+          "sum" = sum of the Kreis values; "weighted_avg_population" =
+          population-weighted average of the Kreis values; "weighted_avg_area" =
+          area-weighted average (fallback when population is missing for a
+          contributing Kreis); "weighted_avg_employees" = average weighted by the
+          number of employed persons (for values per employed person, e.g.
+          arbeitsvolumen). The averages are an approximation, not an exact
+          recomputation.
         enum:
         - sum
         - weighted_avg_population
+        - weighted_avg_employees
         - weighted_avg_area
         example: weighted_avg_population
         type: string
@@ -126,22 +42,19 @@ definitions:
         type: string
       is_computed:
         description: |-
-          Immer true: jeder Punkt ist eine flächengewichtete Aggregation über
-          mehrere Kreise, keine an einer einzelnen Quelle abgelesene
-          Einzelbeobachtung.
+          Always true: every point is an area-weighted aggregation over several
+          Kreise, not a single observation read from one source.
         example: true
         type: boolean
       is_interpolated:
         description: |-
-          Immer false - keine gap-gefüllte Version wird hier aggregiert. Nicht
-          aus der DB gescannt, damit TimeseriesChart.vue/DataTable.vue dieselbe
-          Interpolationsstatus-Spalte wie bei den anderen Aggregat-Endpunkten
-          anzeigen können.
+          Always false - no gap-filled version is aggregated here. Not scanned from
+          the DB, so TimeseriesChart.vue/DataTable.vue can show the same
+          interpolation-status column as for the other aggregate endpoints.
         example: false
         type: boolean
       source_region_count:
-        description: Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert
-          beigetragen haben.
+        description: Number of Kreise that actually contributed a value for this year.
         example: 3
         type: integer
       value:
@@ -149,9 +62,8 @@ definitions:
         type: number
       value_kind:
         description: |-
-          Art der Größe: "count" (Zählgröße), "rate" (Quote), "mean"
-          (Durchschnitt) oder "median". Mediane lassen sich nicht aus Kreis-
-          Medianen zusammensetzen - der Wert ist dann nur eine Schätzung.
+          Kind of quantity: "count", "rate", "mean" or "median". Medians cannot be
+          composed from Kreis medians - the value is then only an estimate.
         enum:
         - count
         - rate
@@ -163,7 +75,7 @@ definitions:
         example: 2022
         type: integer
     type: object
-  models.AgenturDatasetAggregateYear:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturDatasetAggregateYear:
     properties:
       dataset_slug:
         example: bevoelkerung
@@ -172,7 +84,7 @@ definitions:
         example: 2022
         type: integer
     type: object
-  models.AgenturNuts3Share:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturNuts3Share:
     properties:
       area_share_of_agentur:
         example: 0.42
@@ -187,7 +99,7 @@ definitions:
         example: Berlin
         type: string
     type: object
-  models.AgenturNutsMembership:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturNutsMembership:
     properties:
       area_share_of_agentur:
         example: 1
@@ -206,7 +118,7 @@ definitions:
         example: Berlin
         type: string
     type: object
-  models.AgenturbezirkArbeitslosigkeitPoint:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkArbeitslosigkeitPoint:
     properties:
       arbeitslose:
         type: number
@@ -222,7 +134,7 @@ definitions:
         example: 2026
         type: integer
     type: object
-  models.AgenturbezirkLatestValue:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkLatestValue:
     properties:
       arbeitslose:
         type: number
@@ -248,7 +160,7 @@ definitions:
         example: 2026
         type: integer
     type: object
-  models.AgenturbezirkPeriod:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkPeriod:
     properties:
       month:
         example: 8
@@ -260,7 +172,7 @@ definitions:
         example: 2026
         type: integer
     type: object
-  models.AgenturbezirkSummary:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkSummary:
     properties:
       ba_schl:
         example: "962"
@@ -279,7 +191,7 @@ definitions:
         example: "2050-12-31"
         type: string
     type: object
-  models.ArbeitsloseData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.ArbeitsloseData:
     properties:
       arbeitslose:
         example: 0
@@ -310,9 +222,9 @@ definitions:
         type: boolean
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -323,10 +235,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -351,7 +263,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.ArbeitsvolumenData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.ArbeitsvolumenData:
     properties:
       arbeitsvolumen:
         example: 0
@@ -382,9 +294,9 @@ definitions:
         type: boolean
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -395,10 +307,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -423,7 +335,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.AuszubildendeData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AuszubildendeData:
     properties:
       auszubildende:
         example: 0
@@ -454,9 +366,9 @@ definitions:
         type: boolean
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -467,10 +379,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -495,7 +407,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.BeschaeftigungsquoteGemeindenData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BeschaeftigungsquoteGemeindenData:
     properties:
       beschaeftigungsquote_prozent:
         example: 50
@@ -526,9 +438,9 @@ definitions:
         type: boolean
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -539,10 +451,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -567,7 +479,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.BeschaeftigungsquoteNuts3Data:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BeschaeftigungsquoteNuts3Data:
     properties:
       beschaeftigungsquote_median:
         example: 0
@@ -607,9 +519,9 @@ definitions:
         type: boolean
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -620,10 +532,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -648,7 +560,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.BevoelkerungData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BevoelkerungData:
     properties:
       bevoelkerung:
         example: 0
@@ -679,9 +591,9 @@ definitions:
         type: boolean
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -692,10 +604,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -720,7 +632,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.BruttoverdienstData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BruttoverdienstData:
     properties:
       bruttoverdienst:
         example: 0
@@ -751,9 +663,9 @@ definitions:
         type: boolean
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -764,10 +676,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -792,7 +704,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.DatasetCatalogEintrag:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetCatalogEintrag:
     properties:
       algorithm:
         type: string
@@ -801,8 +713,8 @@ definitions:
         type: string
       dataset_uri:
         description: |-
-          DatasetURI ist eine persistente, deterministisch aus DatasetSlug abgeleitete
-          Kennung (urn:soziodata:dataset:<slug>) - keine künstliche Zufalls-ID.
+          DatasetURI is a persistent identifier (urn:soziodata:dataset:<slug>)
+          derived deterministically from DatasetSlug - not an artificial random ID.
         example: urn:soziodata:dataset:bevoelkerung
         type: string
       description:
@@ -821,16 +733,15 @@ definitions:
         type: string
       license_backfilled:
         description: |-
-          LicenseBackfilled ist true, wenn der Datensatz Jahre vor LicenseTrackedSince
-          enthält - die aktuelle Lizenz wurde dann rückwirkend auf diese älteren Jahre
-          angewendet, ohne für sie unabhängig verifiziert zu sein.
+          LicenseBackfilled is true if the dataset contains years before
+          LicenseTrackedSince - the current license was then applied retroactively to
+          these older years without being independently verified for them.
         example: true
         type: boolean
       license_tracked_since:
         description: |-
-          LicenseTrackedSince ist das Datum, seit dem die Lizenz dieses Datensatzes
-          per snap_dataset_license beobachtet wird; null falls noch kein dbt snapshot
-          gelaufen ist.
+          LicenseTrackedSince is the date since which this dataset's license has been
+          observed via snap_dataset_license; null if no dbt snapshot has run yet.
         example: "2026-09-11"
         type: string
       license_url:
@@ -859,11 +770,11 @@ definitions:
       updated_at:
         type: string
     type: object
-  models.DatasetMetricsResult:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetMetricsResult:
     properties:
       by_year:
         items:
-          $ref: '#/definitions/models.DatasetYearMetrics'
+          $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetYearMetrics'
         type: array
       column:
         example: schuldnerquote_prozent
@@ -872,7 +783,7 @@ definitions:
         example: schuldnerquote
         type: string
     type: object
-  models.DatasetQuellwert:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetQuellwert:
     properties:
       dataset_slug:
         example: bevoelkerung
@@ -908,7 +819,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.DatasetYearMetrics:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetYearMetrics:
     properties:
       max:
         example: 42.7
@@ -947,13 +858,13 @@ definitions:
         example: 1.8
         type: number
     type: object
-  models.DerivedMetricEntry:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DerivedMetricEntry:
     properties:
       description:
         example: Einwohner je km²
         type: string
       formula:
-        $ref: '#/definitions/models.FormulaDefinition'
+        $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaDefinition'
       label:
         example: Bevölkerungsdichte
         type: string
@@ -964,7 +875,7 @@ definitions:
         example: EW/km²
         type: string
     type: object
-  models.DurchschnittsalterData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DurchschnittsalterData:
     properties:
       durchschnittsalter:
         example: 50
@@ -995,9 +906,9 @@ definitions:
         type: boolean
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -1008,10 +919,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -1036,7 +947,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.ErwerbstaetigePro1000EinwohnerData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.ErwerbstaetigePro1000EinwohnerData:
     properties:
       erwerbstaetige_pro_1000_einwohner:
         example: 0
@@ -1067,9 +978,9 @@ definitions:
         type: boolean
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -1080,10 +991,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -1108,12 +1019,12 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.FormulaDefinition:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaDefinition:
     properties:
       denominator:
-        $ref: '#/definitions/models.FormulaSource'
+        $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaSource'
       numerator:
-        $ref: '#/definitions/models.FormulaSource'
+        $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaSource'
       scale:
         example: 100
         type: number
@@ -1121,7 +1032,7 @@ definitions:
         example: ratio
         type: string
     type: object
-  models.FormulaSource:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaSource:
     properties:
       builtin:
         example: nuts_geometry_area_sqkm
@@ -1133,7 +1044,7 @@ definitions:
         example: bevoelkerung
         type: string
     type: object
-  models.GeoPeriod:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoPeriod:
     properties:
       valid_from:
         example: 2016
@@ -1142,14 +1053,14 @@ definitions:
         example: 2023
         type: integer
     type: object
-  models.GeoRegionSummary:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoRegionSummary:
     properties:
       country_code:
         example: DE
         type: string
       datasets:
         items:
-          $ref: '#/definitions/models.RegionDataset'
+          $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataset'
         type: array
       geo_id:
         example: DE111
@@ -1175,7 +1086,7 @@ definitions:
         example: 2024
         type: integer
     type: object
-  models.GeoRegionVersions:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoRegionVersions:
     properties:
       geo_id:
         example: DE111
@@ -1191,10 +1102,10 @@ definitions:
         type: string
       periods:
         items:
-          $ref: '#/definitions/models.GeoPeriod'
+          $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoPeriod'
         type: array
     type: object
-  models.GeoSpatialQueryRequest:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoSpatialQueryRequest:
     properties:
       from_year:
         example: 2020
@@ -1232,7 +1143,7 @@ definitions:
         example: 2024
         type: integer
     type: object
-  models.KinderarmutData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.KinderarmutData:
     properties:
       geodata_id_ars:
         example: "01001"
@@ -1263,9 +1174,9 @@ definitions:
         type: number
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -1276,10 +1187,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -1304,7 +1215,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.LAURegion:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.LAURegion:
     properties:
       country:
         type: string
@@ -1313,7 +1224,7 @@ definitions:
         type: string
       datasets:
         items:
-          $ref: '#/definitions/models.RegionDataset'
+          $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataset'
         type: array
       geometry_wgs84:
         type: object
@@ -1344,16 +1255,16 @@ definitions:
         type: string
       nuts3_id:
         description: |-
-          NUTS3ID ist die kanonische LAU->NUTS-3-Verlinkung: deklarierte
-          Quellspalte (nuts_3_code/nuts_3), sonst räumlich ermittelter Fallback
-          (siehe int_lau_nuts3_spatial_link.sql). Robuster als NUTS3Code, das
-          oft NULL ist, wenn die Quelldaten keinen NUTS-3-Code führen.
+          NUTS3ID is the canonical LAU->NUTS-3 link: declared source column
+          (nuts_3_code/nuts_3), else spatially derived fallback (see
+          int_lau_nuts3_spatial_link.sql). More robust than NUTS3Code, which is
+          often NULL when the source data carries no NUTS-3 code.
         type: string
       nuts3_link_source:
         description: |-
-          NUTS3LinkSource kennzeichnet, woher NUTS3ID stammt: 'declared' (aus
-          Quelldaten) oder 'spatial_estimate' (räumlich ermittelt, keine
-          amtliche Zuordnung) - siehe lau_integrated.sql.
+          NUTS3LinkSource marks where NUTS3ID comes from: 'declared' (from source
+          data) or 'spatial_estimate' (spatially derived, not an official mapping) -
+          see lau_integrated.sql.
         type: string
       population_count:
         type: integer
@@ -1364,7 +1275,7 @@ definitions:
         example: true
         type: boolean
     type: object
-  models.LauTimeseriesPoint:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.LauTimeseriesPoint:
     properties:
       dataset_slug:
         example: beschaeftigungsquote-gemeinden
@@ -1373,39 +1284,38 @@ definitions:
         example: DE_11000000
         type: string
       is_interpolated:
-        description: true = Wert wurde imputiert (kein Originalwert vorhanden für
-          dieses Jahr).
+        description: true = value was imputed (no original value exists for this year).
         example: true
         type: boolean
       lau_version:
-        description: LauVersion ist die LAU-Zielversion dieses Zeitreihenpunkts (2011-2024).
+        description: LauVersion is the LAU target version of this time-series point
+          (2011-2024).
         example: 2021
         type: integer
       n_peer_regions:
-        description: Anzahl Peer-Gemeinden (gleicher Kreis), die zu value_peer_trend
-          beigetragen haben.
+        description: Number of peer Gemeinden (same Kreis) that contributed to value_peer_trend.
         example: 8
         type: integer
       value:
         example: 58.3
         type: number
       value_linear:
-        description: Methode-1-Schätzung (lineare Interpolation). Nur bei is_interpolated
-          = true befüllt.
+        description: Method-1 estimate (linear interpolation). Populated only if is_interpolated
+          = true.
         example: 58.3
         type: number
       value_peer_trend:
         description: |-
-          Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen
-          Veränderung anderer Gemeinden desselben Kreises). Nur befüllt, wenn
-          is_interpolated = true und die Schätzung berechenbar war.
+          Method-3 estimate (extrapolation using the average relative change of
+          other Gemeinden in the same Kreis). Populated only if
+          is_interpolated = true and the estimate was computable.
         example: 57.9
         type: number
       year:
         example: 2021
         type: integer
     type: object
-  models.MedianeinkommenData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.MedianeinkommenData:
     properties:
       geodata_id_ars:
         example: "01001"
@@ -1433,9 +1343,9 @@ definitions:
         type: boolean
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -1449,10 +1359,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -1477,7 +1387,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.MetaInfo:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.MetaInfo:
     properties:
       limit:
         example: 100
@@ -1489,7 +1399,7 @@ definitions:
         example: 140400
         type: integer
     type: object
-  models.NutsAgenturbezirk:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsAgenturbezirk:
     properties:
       area_share_of_agentur:
         example: 1
@@ -1503,31 +1413,30 @@ definitions:
         example: Berlin Mitte
         type: string
     type: object
-  models.NutsDatasetAggregatePoint:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsDatasetAggregatePoint:
     properties:
       dataset_slug:
         example: bevoelkerung
         type: string
       is_computed:
         description: |-
-          Immer true (siehe SELECT true AS is_computed in GetNutsDatasetAggregateTimeseries):
-          jeder Punkt ist eine Aggregation über mehrere Kreise, keine an einer
-          einzelnen Quelle abgelesene Einzelbeobachtung.
+          Always true (see SELECT true AS is_computed in GetNutsDatasetAggregateTimeseries):
+          every point is an aggregation over several Kreise, not a single
+          observation read from one source.
         example: true
         type: boolean
       is_interpolated:
         description: |-
-          Immer false - siehe Typkommentar oben (keine gap-gefüllte Version wird hier aggregiert).
-          Nicht aus der DB gescannt (kein db-Tag), damit TimeseriesChart.vue/DataTable.vue
-          dieselbe Interpolationsstatus-Spalte wie bei NutsTimeseriesPoint anzeigen können.
+          Always false - see type comment above (no gap-filled version is aggregated
+          here). Not scanned from the DB (no db tag), so TimeseriesChart.vue/DataTable.vue
+          can show the same interpolation-status column as for NutsTimeseriesPoint.
         example: false
         type: boolean
       nuts_id:
         example: DE1
         type: string
       source_region_count:
-        description: Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert
-          beigetragen haben.
+        description: Number of Kreise that actually contributed a value for this year.
         example: 44
         type: integer
       value:
@@ -1537,45 +1446,44 @@ definitions:
         example: 2022
         type: integer
     type: object
-  models.NutsLauAggregatePoint:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsLauAggregatePoint:
     properties:
       lau_beschaeftigungsquote_weighted_avg:
-        description: Bevölkerungsgewichteter Durchschnitt der Gemeinde-Beschäftigungsquote;
-          null ohne Datenabdeckung.
+        description: Population-weighted average of the Gemeinde Beschäftigungsquote;
+          null without data coverage.
         example: 64.2
         type: number
       lau_population_sum:
-        description: Kann null sein, wenn für keine zugeordnete Gemeinde ein Bevölkerungswert
-          vorliegt.
+        description: May be null if no assigned Gemeinde has a population value.
         example: 634830
         type: number
       lau_region_count:
-        description: Anzahl der diesem Kreis zugeordneten Gemeinden.
+        description: Number of Gemeinden assigned to this Kreis.
         example: 23
         type: integer
       lau_region_count_with_population:
-        description: Davon mit einem tatsächlichen Bevölkerungswert (<=lau_region_count).
+        description: Of these, with an actual population value (<=lau_region_count).
         example: 21
         type: integer
       year:
         example: 2022
         type: integer
     type: object
-  models.NutsLauAggregateResponse:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsLauAggregateResponse:
     properties:
       nuts_id:
         example: DE300
         type: string
       series:
         items:
-          $ref: '#/definitions/models.NutsLauAggregatePoint'
+          $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsLauAggregatePoint'
         type: array
     type: object
-  models.NutsRegionMetadata:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionMetadata:
     properties:
       ars:
-        description: ARS (Amtlicher Regionalschlüssel) – nur für NUTS-3 verfügbar,
-          sonst null.
+        description: ARS (Amtlicher Regionalschlüssel) - available for NUTS-3 only,
+          otherwise null.
         example: "08111000"
         type: string
       geometry_wgs84:
@@ -1596,18 +1504,18 @@ definitions:
         example: Stuttgart, Stadtkreis
         type: string
     type: object
-  models.NutsRegionResponse:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionResponse:
     properties:
       datasets:
         items:
-          $ref: '#/definitions/models.RegionDataset'
+          $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataset'
         type: array
       metadata:
-        $ref: '#/definitions/models.NutsRegionMetadata'
+        $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionMetadata'
       socioeconomic:
-        $ref: '#/definitions/models.NutsSocioeconomicData'
+        $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsSocioeconomicData'
     type: object
-  models.NutsRegionSummary:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionSummary:
     properties:
       ars:
         example: "08111000"
@@ -1625,20 +1533,20 @@ definitions:
         example: Stuttgart, Stadtkreis
         type: string
     type: object
-  models.NutsRegionTimeSeries:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionTimeSeries:
     properties:
       datasets:
         items:
-          $ref: '#/definitions/models.RegionDataset'
+          $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataset'
         type: array
       metadata:
-        $ref: '#/definitions/models.NutsRegionMetadata'
+        $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionMetadata'
       socioeconomic:
         items:
-          $ref: '#/definitions/models.NutsSocioeconomicData'
+          $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsSocioeconomicData'
         type: array
     type: object
-  models.NutsRegionVersions:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionVersions:
     properties:
       nuts_id:
         example: DE111
@@ -1651,10 +1559,10 @@ definitions:
         type: string
       periods:
         items:
-          $ref: '#/definitions/models.GeoPeriod'
+          $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoPeriod'
         type: array
     type: object
-  models.NutsSocioeconomicData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsSocioeconomicData:
     properties:
       arbeitslose:
         example: 17423
@@ -1672,66 +1580,68 @@ definitions:
         example: -2.3
         type: number
     type: object
-  models.NutsTimeseriesPoint:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint:
     properties:
       dataset_slug:
         example: wohngeldhaushalte
         type: string
       is_interpolated:
-        description: true = Wert wurde imputiert (kein Originalwert vorhanden für
-          dieses Jahr).
+        description: true = value was imputed (no original value exists for this year).
         example: true
         type: boolean
       n_peer_regions:
-        description: Anzahl Peer-Regionen (gleiche NUTS-2-Gruppe), die zu value_peer_trend
-          beigetragen haben.
+        description: Number of peer regions (same NUTS-2 group) that contributed to
+          value_peer_trend.
         example: 11
         type: integer
       nuts_id:
         example: DE226
         type: string
       nuts_version:
-        description: NutsVersion ist die NUTS-3-Zielversion dieses Zeitreihenpunkts
-          (2016, 2021 oder 2024).
+        description: NutsVersion is the NUTS-3 target version of this time-series
+          point (2016, 2021 or 2024).
         example: 2021
         type: integer
       value:
         example: 8.78
         type: number
       value_linear:
-        description: Methode-1-Schätzung (lineare Interpolation). Nur bei is_interpolated
-          = true befüllt.
+        description: Method-1 estimate (linear interpolation). Populated only if is_interpolated
+          = true.
         example: 8.78
         type: number
       value_peer_trend:
         description: |-
-          Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen
-          Veränderung anderer Regionen derselben NUTS-2-Gruppe). Nur befüllt, wenn
-          is_interpolated = true und die Schätzung berechenbar war.
+          Method-3 estimate (extrapolation using the average relative change of
+          other regions in the same NUTS-2 group). Populated only if
+          is_interpolated = true and the estimate was computable.
         example: 8.5
         type: number
       year:
         example: 2021
         type: integer
     type: object
-  models.RegionDataRow:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataRow:
     properties:
       aggregation_method:
-        description: 'Nur bei aggregierten Werten: sum, weighted_avg_population, weighted_avg_area.'
+        description: 'Only for aggregated values: sum, weighted_avg_population, weighted_avg_employees,
+          weighted_avg_area.'
         example: weighted_avg_population
         type: string
       dataset_slug:
         example: bevoelkerung
         type: string
       is_computed:
-        description: true = aus mehreren Quellregionen berechnet, false = Ursprungswert
-          der Region.
+        description: true = computed from several source regions, false = the region's
+          original value.
         type: boolean
       is_interpolated:
-        description: true = kein Originalwert, sondern imputiert (nur NUTS-3/LAU-Rohwerte).
+        description: true = not an original value but imputed (NUTS-3/LAU raw values
+          only).
         type: boolean
       month:
-        description: Nur bei Monatswerten (Agenturbezirk-Rohwerte), sonst leer.
+        description: Only for monthly values (Agenturbezirk raw values), otherwise
+          empty.
         example: 8
         type: integer
       region_id:
@@ -1745,22 +1655,22 @@ definitions:
         example: nuts
         type: string
       source_region_count:
-        description: Anzahl der Quellregionen (Kreise/Gemeinden) hinter einem aggregierten
-          Wert.
+        description: Number of source regions (Kreise/Gemeinden) behind an aggregated
+          value.
         example: 3
         type: integer
       value:
         example: 340123
         type: number
       value_kind:
-        description: 'Nur bei Agentur-Aggregaten: count, rate, mean, median.'
+        description: 'Only for Agentur aggregates: count, rate, mean, median.'
         example: rate
         type: string
       year:
         example: 2022
         type: integer
     type: object
-  models.RegionDataset:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataset:
     properties:
       available_years:
         example:
@@ -1777,11 +1687,11 @@ definitions:
         example: bevoelkerung
         type: string
     type: object
-  models.RegionDatasets:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDatasets:
     properties:
       datasets:
         items:
-          $ref: '#/definitions/models.RegionDataset'
+          $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataset'
         type: array
       geo_id:
         example: DEF01
@@ -1790,7 +1700,7 @@ definitions:
         example: NUTS
         type: string
     type: object
-  models.SchuldnerquoteData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SchuldnerquoteData:
     properties:
       geodata_id_ars:
         example: "01001"
@@ -1818,9 +1728,9 @@ definitions:
         type: boolean
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -1831,10 +1741,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -1862,7 +1772,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.SgbIiQuoteData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SgbIiQuoteData:
     properties:
       geodata_id_ars:
         example: "01001"
@@ -1890,9 +1800,9 @@ definitions:
         type: boolean
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -1903,10 +1813,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -1934,7 +1844,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.SoziooekonomischesInventarEintrag:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SoziooekonomischesInventarEintrag:
     properties:
       dataset:
         example: arbeitslose
@@ -1958,7 +1868,7 @@ definitions:
         example: 2022
         type: integer
     type: object
-  models.StudierendeData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.StudierendeData:
     properties:
       geodata_id_ars:
         example: "01001"
@@ -1986,9 +1896,9 @@ definitions:
         type: boolean
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -1999,10 +1909,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -2030,7 +1940,7 @@ definitions:
         example: 2020
         type: integer
     type: object
-  models.WohngeldhaushalteData:
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.WohngeldhaushalteData:
     properties:
       geodata_id_ars:
         example: "01001"
@@ -2058,9 +1968,9 @@ definitions:
         type: boolean
       lau_version:
         description: |-
-          LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.
-          beschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem
-          IsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
         example: 2021
         type: integer
       mapper:
@@ -2071,10 +1981,10 @@ definitions:
         type: integer
       nuts_version:
         description: |-
-          NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true
-          befüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und
-          /timeseries?nuts_version= für denselben Datensatz konsistent dieselbe
-          Zielversion erkennbar zurückgeben.
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
         example: 2021
         type: integer
       observation_date:
@@ -2102,6 +2012,93 @@ definitions:
         example: 2020
         type: integer
     type: object
+  internal_handlers.CustomRegionAggregateRequest:
+    properties:
+      datasets:
+        example:
+        - bevoelkerung
+        - schuldnerquote
+        items:
+          type: string
+        type: array
+      from_year:
+        example: 2015
+        type: integer
+      geometry:
+        type: object
+      min_share:
+        example: 0.01
+        type: number
+      to_year:
+        example: 2024
+        type: integer
+    type: object
+  internal_handlers.CustomRegionAggregateRow:
+    properties:
+      aggregation_method:
+        example: weighted_avg_population
+        type: string
+      coverage:
+        example: 0.98
+        type: number
+      dataset_slug:
+        example: schuldnerquote
+        type: string
+      indicator:
+        example: schuldnerquote
+        type: string
+      is_crosswalked:
+        description: |-
+          IsCrosswalked: at least one contributing unit value was converted across a
+          version boundary (not a direct value).
+        example: false
+        type: boolean
+      level_used:
+        example: nuts3
+        type: string
+      matched_unit:
+        description: |-
+          MatchedUnit is set when the polygon matches exactly one existing unit of
+          the level used (nuts_id, gisco_id or ba_schl); the values are then that
+          unit's values, without contributions from neighbouring units.
+        example: DE300
+        type: string
+      month:
+        example: 6
+        type: integer
+      source_region_count:
+        example: 3
+        type: integer
+      value:
+        example: 7.4
+        type: number
+      value_kind:
+        example: rate
+        type: string
+      year:
+        example: 2023
+        type: integer
+    type: object
+  internal_handlers.customRegionMeta:
+    properties:
+      dataset_slug:
+        example: schuldnerquote
+        type: string
+      finer_slug:
+        type: string
+      indicator:
+        example: schuldnerquote
+        type: string
+      kind:
+        example: rate
+        type: string
+      level:
+        example: nuts3
+        type: string
+      measure_type:
+        example: weighted_avg
+        type: string
+    type: object
 info:
   contact:
     email: Socioeconomic-Data@b.sgtrf.de
@@ -2125,17 +2122,17 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.AgenturbezirkSummary'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkSummary'
                   type: array
               type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Liste aller Agenturbezirke
       tags:
       - Agenturbezirke
@@ -2158,19 +2155,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.AgenturbezirkSummary'
+                  $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkSummary'
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Agenturbezirk-Details
       tags:
       - Agenturbezirke
@@ -2207,25 +2204,25 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.AgenturbezirkArbeitslosigkeitPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkArbeitslosigkeitPoint'
                   type: array
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Monatliche Arbeitslosenzahlen eines Agenturbezirks
       tags:
       - Agenturbezirke
@@ -2239,12 +2236,13 @@ paths:
         mart_agentur_dataset_aggregate). Analog zu GET /nuts/{nuts_id}/dataset-aggregate/{slug}
         für NUTS-0/1/2. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte;
         Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der
-        Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen)
-        - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen
-        und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist.
-        Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung).
-        Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig
-        aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.'
+        Kreis-Werte (Werte je Erwerbstätigen: erwerbstätigengewichtet; Rückfall auf
+        Flächengewichte, wenn die Gewichte fehlen) - eine Näherung, keine exakte Neuberechnung,
+        da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für
+        die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen
+        zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke,
+        Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method
+        und value_kind das Verfahren.'
       parameters:
       - description: Amtlicher BA-Schlüssel des Agenturbezirks
         example: "962"
@@ -2278,29 +2276,29 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.AgenturDatasetAggregatePoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturDatasetAggregatePoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Auf Agenturbezirk-Ebene aggregierte Datensatz-Zeitreihe
       tags:
       - Agenturbezirke
@@ -2327,21 +2325,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.AgenturNutsMembership'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturNutsMembership'
                   type: array
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: NUTS-Hierarchie eines Agenturbezirks (Kreis/Regierungsbezirk/Bundesland)
       tags:
       - Agenturbezirke
@@ -2367,21 +2365,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.AgenturNuts3Share'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturNuts3Share'
                   type: array
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: NUTS-3-Zuordnung eines Agenturbezirks (Flächenanteile)
       tags:
       - Agenturbezirke
@@ -2413,21 +2411,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.AgenturDatasetAggregateYear'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturDatasetAggregateYear'
                   type: array
               type: object
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Verfügbare aggregierte Datensätze/Jahre (Agenturbezirke)
       tags:
       - Agenturbezirke
@@ -2440,12 +2438,13 @@ paths:
         - für die Kartendarstellung. Geometrien kommen weiterhin aus GET /agenturbezirke/period.
         LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und
         Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte
-        (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung,
-        keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung
-        nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht
-        aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt
-        sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro
-        Punkt kennzeichnen aggregation_method und value_kind das Verfahren.'
+        (Werte je Erwerbstätigen: erwerbstätigengewichtet; Rückfall auf Flächengewichte,
+        wenn die Gewichte fehlen) - eine Näherung, keine exakte Neuberechnung, da
+        Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die
+        eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen
+        zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke,
+        Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method
+        und value_kind das Verfahren.'
       parameters:
       - description: Route-Slug des Datensatzes
         example: bevoelkerung
@@ -2479,25 +2478,25 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.AgenturDatasetAggregatePoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturDatasetAggregatePoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Aggregierter Datensatz für alle Agenturbezirke (ein Jahr)
       tags:
       - Agenturbezirke
@@ -2514,17 +2513,17 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.AgenturbezirkLatestValue'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkLatestValue'
                   type: array
               type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Agenturbezirke mit neuestem Berichtsmonat (für die Karte)
       tags:
       - Agenturbezirke
@@ -2554,21 +2553,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.AgenturbezirkLatestValue'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkLatestValue'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Agenturbezirke zu einem gewählten Berichtsmonat (für die Karte)
       tags:
       - Agenturbezirke
@@ -2585,17 +2584,17 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.AgenturbezirkPeriod'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkPeriod'
                   type: array
               type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Verfügbare Berichtsmonate der Agenturbezirke
       tags:
       - Agenturbezirke
@@ -2603,8 +2602,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit
-        Datumsableitung und Qualitätsflag
+      description: Cleaned unemployment counts per district (Kreis), with derived
+        observation date and quality flag.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -2685,27 +2684,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.ArbeitsloseData'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.ArbeitsloseData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Cleaned unemployment counts per district (Kreis), with derived observation
+        date and quality flag.
       tags:
       - Arbeitslose
   /arbeitslose/timeseries:
@@ -2779,35 +2778,35 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für Arbeitslosenzahlen je Kreis
-        – bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Cleaned unemployment counts per district (Kreis),
+        with derived observation date and quality flag.
       tags:
       - Arbeitslose
   /arbeitsvolumen:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+      description: Cleaned labour volume per district (Kreis), with derived observation
+        date and quality flag.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -2888,27 +2887,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.ArbeitsvolumenData'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.ArbeitsvolumenData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Cleaned labour volume per district (Kreis), with derived observation
+        date and quality flag.
       tags:
       - Arbeitsvolumen
   /arbeitsvolumen/timeseries:
@@ -2982,35 +2981,35 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für Arbeitsvolumen je Kreis
-        – bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Cleaned labour volume per district (Kreis),
+        with derived observation date and quality flag.
       tags:
       - Arbeitsvolumen
   /auszubildende:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+      description: Cleaned trainee counts per district (Kreis), with derived observation
+        date and quality flag.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -3091,27 +3090,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.AuszubildendeData'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AuszubildendeData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Cleaned trainee counts per district (Kreis), with derived observation
+        date and quality flag.
       tags:
       - Auszubildende
   /auszubildende/timeseries:
@@ -3185,35 +3184,35 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für Auszubildende je Kreis
-        – bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Cleaned trainee counts per district (Kreis),
+        with derived observation date and quality flag.
       tags:
       - Auszubildende
   /beschaeftigungsquote-gemeinden:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt,
-        mit Datumsableitung und Qualitätsflag
+      description: Staging model for the employment rate per municipality (LAU), cleaned,
+        with derived observation date and quality flag.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -3294,27 +3293,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.BeschaeftigungsquoteGemeindenData'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BeschaeftigungsquoteGemeindenData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt,
-        mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Staging model for the employment rate per municipality (LAU), cleaned,
+        with derived observation date and quality flag.
       tags:
       - BeschaeftigungsquoteGemeinden
   /beschaeftigungsquote-gemeinden/timeseries:
@@ -3388,35 +3387,35 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.LauTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.LauTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je
-        Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging model for the employment rate per
+        municipality (LAU), cleaned, with derived observation date and quality flag.
       tags:
       - BeschaeftigungsquoteGemeinden
   /beschaeftigungsquote-nuts3:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert
-        aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
+      description: Staging model for the employment rate per NUTS-3 region, aggregated
+        from municipality level and weighted by population.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -3485,27 +3484,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.BeschaeftigungsquoteNuts3Data'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BeschaeftigungsquoteNuts3Data'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert
-        aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Staging model for the employment rate per NUTS-3 region, aggregated
+        from municipality level and weighted by population.
       tags:
       - BeschaeftigungsquoteNuts3
   /beschaeftigungsquote-nuts3/timeseries:
@@ -3579,35 +3578,35 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je
-        NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Staging model for the employment rate per
+        NUTS-3 region, aggregated from municipality level and weighted by population.
       tags:
       - BeschaeftigungsquoteNuts3
   /bevoelkerung:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit
-        Datumsableitung und Qualitätsflag
+      description: Cleaned population per district (Kreis), with derived observation
+        date and quality flag.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -3688,27 +3687,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.BevoelkerungData'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BevoelkerungData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Cleaned population per district (Kreis), with derived observation date
+        and quality flag.
       tags:
       - Bevoelkerung
   /bevoelkerung/timeseries:
@@ -3782,35 +3781,35 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für Bevölkerungsdaten je Kreis
-        – bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Cleaned population per district (Kreis), with
+        derived observation date and quality flag.
       tags:
       - Bevoelkerung
   /bruttoverdienst:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+      description: Cleaned gross earnings per district (Kreis), with derived observation
+        date and quality flag.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -3891,27 +3890,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.BruttoverdienstData'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BruttoverdienstData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Cleaned gross earnings per district (Kreis), with derived observation
+        date and quality flag.
       tags:
       - Bruttoverdienst
   /bruttoverdienst/timeseries:
@@ -3985,27 +3984,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für Bruttoverdienst je Kreis
-        – bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Cleaned gross earnings per district (Kreis),
+        with derived observation date and quality flag.
       tags:
       - Bruttoverdienst
   /custom-regions/dataset-aggregate:
@@ -4016,16 +4015,17 @@ paths:
         und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt
         (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene
         vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte
-        (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt. Näherungswerte (z.
-        B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet.
-        Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: Version 2024.'
+        (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt, Werte je Erwerbstätigen
+        (weighted_avg_employees) erwerbstätigengewichtet. Näherungswerte (z. B. Mediane,
+        Quoten) sind über value_kind und aggregation_method gekennzeichnet. Die Region
+        wird nicht gespeichert. NUTS-3/LAU-Bezug: Version 2024.'
       parameters:
       - description: GeoJSON-Region und Datensätze
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handlers.CustomRegionAggregateRequest'
+          $ref: '#/definitions/internal_handlers.CustomRegionAggregateRequest'
       produces:
       - application/json
       responses:
@@ -4033,29 +4033,29 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/handlers.CustomRegionAggregateRow'
+                    $ref: '#/definitions/internal_handlers.CustomRegionAggregateRow'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Datensätze für eine Custom-Region (GeoJSON)
       tags:
       - Geo
   /custom-regions/datasets:
     get:
       description: 'Gibt je Datensatz/Indikator die Quellebene (lau, nuts3, agentur),
-        die Aggregationsart (sum, weighted_avg) und die Kennzeichnung der Näherung
-        (kind) zurück. Namen und Lizenz: GET /datasets/{slug}.'
+        die Aggregationsart (sum, weighted_avg, weighted_avg_employees) und die Kennzeichnung
+        der Näherung (kind) zurück. Namen und Lizenz: GET /datasets/{slug}.'
       produces:
       - application/json
       responses:
@@ -4063,17 +4063,17 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/handlers.customRegionMeta'
+                    $ref: '#/definitions/internal_handlers.customRegionMeta'
                   type: array
               type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Für Custom-Regionen abfragbare Datensätze
       tags:
       - Geo
@@ -4112,21 +4112,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.DatasetCatalogEintrag'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetCatalogEintrag'
                   type: array
               type: object
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Datensatz-Katalog (Herkunft, Lizenz, Beschreibung)
       tags:
       - Datensatz-Katalog
@@ -4163,23 +4163,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.DatasetCatalogEintrag'
+                  $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetCatalogEintrag'
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Katalogeintrag eines einzelnen Datensatzes
       tags:
       - Datensatz-Katalog
@@ -4219,25 +4219,25 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.DatasetQuellwert'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetQuellwert'
                   type: array
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Quelldaten eines Datensatzes (gemappt, unverändert)
       tags:
       - Datensatz-Katalog
@@ -4245,8 +4245,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit
-        Datumsableitung und Qualitätsflag
+      description: Cleaned average age per district (Kreis), with derived observation
+        date and quality flag.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -4327,27 +4327,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.DurchschnittsalterData'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DurchschnittsalterData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Cleaned average age per district (Kreis), with derived observation
+        date and quality flag.
       tags:
       - Durchschnittsalter
   /durchschnittsalter/timeseries:
@@ -4421,35 +4421,36 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für Durchschnittsalter je Kreis
-        – bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Cleaned average age per district (Kreis),
+        with derived observation date and quality flag.
       tags:
       - Durchschnittsalter
   /erwerbstaetige_pro_1000_einwohner:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis –
-        bereinigt, mit Datumsableitung und Qualitätsflag
+      description: Cleaned number of employed persons in thousands (absolute count,
+        not a rate) per district (Kreis), with derived observation date and quality
+        flag.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -4530,27 +4531,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.ErwerbstaetigePro1000EinwohnerData'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.ErwerbstaetigePro1000EinwohnerData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt,
-        mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Cleaned number of employed persons in thousands (absolute count, not
+        a rate) per district (Kreis), with derived observation date and quality flag.
       tags:
       - ErwerbstaetigePro1000Einwohner
   /erwerbstaetige_pro_1000_einwohner/timeseries:
@@ -4624,27 +4625,28 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für Erwerbstätige je 1.000
-        Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Cleaned number of employed persons in thousands
+        (absolute count, not a rate) per district (Kreis), with derived observation
+        date and quality flag.
       tags:
       - ErwerbstaetigePro1000Einwohner
   /geo:
@@ -4736,21 +4738,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.GeoRegionSummary'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoRegionSummary'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Liste allgemeiner Geo-Regionen
       tags:
       - Geo
@@ -4816,19 +4818,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Allgemeine Geo-Region nach ID
       tags:
       - Geo
@@ -4862,23 +4864,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.GeoRegionVersions'
+                  $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoRegionVersions'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Geometrie-Perioden einer Geo-Region
       tags:
       - Geo
@@ -4895,7 +4897,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.GeoSpatialQueryRequest'
+          $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoSpatialQueryRequest'
       produces:
       - application/json
       responses:
@@ -4903,21 +4905,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.GeoRegionSummary'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoRegionSummary'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Räumliche Geo-Abfrage via GeoJSON
       tags:
       - Geo
@@ -4940,8 +4942,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte
-        unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
+      description: Cleaned child poverty per district (Kreis), with derived observation
+        date and quality flag.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -5022,27 +5024,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.KinderarmutData'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.KinderarmutData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte
-        unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Cleaned child poverty per district (Kreis), with derived observation
+        date and quality flag.
       tags:
       - Kinderarmut
   /kinderarmut/timeseries:
@@ -5116,28 +5118,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für Kinderarmut je Kreis –
-        nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner
-        – bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Cleaned child poverty per district (Kreis),
+        with derived observation date and quality flag.
       tags:
       - Kinderarmut
   /lau:
@@ -5205,21 +5206,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.LAURegion'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.LAURegion'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Liste aller LAU-Regionen
       tags:
       - LAU
@@ -5250,19 +5251,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.LAURegion'
+                  $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.LAURegion'
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: LAU-Region Details
       tags:
       - LAU
@@ -5286,23 +5287,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.RegionDatasets'
+                  $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDatasets'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Verfügbare Datensätze für eine LAU-Region
       tags:
       - LAU
@@ -5327,23 +5328,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.GeoRegionVersions'
+                  $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoRegionVersions'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Geometrie-Perioden einer LAU-Region
       tags:
       - LAU
@@ -5351,8 +5352,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+      description: Cleaned median income per district (Kreis), with derived observation
+        date and quality flag.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -5433,27 +5434,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.MedianeinkommenData'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.MedianeinkommenData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Cleaned median income per district (Kreis), with derived observation
+        date and quality flag.
       tags:
       - Medianeinkommen
   /medianeinkommen/timeseries:
@@ -5527,27 +5528,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für Medianeinkommen je Kreis
-        – bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Cleaned median income per district (Kreis),
+        with derived observation date and quality flag.
       tags:
       - Medianeinkommen
   /metrics:
@@ -5602,21 +5603,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.DatasetMetricsResult'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetMetricsResult'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Statistische Metriken für Soziodata-Datensätze
       tags:
       - Metriken
@@ -5635,11 +5636,11 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.DerivedMetricEntry'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DerivedMetricEntry'
                   type: array
               type: object
       summary: Abgeleitete Metriken-Definitionen
@@ -5691,19 +5692,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.DatasetMetricsResult'
+                  $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetMetricsResult'
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Statistiken für eine abgeleitete Metrik
       tags:
       - Metriken
@@ -5743,21 +5744,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsRegionSummary'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionSummary'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Liste aller NUTS-Regionen
       tags:
       - NUTS
@@ -5823,23 +5824,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.NutsRegionTimeSeries'
+                  $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionTimeSeries'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Alle Indikatoren für eine NUTS-Region (Level 0–3)
       tags:
       - NUTS
@@ -5867,21 +5868,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsAgenturbezirk'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsAgenturbezirk'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Agenturbezirke einer NUTS-Region
       tags:
       - NUTS
@@ -5891,10 +5892,10 @@ paths:
       - application/json
       description: Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets)
         auf Land-/Bundesland-/Regierungsbezirksebene hoch (Summe bzw. bevölkerungsgewichteter
-        Durchschnitt je nach Datensatz, siehe mart_nuts012_dataset_aggregate). Pendant
-        zu GET /{slug}/timeseries für NUTS-3, das für Level 0-2 keine Kreis-Zeilen
-        findet. Nur für NUTS-0/1/2-IDs (2-4 Zeichen) gültig; für Kreise (NUTS-3) GET
-        /{slug}/timeseries verwenden.
+        Durchschnitt je nach Datensatz, bei Werten je Erwerbstätigen erwerbstätigengewichtet,
+        siehe mart_nuts012_dataset_aggregate). Pendant zu GET /{slug}/timeseries für
+        NUTS-3, das für Level 0-2 keine Kreis-Zeilen findet. Nur für NUTS-0/1/2-IDs
+        (2-4 Zeichen) gültig; für Kreise (NUTS-3) GET /{slug}/timeseries verwenden.
       parameters:
       - description: NUTS-0/1/2-Code der Region
         example: DE1
@@ -5928,25 +5929,25 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsDatasetAggregatePoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsDatasetAggregatePoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Auf NUTS-0/1/2-Ebene aggregierte Datensatz-Zeitreihe
       tags:
       - NUTS
@@ -5970,19 +5971,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.RegionDatasets'
+                  $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDatasets'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Verfügbare Datensätze für eine NUTS-Region
       tags:
       - NUTS
@@ -6021,27 +6022,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.NutsLauAggregateResponse'
+                  $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsLauAggregateResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Auf NUTS-3-Ebene aggregierte LAU-Werte (Gemeinden)
       tags:
       - NUTS
@@ -6066,23 +6067,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.NutsRegionVersions'
+                  $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionVersions'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Geometrie-Perioden einer NUTS-Region
       tags:
       - NUTS
@@ -6157,29 +6158,29 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.RegionDataRow'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataRow'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Kombinierter Daten-Export einer Region (roh und/oder aggregiert)
       tags:
       - Regionen
@@ -6187,8 +6188,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+      description: Cleaned debtor quota per district (Kreis), with derived observation
+        date and quality flag.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -6269,27 +6270,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.SchuldnerquoteData'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SchuldnerquoteData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Cleaned debtor quota per district (Kreis), with derived observation
+        date and quality flag.
       tags:
       - Schuldnerquote
   /schuldnerquote/timeseries:
@@ -6363,35 +6364,35 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für Schuldnerquoten je Kreis
-        – bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Cleaned debtor quota per district (Kreis),
+        with derived observation date and quality flag.
       tags:
       - Schuldnerquote
   /sgb_ii_quote:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+      description: Cleaned SGB II quota per district (Kreis), with derived observation
+        date and quality flag.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -6472,27 +6473,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.SgbIiQuoteData'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SgbIiQuoteData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Cleaned SGB II quota per district (Kreis), with derived observation
+        date and quality flag.
       tags:
       - SgbIiQuote
   /sgb_ii_quote/timeseries:
@@ -6566,27 +6567,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für SGB-II-Quote je Kreis –
-        bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Cleaned SGB II quota per district (Kreis),
+        with derived observation date and quality flag.
       tags:
       - SgbIiQuote
   /socioeconomic/inventory:
@@ -6618,21 +6619,21 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.SoziooekonomischesInventarEintrag'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SoziooekonomischesInventarEintrag'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Inventar verfügbarer Soziodaten
       tags:
       - Soziooekonomie
@@ -6640,8 +6641,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt,
-        mit Datumsableitung und Qualitätsflag
+      description: Cleaned students per district (Kreis), with derived observation
+        date and quality flag.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -6722,27 +6723,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.StudierendeData'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.StudierendeData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt,
-        mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Cleaned students per district (Kreis), with derived observation date
+        and quality flag.
       tags:
       - Studierende
   /studierende/timeseries:
@@ -6816,35 +6817,35 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für Studierende je 1.000 Einwohner
-        je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Cleaned students per district (Kreis), with
+        derived observation date and quality flag.
       tags:
       - Studierende
   /wohngeldhaushalte:
     get:
       consumes:
       - application/json
-      description: Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit
-        Datumsableitung und Qualitätsflag
+      description: Cleaned housing benefit households per district (Kreis), with derived
+        observation date and quality flag.
       parameters:
       - description: NUTS-3-Code der Region
         example: DEF01
@@ -6925,27 +6926,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.WohngeldhaushalteData'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.WohngeldhaushalteData'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung
-        und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Cleaned housing benefit households per district (Kreis), with derived
+        observation date and quality flag.
       tags:
       - Wohngeldhaushalte
   /wohngeldhaushalte/timeseries:
@@ -7019,27 +7020,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/models.APIResponse'
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.NutsTimeseriesPoint'
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
                   type: array
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "406":
           description: Not Acceptable
           schema:
-            $ref: '#/definitions/models.APIResponse'
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.APIResponse'
-      summary: Lückenlose Zeitreihe für Staging-Modell für Wohngeldhaushalte je Kreis
-        – bereinigt, mit Datumsableitung und Qualitätsflag
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Cleaned housing benefit households per district
+        (Kreis), with derived observation date and quality flag.
       tags:
       - Wohngeldhaushalte
 schemes:

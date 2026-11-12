@@ -227,9 +227,11 @@ export interface AgenturDatasetAggregatePoint extends TimeseriesPoint {
   dataset_slug: string;
   source_region_count: number;
   // "sum" = sum of the Kreis values; "weighted_avg_population" =
-  // population-weighted average (approximation); "weighted_avg_area" =
-  // area-weighted fallback when population is missing (approximation).
-  aggregation_method: "sum" | "weighted_avg_population" | "weighted_avg_area";
+  // population-weighted average (approximation); "weighted_avg_employees" =
+  // average weighted by employed persons (values per employed person,
+  // approximation); "weighted_avg_area" = area-weighted fallback when the
+  // weights are missing (approximation).
+  aggregation_method: "sum" | "weighted_avg_population" | "weighted_avg_employees" | "weighted_avg_area";
   // "median" is only an estimate (medians can't be aggregated).
   value_kind: "count" | "rate" | "mean" | "median";
 }

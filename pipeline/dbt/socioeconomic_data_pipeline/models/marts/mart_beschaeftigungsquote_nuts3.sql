@@ -29,14 +29,16 @@ with lau_data as (
             and nullif(geodata_id_nuts, '') is not null  -- Only mapped Gemeinden
 ),
 
+-- Population from the newest LAU vintage, matching the staging mapping
+-- (stg_beschaeftigungsquote_gemeinden): not joined per observation year.
 lau_population as (
-    select
-        regexp_replace(cast(lau_nat_code as text), '\\.0+$', '') as original_id_1,
-        year,
+    select distinct on (regexp_replace(cast(lau_nat_code as text), '\.0+$', ''))
+        regexp_replace(cast(lau_nat_code as text), '\.0+$', '') as original_id_1,
         population_count
     from {{ ref('stg_lau_population') }}
     where has_valid_population = true
       and population_count > 0
+    order by regexp_replace(cast(lau_nat_code as text), '\.0+$', ''), year desc
 ),
 
 --  Combine LAU data with population for weighting
@@ -52,7 +54,6 @@ lau_with_population as (
     from lau_data l
     left join lau_population p
         on p.original_id_1 = l.original_id_1
-        and l.year = p.year
 ),
 
 unweighted_stats as (

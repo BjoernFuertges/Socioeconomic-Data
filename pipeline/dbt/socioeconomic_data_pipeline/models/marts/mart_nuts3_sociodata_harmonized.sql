@@ -45,20 +45,24 @@
 -- endpoints 1:1 so the backend can join both sides without a mapping table.
 -- measure_type is derived from the column descriptions/meta.yaml per
 -- dataset (count = 'sum', ratio/average = 'weighted_avg').
+-- Note: erwerbstaetige_pro_1000_einwohner is, despite its slug (kept: public
+-- API route), the absolute number of employed persons in thousands - a sum.
+-- 'weighted_avg_employees' (aggregation marts only) is treated like
+-- 'weighted_avg' here: the crosswalk between versions has no employee weight.
 {% set source_datasets = [
     {'slug': 'arbeitslose',        'table': 'results_arbeitslose_kreise', 'measure_type': 'sum'},
-    {'slug': 'arbeitsvolumen',     'table': 'results_arbeitsvolumen_kreise', 'measure_type': 'sum'},
-    {'slug': 'auszubildende',      'table': 'results_auszubildende_kreise', 'measure_type': 'sum'},
+    {'slug': 'arbeitsvolumen',     'table': 'results_arbeitsvolumen_kreise', 'measure_type': 'weighted_avg'},
+    {'slug': 'auszubildende',      'table': 'results_auszubildende_kreise', 'measure_type': 'weighted_avg'},
     {'slug': 'bevoelkerung',       'table': 'results_bevoelkerung_kreise', 'measure_type': 'sum'},
     {'slug': 'bruttoverdienst',    'table': 'results_bruttoverdienst_kreise', 'measure_type': 'weighted_avg'},
     {'slug': 'durchschnittsalter', 'table': 'results_durchschnittsalter_kreise', 'measure_type': 'weighted_avg'},
-    {'slug': 'erwerbstaetige_pro_1000_einwohner', 'table': 'results_erwerbstaetige_pro_1000_einwohner_kreise', 'measure_type': 'weighted_avg'},
+    {'slug': 'erwerbstaetige_pro_1000_einwohner', 'table': 'results_erwerbstaetige_pro_1000_einwohner_kreise', 'measure_type': 'sum'},
     {'slug': 'kinderarmut',        'table': 'results_kinderarmut_kreise', 'measure_type': 'weighted_avg'},
     {'slug': 'medianeinkommen',    'table': 'results_medianeinkommen_kreise', 'measure_type': 'weighted_avg'},
     {'slug': 'schuldnerquote',     'table': 'results_schuldnerquote_kreise', 'measure_type': 'weighted_avg'},
     {'slug': 'sgb_ii_quote',       'table': 'results_sgb_ii_quote_kreise', 'measure_type': 'weighted_avg'},
-    {'slug': 'studierende',        'table': 'results_studierende_kreise', 'measure_type': 'sum'},
-    {'slug': 'wohngeldhaushalte',  'table': 'results_wohngeldhaushalte_kreise', 'measure_type': 'sum'},
+    {'slug': 'studierende',        'table': 'results_studierende_kreise', 'measure_type': 'weighted_avg'},
+    {'slug': 'wohngeldhaushalte',  'table': 'results_wohngeldhaushalte_kreise', 'measure_type': 'weighted_avg'},
 ] %}
 {% set beschaeftigungsquote_nuts3_measure_type = 'weighted_avg' %}
 

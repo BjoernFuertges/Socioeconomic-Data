@@ -96,7 +96,12 @@ and `mart_nuts0_summary` are views):
     [AGENTS.md](../../AGENTS.md)).
     Each entry carries a `measure_type` ('sum' for counts, 'weighted_avg'
     for rates/averages) that decides how values are combined when several
-    source regions map onto one target region.
+    source regions map onto one target region. The aggregation marts
+    (`mart_nuts012_dataset_aggregate`, `mart_agentur_dataset_aggregate`,
+    custom regions) add 'weighted_avg_employees' for values per employed
+    person (`arbeitsvolumen`, `bruttoverdienst`), weighted by the
+    `erwerbstaetige_pro_1000_einwohner` count (absolute, in thousands - the
+    slug is a misnomer kept for the public API route).
   - `mart_nuts3_timeseries_interpolated` / `mart_lau_timeseries_interpolated`
     — gap-filled time series built on top of the harmonized marts, one row
     per (region, dataset, target_version, year).

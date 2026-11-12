@@ -430,9 +430,9 @@ func (h *Handler) GetDurchschnittsalterTimeseriesData(c *gin.Context) {
 	getKreisTimeseriesEndpoint(h, c, models.DurchschnittsalterConfig)
 }
 
-// GetErwerbstaetigePro1000EinwohnerData returns Cleaned employed persons per 1,000 inhabitants per district (Kreis), with derived observation date and quality flag.
-// @Summary Cleaned employed persons per 1,000 inhabitants per district (Kreis), with derived observation date and quality flag.
-// @Description Cleaned employed persons per 1,000 inhabitants per district (Kreis), with derived observation date and quality flag.
+// GetErwerbstaetigePro1000EinwohnerData returns Cleaned number of employed persons in thousands (absolute count, not a rate) per district (Kreis), with derived observation date and quality flag.
+// @Summary Cleaned number of employed persons in thousands (absolute count, not a rate) per district (Kreis), with derived observation date and quality flag.
+// @Description Cleaned number of employed persons in thousands (absolute count, not a rate) per district (Kreis), with derived observation date and quality flag.
 // @Tags ErwerbstaetigePro1000Einwohner
 // @Accept json
 // @Produce json,text/csv
@@ -458,8 +458,8 @@ func (h *Handler) GetErwerbstaetigePro1000EinwohnerData(c *gin.Context) {
 	getKreisData[models.ErwerbstaetigePro1000EinwohnerData](h, c, models.ErwerbstaetigePro1000EinwohnerConfig)
 }
 
-// GetErwerbstaetigePro1000EinwohnerTimeseriesData returns the gap-free, interpolated time series for Cleaned employed persons per 1,000 inhabitants per district (Kreis), with derived observation date and quality flag.
-// @Summary Lückenlose Zeitreihe für Cleaned employed persons per 1,000 inhabitants per district (Kreis), with derived observation date and quality flag.
+// GetErwerbstaetigePro1000EinwohnerTimeseriesData returns the gap-free, interpolated time series for Cleaned number of employed persons in thousands (absolute count, not a rate) per district (Kreis), with derived observation date and quality flag.
+// @Summary Lückenlose Zeitreihe für Cleaned number of employed persons in thousands (absolute count, not a rate) per district (Kreis), with derived observation date and quality flag.
 // @Description Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.
 // @Tags ErwerbstaetigePro1000Einwohner
 // @Accept json

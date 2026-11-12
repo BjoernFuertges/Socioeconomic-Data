@@ -87,6 +87,16 @@ func TestComputeCustomRegionValue(t *testing.T) {
 		}, 4, "weighted_avg_area", true},
 		{"avg falls back to plain", "weighted_avg", customRegionAggRow{PlainAvg: nf(9)}, 9, "avg", true},
 		{"avg nothing", "weighted_avg", customRegionAggRow{}, 0, "", false},
+		{"avg by employees", "weighted_avg_employees", customRegionAggRow{
+			EmpNum: nf(60), EmpDen: nf(40), EmpComplete: true, PopNum: nf(30), PopDen: nf(10), PopComplete: true,
+			AreaNum: nf(1), AreaDen: nf(1), PlainAvg: nf(9),
+		}, 1.5, "weighted_avg_employees", true},
+		{"employees fall back to area, not population", "weighted_avg_employees", customRegionAggRow{
+			EmpNum: nf(60), EmpDen: nf(40), EmpComplete: false, PopNum: nf(30), PopDen: nf(10), PopComplete: true,
+			AreaNum: nf(8), AreaDen: nf(2), PlainAvg: nf(9),
+		}, 4, "weighted_avg_area", true},
+		{"employees fall back to plain", "weighted_avg_employees", customRegionAggRow{PlainAvg: nf(9)}, 9, "avg", true},
+		{"population weights ignored for sum", "sum", customRegionAggRow{SumValue: nf(7), EmpNum: nf(1), EmpDen: nf(1), EmpComplete: true}, 7, "sum", true},
 	}
 
 	for _, tt := range tests {

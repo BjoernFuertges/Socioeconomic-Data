@@ -3,7 +3,7 @@ version: 2
 models:
 
   - name: stg_erwerbstaetige_pro_1000_einwohner_kreise
-    description: Cleaned employed persons per 1,000 inhabitants per district (Kreis), with derived observation date and quality flag.
+    description: Cleaned number of employed persons in thousands (absolute count, not a rate) per district (Kreis), with derived observation date and quality flag.
     columns:
       - name: erwerbstaetige_pro_1000_einwohner_pk
         description: Surrogate key built from geodata_id_nuts and year
@@ -53,7 +53,7 @@ models:
               min_value: 1990
               max_value: 2030
       - name: erwerbstaetige_pro_1000_einwohner
-        description: Employed persons per 1,000 inhabitants
+        description: Number of employed persons in thousands (absolute count, not a rate)
         data_type: numeric
         tests:
           - not_null

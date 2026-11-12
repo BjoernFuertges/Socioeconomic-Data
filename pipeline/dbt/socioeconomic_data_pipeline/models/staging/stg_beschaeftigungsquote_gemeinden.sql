@@ -20,7 +20,7 @@ with source_data as (
 cleaned as (
     select
         -- Remove _dlt* fields by explicitly selecting only needed columns
-        regexp_replace(cast(original_id_1 as text), '\\.0+$', '') as original_id_1,
+        regexp_replace(cast(original_id_1 as text), '\.0+$', '') as original_id_1,
         original_name,
         geodata_name,
         {% if 'geodata_id_nuts' in source_columns %}
@@ -66,14 +66,29 @@ cleaned as (
     from source_data
 ),
 
+-- One row per municipality key from the newest LAU vintage. The BBSR series
+-- is on the 2024 boundary/code level (see meta.yaml geodata_year), so the
+-- mapping must not follow the observation year: lau_population.year is the
+-- Eurostat vintage, and a same-year join leaves early observation years
+-- without a NUTS-3 code and maps later ones onto the wrong vintage.
+latest_lau as (
+    select distinct on (regexp_replace(cast(lau_nat_code as text), '\.0+$', ''))
+        regexp_replace(cast(lau_nat_code as text), '\.0+$', '') as ars_key,
+        lau_nat_code,
+        nuts_3_code
+    from {{ ref('stg_lau_population') }}
+    where lau_nat_code is not null
+    order by regexp_replace(cast(lau_nat_code as text), '\.0+$', ''), year desc
+),
+
 mapped as (
     select
         c.original_id_1,
         coalesce(c.original_name, '') as original_name,
         coalesce(c.geodata_name, c.original_name, '') as geodata_name,
-        coalesce(c.geodata_id_nuts, p.nuts_3_code, g.nuts_3, '') as geodata_id_nuts,
-        coalesce(c.geodata_id_lau, regexp_replace(cast(p.lau_nat_code as text), '\\.0+$', ''), c.original_id_1, '') as geodata_id_lau,
-        coalesce(c.geodata_id_ars, c.geodata_id_lau, regexp_replace(cast(p.lau_nat_code as text), '\\.0+$', ''), c.original_id_1, '') as geodata_id_ars,
+        coalesce(c.geodata_id_nuts, p.nuts_3_code, '') as geodata_id_nuts,
+        coalesce(c.geodata_id_lau, regexp_replace(cast(p.lau_nat_code as text), '\.0+$', ''), c.original_id_1, '') as geodata_id_lau,
+        coalesce(c.geodata_id_ars, c.geodata_id_lau, regexp_replace(cast(p.lau_nat_code as text), '\.0+$', ''), c.original_id_1, '') as geodata_id_ars,
         coalesce(c.mapper, '') as mapper,
         coalesce(c.parameter, '') as parameter,
         c.geodata_level,
@@ -83,12 +98,8 @@ mapped as (
         c.observation_date,
         c.has_valid_value
     from cleaned c
-    left join {{ ref('stg_lau_population') }} p
-        on regexp_replace(cast(p.lau_nat_code as text), '\\.0+$', '') = c.original_id_1
-       and p.year = c.year
-    left join {{ ref('stg_lau_geometry') }} g
-        on lower(trim(g.lau_name)) = lower(trim(c.geodata_name))
-       and g.year = c.year
+    left join latest_lau p
+        on p.ars_key = c.original_id_1
 ),
 
 final as (

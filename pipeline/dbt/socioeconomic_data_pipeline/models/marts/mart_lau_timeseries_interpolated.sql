@@ -46,7 +46,9 @@ with source as (
 gisco_kreis as (
     select distinct on (gisco_id)
         gisco_id,
-        left(regexp_replace(cast(lau_nat_code as text), '\.0+$', ''), 5) as kreis_prefix
+        -- lau_nat_code has no leading zero for states 01-09 (7 digits), so pad
+        -- to the 8-digit AGS before cutting the 5-digit Kreis key.
+        left(lpad(regexp_replace(cast(lau_nat_code as text), '\.0+$', ''), 8, '0'), 5) as kreis_prefix
     from {{ ref('stg_lau_population') }}
     where gisco_id is not null and lau_nat_code is not null
     order by gisco_id, year desc

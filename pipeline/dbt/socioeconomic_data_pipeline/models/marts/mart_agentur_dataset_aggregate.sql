@@ -44,6 +44,13 @@
       never mixed within a row). For Berlin (one Kreis, three
       Agenturbezirke) the weight has no effect; the value is that of the
       single Kreis.
+    - 'weighted_avg_employees' (values per employed person, e.g.
+      arbeitsvolumen, bruttoverdienst): same as 'weighted_avg', but the
+      preferred weight is the number of EMPLOYED PERSONS of the Kreis part
+      (dataset erwerbstaetige_pro_1000_einwohner - despite its slug the
+      absolute count in thousands - of the same year * area_share_of_nuts3)
+      -> aggregation_method 'weighted_avg_employees'. Fallback to the area
+      weight as above if any contributing Kreis lacks it.
 
   LIMITATIONS (approximations, not an exact recomputation):
     - A true Agenturbezirk ratio cannot be recovered from finished Kreis
@@ -60,18 +67,18 @@
 
 {% set source_datasets = [
     {'slug': 'arbeitslose', 'measure_type': 'sum', 'kind': 'count'},
-    {'slug': 'arbeitsvolumen', 'measure_type': 'sum', 'kind': 'count'},
-    {'slug': 'auszubildende', 'measure_type': 'sum', 'kind': 'count'},
+    {'slug': 'arbeitsvolumen', 'measure_type': 'weighted_avg_employees', 'kind': 'mean'},
+    {'slug': 'auszubildende', 'measure_type': 'weighted_avg', 'kind': 'rate'},
     {'slug': 'bevoelkerung', 'measure_type': 'sum', 'kind': 'count'},
-    {'slug': 'bruttoverdienst', 'measure_type': 'weighted_avg', 'kind': 'mean'},
+    {'slug': 'bruttoverdienst', 'measure_type': 'weighted_avg_employees', 'kind': 'mean'},
     {'slug': 'durchschnittsalter', 'measure_type': 'weighted_avg', 'kind': 'mean'},
-    {'slug': 'erwerbstaetige_pro_1000_einwohner', 'measure_type': 'weighted_avg', 'kind': 'rate'},
+    {'slug': 'erwerbstaetige_pro_1000_einwohner', 'measure_type': 'sum', 'kind': 'count'},
     {'slug': 'kinderarmut', 'measure_type': 'weighted_avg', 'kind': 'rate'},
     {'slug': 'medianeinkommen', 'measure_type': 'weighted_avg', 'kind': 'median'},
     {'slug': 'schuldnerquote', 'measure_type': 'weighted_avg', 'kind': 'rate'},
     {'slug': 'sgb_ii_quote', 'measure_type': 'weighted_avg', 'kind': 'rate'},
-    {'slug': 'studierende', 'measure_type': 'sum', 'kind': 'count'},
-    {'slug': 'wohngeldhaushalte', 'measure_type': 'sum', 'kind': 'count'},
+    {'slug': 'studierende', 'measure_type': 'weighted_avg', 'kind': 'rate'},
+    {'slug': 'wohngeldhaushalte', 'measure_type': 'weighted_avg', 'kind': 'rate'},
     {'slug': 'beschaeftigungsquote-nuts3', 'measure_type': 'weighted_avg', 'kind': 'rate'},
 ] %}
 
@@ -89,6 +96,12 @@ population as (
     select nuts_id, year, value as population
     from harmonized
     where dataset_slug = 'bevoelkerung'
+),
+
+employees as (
+    select nuts_id, year, value as employees
+    from harmonized
+    where dataset_slug = 'erwerbstaetige_pro_1000_einwohner'
 ),
 
 crosswalk as (
@@ -109,13 +122,18 @@ weighted as (
         -- See the header comment for why they are not interchangeable.
         c.area_share_of_nuts3                          as sum_weight,
         c.area_share_of_agentur                        as avg_weight,
-        p.population * c.area_share_of_nuts3           as pop_weight
+        p.population * c.area_share_of_nuts3           as pop_weight,
+        -- emp_weight: employed persons of the Kreis part in this Agenturbezirk.
+        e.employees * c.area_share_of_nuts3            as emp_weight
     from harmonized h
     join crosswalk c
         on c.nuts_id = h.nuts_id
     left join population p
         on  p.nuts_id = h.nuts_id
         and p.year    = h.year
+    left join employees e
+        on  e.nuts_id = h.nuts_id
+        and e.year    = h.year
 ),
 
 grouped as (
@@ -131,7 +149,10 @@ grouped as (
         sum(value * pop_weight)                         as pop_num,
         sum(pop_weight)                                 as pop_den,
         -- Population weight only if ALL contributing Kreise have it
-        (count(pop_weight) = count(*) and coalesce(sum(pop_weight), 0) > 0) as pop_complete
+        (count(pop_weight) = count(*) and coalesce(sum(pop_weight), 0) > 0) as pop_complete,
+        sum(value * emp_weight)                         as emp_num,
+        sum(emp_weight)                                 as emp_den,
+        (count(emp_weight) = count(*) and coalesce(sum(emp_weight), 0) > 0) as emp_complete
     from weighted
     group by ba_schl, dataset_slug, year
 )
@@ -150,6 +171,12 @@ select
                 when area_den > 0 then area_num / area_den
                 else plain_avg
             end
+            {% elif ds.measure_type == 'weighted_avg_employees' %}
+            case
+                when emp_complete then emp_num / emp_den
+                when area_den > 0 then area_num / area_den
+                else plain_avg
+            end
             {% else %}
             sum_value
             {% endif %}
@@ -160,6 +187,8 @@ select
         when '{{ ds.slug }}' then
             {% if ds.measure_type == 'weighted_avg' %}
             case when pop_complete then 'weighted_avg_population' else 'weighted_avg_area' end
+            {% elif ds.measure_type == 'weighted_avg_employees' %}
+            case when emp_complete then 'weighted_avg_employees' else 'weighted_avg_area' end
             {% else %}
             'sum'
             {% endif %}

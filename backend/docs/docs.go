@@ -38,7 +38,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -46,7 +46,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.AgenturbezirkSummary"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkSummary"
                                             }
                                         }
                                     }
@@ -57,7 +57,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -102,7 +102,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -110,7 +110,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.AgenturDatasetAggregateYear"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturDatasetAggregateYear"
                                             }
                                         }
                                     }
@@ -121,13 +121,13 @@ const docTemplate = `{
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -135,7 +135,7 @@ const docTemplate = `{
         },
         "/agenturbezirke/dataset-aggregate/{slug}": {
             "get": {
-                "description": "Liefert für einen Kreis-grain-Datensatz und ein Jahr den auf Agenturbezirk-Ebene aggregierten Wert je Agenturbezirk (siehe mart_agentur_dataset_aggregate) - für die Kartendarstellung. Geometrien kommen weiterhin aus GET /agenturbezirke/period. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.",
+                "description": "Liefert für einen Kreis-grain-Datensatz und ein Jahr den auf Agenturbezirk-Ebene aggregierten Wert je Agenturbezirk (siehe mart_agentur_dataset_aggregate) - für die Kartendarstellung. Geometrien kommen weiterhin aus GET /agenturbezirke/period. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte (Werte je Erwerbstätigen: erwerbstätigengewichtet; Rückfall auf Flächengewichte, wenn die Gewichte fehlen) - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.",
                 "consumes": [
                     "application/json"
                 ],
@@ -188,7 +188,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -196,7 +196,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.AgenturDatasetAggregatePoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturDatasetAggregatePoint"
                                             }
                                         }
                                     }
@@ -207,19 +207,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -244,7 +244,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -252,7 +252,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.AgenturbezirkLatestValue"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkLatestValue"
                                             }
                                         }
                                     }
@@ -263,7 +263,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -306,7 +306,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -314,7 +314,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.AgenturbezirkLatestValue"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkLatestValue"
                                             }
                                         }
                                     }
@@ -325,13 +325,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -356,7 +356,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -364,7 +364,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.AgenturbezirkPeriod"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkPeriod"
                                             }
                                         }
                                     }
@@ -375,7 +375,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -410,13 +410,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.AgenturbezirkSummary"
+                                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkSummary"
                                         }
                                     }
                                 }
@@ -426,13 +426,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -485,7 +485,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -493,7 +493,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.AgenturbezirkArbeitslosigkeitPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkArbeitslosigkeitPoint"
                                             }
                                         }
                                     }
@@ -504,19 +504,19 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -524,7 +524,7 @@ const docTemplate = `{
         },
         "/agenturbezirke/{ba_schl}/dataset-aggregate/{slug}": {
             "get": {
-                "description": "Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) über den Agentur\u003c-\u003eNUTS-3-Flächenanteils-Crosswalk auf Agenturbezirk-Ebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_agentur_dataset_aggregate). Analog zu GET /nuts/{nuts_id}/dataset-aggregate/{slug} für NUTS-0/1/2. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte (Rückfall auf Flächengewichte, wenn Bevölkerungszahlen fehlen) - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.",
+                "description": "Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) über den Agentur\u003c-\u003eNUTS-3-Flächenanteils-Crosswalk auf Agenturbezirk-Ebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_agentur_dataset_aggregate). Analog zu GET /nuts/{nuts_id}/dataset-aggregate/{slug} für NUTS-0/1/2. LIMITATIONEN: Summen (Zählgrößen) sind Summen der Kreis-Werte; Quoten und Durchschnitte sind ein bevölkerungsgewichteter Durchschnitt der Kreis-Werte (Werte je Erwerbstätigen: erwerbstätigengewichtet; Rückfall auf Flächengewichte, wenn die Gewichte fehlen) - eine Näherung, keine exakte Neuberechnung, da Zähler/Nenner nicht vorliegen und die Gesamtbevölkerung nur Ersatz für die eigentliche Bezugsgröße ist. Mediane lassen sich nicht aus Kreis-Medianen zusammensetzen (nur Schätzung). Berlin: ein Kreis verteilt sich auf drei Agenturbezirke, Summen werden flächenanteilig aufgeteilt. Pro Punkt kennzeichnen aggregation_method und value_kind das Verfahren.",
                 "consumes": [
                     "application/json"
                 ],
@@ -577,7 +577,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -585,7 +585,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.AgenturDatasetAggregatePoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturDatasetAggregatePoint"
                                             }
                                         }
                                     }
@@ -596,25 +596,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -649,7 +649,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -657,7 +657,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.AgenturNutsMembership"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturNutsMembership"
                                             }
                                         }
                                     }
@@ -668,13 +668,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -709,7 +709,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -717,7 +717,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.AgenturNuts3Share"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturNuts3Share"
                                             }
                                         }
                                     }
@@ -728,13 +728,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -742,7 +742,7 @@ const docTemplate = `{
         },
         "/arbeitslose": {
             "get": {
-                "description": "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "description": "Cleaned unemployment counts per district (Kreis), with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -753,7 +753,7 @@ const docTemplate = `{
                 "tags": [
                     "Arbeitslose"
                 ],
-                "summary": "Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Cleaned unemployment counts per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -858,7 +858,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -866,7 +866,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.ArbeitsloseData"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.ArbeitsloseData"
                                             }
                                         }
                                     }
@@ -877,19 +877,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -908,7 +908,7 @@ const docTemplate = `{
                 "tags": [
                     "Arbeitslose"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Lückenlose Zeitreihe für Cleaned unemployment counts per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -992,7 +992,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1000,7 +1000,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -1011,19 +1011,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1031,7 +1031,7 @@ const docTemplate = `{
         },
         "/arbeitsvolumen": {
             "get": {
-                "description": "Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "description": "Cleaned labour volume per district (Kreis), with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1042,7 +1042,7 @@ const docTemplate = `{
                 "tags": [
                     "Arbeitsvolumen"
                 ],
-                "summary": "Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Cleaned labour volume per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -1147,7 +1147,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1155,7 +1155,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.ArbeitsvolumenData"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.ArbeitsvolumenData"
                                             }
                                         }
                                     }
@@ -1166,19 +1166,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1197,7 +1197,7 @@ const docTemplate = `{
                 "tags": [
                     "Arbeitsvolumen"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Lückenlose Zeitreihe für Cleaned labour volume per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -1281,7 +1281,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1289,7 +1289,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -1300,19 +1300,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1320,7 +1320,7 @@ const docTemplate = `{
         },
         "/auszubildende": {
             "get": {
-                "description": "Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "description": "Cleaned trainee counts per district (Kreis), with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1331,7 +1331,7 @@ const docTemplate = `{
                 "tags": [
                     "Auszubildende"
                 ],
-                "summary": "Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Cleaned trainee counts per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -1436,7 +1436,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1444,7 +1444,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.AuszubildendeData"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AuszubildendeData"
                                             }
                                         }
                                     }
@@ -1455,19 +1455,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1486,7 +1486,7 @@ const docTemplate = `{
                 "tags": [
                     "Auszubildende"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Lückenlose Zeitreihe für Cleaned trainee counts per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -1570,7 +1570,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1578,7 +1578,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -1589,19 +1589,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1609,7 +1609,7 @@ const docTemplate = `{
         },
         "/beschaeftigungsquote-gemeinden": {
             "get": {
-                "description": "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "description": "Staging model for the employment rate per municipality (LAU), cleaned, with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1620,7 +1620,7 @@ const docTemplate = `{
                 "tags": [
                     "BeschaeftigungsquoteGemeinden"
                 ],
-                "summary": "Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Staging model for the employment rate per municipality (LAU), cleaned, with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -1725,7 +1725,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1733,7 +1733,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.BeschaeftigungsquoteGemeindenData"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BeschaeftigungsquoteGemeindenData"
                                             }
                                         }
                                     }
@@ -1744,19 +1744,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1775,7 +1775,7 @@ const docTemplate = `{
                 "tags": [
                     "BeschaeftigungsquoteGemeinden"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Lückenlose Zeitreihe für Staging model for the employment rate per municipality (LAU), cleaned, with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -1859,7 +1859,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -1867,7 +1867,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.LauTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.LauTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -1878,19 +1878,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -1898,7 +1898,7 @@ const docTemplate = `{
         },
         "/beschaeftigungsquote-nuts3": {
             "get": {
-                "description": "Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung",
+                "description": "Staging model for the employment rate per NUTS-3 region, aggregated from municipality level and weighted by population.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1909,7 +1909,7 @@ const docTemplate = `{
                 "tags": [
                     "BeschaeftigungsquoteNuts3"
                 ],
-                "summary": "Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung",
+                "summary": "Staging model for the employment rate per NUTS-3 region, aggregated from municipality level and weighted by population.",
                 "parameters": [
                     {
                         "type": "string",
@@ -2000,7 +2000,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2008,7 +2008,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.BeschaeftigungsquoteNuts3Data"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BeschaeftigungsquoteNuts3Data"
                                             }
                                         }
                                     }
@@ -2019,19 +2019,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2050,7 +2050,7 @@ const docTemplate = `{
                 "tags": [
                     "BeschaeftigungsquoteNuts3"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung",
+                "summary": "Lückenlose Zeitreihe für Staging model for the employment rate per NUTS-3 region, aggregated from municipality level and weighted by population.",
                 "parameters": [
                     {
                         "type": "string",
@@ -2134,7 +2134,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2142,7 +2142,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -2153,19 +2153,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2173,7 +2173,7 @@ const docTemplate = `{
         },
         "/bevoelkerung": {
             "get": {
-                "description": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "description": "Cleaned population per district (Kreis), with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2184,7 +2184,7 @@ const docTemplate = `{
                 "tags": [
                     "Bevoelkerung"
                 ],
-                "summary": "Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Cleaned population per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -2289,7 +2289,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2297,7 +2297,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.BevoelkerungData"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BevoelkerungData"
                                             }
                                         }
                                     }
@@ -2308,19 +2308,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2339,7 +2339,7 @@ const docTemplate = `{
                 "tags": [
                     "Bevoelkerung"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Lückenlose Zeitreihe für Cleaned population per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -2423,7 +2423,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2431,7 +2431,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -2442,19 +2442,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2462,7 +2462,7 @@ const docTemplate = `{
         },
         "/bruttoverdienst": {
             "get": {
-                "description": "Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "description": "Cleaned gross earnings per district (Kreis), with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2473,7 +2473,7 @@ const docTemplate = `{
                 "tags": [
                     "Bruttoverdienst"
                 ],
-                "summary": "Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Cleaned gross earnings per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -2578,7 +2578,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2586,7 +2586,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.BruttoverdienstData"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BruttoverdienstData"
                                             }
                                         }
                                     }
@@ -2597,19 +2597,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2628,7 +2628,7 @@ const docTemplate = `{
                 "tags": [
                     "Bruttoverdienst"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Lückenlose Zeitreihe für Cleaned gross earnings per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -2712,7 +2712,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2720,7 +2720,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -2731,19 +2731,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2751,7 +2751,7 @@ const docTemplate = `{
         },
         "/custom-regions/dataset-aggregate": {
             "post": {
-                "description": "Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt. Näherungswerte (z. B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet. Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: Version 2024.",
+                "description": "Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt, Werte je Erwerbstätigen (weighted_avg_employees) erwerbstätigengewichtet. Näherungswerte (z. B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet. Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: Version 2024.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2769,7 +2769,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.CustomRegionAggregateRequest"
+                            "$ref": "#/definitions/internal_handlers.CustomRegionAggregateRequest"
                         }
                     }
                 ],
@@ -2779,7 +2779,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2787,7 +2787,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/handlers.CustomRegionAggregateRow"
+                                                "$ref": "#/definitions/internal_handlers.CustomRegionAggregateRow"
                                             }
                                         }
                                     }
@@ -2798,13 +2798,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2812,7 +2812,7 @@ const docTemplate = `{
         },
         "/custom-regions/datasets": {
             "get": {
-                "description": "Gibt je Datensatz/Indikator die Quellebene (lau, nuts3, agentur), die Aggregationsart (sum, weighted_avg) und die Kennzeichnung der Näherung (kind) zurück. Namen und Lizenz: GET /datasets/{slug}.",
+                "description": "Gibt je Datensatz/Indikator die Quellebene (lau, nuts3, agentur), die Aggregationsart (sum, weighted_avg, weighted_avg_employees) und die Kennzeichnung der Näherung (kind) zurück. Namen und Lizenz: GET /datasets/{slug}.",
                 "produces": [
                     "application/json"
                 ],
@@ -2826,7 +2826,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2834,7 +2834,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/handlers.customRegionMeta"
+                                                "$ref": "#/definitions/internal_handlers.customRegionMeta"
                                             }
                                         }
                                     }
@@ -2845,7 +2845,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2896,7 +2896,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -2904,7 +2904,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.DatasetCatalogEintrag"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetCatalogEintrag"
                                             }
                                         }
                                     }
@@ -2915,13 +2915,13 @@ const docTemplate = `{
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -2973,13 +2973,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.DatasetCatalogEintrag"
+                                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetCatalogEintrag"
                                         }
                                     }
                                 }
@@ -2989,19 +2989,19 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -3053,7 +3053,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3061,7 +3061,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.DatasetQuellwert"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetQuellwert"
                                             }
                                         }
                                     }
@@ -3072,19 +3072,19 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -3092,7 +3092,7 @@ const docTemplate = `{
         },
         "/durchschnittsalter": {
             "get": {
-                "description": "Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "description": "Cleaned average age per district (Kreis), with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3103,7 +3103,7 @@ const docTemplate = `{
                 "tags": [
                     "Durchschnittsalter"
                 ],
-                "summary": "Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Cleaned average age per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -3208,7 +3208,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3216,7 +3216,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.DurchschnittsalterData"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DurchschnittsalterData"
                                             }
                                         }
                                     }
@@ -3227,19 +3227,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -3258,7 +3258,7 @@ const docTemplate = `{
                 "tags": [
                     "Durchschnittsalter"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Lückenlose Zeitreihe für Cleaned average age per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -3342,7 +3342,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3350,7 +3350,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -3361,19 +3361,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -3381,7 +3381,7 @@ const docTemplate = `{
         },
         "/erwerbstaetige_pro_1000_einwohner": {
             "get": {
-                "description": "Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "description": "Cleaned number of employed persons in thousands (absolute count, not a rate) per district (Kreis), with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3392,7 +3392,7 @@ const docTemplate = `{
                 "tags": [
                     "ErwerbstaetigePro1000Einwohner"
                 ],
-                "summary": "Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Cleaned number of employed persons in thousands (absolute count, not a rate) per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -3497,7 +3497,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3505,7 +3505,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.ErwerbstaetigePro1000EinwohnerData"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.ErwerbstaetigePro1000EinwohnerData"
                                             }
                                         }
                                     }
@@ -3516,19 +3516,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -3547,7 +3547,7 @@ const docTemplate = `{
                 "tags": [
                     "ErwerbstaetigePro1000Einwohner"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Lückenlose Zeitreihe für Cleaned number of employed persons in thousands (absolute count, not a rate) per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -3631,7 +3631,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3639,7 +3639,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -3650,19 +3650,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -3790,7 +3790,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3798,7 +3798,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.GeoRegionSummary"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoRegionSummary"
                                             }
                                         }
                                     }
@@ -3809,13 +3809,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -3841,7 +3841,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.GeoSpatialQueryRequest"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoSpatialQueryRequest"
                         }
                     }
                 ],
@@ -3851,7 +3851,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -3859,7 +3859,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.GeoRegionSummary"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoRegionSummary"
                                             }
                                         }
                                     }
@@ -3870,13 +3870,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -3966,25 +3966,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -4032,13 +4032,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.GeoRegionVersions"
+                                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoRegionVersions"
                                         }
                                     }
                                 }
@@ -4048,19 +4048,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -4091,7 +4091,7 @@ const docTemplate = `{
         },
         "/kinderarmut": {
             "get": {
-                "description": "Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "description": "Cleaned child poverty per district (Kreis), with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4102,7 +4102,7 @@ const docTemplate = `{
                 "tags": [
                     "Kinderarmut"
                 ],
-                "summary": "Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Cleaned child poverty per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -4207,7 +4207,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4215,7 +4215,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.KinderarmutData"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.KinderarmutData"
                                             }
                                         }
                                     }
@@ -4226,19 +4226,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -4257,7 +4257,7 @@ const docTemplate = `{
                 "tags": [
                     "Kinderarmut"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Lückenlose Zeitreihe für Cleaned child poverty per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -4341,7 +4341,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4349,7 +4349,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -4360,19 +4360,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -4471,7 +4471,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4479,7 +4479,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.LAURegion"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.LAURegion"
                                             }
                                         }
                                     }
@@ -4490,13 +4490,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -4543,13 +4543,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.LAURegion"
+                                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.LAURegion"
                                         }
                                     }
                                 }
@@ -4559,13 +4559,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -4600,13 +4600,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.RegionDatasets"
+                                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDatasets"
                                         }
                                     }
                                 }
@@ -4616,19 +4616,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -4663,13 +4663,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.GeoRegionVersions"
+                                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoRegionVersions"
                                         }
                                     }
                                 }
@@ -4679,19 +4679,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -4699,7 +4699,7 @@ const docTemplate = `{
         },
         "/medianeinkommen": {
             "get": {
-                "description": "Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "description": "Cleaned median income per district (Kreis), with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4710,7 +4710,7 @@ const docTemplate = `{
                 "tags": [
                     "Medianeinkommen"
                 ],
-                "summary": "Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Cleaned median income per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -4815,7 +4815,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4823,7 +4823,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.MedianeinkommenData"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.MedianeinkommenData"
                                             }
                                         }
                                     }
@@ -4834,19 +4834,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -4865,7 +4865,7 @@ const docTemplate = `{
                 "tags": [
                     "Medianeinkommen"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Lückenlose Zeitreihe für Cleaned median income per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -4949,7 +4949,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4957,7 +4957,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -4968,19 +4968,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -5054,7 +5054,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5062,7 +5062,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.DatasetMetricsResult"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetMetricsResult"
                                             }
                                         }
                                     }
@@ -5073,13 +5073,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -5104,7 +5104,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5112,7 +5112,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.DerivedMetricEntry"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DerivedMetricEntry"
                                             }
                                         }
                                     }
@@ -5187,13 +5187,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.DatasetMetricsResult"
+                                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetMetricsResult"
                                         }
                                     }
                                 }
@@ -5203,13 +5203,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -5265,7 +5265,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5273,7 +5273,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsRegionSummary"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionSummary"
                                             }
                                         }
                                     }
@@ -5284,13 +5284,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -5376,13 +5376,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.NutsRegionTimeSeries"
+                                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionTimeSeries"
                                         }
                                     }
                                 }
@@ -5392,19 +5392,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -5439,7 +5439,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5447,7 +5447,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsAgenturbezirk"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsAgenturbezirk"
                                             }
                                         }
                                     }
@@ -5458,13 +5458,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -5472,7 +5472,7 @@ const docTemplate = `{
         },
         "/nuts/{nuts_id}/dataset-aggregate/{slug}": {
             "get": {
-                "description": "Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) auf Land-/Bundesland-/Regierungsbezirksebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_nuts012_dataset_aggregate). Pendant zu GET /{slug}/timeseries für NUTS-3, das für Level 0-2 keine Kreis-Zeilen findet. Nur für NUTS-0/1/2-IDs (2-4 Zeichen) gültig; für Kreise (NUTS-3) GET /{slug}/timeseries verwenden.",
+                "description": "Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) auf Land-/Bundesland-/Regierungsbezirksebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, bei Werten je Erwerbstätigen erwerbstätigengewichtet, siehe mart_nuts012_dataset_aggregate). Pendant zu GET /{slug}/timeseries für NUTS-3, das für Level 0-2 keine Kreis-Zeilen findet. Nur für NUTS-0/1/2-IDs (2-4 Zeichen) gültig; für Kreise (NUTS-3) GET /{slug}/timeseries verwenden.",
                 "consumes": [
                     "application/json"
                 ],
@@ -5525,7 +5525,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5533,7 +5533,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsDatasetAggregatePoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsDatasetAggregatePoint"
                                             }
                                         }
                                     }
@@ -5544,19 +5544,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -5591,13 +5591,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.RegionDatasets"
+                                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDatasets"
                                         }
                                     }
                                 }
@@ -5607,13 +5607,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -5666,13 +5666,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.NutsLauAggregateResponse"
+                                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsLauAggregateResponse"
                                         }
                                     }
                                 }
@@ -5682,25 +5682,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -5735,13 +5735,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.NutsRegionVersions"
+                                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionVersions"
                                         }
                                     }
                                 }
@@ -5751,19 +5751,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -5858,7 +5858,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5866,7 +5866,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.RegionDataRow"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataRow"
                                             }
                                         }
                                     }
@@ -5877,25 +5877,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -5903,7 +5903,7 @@ const docTemplate = `{
         },
         "/schuldnerquote": {
             "get": {
-                "description": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "description": "Cleaned debtor quota per district (Kreis), with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -5914,7 +5914,7 @@ const docTemplate = `{
                 "tags": [
                     "Schuldnerquote"
                 ],
-                "summary": "Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Cleaned debtor quota per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -6019,7 +6019,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6027,7 +6027,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.SchuldnerquoteData"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SchuldnerquoteData"
                                             }
                                         }
                                     }
@@ -6038,19 +6038,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -6069,7 +6069,7 @@ const docTemplate = `{
                 "tags": [
                     "Schuldnerquote"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Lückenlose Zeitreihe für Cleaned debtor quota per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -6153,7 +6153,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6161,7 +6161,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -6172,19 +6172,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -6192,7 +6192,7 @@ const docTemplate = `{
         },
         "/sgb_ii_quote": {
             "get": {
-                "description": "Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "description": "Cleaned SGB II quota per district (Kreis), with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -6203,7 +6203,7 @@ const docTemplate = `{
                 "tags": [
                     "SgbIiQuote"
                 ],
-                "summary": "Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Cleaned SGB II quota per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -6308,7 +6308,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6316,7 +6316,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.SgbIiQuoteData"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SgbIiQuoteData"
                                             }
                                         }
                                     }
@@ -6327,19 +6327,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -6358,7 +6358,7 @@ const docTemplate = `{
                 "tags": [
                     "SgbIiQuote"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Lückenlose Zeitreihe für Cleaned SGB II quota per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -6442,7 +6442,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6450,7 +6450,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -6461,19 +6461,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -6521,7 +6521,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6529,7 +6529,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.SoziooekonomischesInventarEintrag"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SoziooekonomischesInventarEintrag"
                                             }
                                         }
                                     }
@@ -6540,13 +6540,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -6554,7 +6554,7 @@ const docTemplate = `{
         },
         "/studierende": {
             "get": {
-                "description": "Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "description": "Cleaned students per district (Kreis), with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -6565,7 +6565,7 @@ const docTemplate = `{
                 "tags": [
                     "Studierende"
                 ],
-                "summary": "Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Cleaned students per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -6670,7 +6670,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6678,7 +6678,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.StudierendeData"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.StudierendeData"
                                             }
                                         }
                                     }
@@ -6689,19 +6689,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -6720,7 +6720,7 @@ const docTemplate = `{
                 "tags": [
                     "Studierende"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Lückenlose Zeitreihe für Cleaned students per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -6804,7 +6804,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6812,7 +6812,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -6823,19 +6823,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -6843,7 +6843,7 @@ const docTemplate = `{
         },
         "/wohngeldhaushalte": {
             "get": {
-                "description": "Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "description": "Cleaned housing benefit households per district (Kreis), with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -6854,7 +6854,7 @@ const docTemplate = `{
                 "tags": [
                     "Wohngeldhaushalte"
                 ],
-                "summary": "Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Cleaned housing benefit households per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -6959,7 +6959,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -6967,7 +6967,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.WohngeldhaushalteData"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.WohngeldhaushalteData"
                                             }
                                         }
                                     }
@@ -6978,19 +6978,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -7009,7 +7009,7 @@ const docTemplate = `{
                 "tags": [
                     "Wohngeldhaushalte"
                 ],
-                "summary": "Lückenlose Zeitreihe für Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag",
+                "summary": "Lückenlose Zeitreihe für Cleaned housing benefit households per district (Kreis), with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -7093,7 +7093,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/models.APIResponse"
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -7101,7 +7101,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.NutsTimeseriesPoint"
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
                                             }
                                         }
                                     }
@@ -7112,19 +7112,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "406": {
                         "description": "Not Acceptable",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     }
                 }
@@ -7132,120 +7132,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handlers.CustomRegionAggregateRequest": {
-            "type": "object",
-            "properties": {
-                "datasets": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "bevoelkerung",
-                        "schuldnerquote"
-                    ]
-                },
-                "from_year": {
-                    "type": "integer",
-                    "example": 2015
-                },
-                "geometry": {
-                    "type": "object"
-                },
-                "min_share": {
-                    "type": "number",
-                    "example": 0.01
-                },
-                "to_year": {
-                    "type": "integer",
-                    "example": 2024
-                }
-            }
-        },
-        "handlers.CustomRegionAggregateRow": {
-            "type": "object",
-            "properties": {
-                "aggregation_method": {
-                    "type": "string",
-                    "example": "weighted_avg_population"
-                },
-                "coverage": {
-                    "type": "number",
-                    "example": 0.98
-                },
-                "dataset_slug": {
-                    "type": "string",
-                    "example": "schuldnerquote"
-                },
-                "indicator": {
-                    "type": "string",
-                    "example": "schuldnerquote"
-                },
-                "is_crosswalked": {
-                    "description": "IsCrosswalked: mindestens ein beteiligter Einheitenwert wurde über eine\nVersionsgrenze umgerechnet (kein Direktwert).",
-                    "type": "boolean",
-                    "example": false
-                },
-                "level_used": {
-                    "type": "string",
-                    "example": "nuts3"
-                },
-                "matched_unit": {
-                    "description": "MatchedUnit ist gesetzt, wenn das Polygon exakt einer bestehenden Einheit\nder genutzten Ebene entspricht (nuts_id, gisco_id bzw. ba_schl); die Werte\nsind dann die Werte dieser Einheit, ohne Beiträge benachbarter Einheiten.",
-                    "type": "string",
-                    "example": "DE300"
-                },
-                "month": {
-                    "type": "integer",
-                    "example": 6
-                },
-                "source_region_count": {
-                    "type": "integer",
-                    "example": 3
-                },
-                "value": {
-                    "type": "number",
-                    "example": 7.4
-                },
-                "value_kind": {
-                    "type": "string",
-                    "example": "rate"
-                },
-                "year": {
-                    "type": "integer",
-                    "example": 2023
-                }
-            }
-        },
-        "handlers.customRegionMeta": {
-            "type": "object",
-            "properties": {
-                "dataset_slug": {
-                    "type": "string",
-                    "example": "schuldnerquote"
-                },
-                "finer_slug": {
-                    "type": "string"
-                },
-                "indicator": {
-                    "type": "string",
-                    "example": "schuldnerquote"
-                },
-                "kind": {
-                    "type": "string",
-                    "example": "rate"
-                },
-                "level": {
-                    "type": "string",
-                    "example": "nuts3"
-                },
-                "measure_type": {
-                    "type": "string",
-                    "example": "weighted_avg"
-                }
-            }
-        },
-        "models.APIResponse": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -7258,7 +7145,7 @@ const docTemplate = `{
                     "example": "Operation erfolgreich"
                 },
                 "meta": {
-                    "$ref": "#/definitions/models.MetaInfo"
+                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.MetaInfo"
                 },
                 "success": {
                     "type": "boolean",
@@ -7266,15 +7153,16 @@ const docTemplate = `{
                 }
             }
         },
-        "models.AgenturDatasetAggregatePoint": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturDatasetAggregatePoint": {
             "type": "object",
             "properties": {
                 "aggregation_method": {
-                    "description": "Wie der Wert entstanden ist (siehe mart_agentur_dataset_aggregate):\n\"sum\" = Summe der Kreis-Werte; \"weighted_avg_population\" =\nbevölkerungsgewichteter Durchschnitt der Kreis-Werte;\n\"weighted_avg_area\" = flächengewichteter Durchschnitt (Rückfall, wenn\nfür einen beteiligten Kreis die Bevölkerung fehlt). Die beiden\nDurchschnitte sind eine Näherung, keine exakte Neuberechnung.",
+                    "description": "How the value was derived (see mart_agentur_dataset_aggregate):\n\"sum\" = sum of the Kreis values; \"weighted_avg_population\" =\npopulation-weighted average of the Kreis values; \"weighted_avg_area\" =\narea-weighted average (fallback when population is missing for a\ncontributing Kreis); \"weighted_avg_employees\" = average weighted by the\nnumber of employed persons (for values per employed person, e.g.\narbeitsvolumen). The averages are an approximation, not an exact\nrecomputation.",
                     "type": "string",
                     "enum": [
                         "sum",
                         "weighted_avg_population",
+                        "weighted_avg_employees",
                         "weighted_avg_area"
                     ],
                     "example": "weighted_avg_population"
@@ -7288,17 +7176,17 @@ const docTemplate = `{
                     "example": "bevoelkerung"
                 },
                 "is_computed": {
-                    "description": "Immer true: jeder Punkt ist eine flächengewichtete Aggregation über\nmehrere Kreise, keine an einer einzelnen Quelle abgelesene\nEinzelbeobachtung.",
+                    "description": "Always true: every point is an area-weighted aggregation over several\nKreise, not a single observation read from one source.",
                     "type": "boolean",
                     "example": true
                 },
                 "is_interpolated": {
-                    "description": "Immer false - keine gap-gefüllte Version wird hier aggregiert. Nicht\naus der DB gescannt, damit TimeseriesChart.vue/DataTable.vue dieselbe\nInterpolationsstatus-Spalte wie bei den anderen Aggregat-Endpunkten\nanzeigen können.",
+                    "description": "Always false - no gap-filled version is aggregated here. Not scanned from\nthe DB, so TimeseriesChart.vue/DataTable.vue can show the same\ninterpolation-status column as for the other aggregate endpoints.",
                     "type": "boolean",
                     "example": false
                 },
                 "source_region_count": {
-                    "description": "Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert beigetragen haben.",
+                    "description": "Number of Kreise that actually contributed a value for this year.",
                     "type": "integer",
                     "example": 3
                 },
@@ -7307,7 +7195,7 @@ const docTemplate = `{
                     "example": 340123
                 },
                 "value_kind": {
-                    "description": "Art der Größe: \"count\" (Zählgröße), \"rate\" (Quote), \"mean\"\n(Durchschnitt) oder \"median\". Mediane lassen sich nicht aus Kreis-\nMedianen zusammensetzen - der Wert ist dann nur eine Schätzung.",
+                    "description": "Kind of quantity: \"count\", \"rate\", \"mean\" or \"median\". Medians cannot be\ncomposed from Kreis medians - the value is then only an estimate.",
                     "type": "string",
                     "enum": [
                         "count",
@@ -7323,7 +7211,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.AgenturDatasetAggregateYear": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturDatasetAggregateYear": {
             "type": "object",
             "properties": {
                 "dataset_slug": {
@@ -7336,7 +7224,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.AgenturNuts3Share": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturNuts3Share": {
             "type": "object",
             "properties": {
                 "area_share_of_agentur": {
@@ -7357,7 +7245,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.AgenturNutsMembership": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturNutsMembership": {
             "type": "object",
             "properties": {
                 "area_share_of_agentur": {
@@ -7384,7 +7272,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.AgenturbezirkArbeitslosigkeitPoint": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkArbeitslosigkeitPoint": {
             "type": "object",
             "properties": {
                 "arbeitslose": {
@@ -7407,7 +7295,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.AgenturbezirkLatestValue": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkLatestValue": {
             "type": "object",
             "properties": {
                 "arbeitslose": {
@@ -7444,7 +7332,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.AgenturbezirkPeriod": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkPeriod": {
             "type": "object",
             "properties": {
                 "month": {
@@ -7461,7 +7349,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.AgenturbezirkSummary": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AgenturbezirkSummary": {
             "type": "object",
             "properties": {
                 "ba_schl": {
@@ -7488,7 +7376,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ArbeitsloseData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.ArbeitsloseData": {
             "type": "object",
             "properties": {
                 "arbeitslose": {
@@ -7528,7 +7416,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -7541,7 +7429,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -7575,7 +7463,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ArbeitsvolumenData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.ArbeitsvolumenData": {
             "type": "object",
             "properties": {
                 "arbeitsvolumen": {
@@ -7615,7 +7503,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -7628,7 +7516,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -7662,7 +7550,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.AuszubildendeData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.AuszubildendeData": {
             "type": "object",
             "properties": {
                 "auszubildende": {
@@ -7702,7 +7590,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -7715,7 +7603,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -7749,7 +7637,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.BeschaeftigungsquoteGemeindenData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BeschaeftigungsquoteGemeindenData": {
             "type": "object",
             "properties": {
                 "beschaeftigungsquote_prozent": {
@@ -7789,7 +7677,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -7802,7 +7690,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -7836,7 +7724,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.BeschaeftigungsquoteNuts3Data": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BeschaeftigungsquoteNuts3Data": {
             "type": "object",
             "properties": {
                 "beschaeftigungsquote_median": {
@@ -7888,7 +7776,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -7901,7 +7789,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -7935,7 +7823,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.BevoelkerungData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BevoelkerungData": {
             "type": "object",
             "properties": {
                 "bevoelkerung": {
@@ -7975,7 +7863,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -7988,7 +7876,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -8022,7 +7910,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.BruttoverdienstData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BruttoverdienstData": {
             "type": "object",
             "properties": {
                 "bruttoverdienst": {
@@ -8062,7 +7950,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -8075,7 +7963,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -8109,7 +7997,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.DatasetCatalogEintrag": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetCatalogEintrag": {
             "type": "object",
             "properties": {
                 "algorithm": {
@@ -8120,7 +8008,7 @@ const docTemplate = `{
                     "example": "bevoelkerung"
                 },
                 "dataset_uri": {
-                    "description": "DatasetURI ist eine persistente, deterministisch aus DatasetSlug abgeleitete\nKennung (urn:soziodata:dataset:\u003cslug\u003e) - keine künstliche Zufalls-ID.",
+                    "description": "DatasetURI is a persistent identifier (urn:soziodata:dataset:\u003cslug\u003e)\nderived deterministically from DatasetSlug - not an artificial random ID.",
                     "type": "string",
                     "example": "urn:soziodata:dataset:bevoelkerung"
                 },
@@ -8144,12 +8032,12 @@ const docTemplate = `{
                     "example": "unbekannt"
                 },
                 "license_backfilled": {
-                    "description": "LicenseBackfilled ist true, wenn der Datensatz Jahre vor LicenseTrackedSince\nenthält - die aktuelle Lizenz wurde dann rückwirkend auf diese älteren Jahre\nangewendet, ohne für sie unabhängig verifiziert zu sein.",
+                    "description": "LicenseBackfilled is true if the dataset contains years before\nLicenseTrackedSince - the current license was then applied retroactively to\nthese older years without being independently verified for them.",
                     "type": "boolean",
                     "example": true
                 },
                 "license_tracked_since": {
-                    "description": "LicenseTrackedSince ist das Datum, seit dem die Lizenz dieses Datensatzes\nper snap_dataset_license beobachtet wird; null falls noch kein dbt snapshot\ngelaufen ist.",
+                    "description": "LicenseTrackedSince is the date since which this dataset's license has been\nobserved via snap_dataset_license; null if no dbt snapshot has run yet.",
                     "type": "string",
                     "example": "2026-09-11"
                 },
@@ -8189,13 +8077,13 @@ const docTemplate = `{
                 }
             }
         },
-        "models.DatasetMetricsResult": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetMetricsResult": {
             "type": "object",
             "properties": {
                 "by_year": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.DatasetYearMetrics"
+                        "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetYearMetrics"
                     }
                 },
                 "column": {
@@ -8208,7 +8096,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.DatasetQuellwert": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetQuellwert": {
             "type": "object",
             "properties": {
                 "dataset_slug": {
@@ -8259,7 +8147,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.DatasetYearMetrics": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetYearMetrics": {
             "type": "object",
             "properties": {
                 "max": {
@@ -8312,7 +8200,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.DerivedMetricEntry": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DerivedMetricEntry": {
             "type": "object",
             "properties": {
                 "description": {
@@ -8320,7 +8208,7 @@ const docTemplate = `{
                     "example": "Einwohner je km²"
                 },
                 "formula": {
-                    "$ref": "#/definitions/models.FormulaDefinition"
+                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaDefinition"
                 },
                 "label": {
                     "type": "string",
@@ -8336,7 +8224,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.DurchschnittsalterData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DurchschnittsalterData": {
             "type": "object",
             "properties": {
                 "durchschnittsalter": {
@@ -8376,7 +8264,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -8389,7 +8277,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -8423,7 +8311,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ErwerbstaetigePro1000EinwohnerData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.ErwerbstaetigePro1000EinwohnerData": {
             "type": "object",
             "properties": {
                 "erwerbstaetige_pro_1000_einwohner": {
@@ -8463,7 +8351,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -8476,7 +8364,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -8510,14 +8398,14 @@ const docTemplate = `{
                 }
             }
         },
-        "models.FormulaDefinition": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaDefinition": {
             "type": "object",
             "properties": {
                 "denominator": {
-                    "$ref": "#/definitions/models.FormulaSource"
+                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaSource"
                 },
                 "numerator": {
-                    "$ref": "#/definitions/models.FormulaSource"
+                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaSource"
                 },
                 "scale": {
                     "type": "number",
@@ -8529,7 +8417,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.FormulaSource": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaSource": {
             "type": "object",
             "properties": {
                 "builtin": {
@@ -8546,7 +8434,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.GeoPeriod": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoPeriod": {
             "type": "object",
             "properties": {
                 "valid_from": {
@@ -8559,7 +8447,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.GeoRegionSummary": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoRegionSummary": {
             "type": "object",
             "properties": {
                 "country_code": {
@@ -8569,7 +8457,7 @@ const docTemplate = `{
                 "datasets": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.RegionDataset"
+                        "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataset"
                     }
                 },
                 "geo_id": {
@@ -8605,7 +8493,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.GeoRegionVersions": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoRegionVersions": {
             "type": "object",
             "properties": {
                 "geo_id": {
@@ -8627,12 +8515,12 @@ const docTemplate = `{
                 "periods": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.GeoPeriod"
+                        "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoPeriod"
                     }
                 }
             }
         },
-        "models.GeoSpatialQueryRequest": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoSpatialQueryRequest": {
             "type": "object",
             "properties": {
                 "from_year": {
@@ -8684,7 +8572,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.KinderarmutData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.KinderarmutData": {
             "type": "object",
             "properties": {
                 "geodata_id_ars": {
@@ -8724,7 +8612,7 @@ const docTemplate = `{
                     "example": 50
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -8737,7 +8625,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -8771,7 +8659,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.LAURegion": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.LAURegion": {
             "type": "object",
             "properties": {
                 "country": {
@@ -8784,7 +8672,7 @@ const docTemplate = `{
                 "datasets": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.RegionDataset"
+                        "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataset"
                     }
                 },
                 "geometry_wgs84": {
@@ -8823,11 +8711,11 @@ const docTemplate = `{
                     "example": false
                 },
                 "nuts3_id": {
-                    "description": "NUTS3ID ist die kanonische LAU-\u003eNUTS-3-Verlinkung: deklarierte\nQuellspalte (nuts_3_code/nuts_3), sonst räumlich ermittelter Fallback\n(siehe int_lau_nuts3_spatial_link.sql). Robuster als NUTS3Code, das\noft NULL ist, wenn die Quelldaten keinen NUTS-3-Code führen.",
+                    "description": "NUTS3ID is the canonical LAU-\u003eNUTS-3 link: declared source column\n(nuts_3_code/nuts_3), else spatially derived fallback (see\nint_lau_nuts3_spatial_link.sql). More robust than NUTS3Code, which is\noften NULL when the source data carries no NUTS-3 code.",
                     "type": "string"
                 },
                 "nuts3_link_source": {
-                    "description": "NUTS3LinkSource kennzeichnet, woher NUTS3ID stammt: 'declared' (aus\nQuelldaten) oder 'spatial_estimate' (räumlich ermittelt, keine\namtliche Zuordnung) - siehe lau_integrated.sql.",
+                    "description": "NUTS3LinkSource marks where NUTS3ID comes from: 'declared' (from source\ndata) or 'spatial_estimate' (spatially derived, not an official mapping) -\nsee lau_integrated.sql.",
                     "type": "string"
                 },
                 "nuts_3_code": {
@@ -8846,7 +8734,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.LauTimeseriesPoint": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.LauTimeseriesPoint": {
             "type": "object",
             "properties": {
                 "dataset_slug": {
@@ -8858,17 +8746,17 @@ const docTemplate = `{
                     "example": "DE_11000000"
                 },
                 "is_interpolated": {
-                    "description": "true = Wert wurde imputiert (kein Originalwert vorhanden für dieses Jahr).",
+                    "description": "true = value was imputed (no original value exists for this year).",
                     "type": "boolean",
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist die LAU-Zielversion dieses Zeitreihenpunkts (2011-2024).",
+                    "description": "LauVersion is the LAU target version of this time-series point (2011-2024).",
                     "type": "integer",
                     "example": 2021
                 },
                 "n_peer_regions": {
-                    "description": "Anzahl Peer-Gemeinden (gleicher Kreis), die zu value_peer_trend beigetragen haben.",
+                    "description": "Number of peer Gemeinden (same Kreis) that contributed to value_peer_trend.",
                     "type": "integer",
                     "example": 8
                 },
@@ -8877,12 +8765,12 @@ const docTemplate = `{
                     "example": 58.3
                 },
                 "value_linear": {
-                    "description": "Methode-1-Schätzung (lineare Interpolation). Nur bei is_interpolated = true befüllt.",
+                    "description": "Method-1 estimate (linear interpolation). Populated only if is_interpolated = true.",
                     "type": "number",
                     "example": 58.3
                 },
                 "value_peer_trend": {
-                    "description": "Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen\nVeränderung anderer Gemeinden desselben Kreises). Nur befüllt, wenn\nis_interpolated = true und die Schätzung berechenbar war.",
+                    "description": "Method-3 estimate (extrapolation using the average relative change of\nother Gemeinden in the same Kreis). Populated only if\nis_interpolated = true and the estimate was computable.",
                     "type": "number",
                     "example": 57.9
                 },
@@ -8892,7 +8780,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.MedianeinkommenData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.MedianeinkommenData": {
             "type": "object",
             "properties": {
                 "geodata_id_ars": {
@@ -8928,7 +8816,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -8945,7 +8833,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -8979,7 +8867,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.MetaInfo": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.MetaInfo": {
             "type": "object",
             "properties": {
                 "limit": {
@@ -8996,7 +8884,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.NutsAgenturbezirk": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsAgenturbezirk": {
             "type": "object",
             "properties": {
                 "area_share_of_agentur": {
@@ -9016,7 +8904,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.NutsDatasetAggregatePoint": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsDatasetAggregatePoint": {
             "type": "object",
             "properties": {
                 "dataset_slug": {
@@ -9024,12 +8912,12 @@ const docTemplate = `{
                     "example": "bevoelkerung"
                 },
                 "is_computed": {
-                    "description": "Immer true (siehe SELECT true AS is_computed in GetNutsDatasetAggregateTimeseries):\njeder Punkt ist eine Aggregation über mehrere Kreise, keine an einer\neinzelnen Quelle abgelesene Einzelbeobachtung.",
+                    "description": "Always true (see SELECT true AS is_computed in GetNutsDatasetAggregateTimeseries):\nevery point is an aggregation over several Kreise, not a single\nobservation read from one source.",
                     "type": "boolean",
                     "example": true
                 },
                 "is_interpolated": {
-                    "description": "Immer false - siehe Typkommentar oben (keine gap-gefüllte Version wird hier aggregiert).\nNicht aus der DB gescannt (kein db-Tag), damit TimeseriesChart.vue/DataTable.vue\ndieselbe Interpolationsstatus-Spalte wie bei NutsTimeseriesPoint anzeigen können.",
+                    "description": "Always false - see type comment above (no gap-filled version is aggregated\nhere). Not scanned from the DB (no db tag), so TimeseriesChart.vue/DataTable.vue\ncan show the same interpolation-status column as for NutsTimeseriesPoint.",
                     "type": "boolean",
                     "example": false
                 },
@@ -9038,7 +8926,7 @@ const docTemplate = `{
                     "example": "DE1"
                 },
                 "source_region_count": {
-                    "description": "Anzahl der Kreise, die für dieses Jahr tatsächlich einen Wert beigetragen haben.",
+                    "description": "Number of Kreise that actually contributed a value for this year.",
                     "type": "integer",
                     "example": 44
                 },
@@ -9052,26 +8940,26 @@ const docTemplate = `{
                 }
             }
         },
-        "models.NutsLauAggregatePoint": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsLauAggregatePoint": {
             "type": "object",
             "properties": {
                 "lau_beschaeftigungsquote_weighted_avg": {
-                    "description": "Bevölkerungsgewichteter Durchschnitt der Gemeinde-Beschäftigungsquote; null ohne Datenabdeckung.",
+                    "description": "Population-weighted average of the Gemeinde Beschäftigungsquote; null without data coverage.",
                     "type": "number",
                     "example": 64.2
                 },
                 "lau_population_sum": {
-                    "description": "Kann null sein, wenn für keine zugeordnete Gemeinde ein Bevölkerungswert vorliegt.",
+                    "description": "May be null if no assigned Gemeinde has a population value.",
                     "type": "number",
                     "example": 634830
                 },
                 "lau_region_count": {
-                    "description": "Anzahl der diesem Kreis zugeordneten Gemeinden.",
+                    "description": "Number of Gemeinden assigned to this Kreis.",
                     "type": "integer",
                     "example": 23
                 },
                 "lau_region_count_with_population": {
-                    "description": "Davon mit einem tatsächlichen Bevölkerungswert (\u003c=lau_region_count).",
+                    "description": "Of these, with an actual population value (\u003c=lau_region_count).",
                     "type": "integer",
                     "example": 21
                 },
@@ -9081,7 +8969,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.NutsLauAggregateResponse": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsLauAggregateResponse": {
             "type": "object",
             "properties": {
                 "nuts_id": {
@@ -9091,16 +8979,16 @@ const docTemplate = `{
                 "series": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.NutsLauAggregatePoint"
+                        "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsLauAggregatePoint"
                     }
                 }
             }
         },
-        "models.NutsRegionMetadata": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionMetadata": {
             "type": "object",
             "properties": {
                 "ars": {
-                    "description": "ARS (Amtlicher Regionalschlüssel) – nur für NUTS-3 verfügbar, sonst null.",
+                    "description": "ARS (Amtlicher Regionalschlüssel) - available for NUTS-3 only, otherwise null.",
                     "type": "string",
                     "example": "08111000"
                 },
@@ -9129,24 +9017,24 @@ const docTemplate = `{
                 }
             }
         },
-        "models.NutsRegionResponse": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionResponse": {
             "type": "object",
             "properties": {
                 "datasets": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.RegionDataset"
+                        "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataset"
                     }
                 },
                 "metadata": {
-                    "$ref": "#/definitions/models.NutsRegionMetadata"
+                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionMetadata"
                 },
                 "socioeconomic": {
-                    "$ref": "#/definitions/models.NutsSocioeconomicData"
+                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsSocioeconomicData"
                 }
             }
         },
-        "models.NutsRegionSummary": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionSummary": {
             "type": "object",
             "properties": {
                 "ars": {
@@ -9171,27 +9059,27 @@ const docTemplate = `{
                 }
             }
         },
-        "models.NutsRegionTimeSeries": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionTimeSeries": {
             "type": "object",
             "properties": {
                 "datasets": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.RegionDataset"
+                        "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataset"
                     }
                 },
                 "metadata": {
-                    "$ref": "#/definitions/models.NutsRegionMetadata"
+                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionMetadata"
                 },
                 "socioeconomic": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.NutsSocioeconomicData"
+                        "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsSocioeconomicData"
                     }
                 }
             }
         },
-        "models.NutsRegionVersions": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsRegionVersions": {
             "type": "object",
             "properties": {
                 "nuts_id": {
@@ -9209,12 +9097,12 @@ const docTemplate = `{
                 "periods": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.GeoPeriod"
+                        "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.GeoPeriod"
                     }
                 }
             }
         },
-        "models.NutsSocioeconomicData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsSocioeconomicData": {
             "type": "object",
             "properties": {
                 "arbeitslose": {
@@ -9239,7 +9127,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.NutsTimeseriesPoint": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint": {
             "type": "object",
             "properties": {
                 "dataset_slug": {
@@ -9247,12 +9135,12 @@ const docTemplate = `{
                     "example": "wohngeldhaushalte"
                 },
                 "is_interpolated": {
-                    "description": "true = Wert wurde imputiert (kein Originalwert vorhanden für dieses Jahr).",
+                    "description": "true = value was imputed (no original value exists for this year).",
                     "type": "boolean",
                     "example": true
                 },
                 "n_peer_regions": {
-                    "description": "Anzahl Peer-Regionen (gleiche NUTS-2-Gruppe), die zu value_peer_trend beigetragen haben.",
+                    "description": "Number of peer regions (same NUTS-2 group) that contributed to value_peer_trend.",
                     "type": "integer",
                     "example": 11
                 },
@@ -9261,7 +9149,7 @@ const docTemplate = `{
                     "example": "DE226"
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieses Zeitreihenpunkts (2016, 2021 oder 2024).",
+                    "description": "NutsVersion is the NUTS-3 target version of this time-series point (2016, 2021 or 2024).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -9270,12 +9158,12 @@ const docTemplate = `{
                     "example": 8.78
                 },
                 "value_linear": {
-                    "description": "Methode-1-Schätzung (lineare Interpolation). Nur bei is_interpolated = true befüllt.",
+                    "description": "Method-1 estimate (linear interpolation). Populated only if is_interpolated = true.",
                     "type": "number",
                     "example": 8.78
                 },
                 "value_peer_trend": {
-                    "description": "Methode-3-Schätzung (Fortschreibung mit der durchschnittlichen relativen\nVeränderung anderer Regionen derselben NUTS-2-Gruppe). Nur befüllt, wenn\nis_interpolated = true und die Schätzung berechenbar war.",
+                    "description": "Method-3 estimate (extrapolation using the average relative change of\nother regions in the same NUTS-2 group). Populated only if\nis_interpolated = true and the estimate was computable.",
                     "type": "number",
                     "example": 8.5
                 },
@@ -9285,11 +9173,11 @@ const docTemplate = `{
                 }
             }
         },
-        "models.RegionDataRow": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataRow": {
             "type": "object",
             "properties": {
                 "aggregation_method": {
-                    "description": "Nur bei aggregierten Werten: sum, weighted_avg_population, weighted_avg_area.",
+                    "description": "Only for aggregated values: sum, weighted_avg_population, weighted_avg_employees, weighted_avg_area.",
                     "type": "string",
                     "example": "weighted_avg_population"
                 },
@@ -9298,15 +9186,15 @@ const docTemplate = `{
                     "example": "bevoelkerung"
                 },
                 "is_computed": {
-                    "description": "true = aus mehreren Quellregionen berechnet, false = Ursprungswert der Region.",
+                    "description": "true = computed from several source regions, false = the region's original value.",
                     "type": "boolean"
                 },
                 "is_interpolated": {
-                    "description": "true = kein Originalwert, sondern imputiert (nur NUTS-3/LAU-Rohwerte).",
+                    "description": "true = not an original value but imputed (NUTS-3/LAU raw values only).",
                     "type": "boolean"
                 },
                 "month": {
-                    "description": "Nur bei Monatswerten (Agenturbezirk-Rohwerte), sonst leer.",
+                    "description": "Only for monthly values (Agenturbezirk raw values), otherwise empty.",
                     "type": "integer",
                     "example": 8
                 },
@@ -9324,7 +9212,7 @@ const docTemplate = `{
                     "example": "nuts"
                 },
                 "source_region_count": {
-                    "description": "Anzahl der Quellregionen (Kreise/Gemeinden) hinter einem aggregierten Wert.",
+                    "description": "Number of source regions (Kreise/Gemeinden) behind an aggregated value.",
                     "type": "integer",
                     "example": 3
                 },
@@ -9333,7 +9221,7 @@ const docTemplate = `{
                     "example": 340123
                 },
                 "value_kind": {
-                    "description": "Nur bei Agentur-Aggregaten: count, rate, mean, median.",
+                    "description": "Only for Agentur aggregates: count, rate, mean, median.",
                     "type": "string",
                     "example": "rate"
                 },
@@ -9343,7 +9231,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.RegionDataset": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataset": {
             "type": "object",
             "properties": {
                 "available_years": {
@@ -9367,13 +9255,13 @@ const docTemplate = `{
                 }
             }
         },
-        "models.RegionDatasets": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDatasets": {
             "type": "object",
             "properties": {
                 "datasets": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.RegionDataset"
+                        "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.RegionDataset"
                     }
                 },
                 "geo_id": {
@@ -9386,7 +9274,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.SchuldnerquoteData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SchuldnerquoteData": {
             "type": "object",
             "properties": {
                 "geodata_id_ars": {
@@ -9422,7 +9310,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -9435,7 +9323,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -9473,7 +9361,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.SgbIiQuoteData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SgbIiQuoteData": {
             "type": "object",
             "properties": {
                 "geodata_id_ars": {
@@ -9509,7 +9397,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -9522,7 +9410,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -9560,7 +9448,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.SoziooekonomischesInventarEintrag": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SoziooekonomischesInventarEintrag": {
             "type": "object",
             "properties": {
                 "dataset": {
@@ -9593,7 +9481,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.StudierendeData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.StudierendeData": {
             "type": "object",
             "properties": {
                 "geodata_id_ars": {
@@ -9629,7 +9517,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -9642,7 +9530,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -9680,7 +9568,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.WohngeldhaushalteData": {
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.WohngeldhaushalteData": {
             "type": "object",
             "properties": {
                 "geodata_id_ars": {
@@ -9716,7 +9604,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion ist das Pendant zu NutsVersion für LAU-Datensätze (z. B.\nbeschaeftigungsquote-gemeinden). Nur bei fill_gaps=true auf einem\nIsHarmonizedLau-Datensatz befüllt (siehe api_*_fill_gaps-Views für LAU).",
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -9729,7 +9617,7 @@ const docTemplate = `{
                     "example": 11
                 },
                 "nuts_version": {
-                    "description": "NutsVersion ist die NUTS-3-Zielversion dieser Zeile. Nur bei fill_gaps=true\nbefüllt (siehe api_*_fill_gaps-Views), damit fill_gaps=true und\n/timeseries?nuts_version= für denselben Datensatz konsistent dieselbe\nZielversion erkennbar zurückgeben.",
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
                     "type": "integer",
                     "example": 2021
                 },
@@ -9764,6 +9652,119 @@ const docTemplate = `{
                 "year": {
                     "type": "integer",
                     "example": 2020
+                }
+            }
+        },
+        "internal_handlers.CustomRegionAggregateRequest": {
+            "type": "object",
+            "properties": {
+                "datasets": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "bevoelkerung",
+                        "schuldnerquote"
+                    ]
+                },
+                "from_year": {
+                    "type": "integer",
+                    "example": 2015
+                },
+                "geometry": {
+                    "type": "object"
+                },
+                "min_share": {
+                    "type": "number",
+                    "example": 0.01
+                },
+                "to_year": {
+                    "type": "integer",
+                    "example": 2024
+                }
+            }
+        },
+        "internal_handlers.CustomRegionAggregateRow": {
+            "type": "object",
+            "properties": {
+                "aggregation_method": {
+                    "type": "string",
+                    "example": "weighted_avg_population"
+                },
+                "coverage": {
+                    "type": "number",
+                    "example": 0.98
+                },
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "schuldnerquote"
+                },
+                "indicator": {
+                    "type": "string",
+                    "example": "schuldnerquote"
+                },
+                "is_crosswalked": {
+                    "description": "IsCrosswalked: at least one contributing unit value was converted across a\nversion boundary (not a direct value).",
+                    "type": "boolean",
+                    "example": false
+                },
+                "level_used": {
+                    "type": "string",
+                    "example": "nuts3"
+                },
+                "matched_unit": {
+                    "description": "MatchedUnit is set when the polygon matches exactly one existing unit of\nthe level used (nuts_id, gisco_id or ba_schl); the values are then that\nunit's values, without contributions from neighbouring units.",
+                    "type": "string",
+                    "example": "DE300"
+                },
+                "month": {
+                    "type": "integer",
+                    "example": 6
+                },
+                "source_region_count": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "value": {
+                    "type": "number",
+                    "example": 7.4
+                },
+                "value_kind": {
+                    "type": "string",
+                    "example": "rate"
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2023
+                }
+            }
+        },
+        "internal_handlers.customRegionMeta": {
+            "type": "object",
+            "properties": {
+                "dataset_slug": {
+                    "type": "string",
+                    "example": "schuldnerquote"
+                },
+                "finer_slug": {
+                    "type": "string"
+                },
+                "indicator": {
+                    "type": "string",
+                    "example": "schuldnerquote"
+                },
+                "kind": {
+                    "type": "string",
+                    "example": "rate"
+                },
+                "level": {
+                    "type": "string",
+                    "example": "nuts3"
+                },
+                "measure_type": {
+                    "type": "string",
+                    "example": "weighted_avg"
                 }
             }
         }

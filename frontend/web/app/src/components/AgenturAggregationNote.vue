@@ -21,9 +21,15 @@ const notes = computed(() => {
         "(Zähler/Nenner liegen nicht vor, die Gesamtbevölkerung ersetzt die eigentliche Bezugsgröße).",
     );
   }
+  if (methods.has("weighted_avg_employees")) {
+    out.push(
+      "Nach der Zahl der Erwerbstätigen gewichteter Durchschnitt der Kreis-Werte – eine Näherung, " +
+        "keine exakte Neuberechnung.",
+    );
+  }
   if (methods.has("weighted_avg_area")) {
     out.push(
-      "Teilweise flächengewichteter Durchschnitt (für mindestens einen Kreis fehlt die Bevölkerung) – Näherung.",
+      "Teilweise flächengewichteter Durchschnitt (für mindestens einen Kreis fehlt die Gewichtung) – Näherung.",
     );
   }
   if (kinds.has("median")) {
