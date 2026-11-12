@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -19,6 +20,10 @@ type nutsLevelDetails struct {
 	Code         string
 	Table        string
 }
+
+// nutsMaxLimit caps ?limit= on GET /nuts, in line with the 10000 of the
+// Kreis dataset endpoints (limit=null fetches everything).
+const nutsMaxLimit = 10000
 
 func nutsLevelDetailsFromLevel(level int) (nutsLevelDetails, error) {
 	switch level {
@@ -62,7 +67,7 @@ func nutsMetadata(details nutsLevelDetails, regionName string, ars *string) *mod
 	}
 }
 
-func (h *Handler) lookupNutsGeometry(nutsID string, geometryYear *int) (json.RawMessage, bool, error) {
+func (h *Handler) lookupNutsGeometry(ctx context.Context, nutsID string, geometryYear *int) (json.RawMessage, bool, error) {
 	var row struct {
 		GeometryWGS84    json.RawMessage `db:"geometry_wgs84"`
 		HasValidGeometry bool            `db:"has_valid_geometry"`
@@ -84,7 +89,7 @@ func (h *Handler) lookupNutsGeometry(nutsID string, geometryYear *int) (json.Raw
 		ORDER BY valid_from DESC
 		LIMIT 1`
 
-	if err := h.DB.Get(&row, query, args...); err != nil {
+	if err := h.DB.GetContext(ctx, &row, query, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, false, nil
 		}
@@ -114,7 +119,7 @@ func normalizeNutsResponsePart(part string) (string, error) {
 // @Accept json
 // @Produce json
 // @Param level query int false "NUTS-Level (0–3)" Enums(0,1,2,3) example(3)
-// @Param limit query int false "Anzahl der Ergebnisse" default(100) example(100)
+// @Param limit query int false "Anzahl der Ergebnisse je Level (1-10000, oder null für alle)" default(100) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsRegionSummary}
 // @Failure 400 {object} models.APIResponse
@@ -123,17 +128,30 @@ func normalizeNutsResponsePart(part string) (string, error) {
 func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 	levelStr := c.Query("level")
 	limitNull := normalizeNullableLimitQuery(c)
-	requestedLimit, err := parseOptionalIntQuery(c, "limit")
-	if err != nil {
-		respondBadRequest(c, err.Error())
-		return
+	// gin caches the query string on first access (c.Query("level") above), so
+	// c.Query("limit") still sees "null" after normalizeNullableLimitQuery
+	// removed it from the URL - only parse it as a number without limit=null.
+	var requestedLimit *int
+	var err error
+	if !limitNull {
+		requestedLimit, err = parseOptionalIntQuery(c, "limit")
+		if err != nil {
+			respondBadRequest(c, err.Error())
+			return
+		}
 	}
 	requestedOffset, err := parseOptionalIntQuery(c, "offset")
 	if err != nil {
 		respondBadRequest(c, err.Error())
 		return
 	}
-	limit, offset, err := resolvePagination(c, 100, derefInt(requestedLimit), derefInt(requestedOffset), limitNull)
+	if requestedLimit != nil && *requestedLimit > nutsMaxLimit {
+		respondBadRequest(c, fmt.Sprintf("limit darf höchstens %d sein (für alle Zeilen limit=null)", nutsMaxLimit))
+		return
+	}
+	// Validated here, before any DB access; the limit=null cap is applied by
+	// pagination.resolve once total is counted below.
+	pagination, err := parsePagination(c, 100, derefInt(requestedLimit), derefInt(requestedOffset), limitNull)
 	if err != nil {
 		respondBadRequest(c, err.Error())
 		return
@@ -172,6 +190,7 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 
 	result := make([]models.NutsRegionSummary, 0)
 	total := 0
+	levelDetailsList := make([]nutsLevelDetails, 0, len(levels))
 
 	for _, lvl := range levels {
 		levelDetails, err := nutsLevelDetailsFromLevel(lvl)
@@ -182,19 +201,32 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 			})
 			return
 		}
+		levelDetailsList = append(levelDetailsList, levelDetails)
 
 		var cnt int
-		if err := h.DB.QueryRow(buildQuery(levelDetails.Table, true)).Scan(&cnt); err != nil {
-			respondInternalError(c, fmt.Sprintf("Datenbankfehler (Level %d): %v", lvl, err))
+		if err := h.DB.QueryRowContext(c.Request.Context(), buildQuery(levelDetails.Table, true)).Scan(&cnt); err != nil {
+			respondDBError(c, fmt.Sprintf("Datenbankfehler (Level %d)", lvl), err)
 			return
 		}
 		total += cnt
+	}
 
+	// Pagination applies per level, so total-offset is an upper bound of the
+	// rows a limit=null request returns. With chunk_size the response is paged
+	// and the cap does not apply (resolve).
+	limit, offset, err := pagination.resolve(total)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+
+	for _, levelDetails := range levelDetailsList {
+		lvl := levelDetails.Number
 		rows := []dbRow{}
 		query := buildQuery(levelDetails.Table, false)
 		paginationQuery, paginationArgs := applyPaginationClause(query, 1, limit, offset)
-		if err := h.DB.Select(&rows, paginationQuery, paginationArgs...); err != nil {
-			respondInternalError(c, fmt.Sprintf("Datenbankfehler (Level %d): %v", lvl, err))
+		if err := h.DB.SelectContext(c.Request.Context(), &rows, paginationQuery, paginationArgs...); err != nil {
+			respondDBError(c, fmt.Sprintf("Datenbankfehler (Level %d)", lvl), err)
 			return
 		}
 
@@ -301,11 +333,8 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	if allStr == "true" {
 		query := `SELECT ` + selectCols + fromClause + ` ORDER BY year DESC`
 		rows := []models.NutsRegionData{}
-		if err := h.DB.Select(&rows, query, levelDetails.NormalizedID); err != nil {
-			c.JSON(http.StatusInternalServerError, models.APIResponse{
-				Success: false,
-				Error:   fmt.Sprintf("Datenbankfehler: %v", err),
-			})
+		if err := h.DB.SelectContext(c.Request.Context(), &rows, query, levelDetails.NormalizedID); err != nil {
+			respondDBError(c, "Datenbankfehler", err)
 			return
 		}
 		if len(rows) == 0 {
@@ -328,9 +357,9 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		}
 
 		metadata := nutsMetadata(levelDetails, rows[0].RegionName, rows[0].GeodataIDArs)
-		geometryWGS84, hasValidGeometry, err := h.lookupNutsGeometry(levelDetails.NormalizedID, geometryYear)
+		geometryWGS84, hasValidGeometry, err := h.lookupNutsGeometry(c.Request.Context(), levelDetails.NormalizedID, geometryYear)
 		if err != nil {
-			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+			respondDBError(c, "Datenbankfehler", err)
 			return
 		}
 		metadata.GeometryWGS84 = geometryWGS84
@@ -341,7 +370,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		}
 
 		if includeDatasets {
-			if datasets, dsErr := h.regionNutsDatasets(levelDetails.NormalizedID, levelDetails.Number); dsErr == nil {
+			if datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), levelDetails.NormalizedID, levelDetails.Number); dsErr == nil {
 				response.Datasets = datasets
 			}
 		}
@@ -367,7 +396,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	}
 
 	var row models.NutsRegionData
-	if err := h.DB.Get(&row, query, args...); err != nil {
+	if err := h.DB.GetContext(c.Request.Context(), &row, query, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			c.JSON(http.StatusNotFound, models.APIResponse{
 				Success: false,
@@ -375,17 +404,14 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, models.APIResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Datenbankfehler: %v", err),
-		})
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
 	metadata := nutsMetadata(levelDetails, row.RegionName, row.GeodataIDArs)
-	geometryWGS84, hasValidGeometry, err := h.lookupNutsGeometry(levelDetails.NormalizedID, geometryYear)
+	geometryWGS84, hasValidGeometry, err := h.lookupNutsGeometry(c.Request.Context(), levelDetails.NormalizedID, geometryYear)
 	if err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 	metadata.GeometryWGS84 = geometryWGS84
@@ -403,7 +429,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	}
 
 	if includeDatasets {
-		if datasets, dsErr := h.regionNutsDatasets(levelDetails.NormalizedID, levelDetails.Number); dsErr == nil {
+		if datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), levelDetails.NormalizedID, levelDetails.Number); dsErr == nil {
 			response.Datasets = datasets
 		}
 	}
@@ -454,11 +480,8 @@ func (h *Handler) GetNutsRegionVersions(c *gin.Context) {
 		FROM transformed_data.mart_nuts_geometry_historized
 		WHERE nuts_id = $1
 		ORDER BY valid_from DESC`
-	if err := h.DB.Select(&periods, query, levelDetails.NormalizedID); err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Datenbankfehler: %v", err),
-		})
+	if err := h.DB.SelectContext(c.Request.Context(), &periods, query, levelDetails.NormalizedID); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -518,8 +541,8 @@ func (h *Handler) GetNutsLauAggregate(c *gin.Context) {
 		FROM transformed_data.mart_nuts3_lau_aggregate
 		WHERE nuts3_id = $1
 		ORDER BY year DESC`
-	if err := h.DB.Select(&series, query, levelDetails.NormalizedID); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &series, query, levelDetails.NormalizedID); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -578,8 +601,8 @@ func (h *Handler) GetNutsDatasetAggregateTimeseries(c *gin.Context) {
 		FROM transformed_data.mart_nuts012_dataset_aggregate
 		WHERE nuts_id = $1 AND dataset_slug = $2
 		ORDER BY year DESC`
-	if err := h.DB.Select(&points, query, levelDetails.NormalizedID, cfg.RouteSlug); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &points, query, levelDetails.NormalizedID, cfg.RouteSlug); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 

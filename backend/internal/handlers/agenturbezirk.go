@@ -28,8 +28,8 @@ func (h *Handler) GetAgenturbezirke(c *gin.Context) {
 		ORDER BY ba_schl`
 
 	agenturbezirke := []models.AgenturbezirkSummary{}
-	if err := h.DB.Select(&agenturbezirke, query); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &agenturbezirke, query); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -63,13 +63,13 @@ func (h *Handler) GetAgenturbezirkByID(c *gin.Context) {
 		WHERE ba_schl = $1`
 
 	var agenturbezirk models.AgenturbezirkSummary
-	err := h.DB.Get(&agenturbezirk, query, baSchl)
+	err := h.DB.GetContext(c.Request.Context(), &agenturbezirk, query, baSchl)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			respondNotFound(c, "Agenturbezirk nicht gefunden")
 			return
 		}
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -97,8 +97,8 @@ func (h *Handler) GetAgenturbezirkArbeitslosigkeit(c *gin.Context) {
 	baSchl := strings.TrimSpace(c.Param("ba_schl"))
 
 	var exists bool
-	if err := h.DB.Get(&exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_sociodata WHERE ba_schl = $1)`, baSchl); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.GetContext(c.Request.Context(), &exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_sociodata WHERE ba_schl = $1)`, baSchl); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 	if !exists {
@@ -112,8 +112,8 @@ func (h *Handler) GetAgenturbezirkArbeitslosigkeit(c *gin.Context) {
 		ORDER BY observation_date`
 
 	points := []models.AgenturbezirkArbeitslosigkeitPoint{}
-	if err := h.DB.Select(&points, query, baSchl); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &points, query, baSchl); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -139,8 +139,8 @@ func (h *Handler) GetAgenturbezirkeLatest(c *gin.Context) {
 		ORDER BY ba_schl`
 
 	latest := []models.AgenturbezirkLatestValue{}
-	if err := h.DB.Select(&latest, query); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &latest, query); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -171,8 +171,8 @@ func (h *Handler) GetAgenturbezirkePeriods(c *gin.Context) {
 		ORDER BY year DESC, month DESC`
 
 	periods := []models.AgenturbezirkPeriod{}
-	if err := h.DB.Select(&periods, query); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &periods, query); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -218,8 +218,8 @@ func (h *Handler) GetAgenturbezirkeByPeriod(c *gin.Context) {
 		ORDER BY ba_schl`
 
 	values := []models.AgenturbezirkLatestValue{}
-	if err := h.DB.Select(&values, query, filter.Year, filter.Month); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &values, query, filter.Year, filter.Month); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -249,8 +249,8 @@ func (h *Handler) GetAgenturbezirkNuts3(c *gin.Context) {
 	baSchl := strings.TrimSpace(c.Param("ba_schl"))
 
 	var exists bool
-	if err := h.DB.Get(&exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_sociodata WHERE ba_schl = $1)`, baSchl); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.GetContext(c.Request.Context(), &exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_sociodata WHERE ba_schl = $1)`, baSchl); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 	if !exists {
@@ -265,8 +265,8 @@ func (h *Handler) GetAgenturbezirkNuts3(c *gin.Context) {
 		ORDER BY area_share_of_agentur DESC`
 
 	shares := []models.AgenturNuts3Share{}
-	if err := h.DB.Select(&shares, query, baSchl); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &shares, query, baSchl); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -295,8 +295,8 @@ func (h *Handler) GetAgenturbezirkNutsHierarchy(c *gin.Context) {
 	baSchl := strings.TrimSpace(c.Param("ba_schl"))
 
 	var exists bool
-	if err := h.DB.Get(&exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_latest WHERE ba_schl = $1)`, baSchl); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.GetContext(c.Request.Context(), &exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_latest WHERE ba_schl = $1)`, baSchl); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 	if !exists {
@@ -310,8 +310,8 @@ func (h *Handler) GetAgenturbezirkNutsHierarchy(c *gin.Context) {
 		ORDER BY nuts_level DESC, area_share_of_agentur DESC`
 
 	rows := []models.AgenturNutsMembership{}
-	if err := h.DB.Select(&rows, query, baSchl); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &rows, query, baSchl); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -352,8 +352,8 @@ func (h *Handler) GetNutsAgenturbezirke(c *gin.Context) {
 		ORDER BY m.is_fully_contained DESC, m.area_share_of_agentur DESC, l.name`
 
 	rows := []models.NutsAgenturbezirk{}
-	if err := h.DB.Select(&rows, query, details.NormalizedID); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &rows, query, details.NormalizedID); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -385,8 +385,8 @@ func (h *Handler) GetAgenturbezirkDatasetAggregateTimeseries(c *gin.Context) {
 	baSchl := strings.TrimSpace(c.Param("ba_schl"))
 
 	var exists bool
-	if err := h.DB.Get(&exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_sociodata WHERE ba_schl = $1)`, baSchl); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.GetContext(c.Request.Context(), &exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_sociodata WHERE ba_schl = $1)`, baSchl); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 	if !exists {
@@ -406,8 +406,8 @@ func (h *Handler) GetAgenturbezirkDatasetAggregateTimeseries(c *gin.Context) {
 		FROM transformed_data.mart_agentur_dataset_aggregate
 		WHERE ba_schl = $1 AND dataset_slug = $2
 		ORDER BY year DESC`
-	if err := h.DB.Select(&points, query, baSchl, cfg.RouteSlug); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &points, query, baSchl, cfg.RouteSlug); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -431,8 +431,8 @@ func (h *Handler) GetAgenturbezirkDatasetAggregateYears(c *gin.Context) {
 	query := `SELECT DISTINCT dataset_slug, year
 		FROM transformed_data.mart_agentur_dataset_aggregate
 		ORDER BY dataset_slug, year DESC`
-	if err := h.DB.Select(&rows, query); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &rows, query); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -475,8 +475,8 @@ func (h *Handler) GetAgenturbezirkeDatasetAggregateByYear(c *gin.Context) {
 		FROM transformed_data.mart_agentur_dataset_aggregate
 		WHERE dataset_slug = $1 AND year = $2
 		ORDER BY ba_schl`
-	if err := h.DB.Select(&points, query, cfg.RouteSlug, filter.Year); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &points, query, cfg.RouteSlug, filter.Year); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 

@@ -210,8 +210,8 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
 	var total int
-	if err := h.DB.QueryRow(countQuery, args...).Scan(&total); err != nil {
-		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+	if err := h.DB.QueryRowContext(c.Request.Context(), countQuery, args...).Scan(&total); err != nil {
+		respondDBError(c, "Fehler beim Zählen der Datensätze", err)
 		return
 	}
 
@@ -225,6 +225,7 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 		filter.Limit,
 		filter.Offset,
 		limitNull,
+		total,
 	)
 	if err != nil {
 		respondBadRequest(c, err.Error())
@@ -234,8 +235,8 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 	args = pagedArgs
 
 	data := make([]T, 0)
-	if err := h.DB.Select(&data, query, args...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &data, query, args...); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -343,8 +344,8 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
 	var total int
-	if err := h.DB.QueryRow(countQuery, args...).Scan(&total); err != nil {
-		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+	if err := h.DB.QueryRowContext(c.Request.Context(), countQuery, args...).Scan(&total); err != nil {
+		respondDBError(c, "Fehler beim Zählen der Datensätze", err)
 		return
 	}
 
@@ -358,6 +359,7 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 		filter.Limit,
 		filter.Offset,
 		limitNull,
+		total,
 	)
 	if err != nil {
 		respondBadRequest(c, err.Error())
@@ -365,8 +367,8 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 	}
 
 	points := make([]models.NutsTimeseriesPoint, 0)
-	if err := h.DB.Select(&points, pagedQuery, pagedArgs...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &points, pagedQuery, pagedArgs...); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 

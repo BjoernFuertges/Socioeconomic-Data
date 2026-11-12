@@ -2801,8 +2801,20 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
@@ -3823,7 +3835,7 @@ const docTemplate = `{
         },
         "/geo/query": {
             "post": {
-                "description": "Führt eine räumliche Abfrage (intersects/contains) gegen NUTS oder LAU Geometrien aus.",
+                "description": "Führt eine räumliche Abfrage (intersects/contains) gegen NUTS oder LAU Geometrien aus.\nBody höchstens 5 MiB (sonst 413), Geometrie höchstens 200000 Stützpunkte, in WGS84 ([lon, lat]) (sonst 400). Punkte und Linien sind erlaubt und müssen OGC-gültig sein (sonst 400).\nPolygone/MultiPolygone (z. B. selbstschneidend) und GeometryCollections werden wie bei POST /custom-regions/dataset-aggregate mit ST_MakeValid repariert statt abgelehnt; ohne Restfläche 400. Von PostGIS abgelehnte Eingaben ergeben 400 mit fester Meldung ('Ungültiges GeoJSON' bzw. 'Geometrie nicht transformierbar').",
                 "consumes": [
                     "application/json"
                 ],
@@ -3873,8 +3885,20 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
                     },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
@@ -4988,7 +5012,7 @@ const docTemplate = `{
         },
         "/metrics": {
             "get": {
-                "description": "Berechnet Min, Max, Mittelwert, Median und Standardabweichung je Jahr für einen oder mehrere Datensätze.\nMehrere 'dataset'-Parameter kombinieren unterschiedliche Datensätze in einer Antwort.\nMit 'geodata_id_nuts' werden zusätzlich der Regionalwert und das Ranking der Region zurückgegeben.\nFür aufeinanderfolgende Jahre wird die prozentuale Veränderung (YoY) berechnet.",
+                "description": "Berechnet Min, Max, Mittelwert, Median und Standardabweichung je Jahr für einen oder mehrere Datensätze.\nMehrere 'dataset'-Parameter kombinieren unterschiedliche Datensätze in einer Antwort.\nMit 'geodata_id_nuts' werden zusätzlich der Regionalwert und das Ranking der Region zurückgegeben.\nFür aufeinanderfolgende Jahre wird die prozentuale Veränderung (YoY) berechnet.\nHarmonisierte Kreis-Datensätze werden aus mart_nuts3_sociodata_harmonized im NUTS-3-Stand 'nuts_version' berechnet (Default 2024; die Antwort nennt ihn in nuts_version), sodass jede Region je Jahr genau einmal zählt.\nNur gültige Werte gehen ein (has_valid_value; harmonisierte Werte nur, wenn alle beteiligten Quellwerte gültig sind); ausgeschlossene Werte zählt excluded_invalid_count je Jahr und Spalte, excluded_regions die betroffenen Regionen, meta.note erklärt das.\nSpalten ohne harmonisierte Entsprechung (beschaeftigungsquote_median, beschaeftigungsquote_ungewichtet, gemeinden_count von beschaeftigungsquote-nuts3) und nicht harmonisierte Datensätze (beschaeftigungsquote-gemeinden) kommen weiter ungeharmonisiert aus der Staging-Tabelle (nuts_version fehlt dann in der Antwort).",
                 "consumes": [
                     "application/json"
                 ],
@@ -5043,8 +5067,24 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "DEF01",
-                        "description": "NUTS-ID einer Region für Regionalwert und Ranking",
+                        "description": "NUTS-ID einer Region für Regionalwert und Ranking (im Stand nuts_version)",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            2003,
+                            2006,
+                            2010,
+                            2013,
+                            2016,
+                            2021,
+                            2024
+                        ],
+                        "type": "integer",
+                        "default": 2024,
+                        "description": "NUTS-3-Zielversion der harmonisierten Werte",
+                        "name": "nuts_version",
                         "in": "query"
                     }
                 ],
@@ -5081,13 +5121,19 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                        }
                     }
                 }
             }
         },
         "/metrics/derived": {
             "get": {
-                "description": "Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,\nAusbildungsquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.\nMit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.",
+                "description": "Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,\nAusbildungsquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.\nMit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.\nmeta.note: Es gehen nur gültige Werte ein; Zähler und Nenner müssen gültig sein.",
                 "consumes": [
                     "application/json"
                 ],
@@ -5125,7 +5171,7 @@ const docTemplate = `{
         },
         "/metrics/derived/{slug}": {
             "get": {
-                "description": "Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine\nabgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²).",
+                "description": "Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine\nabgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²).\nSind alle beteiligten Datensätze harmonisiert, werden Zähler und Nenner aus mart_nuts3_sociodata_harmonized im\nNUTS-3-Stand 'nuts_version' gelesen (Default 2024) und die Fläche aus der Geometrie desselben Stands; die Antwort nennt ihn in nuts_version.\nNur Regionen mit gültigem Zähler und Nenner gehen ein. Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Nenner oder Nenner 0),\nregions_without_geometry (keine Geometrie für den Flächennenner) und regions_without_denominator (kein Nennerwert) je Jahr; excluded_regions nennt die betroffenen Regionen insgesamt.",
                 "consumes": [
                     "application/json"
                 ],
@@ -5176,8 +5222,24 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "DEF01",
-                        "description": "NUTS-ID einer Region für Regionalwert und Ranking",
+                        "description": "NUTS-ID einer Region für Regionalwert und Ranking (im Stand nuts_version)",
                         "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            2003,
+                            2006,
+                            2010,
+                            2013,
+                            2016,
+                            2021,
+                            2024
+                        ],
+                        "type": "integer",
+                        "default": 2024,
+                        "description": "NUTS-3-Zielversion der harmonisierten Werte",
+                        "name": "nuts_version",
                         "in": "query"
                     }
                 ],
@@ -5200,6 +5262,12 @@ const docTemplate = `{
                             ]
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -5208,6 +5276,12 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
                         }
@@ -5246,7 +5320,7 @@ const docTemplate = `{
                         "type": "integer",
                         "default": 100,
                         "example": 100,
-                        "description": "Anzahl der Ergebnisse",
+                        "description": "Anzahl der Ergebnisse je Level (1-10000, oder null für alle)",
                         "name": "limit",
                         "in": "query"
                     },
@@ -8093,6 +8167,30 @@ const docTemplate = `{
                 "dataset": {
                     "type": "string",
                     "example": "schuldnerquote"
+                },
+                "excluded_invalid_count": {
+                    "description": "ExcludedInvalidCount sums DatasetYearMetrics.ExcludedInvalidCount over\nall years of the filter (also years without any valid value, which are\nmissing from by_year).",
+                    "type": "integer",
+                    "example": 5
+                },
+                "excluded_regions": {
+                    "description": "ExcludedRegions is the number of distinct regions with at least one\nvalue left out for any reason (invalid, no geometry, no denominator).",
+                    "type": "integer",
+                    "example": 3
+                },
+                "nuts_version": {
+                    "description": "NutsVersion is the NUTS-3 version the values were harmonized to; absent\nwhen the column has no harmonized counterpart and the unharmonized\nstaging values were used.",
+                    "type": "integer",
+                    "example": 2024
+                },
+                "regions_without_denominator": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "regions_without_geometry": {
+                    "description": "RegionsWithoutGeometry / RegionsWithoutDenominator: distinct regions\nleft out at least once for that reason (derived metrics only).",
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -8150,6 +8248,11 @@ const docTemplate = `{
         "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetYearMetrics": {
             "type": "object",
             "properties": {
+                "excluded_invalid_count": {
+                    "description": "ExcludedInvalidCount is the number of region values of this year left\nout as invalid (has_valid_value = false, missing value; for derived\nmetrics: numerator or denominator invalid, or a zero denominator).",
+                    "type": "integer",
+                    "example": 2
+                },
                 "max": {
                     "type": "number",
                     "example": 42.7
@@ -8181,6 +8284,16 @@ const docTemplate = `{
                 "regional_value": {
                     "type": "number",
                     "example": 9.4
+                },
+                "regions_without_denominator": {
+                    "description": "RegionsWithoutDenominator (derived metrics with a dataset denominator\nonly) counts regions of this year without a denominator value.",
+                    "type": "integer",
+                    "example": 0
+                },
+                "regions_without_geometry": {
+                    "description": "RegionsWithoutGeometry (derived metrics with the area denominator only)\ncounts regions of this year left out because no NUTS-3 geometry matches.",
+                    "type": "integer",
+                    "example": 1
                 },
                 "stddev": {
                     "type": "number",
@@ -8873,6 +8986,10 @@ const docTemplate = `{
                 "limit": {
                     "type": "integer",
                     "example": 100
+                },
+                "note": {
+                    "type": "string",
+                    "example": "Nur gültige Werte gehen in die Statistik ein"
                 },
                 "offset": {
                     "type": "integer",

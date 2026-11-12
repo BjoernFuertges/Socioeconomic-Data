@@ -1,10 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"sort"
 	"strings"
 
@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	customRegionMaxBodyBytes = 5 << 20 // 5 MiB GeoJSON
-	customRegionMaxPoints    = 200000
+	// Body size and vertex limits: geoJSONMaxBodyBytes / geoJSONMaxPoints
+	// (geojson_input.go), shared with POST /geo/query.
 	customRegionMaxDatasets  = 30
 	customRegionDefaultShare = 0.01
 	// From this area match (intersection / union) the polygon counts as exactly
@@ -100,14 +100,15 @@ var customRegionUnitsSQL = map[string]string{
 		WHERE has_valid_geometry`,
 }
 
-const customRegionPolyCTE = `poly AS (
-	SELECT ST_Multi(ST_CollectionExtract(
-		ST_UnaryUnion(ST_MakeValid(ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1), 4326), 3035))), 3)) AS g
+// customRegionPolyCTE prepares the polygon ($1) like every GeoJSON input
+// (geoJSONGeometrySQL: repaired with ST_MakeValid, areal part only).
+var customRegionPolyCTE = `poly AS (
+	SELECT ` + geoJSONGeometrySQL(geoJSONParsedSQL(1), "MultiPolygon") + ` AS g
 )`
 
 // customRegionExactMatchSQL finds the unit of a level whose area is (nearly)
 // identical to the polygon: intersection area / union area >= $2.
-const customRegionExactMatchSQL = `
+var customRegionExactMatchSQL = `
 WITH ` + customRegionPolyCTE + `,
 units AS (%s)
 SELECT u.unit_id::text
@@ -120,7 +121,7 @@ LIMIT 1`
 
 // $8 (optional): unit to which the aggregation is restricted when the polygon
 // exactly matches it (see customRegionExactMatchSQL).
-const customRegionAggregateSQL = `
+var customRegionAggregateSQL = `
 WITH ` + customRegionPolyCTE + `,
 units AS (%s),
 overlap AS (
@@ -173,14 +174,12 @@ func normalizeCustomRegionRequest(req *CustomRegionAggregateRequest) (geometryJS
 		return "", nil, 0, err
 	}
 
-	var geom struct {
-		Type string `json:"type"`
+	geomType, _, err := validateGeoJSONGeometry(geometryJSON)
+	if err != nil {
+		return "", nil, 0, err
 	}
-	if err := json.Unmarshal([]byte(geometryJSON), &geom); err != nil {
-		return "", nil, 0, fmt.Errorf("ungültiges GeoJSON: %v", err)
-	}
-	if geom.Type != "Polygon" && geom.Type != "MultiPolygon" {
-		return "", nil, 0, fmt.Errorf("geometry muss ein Polygon oder MultiPolygon sein, erhalten %q", geom.Type)
+	if geomType != "Polygon" && geomType != "MultiPolygon" {
+		return "", nil, 0, fmt.Errorf("geometry muss ein Polygon oder MultiPolygon sein, erhalten %q", geomType)
 	}
 
 	seen := map[string]bool{}
@@ -293,17 +292,17 @@ func customRegionRows(m customRegionMeta, agg []customRegionAggRow, matchedUnit 
 // @Failure 500 {object} models.APIResponse
 // @Router /custom-regions/datasets [get]
 func (h *Handler) ListCustomRegionDatasets(c *gin.Context) {
-	metas, err := h.loadCustomRegionMetas()
+	metas, err := h.loadCustomRegionMetas(c.Request.Context())
 	if err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 	respondList(c, metas, &models.MetaInfo{Total: len(metas)})
 }
 
-func (h *Handler) loadCustomRegionMetas() ([]customRegionMeta, error) {
+func (h *Handler) loadCustomRegionMetas(ctx context.Context) ([]customRegionMeta, error) {
 	metas := []customRegionMeta{}
-	err := h.DB.Select(&metas, `
+	err := h.DB.SelectContext(ctx, &metas, `
 		SELECT dataset_slug, indicator, level, measure_type, kind, finer_slug
 		FROM transformed_data.mart_dataset_aggregation_meta
 		ORDER BY dataset_slug, indicator`)
@@ -319,14 +318,13 @@ func (h *Handler) loadCustomRegionMetas() ([]customRegionMeta, error) {
 // @Param request body handlers.CustomRegionAggregateRequest true "GeoJSON-Region und Datensätze"
 // @Success 200 {object} models.APIResponse{data=[]handlers.CustomRegionAggregateRow}
 // @Failure 400 {object} models.APIResponse
+// @Failure 413 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
+// @Failure 503 {object} models.APIResponse
 // @Router /custom-regions/dataset-aggregate [post]
 func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, customRegionMaxBodyBytes)
-
 	var req CustomRegionAggregateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondBadRequest(c, fmt.Sprintf("Ungültiger Request-Body: %v", err))
+	if !bindGeoJSONBody(c, &req) {
 		return
 	}
 
@@ -336,34 +334,22 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 		return
 	}
 
-	// Check the polygon once (valid, non-empty, size limit). Parse/transform
-	// errors (e.g. coordinates outside WGS84) are user errors.
-	var check struct {
-		Points int  `db:"points"`
-		Empty  bool `db:"is_empty"`
-	}
-	err = h.DB.Get(&check, `
-		WITH poly AS (
-			SELECT ST_CollectionExtract(
-				ST_MakeValid(ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1), 4326), 3035)), 3) AS g
-		)
-		SELECT ST_NPoints(g) AS points, ST_IsEmpty(g) AS is_empty FROM poly`, geometryJSON)
-	if err != nil {
-		respondBadRequest(c, fmt.Sprintf("Ungültige Geometrie (erwartet GeoJSON in WGS84/EPSG:4326, [lon, lat]): %v", err))
+	// Check the polygon once (parse errors, non-empty after repair, vertex
+	// limit) with the same preparation as the aggregation queries
+	// (geoJSONGeometrySQL). Self-intersections are repaired, not rejected.
+	_, inputErr, dbErr := h.checkGeoJSONInDB(c.Request.Context(), "MultiPolygon", 1, "", []interface{}{geometryJSON})
+	if dbErr != nil {
+		respondDBError(c, "Geometrieprüfung", dbErr)
 		return
 	}
-	if check.Empty {
-		respondBadRequest(c, "Die Geometrie enthält keine Fläche")
-		return
-	}
-	if check.Points > customRegionMaxPoints {
-		respondBadRequest(c, fmt.Sprintf("Geometrie hat zu viele Stützpunkte (%d, maximal %d)", check.Points, customRegionMaxPoints))
+	if inputErr != nil {
+		respondBadRequest(c, inputErr.Error())
 		return
 	}
 
-	metas, err := h.loadCustomRegionMetas()
+	metas, err := h.loadCustomRegionMetas(c.Request.Context())
 	if err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 	bySlug := map[string][]customRegionMeta{}
@@ -386,7 +372,7 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 			return m, nil
 		}
 		var ids []string
-		err := h.DB.Select(&ids, fmt.Sprintf(customRegionExactMatchSQL, customRegionUnitsSQL[level]),
+		err := h.DB.SelectContext(c.Request.Context(), &ids, fmt.Sprintf(customRegionExactMatchSQL, customRegionUnitsSQL[level]),
 			geometryJSON, customRegionExactMatchIoU)
 		if err != nil {
 			return nil, err
@@ -405,15 +391,15 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 			for _, candidate := range customRegionLevelChain(requested, bySlug) {
 				matched, err := matchFor(candidate.Level)
 				if err != nil {
-					respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+					respondDBError(c, "Datenbankfehler", err)
 					return
 				}
 				var agg []customRegionAggRow
 				query := fmt.Sprintf(customRegionAggregateSQL, customRegionUnitsSQL[candidate.Level])
-				err = h.DB.Select(&agg, query, geometryJSON, minShare, candidate.Level,
+				err = h.DB.SelectContext(c.Request.Context(), &agg, query, geometryJSON, minShare, candidate.Level,
 					candidate.DatasetSlug, candidate.Indicator, req.FromYear, req.ToYear, matched)
 				if err != nil {
-					respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+					respondDBError(c, "Datenbankfehler", err)
 					return
 				}
 				rows := customRegionRows(candidate, agg, matched)

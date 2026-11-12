@@ -126,11 +126,57 @@ func extractGeoJSONGeometry(raw json.RawMessage) (string, error) {
 	}
 }
 
-func spatialPredicateSQL(operation string, geomColumn string, geoJSONParam int) string {
+// spatialPredicateSQL tests geomColumn against the prepared client geometry
+// geoInputRef (see geoJSONInputCTE).
+func spatialPredicateSQL(operation string, geomColumn string) string {
 	if operation == "contains" {
-		return fmt.Sprintf("ST_Contains(%s, ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($%d), 4326), 3035))", geomColumn, geoJSONParam)
+		return fmt.Sprintf("ST_Contains(%s, %s)", geomColumn, geoInputRef)
 	}
-	return fmt.Sprintf("ST_Intersects(%s, ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($%d), 4326), 3035))", geomColumn, geoJSONParam)
+	return fmt.Sprintf("ST_Intersects(%s, %s)", geomColumn, geoInputRef)
+}
+
+// geoSpatialQuery is the prepared spatial query of POST /geo/query: inner
+// selects the matching regions (no ORDER BY/LIMIT) and references the client
+// geometry as geoInputRef, bound at args[geomParam-1].
+type geoSpatialQuery struct {
+	inner     string
+	args      []interface{}
+	argPos    int
+	geomParam int
+	geomType  string
+}
+
+// count checks the client geometry and counts the matches in one statement
+// (geoJSONCheckSQL). It writes the 400/500/503 response itself; ok=false
+// means the handler must stop.
+func (q geoSpatialQuery) count(h *Handler, c *gin.Context) (total int, ok bool) {
+	total, inputErr, dbErr := h.checkGeoJSONInDB(c.Request.Context(), q.geomType, q.geomParam, q.inner, q.args)
+	if dbErr != nil {
+		respondDBError(c, "Fehler beim Zählen der Datensätze", dbErr)
+		return 0, false
+	}
+	if inputErr != nil {
+		respondBadRequest(c, inputErr.Error())
+		return 0, false
+	}
+	return total, true
+}
+
+// pageQuery returns the paginated query with the same geometry preparation
+// (geoJSONInputCTE) as count, so both see the identical (repaired) geometry.
+func (q geoSpatialQuery) pageQuery(c *gin.Context, orderByExpr string, filter models.GeoSpatialQueryRequest, total int) (string, []interface{}, int, error) {
+	return resolveAndApplyOrderedPagination(
+		c,
+		"WITH "+geoJSONInputCTE(q.geomParam, q.geomType)+" "+q.inner,
+		q.args,
+		q.argPos,
+		orderByExpr,
+		100,
+		filter.Limit,
+		filter.Offset,
+		false,
+		total,
+	)
 }
 
 // GetGeoRegions returns a unified list of NUTS, LAU or Agentur regions
@@ -226,8 +272,8 @@ func (h *Handler) getGeoRegionsAgentur(c *gin.Context, filter models.GeoRegionFi
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
 	var total int
-	if err := h.DB.Get(&total, countQuery, args...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+	if err := h.DB.GetContext(c.Request.Context(), &total, countQuery, args...); err != nil {
+		respondDBError(c, "Fehler beim Zählen der Datensätze", err)
 		return
 	}
 
@@ -241,6 +287,7 @@ func (h *Handler) getGeoRegionsAgentur(c *gin.Context, filter models.GeoRegionFi
 		filter.Limit,
 		filter.Offset,
 		limitNull,
+		total,
 	)
 	if err != nil {
 		respondBadRequest(c, err.Error())
@@ -257,8 +304,8 @@ func (h *Handler) getGeoRegionsAgentur(c *gin.Context, filter models.GeoRegionFi
 	}
 
 	rows := make([]row, 0)
-	if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &rows, pagedQuery, pagedArgs...); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -370,8 +417,8 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
 	var total int
-	if err := h.DB.Get(&total, countQuery, args...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+	if err := h.DB.GetContext(c.Request.Context(), &total, countQuery, args...); err != nil {
+		respondDBError(c, "Fehler beim Zählen der Datensätze", err)
 		return
 	}
 
@@ -385,6 +432,7 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 		filter.Limit,
 		filter.Offset,
 		limitNull,
+		total,
 	)
 	if err != nil {
 		respondBadRequest(c, err.Error())
@@ -402,8 +450,8 @@ func (h *Handler) getGeoRegionsLAU(c *gin.Context, filter models.GeoRegionFilter
 	}
 
 	rows := make([]row, 0)
-	if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &rows, pagedQuery, pagedArgs...); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -500,8 +548,8 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
 	var total int
-	if err := h.DB.Get(&total, countQuery, args...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+	if err := h.DB.GetContext(c.Request.Context(), &total, countQuery, args...); err != nil {
+		respondDBError(c, "Fehler beim Zählen der Datensätze", err)
 		return
 	}
 
@@ -515,6 +563,7 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 		filter.Limit,
 		filter.Offset,
 		limitNull,
+		total,
 	)
 	if err != nil {
 		respondBadRequest(c, err.Error())
@@ -533,8 +582,8 @@ func (h *Handler) getGeoRegionsNUTS(c *gin.Context, filter models.GeoRegionFilte
 	}
 
 	rows := make([]row, 0)
-	if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &rows, pagedQuery, pagedArgs...); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -664,8 +713,8 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 			FROM transformed_data.mart_nuts_geometry_historized
 			WHERE nuts_id = $1
 			ORDER BY valid_from DESC`
-		if err := h.DB.Select(&periods, query, details.NormalizedID); err != nil {
-			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		if err := h.DB.SelectContext(c.Request.Context(), &periods, query, details.NormalizedID); err != nil {
+			respondDBError(c, "Datenbankfehler", err)
 			return
 		}
 		if len(periods) == 0 {
@@ -697,12 +746,12 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 			FROM transformed_data.mart_agenturbezirk_sociodata
 			WHERE ba_schl = $1
 			LIMIT 1`
-		if err := h.DB.Get(&period, query, geoID); err != nil {
+		if err := h.DB.GetContext(c.Request.Context(), &period, query, geoID); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				respondNotFound(c, "Keine Versionsdaten für diese Geo-Region gefunden")
 				return
 			}
-			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+			respondDBError(c, "Datenbankfehler", err)
 			return
 		}
 
@@ -731,8 +780,8 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 		FROM transformed_data.mart_lau_geometry_historized
 		WHERE gisco_id = $1
 		ORDER BY valid_from DESC`
-	if err := h.DB.Select(&periods, query, normalizedGeoID); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &periods, query, normalizedGeoID); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 	if len(periods) == 0 {
@@ -753,18 +802,21 @@ func (h *Handler) GetGeoRegionVersions(c *gin.Context) {
 // QueryGeoRegionsByGeometry enables spatial region queries via GeoJSON.
 // @Summary Räumliche Geo-Abfrage via GeoJSON
 // @Description Führt eine räumliche Abfrage (intersects/contains) gegen NUTS oder LAU Geometrien aus.
+// @Description Body höchstens 5 MiB (sonst 413), Geometrie höchstens 200000 Stützpunkte, in WGS84 ([lon, lat]) (sonst 400). Punkte und Linien sind erlaubt und müssen OGC-gültig sein (sonst 400).
+// @Description Polygone/MultiPolygone (z. B. selbstschneidend) und GeometryCollections werden wie bei POST /custom-regions/dataset-aggregate mit ST_MakeValid repariert statt abgelehnt; ohne Restfläche 400. Von PostGIS abgelehnte Eingaben ergeben 400 mit fester Meldung ('Ungültiges GeoJSON' bzw. 'Geometrie nicht transformierbar').
 // @Tags Geo
 // @Accept json
 // @Produce json
 // @Param request body models.GeoSpatialQueryRequest true "GeoJSON-Abfrage. geometry_strategy und geometry_year wirken nur bei geo_type=nuts."
 // @Success 200 {object} models.APIResponse{data=[]models.GeoRegionSummary}
 // @Failure 400 {object} models.APIResponse
+// @Failure 413 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
+// @Failure 503 {object} models.APIResponse
 // @Router /geo/query [post]
 func (h *Handler) QueryGeoRegionsByGeometry(c *gin.Context) {
 	var filter models.GeoSpatialQueryRequest
-	if err := c.ShouldBindJSON(&filter); err != nil {
-		respondBadRequest(c, fmt.Sprintf("Ungültiger Request-Body: %v", err))
+	if !bindGeoJSONBody(c, &filter) {
 		return
 	}
 
@@ -799,6 +851,13 @@ func (h *Handler) QueryGeoRegionsByGeometry(c *gin.Context) {
 		respondBadRequest(c, err.Error())
 		return
 	}
+	// Points and lines stay allowed (intersects/contains against regions);
+	// only structure, WGS84 ranges and the vertex limit are checked here.
+	geomType, _, err := validateGeoJSONGeometry(geometryJSON)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
 
 	if filter.Limit == 0 {
 		filter.Limit = 100
@@ -811,20 +870,29 @@ func (h *Handler) QueryGeoRegionsByGeometry(c *gin.Context) {
 		respondBadRequest(c, "offset muss >= 0 sein")
 		return
 	}
+	// Validate chunk_size/chunk before any DB access; the sub-handlers resolve
+	// the pagination once total is known.
+	if _, err := parsePagination(c, 100, filter.Limit, filter.Offset, false); err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
 
+	// The PostGIS-side check (parse errors, OGC validity after repair) runs in
+	// the sub-handlers' count statement (geoSpatialQuery.count), before the
+	// page query, which would otherwise fail with a database 500.
 	if geoType == "lau" {
-		h.queryGeoRegionsLAU(c, filter, geometryJSON, operation)
+		h.queryGeoRegionsLAU(c, filter, geometryJSON, geomType, operation)
 		return
 	}
 	if geoType == "agentur" {
-		h.queryGeoRegionsAgentur(c, filter, geometryJSON, operation)
+		h.queryGeoRegionsAgentur(c, filter, geometryJSON, geomType, operation)
 		return
 	}
 
-	h.queryGeoRegionsNUTS(c, filter, geometryJSON, operation)
+	h.queryGeoRegionsNUTS(c, filter, geometryJSON, geomType, operation)
 }
 
-func (h *Handler) queryGeoRegionsAgentur(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, operation string) {
+func (h *Handler) queryGeoRegionsAgentur(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, geomType string, operation string) {
 	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
 	if filter.IncludeGeometry {
 		geometrySelect = `ST_AsGeoJSON(geometry_wgs84)::json AS geometry_wgs84, has_valid_geometry`
@@ -844,29 +912,15 @@ func (h *Handler) queryGeoRegionsAgentur(c *gin.Context, filter models.GeoSpatia
 	FROM transformed_data.stg_agenturbezirk_geometry
 	WHERE has_valid_geometry
 	  AND name IS NOT NULL
-	  AND ` + spatialPredicateSQL(operation, "ST_Transform(geometry_wgs84, 3035)", 1)
+	  AND ` + spatialPredicateSQL(operation, "ST_Transform(geometry_wgs84, 3035)")
 
-	args := []interface{}{geometryJSON}
-	argPos := 2
-
-	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
-	var total int
-	if err := h.DB.Get(&total, countQuery, args...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+	sq := geoSpatialQuery{inner: query, args: []interface{}{geometryJSON}, argPos: 2, geomParam: 1, geomType: geomType}
+	total, ok := sq.count(h, c)
+	if !ok {
 		return
 	}
 
-	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
-		c,
-		query,
-		args,
-		argPos,
-		"ba_schl",
-		100,
-		filter.Limit,
-		filter.Offset,
-		false,
-	)
+	pagedQuery, pagedArgs, offset, err := sq.pageQuery(c, "ba_schl", filter, total)
 	if err != nil {
 		respondBadRequest(c, err.Error())
 		return
@@ -882,8 +936,8 @@ func (h *Handler) queryGeoRegionsAgentur(c *gin.Context, filter models.GeoSpatia
 	}
 
 	rows := make([]row, 0)
-	if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &rows, pagedQuery, pagedArgs...); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -909,7 +963,7 @@ func (h *Handler) queryGeoRegionsAgentur(c *gin.Context, filter models.GeoSpatia
 	})
 }
 
-func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, operation string) {
+func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, geomType string, operation string) {
 	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
 	if filter.IncludeGeometry {
 		geometrySelect = `geometry_wgs84, has_valid_geometry`
@@ -925,7 +979,7 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 	FROM transformed_data.lau_integrated
 	WHERE has_valid_geometry
 	  AND lau_name IS NOT NULL
-	  AND ` + spatialPredicateSQL(operation, "geometry_3035", 1)
+	  AND ` + spatialPredicateSQL(operation, "geometry_3035")
 
 	args := []interface{}{geometryJSON}
 	argPos := 2
@@ -964,24 +1018,13 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 		query += " AND year = (SELECT MAX(year) FROM transformed_data.lau_integrated)"
 	}
 
-	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
-	var total int
-	if err := h.DB.Get(&total, countQuery, args...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+	sq := geoSpatialQuery{inner: query, args: args, argPos: argPos, geomParam: 1, geomType: geomType}
+	total, ok := sq.count(h, c)
+	if !ok {
 		return
 	}
 
-	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
-		c,
-		query,
-		args,
-		argPos,
-		"gisco_id, year DESC",
-		100,
-		filter.Limit,
-		filter.Offset,
-		false,
-	)
+	pagedQuery, pagedArgs, offset, err := sq.pageQuery(c, "gisco_id, year DESC", filter, total)
 	if err != nil {
 		respondBadRequest(c, err.Error())
 		return
@@ -998,8 +1041,8 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 	}
 
 	rows := make([]row, 0)
-	if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &rows, pagedQuery, pagedArgs...); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -1020,11 +1063,11 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 	if filter.IncludeDatasets {
 		for i := range data {
 			var nuts3Code string
-			if err := h.DB.Get(&nuts3Code,
+			if err := h.DB.GetContext(c.Request.Context(), &nuts3Code,
 				`SELECT nuts3_id FROM transformed_data.lau_integrated WHERE gisco_id = $1 AND nuts3_id IS NOT NULL AND lau_name IS NOT NULL LIMIT 1`,
 				data[i].GeoID,
 			); err == nil && nuts3Code != "" {
-				if datasets, dsErr := h.regionNutsDatasets(nuts3Code, 3); dsErr == nil {
+				if datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), nuts3Code, 3); dsErr == nil {
 					data[i].Datasets = datasets
 				}
 			}
@@ -1041,14 +1084,29 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 	})
 }
 
-func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, operation string) {
+func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQueryRequest, geometryJSON string, geomType string, operation string) {
 	geometrySelect := `'null'::json AS geometry_wgs84, null::boolean AS has_valid_geometry`
 	if filter.IncludeGeometry {
 		geometrySelect = `base.geometry_wgs84, base.has_valid_geometry`
 	}
 
 	argPos := 1
-	query := `WITH base AS (
+	// base is a subquery rather than a CTE so the statement can be prefixed
+	// with geoJSONInputCTE.
+	query := `SELECT
+			base.nuts_id AS geo_id,
+			'NUTS' AS geo_type,
+			base.region_name,
+			base.levl_code AS nuts_level,
+			CASE base.levl_code
+				WHEN 0 THEN 'NUTS-0'
+				WHEN 1 THEN 'NUTS-1'
+				WHEN 2 THEN 'NUTS-2'
+				ELSE 'NUTS-3'
+			END AS nuts_level_code,
+			` + geometrySelect + `,
+			base.max_vintage_year AS year
+		FROM (
 		SELECT DISTINCT ON (nuts_id)
 			nuts_id,
 			levl_code,
@@ -1089,44 +1147,19 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 	}
 	query += `
 		ORDER BY nuts_id, valid_from DESC
-	)
-	SELECT
-		base.nuts_id AS geo_id,
-		'NUTS' AS geo_type,
-		base.region_name,
-		base.levl_code AS nuts_level,
-		CASE base.levl_code
-			WHEN 0 THEN 'NUTS-0'
-			WHEN 1 THEN 'NUTS-1'
-			WHEN 2 THEN 'NUTS-2'
-			ELSE 'NUTS-3'
-		END AS nuts_level_code,
-		null::text AS country_code,
-		` + geometrySelect + `,
-		base.max_vintage_year AS year
-	FROM base
-	WHERE ` + spatialPredicateSQL(operation, "base.geometry_3035", argPos)
+		) base
+		WHERE ` + spatialPredicateSQL(operation, "base.geometry_3035")
+	geomParam := argPos
 	args = append(args, geometryJSON)
 	argPos++
 
-	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
-	var total int
-	if err := h.DB.Get(&total, countQuery, args...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+	sq := geoSpatialQuery{inner: query, args: args, argPos: argPos, geomParam: geomParam, geomType: geomType}
+	total, ok := sq.count(h, c)
+	if !ok {
 		return
 	}
 
-	pagedQuery, pagedArgs, offset, err := resolveAndApplyOrderedPagination(
-		c,
-		query,
-		args,
-		argPos,
-		"geo_id, year DESC",
-		100,
-		filter.Limit,
-		filter.Offset,
-		false,
-	)
+	pagedQuery, pagedArgs, offset, err := sq.pageQuery(c, "geo_id, year DESC", filter, total)
 	if err != nil {
 		respondBadRequest(c, err.Error())
 		return
@@ -1144,8 +1177,8 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 	}
 
 	rows := make([]row, 0)
-	if err := h.DB.Select(&rows, pagedQuery, pagedArgs...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &rows, pagedQuery, pagedArgs...); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -1172,7 +1205,7 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 	if filter.IncludeDatasets {
 		for i := range data {
 			if data[i].NutsLevel != nil && *data[i].NutsLevel == 3 {
-				if datasets, dsErr := h.regionNutsDatasets(data[i].GeoID, 3); dsErr == nil {
+				if datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), data[i].GeoID, 3); dsErr == nil {
 					data[i].Datasets = datasets
 				}
 			}

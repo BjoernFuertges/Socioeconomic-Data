@@ -115,9 +115,9 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
 	var total int
-	err := h.DB.Get(&total, countQuery, args...)
+	err := h.DB.GetContext(c.Request.Context(), &total, countQuery, args...)
 	if err != nil {
-		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+		respondDBError(c, "Fehler beim Zählen der Datensätze", err)
 		return
 	}
 
@@ -131,6 +131,7 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 		filter.Limit,
 		filter.Offset,
 		limitNull,
+		total,
 	)
 	if err != nil {
 		respondBadRequest(c, err.Error())
@@ -140,9 +141,9 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 	args = pagedArgs
 
 	regions := []models.LAURegion{}
-	err = h.DB.Select(&regions, query, args...)
+	err = h.DB.SelectContext(c.Request.Context(), &regions, query, args...)
 	if err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -195,20 +196,20 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 	}
 
 	var region models.LAURegion
-	err = h.DB.Get(&region, query, args...)
+	err = h.DB.GetContext(c.Request.Context(), &region, query, args...)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			respondNotFound(c, "LAU-Region nicht gefunden")
 			return
 		}
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
 	// nuts3_id is the canonical link (declared or spatially derived) - see the
 	// comment on models.LAURegion.NUTS3ID.
 	if includeDatasets && region.NUTS3ID.Valid {
-		datasets, dsErr := h.regionNutsDatasets(region.NUTS3ID.String, 3)
+		datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), region.NUTS3ID.String, 3)
 		if dsErr == nil {
 			region.Datasets = datasets
 		}
@@ -245,8 +246,8 @@ func (h *Handler) GetLAURegionVersions(c *gin.Context) {
 		FROM transformed_data.mart_lau_geometry_historized
 		WHERE gisco_id = $1
 		ORDER BY valid_from DESC`
-	if err := h.DB.Select(&periods, query, normalizedID); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &periods, query, normalizedID); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 	if len(periods) == 0 {

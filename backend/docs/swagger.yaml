@@ -782,6 +782,35 @@ definitions:
       dataset:
         example: schuldnerquote
         type: string
+      excluded_invalid_count:
+        description: |-
+          ExcludedInvalidCount sums DatasetYearMetrics.ExcludedInvalidCount over
+          all years of the filter (also years without any valid value, which are
+          missing from by_year).
+        example: 5
+        type: integer
+      excluded_regions:
+        description: |-
+          ExcludedRegions is the number of distinct regions with at least one
+          value left out for any reason (invalid, no geometry, no denominator).
+        example: 3
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion is the NUTS-3 version the values were harmonized to; absent
+          when the column has no harmonized counterpart and the unharmonized
+          staging values were used.
+        example: 2024
+        type: integer
+      regions_without_denominator:
+        example: 0
+        type: integer
+      regions_without_geometry:
+        description: |-
+          RegionsWithoutGeometry / RegionsWithoutDenominator: distinct regions
+          left out at least once for that reason (derived metrics only).
+        example: 1
+        type: integer
     type: object
   github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetQuellwert:
     properties:
@@ -821,6 +850,13 @@ definitions:
     type: object
   github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetYearMetrics:
     properties:
+      excluded_invalid_count:
+        description: |-
+          ExcludedInvalidCount is the number of region values of this year left
+          out as invalid (has_valid_value = false, missing value; for derived
+          metrics: numerator or denominator invalid, or a zero denominator).
+        example: 2
+        type: integer
       max:
         example: 42.7
         type: number
@@ -845,6 +881,18 @@ definitions:
       regional_value:
         example: 9.4
         type: number
+      regions_without_denominator:
+        description: |-
+          RegionsWithoutDenominator (derived metrics with a dataset denominator
+          only) counts regions of this year without a denominator value.
+        example: 0
+        type: integer
+      regions_without_geometry:
+        description: |-
+          RegionsWithoutGeometry (derived metrics with the area denominator only)
+          counts regions of this year left out because no NUTS-3 geometry matches.
+        example: 1
+        type: integer
       stddev:
         example: 4.5
         type: number
@@ -1392,6 +1440,9 @@ definitions:
       limit:
         example: 100
         type: integer
+      note:
+        example: Nur gültige Werte gehen in die Statistik ein
+        type: string
       offset:
         example: 0
         type: integer
@@ -4044,8 +4095,16 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+        "503":
+          description: Service Unavailable
           schema:
             $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Datensätze für eine Custom-Region (GeoJSON)
@@ -4888,8 +4947,10 @@ paths:
     post:
       consumes:
       - application/json
-      description: Führt eine räumliche Abfrage (intersects/contains) gegen NUTS oder
-        LAU Geometrien aus.
+      description: |-
+        Führt eine räumliche Abfrage (intersects/contains) gegen NUTS oder LAU Geometrien aus.
+        Body höchstens 5 MiB (sonst 413), Geometrie höchstens 200000 Stützpunkte, in WGS84 ([lon, lat]) (sonst 400). Punkte und Linien sind erlaubt und müssen OGC-gültig sein (sonst 400).
+        Polygone/MultiPolygone (z. B. selbstschneidend) und GeometryCollections werden wie bei POST /custom-regions/dataset-aggregate mit ST_MakeValid repariert statt abgelehnt; ohne Restfläche 400. Von PostGIS abgelehnte Eingaben ergeben 400 mit fester Meldung ('Ungültiges GeoJSON' bzw. 'Geometrie nicht transformierbar').
       parameters:
       - description: GeoJSON-Abfrage. geometry_strategy und geometry_year wirken nur
           bei geo_type=nuts.
@@ -4916,8 +4977,16 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+        "503":
+          description: Service Unavailable
           schema:
             $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Räumliche Geo-Abfrage via GeoJSON
@@ -5560,6 +5629,9 @@ paths:
         Mehrere 'dataset'-Parameter kombinieren unterschiedliche Datensätze in einer Antwort.
         Mit 'geodata_id_nuts' werden zusätzlich der Regionalwert und das Ranking der Region zurückgegeben.
         Für aufeinanderfolgende Jahre wird die prozentuale Veränderung (YoY) berechnet.
+        Harmonisierte Kreis-Datensätze werden aus mart_nuts3_sociodata_harmonized im NUTS-3-Stand 'nuts_version' berechnet (Default 2024; die Antwort nennt ihn in nuts_version), sodass jede Region je Jahr genau einmal zählt.
+        Nur gültige Werte gehen ein (has_valid_value; harmonisierte Werte nur, wenn alle beteiligten Quellwerte gültig sind); ausgeschlossene Werte zählt excluded_invalid_count je Jahr und Spalte, excluded_regions die betroffenen Regionen, meta.note erklärt das.
+        Spalten ohne harmonisierte Entsprechung (beschaeftigungsquote_median, beschaeftigungsquote_ungewichtet, gemeinden_count von beschaeftigungsquote-nuts3) und nicht harmonisierte Datensätze (beschaeftigungsquote-gemeinden) kommen weiter ungeharmonisiert aus der Staging-Tabelle (nuts_version fehlt dann in der Antwort).
       parameters:
       - collectionFormat: multi
         description: Datensatz-Slug(s), z.B. schuldnerquote (mehrfach angeben für
@@ -5591,11 +5663,24 @@ paths:
         in: query
         name: nuts_parent_id
         type: string
-      - description: NUTS-ID einer Region für Regionalwert und Ranking
+      - description: NUTS-ID einer Region für Regionalwert und Ranking (im Stand nuts_version)
         example: DEF01
         in: query
         name: geodata_id_nuts
         type: string
+      - default: 2024
+        description: NUTS-3-Zielversion der harmonisierten Werte
+        enum:
+        - 2003
+        - 2006
+        - 2010
+        - 2013
+        - 2016
+        - 2021
+        - 2024
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -5618,6 +5703,10 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Statistische Metriken für Soziodata-Datensätze
       tags:
       - Metriken
@@ -5629,6 +5718,7 @@ paths:
         Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,
         Ausbildungsquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.
         Mit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.
+        meta.note: Es gehen nur gültige Werte ein; Zähler und Nenner müssen gültig sein.
       produces:
       - application/json
       responses:
@@ -5653,6 +5743,10 @@ paths:
       description: |-
         Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine
         abgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²).
+        Sind alle beteiligten Datensätze harmonisiert, werden Zähler und Nenner aus mart_nuts3_sociodata_harmonized im
+        NUTS-3-Stand 'nuts_version' gelesen (Default 2024) und die Fläche aus der Geometrie desselben Stands; die Antwort nennt ihn in nuts_version.
+        Nur Regionen mit gültigem Zähler und Nenner gehen ein. Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Nenner oder Nenner 0),
+        regions_without_geometry (keine Geometrie für den Flächennenner) und regions_without_denominator (kein Nennerwert) je Jahr; excluded_regions nennt die betroffenen Regionen insgesamt.
       parameters:
       - description: Slug der abgeleiteten Metrik
         example: bevoelkerungsdichte
@@ -5680,11 +5774,24 @@ paths:
         in: query
         name: nuts_parent_id
         type: string
-      - description: NUTS-ID einer Region für Regionalwert und Ranking
+      - description: NUTS-ID einer Region für Regionalwert und Ranking (im Stand nuts_version)
         example: DEF01
         in: query
         name: geodata_id_nuts
         type: string
+      - default: 2024
+        description: NUTS-3-Zielversion der harmonisierten Werte
+        enum:
+        - 2003
+        - 2006
+        - 2010
+        - 2013
+        - 2016
+        - 2021
+        - 2024
+        in: query
+        name: nuts_version
+        type: integer
       produces:
       - application/json
       responses:
@@ -5697,12 +5804,20 @@ paths:
                 data:
                   $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.DatasetMetricsResult'
               type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "404":
           description: Not Found
           schema:
             $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
         "500":
           description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+        "503":
+          description: Service Unavailable
           schema:
             $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
       summary: Statistiken für eine abgeleitete Metrik
@@ -5726,7 +5841,7 @@ paths:
         name: level
         type: integer
       - default: 100
-        description: Anzahl der Ergebnisse
+        description: Anzahl der Ergebnisse je Level (1-10000, oder null für alle)
         example: 100
         in: query
         name: limit

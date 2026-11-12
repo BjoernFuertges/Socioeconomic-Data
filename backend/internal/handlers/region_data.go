@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -175,11 +176,11 @@ func (h *Handler) GetRegionData(c *gin.Context) {
 	rows := []models.RegionDataRow{}
 	switch regionType {
 	case "nuts":
-		rows, err = h.regionDataNuts(regionID, scope, slugs, filter)
+		rows, err = h.regionDataNuts(c.Request.Context(), regionID, scope, slugs, filter)
 	case "lau":
-		rows, err = h.regionDataLau(regionID, scope, slugs, filter)
+		rows, err = h.regionDataLau(c.Request.Context(), regionID, scope, slugs, filter)
 	case "agentur":
-		rows, err = h.regionDataAgentur(regionID, scope, slugs, filter)
+		rows, err = h.regionDataAgentur(c.Request.Context(), regionID, scope, slugs, filter)
 	default:
 		respondBadRequest(c, "region_type muss nuts, lau oder agentur sein")
 		return
@@ -191,7 +192,7 @@ func (h *Handler) GetRegionData(c *gin.Context) {
 		case regionNotFoundError:
 			respondNotFound(c, e.Error())
 		default:
-			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+			respondDBError(c, "Datenbankfehler", err)
 		}
 		return
 	}
@@ -210,7 +211,7 @@ type regionNotFoundError struct{ msg string }
 
 func (e regionNotFoundError) Error() string { return e.msg }
 
-func (h *Handler) regionDataNuts(regionID string, scope regionScope, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
+func (h *Handler) regionDataNuts(ctx context.Context, regionID string, scope regionScope, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
 	details, err := nutsLevelDetailsFromID(regionID)
 	if err != nil {
 		return nil, regionInputError{err.Error()}
@@ -235,14 +236,14 @@ func (h *Handler) regionDataNuts(regionID string, scope regionScope, slugs []str
 				query += " ORDER BY dataset_slug, year"
 
 				var part []models.RegionDataRow
-				if err := h.DB.Select(&part, query, args...); err != nil {
+				if err := h.DB.SelectContext(ctx, &part, query, args...); err != nil {
 					return nil, err
 				}
 				rows = append(rows, part...)
 			}
 		}
 		if scope.Aggregated {
-			part, err := h.lauAggregateRows(id, slugs, filter)
+			part, err := h.lauAggregateRows(ctx, id, slugs, filter)
 			if err != nil {
 				return nil, err
 			}
@@ -270,7 +271,7 @@ func (h *Handler) regionDataNuts(regionID string, scope regionScope, slugs []str
 	}
 	query, args = addYearRange(query, args, "year", filter)
 	query += " ORDER BY dataset_slug, year"
-	if err := h.DB.Select(&rows, query, args...); err != nil {
+	if err := h.DB.SelectContext(ctx, &rows, query, args...); err != nil {
 		return nil, err
 	}
 	return rows, nil
@@ -278,7 +279,7 @@ func (h *Handler) regionDataNuts(regionID string, scope regionScope, slugs []str
 
 // lauAggregateRows converts the two columns of mart_nuts3_lau_aggregate into
 // long format (one row per indicator per year).
-func (h *Handler) lauAggregateRows(nuts3ID string, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
+func (h *Handler) lauAggregateRows(ctx context.Context, nuts3ID string, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
 	wantPop, wantQuote := len(slugs) == 0, len(slugs) == 0
 	for _, slug := range slugs {
 		switch slug {
@@ -299,7 +300,7 @@ func (h *Handler) lauAggregateRows(nuts3ID string, slugs []string, filter region
 	query += " ORDER BY year"
 
 	var series []models.NutsLauAggregatePoint
-	if err := h.DB.Select(&series, query, args...); err != nil {
+	if err := h.DB.SelectContext(ctx, &series, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -321,7 +322,7 @@ func (h *Handler) lauAggregateRows(nuts3ID string, slugs []string, filter region
 	return rows, nil
 }
 
-func (h *Handler) regionDataLau(regionID string, scope regionScope, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
+func (h *Handler) regionDataLau(ctx context.Context, regionID string, scope regionScope, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
 	rows := []models.RegionDataRow{}
 	// LAU has no aggregated values - raw values only.
 	if !scope.Raw {
@@ -344,15 +345,15 @@ func (h *Handler) regionDataLau(regionID string, scope regionScope, slugs []stri
 	}
 	query, args = addYearRange(query, args, "year", filter)
 	query += " ORDER BY dataset_slug, year"
-	if err := h.DB.Select(&rows, query, args...); err != nil {
+	if err := h.DB.SelectContext(ctx, &rows, query, args...); err != nil {
 		return nil, err
 	}
 	return rows, nil
 }
 
-func (h *Handler) regionDataAgentur(baSchl string, scope regionScope, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
+func (h *Handler) regionDataAgentur(ctx context.Context, baSchl string, scope regionScope, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
 	var exists bool
-	if err := h.DB.Get(&exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_sociodata WHERE ba_schl = $1)`, baSchl); err != nil {
+	if err := h.DB.GetContext(ctx, &exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_sociodata WHERE ba_schl = $1)`, baSchl); err != nil {
 		return nil, err
 	}
 	if !exists {
@@ -380,7 +381,7 @@ func (h *Handler) regionDataAgentur(baSchl string, scope regionScope, slugs []st
 			query += " ORDER BY observation_date"
 
 			var points []models.AgenturbezirkArbeitslosigkeitPoint
-			if err := h.DB.Select(&points, query, args...); err != nil {
+			if err := h.DB.SelectContext(ctx, &points, query, args...); err != nil {
 				return nil, err
 			}
 			for _, p := range points {
@@ -419,7 +420,7 @@ func (h *Handler) regionDataAgentur(baSchl string, scope regionScope, slugs []st
 			query += " ORDER BY dataset_slug, year"
 
 			var part []models.RegionDataRow
-			if err := h.DB.Select(&part, query, args...); err != nil {
+			if err := h.DB.SelectContext(ctx, &part, query, args...); err != nil {
 				return nil, err
 			}
 			rows = append(rows, part...)

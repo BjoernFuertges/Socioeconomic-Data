@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -20,6 +21,39 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
+
+// statementTimeoutMs caps every statement on the API's connections server-side,
+// so a runaway query cannot hold a pool connection beyond the 120s
+// WriteTimeout. Handlers additionally pass the request context, which cancels
+// the query when the client disconnects.
+const statementTimeoutMs = 60000
+
+// buildConnString assembles the libpq key/value DSN including the
+// statement_timeout session option. Every value is quoted (dsnValue), so
+// passwords etc. with spaces, quotes or backslashes - or empty values - are
+// passed through unchanged instead of breaking or shifting the DSN.
+func buildConnString(host, port, user, password, dbname, sslmode string) string {
+	pairs := []struct{ key, value string }{
+		{"host", host},
+		{"port", port},
+		{"user", user},
+		{"password", password},
+		{"dbname", dbname},
+		{"sslmode", sslmode},
+		{"options", fmt.Sprintf("-c statement_timeout=%d", statementTimeoutMs)},
+	}
+	parts := make([]string, 0, len(pairs))
+	for _, p := range pairs {
+		parts = append(parts, p.key+"="+dsnValue(p.value))
+	}
+	return strings.Join(parts, " ")
+}
+
+// dsnValue quotes a value for a libpq key/value connection string: wrapped in
+// single quotes, with backslash and single quote escaped by a backslash.
+func dsnValue(v string) string {
+	return "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(v) + "'"
+}
 
 // @title Sozioökonomische Daten API
 // @version dev
@@ -43,8 +77,7 @@ func main() {
 
 	// sslmode defaults to disable because the DB is only reachable on the private
 	// compose network; set DB_SSLMODE=require for a remote database.
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"),
+	connStr := buildConnString(os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"),
 		os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"), config.Getenv("DB_SSLMODE", "disable"))
 
 	db, err := sqlx.Connect("postgres", connStr)
@@ -58,6 +91,12 @@ func main() {
 	db.SetConnMaxLifetime(30 * time.Minute)
 
 	log.Println("Database connection established")
+
+	if rows, err := handlers.ConfigureUnlimitedRowsCap(db); err != nil {
+		log.Printf("Warning: could not size limit=null cap from table statistics, using %d: %v", rows, err)
+	} else {
+		log.Printf("limit=null row cap: %d", rows)
+	}
 
 	derivedCatalog, err := models.LoadMetricsCatalog("metrics_catalog.yaml")
 	if err != nil {

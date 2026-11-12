@@ -61,8 +61,8 @@ func (h *Handler) GetSoziooekonomischesInventar(c *gin.Context) {
 	query += ` ORDER BY dataset, year DESC, geodata_level`
 
 	inventory := make([]models.SoziooekonomischesInventarEintrag, 0)
-	if err := h.DB.Select(&inventory, query, args...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler beim Soziodaten-Inventar: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &inventory, query, args...); err != nil {
+		respondDBError(c, "Datenbankfehler beim Soziodaten-Inventar", err)
 		return
 	}
 

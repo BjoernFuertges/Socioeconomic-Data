@@ -1,9 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -18,7 +18,7 @@ import (
 // already aggregates the same Kreis-grain datasets up to these levels (see
 // the model comment there). Both return the same (dataset_slug, year) row
 // shape, so the grouping below applies to both.
-func (h *Handler) regionNutsDatasets(nutsID string, level int) ([]models.RegionDataset, error) {
+func (h *Handler) regionNutsDatasets(ctx context.Context, nutsID string, level int) ([]models.RegionDataset, error) {
 	type row struct {
 		DatasetSlug string `db:"dataset_slug"`
 		Year        int    `db:"year"`
@@ -30,7 +30,7 @@ func (h *Handler) regionNutsDatasets(nutsID string, level int) ([]models.RegionD
 		 WHERE nuts_id = $1 ORDER BY dataset_slug, year`
 	}
 	var rows []row
-	if err := h.DB.Select(&rows, query, nutsID); err != nil {
+	if err := h.DB.SelectContext(ctx, &rows, query, nutsID); err != nil {
 		return nil, err
 	}
 
@@ -75,9 +75,9 @@ func (h *Handler) GetNutsDatasets(c *gin.Context) {
 		return
 	}
 
-	datasets, err := h.regionNutsDatasets(levelDetails.NormalizedID, levelDetails.Number)
+	datasets, err := h.regionNutsDatasets(c.Request.Context(), levelDetails.NormalizedID, levelDetails.Number)
 	if err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -111,7 +111,7 @@ func (h *Handler) GetLAUDatasets(c *gin.Context) {
 	// lau_integrated.sql), more robust than the often-NULL raw nuts_3_code
 	// column.
 	var nuts3Code string
-	err := h.DB.Get(&nuts3Code,
+	err := h.DB.GetContext(c.Request.Context(), &nuts3Code,
 		`SELECT nuts3_id FROM transformed_data.lau_integrated WHERE gisco_id = $1 AND nuts3_id IS NOT NULL AND lau_name IS NOT NULL LIMIT 1`,
 		giscoID,
 	)
@@ -120,13 +120,13 @@ func (h *Handler) GetLAUDatasets(c *gin.Context) {
 			respondNotFound(c, "LAU-Region nicht gefunden oder kein NUTS-3-Code vorhanden")
 			return
 		}
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
-	datasets, err := h.regionNutsDatasets(nuts3Code, 3)
+	datasets, err := h.regionNutsDatasets(c.Request.Context(), nuts3Code, 3)
 	if err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 

@@ -129,8 +129,8 @@ func getLauTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetCon
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
 	var total int
-	if err := h.DB.QueryRow(countQuery, args...).Scan(&total); err != nil {
-		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+	if err := h.DB.QueryRowContext(c.Request.Context(), countQuery, args...).Scan(&total); err != nil {
+		respondDBError(c, "Fehler beim Zählen der Datensätze", err)
 		return
 	}
 
@@ -144,6 +144,7 @@ func getLauTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetCon
 		filter.Limit,
 		filter.Offset,
 		limitNull,
+		total,
 	)
 	if err != nil {
 		respondBadRequest(c, err.Error())
@@ -151,8 +152,8 @@ func getLauTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetCon
 	}
 
 	points := make([]models.LauTimeseriesPoint, 0)
-	if err := h.DB.Select(&points, pagedQuery, pagedArgs...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &points, pagedQuery, pagedArgs...); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 

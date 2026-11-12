@@ -38,8 +38,8 @@ func (h *Handler) GetDatasetCatalog(c *gin.Context) {
 	query, args := datasetCatalogQuery(slugs)
 
 	catalog := make([]models.DatasetCatalogEintrag, 0)
-	if err := h.DB.Select(&catalog, query, args...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler beim Datensatz-Katalog: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &catalog, query, args...); err != nil {
+		respondDBError(c, "Datenbankfehler beim Datensatz-Katalog", err)
 		return
 	}
 
@@ -83,12 +83,12 @@ func (h *Handler) GetDatasetCatalogEntry(c *gin.Context) {
 	)
 
 	var entry models.DatasetCatalogEintrag
-	if err := h.DB.Get(&entry, query, slug); err != nil {
+	if err := h.DB.GetContext(c.Request.Context(), &entry, query, slug); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			respondNotFound(c, fmt.Sprintf("Datensatz %q nicht im Katalog gefunden", slug))
 			return
 		}
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler beim Datensatz-Katalog: %v", err))
+		respondDBError(c, "Datenbankfehler beim Datensatz-Katalog", err)
 		return
 	}
 
@@ -118,9 +118,9 @@ func (h *Handler) GetDatasetSource(c *gin.Context) {
 	slug := strings.ToLower(c.Param("slug"))
 
 	rows := make([]models.DatasetQuellwert, 0)
-	err := h.DB.Select(&rows, datasetSourceQuery, slug)
+	err := h.DB.SelectContext(c.Request.Context(), &rows, datasetSourceQuery, slug)
 	if err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler bei den Quelldaten: %v", err))
+		respondDBError(c, "Datenbankfehler bei den Quelldaten", err)
 		return
 	}
 	if len(rows) == 0 {
