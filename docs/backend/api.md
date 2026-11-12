@@ -30,11 +30,29 @@ curl -H 'Accept: text/csv' '<host>/api/v1/bevoelkerung/timeseries?geodata_id_nut
 ### Pagination
 
 - `limit` / `offset`: default `limit` is 1000 on the generated dataset
-  routes and 100 on the region lists (`/lau`, `/nuts`, `/geo`). There is no
-  server-side maximum; `limit=null` returns all rows.
-- `chunk_size` + `chunk` (0-based) is an alternative to `limit`/`offset`
-  and takes precedence when set.
-- JSON responses carry pagination info in `meta`.
+  routes and 100 on the region lists (`/lau`, `/nuts`, `/geo`). Maximum
+  `limit` is 10,000 on the dataset routes and `/nuts`, 1,000 on `/lau`,
+  `/geo` and `POST /geo/query`.
+- `limit=null` returns all rows, up to a cap of at least 300,000 rows
+  (set at startup to 1.25× the largest table, so the largest dataset,
+  `beschaeftigungsquote-gemeinden` with ~252,000 rows, stays downloadable). A larger
+  result is rejected with `400` and a hint to page with `chunk_size` —
+  never silently truncated.
+- `chunk_size` (max. 10,000, otherwise `400`) + `chunk` (0-based) is an
+  alternative to `limit`/`offset` and takes precedence when set — also over
+  `limit=null`, whose cap then does not apply (the response is paged).
+- JSON responses carry pagination info in `meta` (`meta.total` is the full
+  row count, so a client can compute the number of chunks).
+
+### Errors
+
+Errors use the same envelope with `success: false` and a German `error`
+text. Invalid parameters yield `400` with a specific message. Database
+failures yield `500` with only the generic text "Interner Fehler beim
+Datenbankzugriff" — the real error is logged server-side, never returned.
+Timeouts and cancelled requests yield `503`: every statement is capped by
+`statement_timeout` (60 s, set on the DB connection), and queries are
+cancelled when the client disconnects.
 
 Implemented once in
 [`internal/handlers/negotiate.go`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/backend/internal/handlers/negotiate.go)
@@ -120,6 +138,16 @@ files only carry the placeholder `dev`.
 | GET | `/geo/{geo_id}/versions` | Available versions of a geo region |
 | POST | `/geo/query` | Spatial query by geometry (e.g. point/polygon) |
 
+`POST /geo/query` accepts any GeoJSON geometry (points and lines too, for
+`intersects`/`contains`). Same input limits and geometry preparation as
+custom regions below: 5 MiB body (`413` above), 200,000 vertices, WGS84
+`[lon, lat]`. Polygons/MultiPolygons (e.g. self-intersecting "bowties") and
+GeometryCollections are repaired with `ST_MakeValid` instead of rejected
+(`400` only if no area is left); points and lines are used unchanged and
+must be OGC-valid. Input PostGIS cannot parse or transform yields `400` with
+a fixed message ("Ungültiges GeoJSON" / "Geometrie nicht transformierbar"),
+never the raw PostGIS error; other database failures are `500`/`503`.
+
 ### Custom regions (GeoJSON)
 
 | Method | Path | Purpose |
@@ -128,7 +156,8 @@ files only carry the placeholder `dev`.
 | POST | `/custom-regions/dataset-aggregate` | Time series of the requested datasets for a user-defined Polygon/MultiPolygon (GeoJSON, WGS84) |
 
 Request body: `geometry` (GeoJSON), `datasets` (slugs, max. 30), optional
-`from_year`, `to_year`, `min_share`. Limits: 5 MiB body, 200,000 vertices.
+`from_year`, `to_year`, `min_share`. Limits: 5 MiB body (`413` above),
+200,000 vertices.
 
 The region is sent per request and never stored. The polygon is intersected
 with the source geometries (reference state 2024) and the values are
@@ -246,6 +275,30 @@ row — the `meta.yaml`-driven Kreis/Gemeinden datasets as well as
 | GET | `/metrics` | Statistical aggregations over socioeconomic datasets |
 | GET | `/metrics/derived` | Catalog of derived metrics (from `configs/metrics_catalog.yaml`) |
 | GET | `/metrics/derived/{slug}` | A single entry from the derived-metrics catalog |
+
+Both statistics endpoints read harmonized datasets from
+`mart_nuts3_sociodata_harmonized` for one NUTS-3 version, selected with
+`?nuts_version=` (2003–2024, default 2024, like `/{slug}/timeseries`), so
+every region counts once per year and `geodata_id_nuts` refers to that
+version. Derived metrics with an area denominator use the area of the same
+NUTS version. The response states the version in `nuts_version`; it is
+absent where a column has no harmonized counterpart
+(`beschaeftigungsquote-gemeinden`, and the median/unweighted/count columns
+of `beschaeftigungsquote-nuts3`), which are still computed from the staging
+tables as before.
+
+Only valid values enter the statistics and the ranking: `has_valid_value`
+of the staging models, and for harmonized values only when every
+contributing source value was valid (`mart_nuts3_sociodata_harmonized.
+has_valid_value`). Each result reports what was left out instead of
+dropping it silently: `excluded_invalid_count` per year and in total,
+`excluded_regions` (distinct regions with at least one excluded value) and,
+for derived metrics (numerator and denominator must both be valid),
+`regions_without_geometry` (area denominator without a matching NUTS-3
+geometry) and `regions_without_denominator`. `meta.note` states this rule;
+years with only invalid values are missing from `by_year` but counted in the
+totals. `GET /metrics` computes its dataset columns in parallel (at most 4
+at a time) and keeps the request order.
 
 ## Generic socioeconomic-data routes
 

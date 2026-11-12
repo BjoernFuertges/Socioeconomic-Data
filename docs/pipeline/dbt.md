@@ -98,6 +98,11 @@ flowchart TB
   the number of employed persons. That count is the dataset
   `erwerbstaetige_pro_1000_einwohner` – despite its (historical, public) slug
   the absolute number of employed persons in thousands, hence a `sum`.
+  `has_valid_value` is false when any contributing source value fails the
+  `has_valid_value` rule of its `stg_<slug>_kreise` model (re-stated as
+  `valid_when` per dataset; `harmonized_value` itself is unchanged);
+  `GET /metrics` skips these rows. The singular test
+  `assert_harmonized_validity_matches_staging` keeps both rules in sync.
 - **`mart_nuts3_timeseries_interpolated`** – fills missing years per region
   and dataset with two alternative imputation methods (no extrapolation
   beyond the known time range), see below.

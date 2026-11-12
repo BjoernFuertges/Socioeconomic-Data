@@ -27,6 +27,10 @@
   is_crosswalked = true   -> value was converted across a version boundary
   is_crosswalked = false  -> direct value, no conversion needed
 
+  has_valid_value = false -> at least one source value fails the has_valid_value
+                             rule of its staging model (e.g. a quota outside
+                             0..100); consumers such as GET /metrics skip it
+
   measure_type per dataset (source_datasets below, plus
   beschaeftigungsquote-nuts3 separately) selects the aggregation formula when
   several source regions merge into one target region:
@@ -49,20 +53,24 @@
 -- API route), the absolute number of employed persons in thousands - a sum.
 -- 'weighted_avg_employees' (aggregation marts only) is treated like
 -- 'weighted_avg' here: the crosswalk between versions has no employee weight.
+-- valid_when mirrors the has_valid_value rule of stg_<slug>_kreise.sql (value
+-- is never null here) - keep both in sync; the singular test
+-- assert_harmonized_validity_matches_staging checks it. It only feeds the
+-- has_valid_value flag, harmonized_value itself is unchanged.
 {% set source_datasets = [
-    {'slug': 'arbeitslose',        'table': 'results_arbeitslose_kreise', 'measure_type': 'sum'},
-    {'slug': 'arbeitsvolumen',     'table': 'results_arbeitsvolumen_kreise', 'measure_type': 'weighted_avg'},
-    {'slug': 'auszubildende',      'table': 'results_auszubildende_kreise', 'measure_type': 'weighted_avg'},
-    {'slug': 'bevoelkerung',       'table': 'results_bevoelkerung_kreise', 'measure_type': 'sum'},
-    {'slug': 'bruttoverdienst',    'table': 'results_bruttoverdienst_kreise', 'measure_type': 'weighted_avg'},
-    {'slug': 'durchschnittsalter', 'table': 'results_durchschnittsalter_kreise', 'measure_type': 'weighted_avg'},
-    {'slug': 'erwerbstaetige_pro_1000_einwohner', 'table': 'results_erwerbstaetige_pro_1000_einwohner_kreise', 'measure_type': 'sum'},
-    {'slug': 'kinderarmut',        'table': 'results_kinderarmut_kreise', 'measure_type': 'weighted_avg'},
-    {'slug': 'medianeinkommen',    'table': 'results_medianeinkommen_kreise', 'measure_type': 'weighted_avg'},
-    {'slug': 'schuldnerquote',     'table': 'results_schuldnerquote_kreise', 'measure_type': 'weighted_avg'},
-    {'slug': 'sgb_ii_quote',       'table': 'results_sgb_ii_quote_kreise', 'measure_type': 'weighted_avg'},
-    {'slug': 'studierende',        'table': 'results_studierende_kreise', 'measure_type': 'weighted_avg'},
-    {'slug': 'wohngeldhaushalte',  'table': 'results_wohngeldhaushalte_kreise', 'measure_type': 'weighted_avg'},
+    {'slug': 'arbeitslose',        'table': 'results_arbeitslose_kreise', 'measure_type': 'sum', 'valid_when': 'value > 0'},
+    {'slug': 'arbeitsvolumen',     'table': 'results_arbeitsvolumen_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value > 0'},
+    {'slug': 'auszubildende',      'table': 'results_auszubildende_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value >= 0'},
+    {'slug': 'bevoelkerung',       'table': 'results_bevoelkerung_kreise', 'measure_type': 'sum', 'valid_when': 'value > 0'},
+    {'slug': 'bruttoverdienst',    'table': 'results_bruttoverdienst_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value > 0'},
+    {'slug': 'durchschnittsalter', 'table': 'results_durchschnittsalter_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value > 0'},
+    {'slug': 'erwerbstaetige_pro_1000_einwohner', 'table': 'results_erwerbstaetige_pro_1000_einwohner_kreise', 'measure_type': 'sum', 'valid_when': 'value >= 0'},
+    {'slug': 'kinderarmut',        'table': 'results_kinderarmut_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value between 0 and 100'},
+    {'slug': 'medianeinkommen',    'table': 'results_medianeinkommen_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value > 0'},
+    {'slug': 'schuldnerquote',     'table': 'results_schuldnerquote_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value between 0 and 100'},
+    {'slug': 'sgb_ii_quote',       'table': 'results_sgb_ii_quote_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value between 0 and 100'},
+    {'slug': 'studierende',        'table': 'results_studierende_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value >= 0'},
+    {'slug': 'wohngeldhaushalte',  'table': 'results_wohngeldhaushalte_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value > 0'},
 ] %}
 {% set beschaeftigungsquote_nuts3_measure_type = 'weighted_avg' %}
 
@@ -78,7 +86,8 @@ with all_source_data as (
         geodata_id_nuts,
         geodata_year::integer as geodata_year,
         year::integer         as year,
-        value::numeric        as value
+        value::numeric        as value,
+        ({{ ds.valid_when }}) as has_valid_value
     from {{ source('loaded_data', ds.table) }}
     where geodata_id_nuts is not null
       and geodata_id_nuts != ''
@@ -95,7 +104,8 @@ with all_source_data as (
         geodata_id_nuts,
         geodata_year::integer        as geodata_year,
         year::integer                as year,
-        beschaeftigungsquote_prozent::numeric as value
+        beschaeftigungsquote_prozent::numeric as value,
+        has_valid_value
     from {{ ref('stg_beschaeftigungsquote_nuts3') }}
     where geodata_id_nuts is not null
       and geodata_id_nuts != ''
@@ -123,7 +133,8 @@ harmonized_{{ tv }} as (
         false               as is_crosswalked,
         s.geodata_id_nuts   as source_nuts_id,
         s.geodata_year      as source_version,
-        0                   as n_hops
+        0                   as n_hops,
+        s.has_valid_value
     from all_source_data s
     where s.geodata_year = {{ tv }}
 
@@ -140,7 +151,8 @@ harmonized_{{ tv }} as (
         true                 as is_crosswalked,
         s.geodata_id_nuts    as source_nuts_id,
         s.geodata_year       as source_version,
-        c.n_hops
+        c.n_hops,
+        s.has_valid_value
     from all_source_data s
     join crosswalk_{{ tv }} c
         on  c.source_nuts_id = s.geodata_id_nuts
@@ -175,7 +187,10 @@ aggregated_{{ tv }} as (
         end                      as harmonized_value,
         bool_or(is_crosswalked)  as is_crosswalked,
         min(source_version)      as source_version,
-        max(n_hops)              as n_hops
+        max(n_hops)              as n_hops,
+        -- false as soon as one contributing source value fails the staging
+        -- validity rule (valid_when): the target value is then contaminated.
+        bool_and(has_valid_value) as has_valid_value
     from harmonized_{{ tv }}
     group by dataset_slug, target_nuts_id, year
 ){% if not loop.last %},{% endif %}

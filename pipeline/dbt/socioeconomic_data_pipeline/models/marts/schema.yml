@@ -301,6 +301,10 @@ models:
         description: "Original NUTS-3 version of the source data (geodata_year); the smallest involved source version when regions merge"
       - name: n_hops
         description: "Number of crosswalk steps between source_version and target_version (0 = no crosswalk needed)"
+      - name: has_valid_value
+        description: "False if any contributing source value fails the has_valid_value rule of its stg_*_kreise model (valid_when in the model); harmonized_value is still computed, consumers that need plausible values (GET /metrics) skip these rows"
+        tests:
+          - not_null
 
   - name: mart_nuts3_timeseries_interpolated
     description: >

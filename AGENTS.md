@@ -108,7 +108,9 @@ built/tested independently as shown above.
      `not_null`/`accepted_range` tests) and
      `snapshots/snap_results_<dataset>_kreise.sql`
   4. dbt marts: register the dataset in the `source_datasets` lists of
-     `mart_nuts3_sociodata_harmonized`, `mart_dataset_source`,
+     `mart_nuts3_sociodata_harmonized` (incl. `valid_when`, mirroring the
+     staging `has_valid_value` rule, and the slug in
+     `tests/assert_harmonized_validity_matches_staging.sql`), `mart_dataset_source`,
      `mart_nuts012_dataset_aggregate`, `mart_agentur_dataset_aggregate`, the
      `nuts3_datasets` list of `mart_dataset_aggregation_meta`, plus
      `mart_nuts3_summary` / `mart_region_datasets` / `mart_socioeconomic_inventory`

@@ -22,7 +22,11 @@ Postgres.
 go run cmd/soziodata/main.go
 
 go build ./...
-go test ./...   # currently covers internal/handlers (content negotiation, CSV encoding, export params)
+go test ./...   # internal/handlers (negotiation/CSV, pagination limits, DB error responses, GeoJSON validation, metrics SQL), no DB needed
+# Opt-in DB tests (TestDB*: synthetic fixtures in a fresh, auto-dropped database;
+# the user needs CREATE DATABASE, e.g. a throwaway postgis/postgis container):
+SOZ_TEST_PG_DSN="host=127.0.0.1 port=5432 user=... password=... dbname=postgres sslmode=disable" go test ./internal/handlers/ -run DB
+# (cmd/soziodata: SOZ_TEST_PG_HOST/PORT/USER/PASSWORD/DB for the DSN login test)
 
 # Release version: internal/version (Version/BuildTime, default "dev") is set via -ldflags
 # (Dockerfile build args VERSION/BUILD_TIME, filled by CI) and copied into
@@ -114,6 +118,27 @@ Enable the pre-commit hook (repo root: `git config core.hooksPath backend/githoo
   `mart_dataset_aggregation_meta`. If the polygon equals one unit of a level
   (area IoU ≥ 0.999, `customRegionExactMatchSQL`) only that unit counts and
   `matched_unit` is set on the rows. Goes through `respondList` (JSON/CSV).
+  Body/vertex limits and the GeoJSON checks (`bindGeoJSONBody`,
+  `validateGeoJSONGeometry`, `checkGeoJSONInDB`) live in `geojson_input.go`
+  and are shared with `POST /geo/query` - reuse them for any new GeoJSON
+  input instead of duplicating limits. `geoJSONGeometrySQL`/`geoJSONInputCTE`
+  are the one definition of the input geometry (polygons repaired with
+  `ST_MakeValid`, points/lines unchanged); `/geo/query` runs the check and
+  its count in one statement (`geoJSONCheckSQL`). PostGIS errors become a
+  400 only via the whitelist in `geometryInputErrorMessage` (fixed text),
+  everything else goes through `respondDBError`.
+- Database errors go through `respondDBError(c, op, err)` (`common.go`): it
+  logs the real error and answers with a generic message (503 on
+  timeout/cancellation, else 500) - never put a raw `err` into a response.
+  DB calls use the `*Context(c.Request.Context(), ...)` variants, and the
+  connection sets `statement_timeout=60000` (`cmd/soziodata/main.go`).
+  Pagination limits (`chunk_size` ≤ 10000, `limit=null` ≤ the cap from `row_cap.go`, else
+  400) are enforced in `resolvePagination` (= `parsePagination` before any
+  DB access + `paginationRequest.resolve(total)` with the pre-counted
+  `total`; the cap only applies to unpaged `limit=null`, not with
+  `chunk_size`). The `limit=null` cap is sized at startup:
+  `max(300000, 1.25 × largest stg_*/snap_results_* table)` from
+  `pg_class.reltuples`.
 - `internal/routes/routes.go` wires the hand-written routes;
   `routes_soziodata_generated.go` wires the generated per-dataset routes.
   Both are mounted together in `cmd/soziodata/main.go`.
@@ -121,6 +146,15 @@ Enable the pre-commit hook (repo root: `git config core.hooksPath backend/githoo
   labels for the *derived* metrics, e.g. `bevoelkerungsdichte`) served by
   `internal/handlers/metrics_catalog.go` — independent of the codegen, so
   it is edited by hand when a derived metric is added or changes.
+  `metrics.go`/`metrics_catalog.go` read harmonized datasets from
+  `mart_nuts3_sociodata_harmonized` for `?nuts_version=` (default 2024);
+  columns without a harmonized counterpart (`harmonizedMetricsColumns`)
+  fall back to the staging tables. Every `metricsSource` keeps invalid rows
+  but marks them (`excluded_reason`: has_valid_value false, missing
+  geometry/denominator), so the statistics use only valid values and the
+  response counts the rest (`excluded_invalid_count`, `excluded_regions`,
+  `regions_without_geometry`/`_denominator`). `GET /metrics` runs its
+  columns via `runIndexedLimited` (≤ 4 parallel, request order kept).
 - `api/bruno/` is a Bruno HTTP-request collection for manually exercising
   the API against a running instance.
 - `deployments/` holds the production `docker-compose.yml`

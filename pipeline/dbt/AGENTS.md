@@ -96,7 +96,10 @@ and `mart_nuts0_summary` are views):
     [AGENTS.md](../../AGENTS.md)).
     Each entry carries a `measure_type` ('sum' for counts, 'weighted_avg'
     for rates/averages) that decides how values are combined when several
-    source regions map onto one target region. The aggregation marts
+    source regions map onto one target region. NUTS-3 entries also carry
+    `valid_when` (the staging `has_valid_value` rule, feeding the mart's
+    `has_valid_value`; checked by
+    `tests/assert_harmonized_validity_matches_staging.sql`). The aggregation marts
     (`mart_nuts012_dataset_aggregate`, `mart_agentur_dataset_aggregate`,
     custom regions) add 'weighted_avg_employees' for values per employed
     person (`arbeitsvolumen`, `bruttoverdienst`), weighted by the

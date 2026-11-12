@@ -7,6 +7,10 @@ type MetricsFilter struct {
 	ToYear        *int   `form:"to_year"`
 	NutsParentID  string `form:"nuts_parent_id"`
 	GeodataIDNUTS string `form:"geodata_id_nuts"`
+	// NutsVersion selects the NUTS-3 target version of the harmonized values
+	// (mart_nuts3_sociodata_harmonized.target_version); default 2024, allowed
+	// values as for SozioKreisFilter.NutsVersion.
+	NutsVersion *int `form:"nuts_version"`
 }
 
 // DatasetYearMetrics holds statistical figures for a dataset in one year.
@@ -23,11 +27,36 @@ type DatasetYearMetrics struct {
 	RegionalValue     *float64 `json:"regional_value,omitempty" example:"9.4"`
 	RegionalRank      *int     `json:"regional_rank,omitempty" example:"142"`
 	RegionalRankTotal *int     `json:"regional_rank_total,omitempty" example:"400"`
+	// ExcludedInvalidCount is the number of region values of this year left
+	// out as invalid (has_valid_value = false, missing value; for derived
+	// metrics: numerator or denominator invalid, or a zero denominator).
+	ExcludedInvalidCount int `json:"excluded_invalid_count" example:"2"`
+	// RegionsWithoutGeometry (derived metrics with the area denominator only)
+	// counts regions of this year left out because no NUTS-3 geometry matches.
+	RegionsWithoutGeometry int `json:"regions_without_geometry,omitempty" example:"1"`
+	// RegionsWithoutDenominator (derived metrics with a dataset denominator
+	// only) counts regions of this year without a denominator value.
+	RegionsWithoutDenominator int `json:"regions_without_denominator,omitempty" example:"0"`
 }
 
 // DatasetMetricsResult holds metrics for a dataset and a value column across all years.
 type DatasetMetricsResult struct {
-	Dataset string               `json:"dataset" example:"schuldnerquote"`
-	Column  string               `json:"column" example:"schuldnerquote_prozent"`
-	ByYear  []DatasetYearMetrics `json:"by_year"`
+	Dataset string `json:"dataset" example:"schuldnerquote"`
+	Column  string `json:"column" example:"schuldnerquote_prozent"`
+	// NutsVersion is the NUTS-3 version the values were harmonized to; absent
+	// when the column has no harmonized counterpart and the unharmonized
+	// staging values were used.
+	NutsVersion *int `json:"nuts_version,omitempty" example:"2024"`
+	// ExcludedInvalidCount sums DatasetYearMetrics.ExcludedInvalidCount over
+	// all years of the filter (also years without any valid value, which are
+	// missing from by_year).
+	ExcludedInvalidCount int `json:"excluded_invalid_count" example:"5"`
+	// ExcludedRegions is the number of distinct regions with at least one
+	// value left out for any reason (invalid, no geometry, no denominator).
+	ExcludedRegions int `json:"excluded_regions" example:"3"`
+	// RegionsWithoutGeometry / RegionsWithoutDenominator: distinct regions
+	// left out at least once for that reason (derived metrics only).
+	RegionsWithoutGeometry    int                  `json:"regions_without_geometry,omitempty" example:"1"`
+	RegionsWithoutDenominator int                  `json:"regions_without_denominator,omitempty" example:"0"`
+	ByYear                    []DatasetYearMetrics `json:"by_year"`
 }
