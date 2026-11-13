@@ -1,6 +1,10 @@
 """
 DLT pipeline for loading LAU and NUTS geodata plus LAU population data into PostGIS.
 Loads all years into single tables in the loaded_data schema.
+
+Geometry source: the "Geodaten" folder of the data exchange if present
+(see find_geodaten_dir), otherwise the legacy GISCO files (GEODATA_BASE_PATH /
+geo-mapper fallbacks).
 """
 
 import dlt
@@ -9,8 +13,11 @@ import gzip
 import ijson
 import os
 import pandas as pd
+import re
 from pathlib import Path
+from pyproj import Transformer
 from shapely.geometry import shape
+from shapely.ops import transform as shapely_transform
 from typing import Iterator, Dict, Any
 import logging
 
@@ -43,6 +50,84 @@ NUTS_GEODATA_PATH = Path(
     )
 )
 
+# Preferred geodata source: the "Geodaten" folder of the data exchange
+# (geojson/LAU/<year>/lau_<year>_level_0.geojson,
+#  geojson/NUTS_<level>/<year>/nuts_<year>_level_<level>.geojson).
+# Files are WGS84 (EPSG:4326) and carry only id/name (LAU) or
+# id_nuts/name/id_ars (NUTS); they are reprojected to EPSG:3035 and mapped to
+# the column layout of the legacy GISCO files (see _lau_record/_nuts_record).
+# In production backend/scripts/sync_nextcloud_data_exchange.sh mirrors the
+# folder to data-exchange/geodata; locally it may still sit in
+# <DATA_EXCHANGE_PATH>/Geodaten. GEODATEN_PATH overrides both.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_DATA_EXCHANGE = Path(os.environ.get("DATA_EXCHANGE_PATH", str(_REPO_ROOT / "data-exchange" / "1_friedrich-bjoern")))
+
+
+def _geodaten_candidates() -> list[Path]:
+    env = os.environ.get("GEODATEN_PATH")
+    if env:
+        return [Path(env)]
+    return [_DATA_EXCHANGE.parent / "geodata", _DATA_EXCHANGE / "Geodaten"]
+
+
+def find_geodaten_dir() -> Path | None:
+    """First candidate that actually contains LAU or NUTS GeoJSON files."""
+    for cand in _geodaten_candidates():
+        gj = cand / "geojson"
+        if gj.is_dir() and (any(gj.glob("LAU/*/lau_*_level_*.geojson")) or any(gj.glob("NUTS_*/*/nuts_*_level_*.geojson"))):
+            return cand
+    return None
+
+
+def _geodaten_lau_files(base: Path) -> list[Path]:
+    return sorted(base.glob("geojson/LAU/*/lau_*_level_*.geojson"))
+
+
+def _geodaten_nuts_files(base: Path) -> list[Path]:
+    return sorted(base.glob("geojson/NUTS_*/*/nuts_*_level_*.geojson"))
+
+
+_WGS84_TO_3035 = Transformer.from_crs(4326, 3035, always_xy=True).transform
+_NUTS_FILE_RE = re.compile(r"nuts_(\d{4})_level_(\d)\.geojson$")
+
+
+def _to_wkt_3035(geom: Any) -> str | None:
+    if geom is None:
+        return None
+    try:
+        return shapely_transform(_WGS84_TO_3035, shape(geom)).wkt
+    except Exception:
+        return None
+
+
+def _lau_record(props: Dict[str, Any], geom: Any, year: int) -> Dict[str, Any]:
+    ags = str(props.get("id") or "").strip()
+    # GISCO id = country code + official municipality key (AGS), as in lau_population.
+    return {
+        "gisco_id": f"DE_{ags}" if ags else None,
+        "cntr_code": "DE",
+        "lau_id": ags or None,
+        "lau_name": props.get("name"),
+        "year": year,
+        "geometry": _to_wkt_3035(geom),
+    }
+
+
+def _nuts_record(props: Dict[str, Any], geom: Any, year: int, level: int) -> Dict[str, Any]:
+    nuts_id = str(props.get("id_nuts") or "").strip()
+    name = props.get("name")
+    return {
+        "nuts_id": nuts_id or None,
+        "levl_code": level,
+        "cntr_code": nuts_id[:2] or None,
+        "nuts_name": name,
+        "name_latn": name,
+        "id_ars": props.get("id_ars"),
+        "year": year,
+        "geometry": _to_wkt_3035(geom),
+    }
+
+
 def extract_year_from_filename(filename: str) -> int:
     """Extract year from filename like 'LAU_RG_01M_2011_3035_cleaned.geojson.gz'"""
     parts = filename.split('_')
@@ -59,6 +144,22 @@ def load_geodata() -> Iterator[Dict[str, Any]]:
     to uncompressed .geojson files from geo-mapper.
     """
     logger.info("Starting geodata extraction...")
+
+    geodaten = find_geodaten_dir()
+    if geodaten is not None and _geodaten_lau_files(geodaten):
+        for file_path in _geodaten_lau_files(geodaten):
+            year = extract_year_from_filename(file_path.name)
+            logger.info(f"Processing LAU geodata (Geodaten) for year {year}: {file_path.name}")
+            try:
+                with open(file_path, "rb") as f:
+                    for feature in ijson.items(f, "features.item"):
+                        yield _lau_record(feature.get("properties") or {}, feature.get("geometry"), year)
+                gc.collect()
+            except Exception as e:
+                # Re-raise: with "replace" a partial extract would wipe the good table.
+                logger.error(f"Error processing {file_path.name}: {e}")
+                raise
+        return
 
     geojson_files = sorted(GEODATA_PATH.glob("LAU_RG_01M_*_3035_cleaned.geojson.gz"))
     use_gz = True
@@ -165,6 +266,25 @@ def load_nuts_geodata() -> Iterator[Dict[str, Any]]:
     """Load all NUTS geometry data from GeoJSON files."""
     logger.info("Starting NUTS geodata extraction...")
 
+    geodaten = find_geodaten_dir()
+    if geodaten is not None and _geodaten_nuts_files(geodaten):
+        for file_path in _geodaten_nuts_files(geodaten):
+            m = _NUTS_FILE_RE.search(file_path.name)
+            if not m:
+                logger.warning(f"Skipping unexpected NUTS file name: {file_path.name}")
+                continue
+            year, level = int(m.group(1)), int(m.group(2))
+            logger.info(f"Processing NUTS geodata (Geodaten) for year {year}, level {level}: {file_path.name}")
+            try:
+                with open(file_path, "rb") as f:
+                    for feature in ijson.items(f, "features.item"):
+                        yield _nuts_record(feature.get("properties") or {}, feature.get("geometry"), year, level)
+                gc.collect()
+            except Exception as e:
+                logger.error(f"Error processing {file_path.name}: {e}")
+                raise
+        return
+
     geojson_files = list(NUTS_GEODATA_PATH.glob("NUTS_RG_01M_*_3035.geojson"))
     logger.info(f"Found {len(geojson_files)} NUTS geodata files")
 
@@ -223,7 +343,10 @@ def main():
 
     try:
         # Load geodata
-        geojson_files = list(GEODATA_PATH.glob("LAU_RG_01M_*_3035_cleaned.geojson.gz")) or \
+        geodaten = find_geodaten_dir()
+        logger.info(f"Geodaten folder: {geodaten if geodaten else 'not found, using legacy GISCO paths'}")
+        geojson_files = (_geodaten_lau_files(geodaten) if geodaten else []) or \
+                        list(GEODATA_PATH.glob("LAU_RG_01M_*_3035_cleaned.geojson.gz")) or \
                         list(LAU_GEOJSON_FALLBACK_PATH.glob("LAU_RG_01M_*_3035.geojson"))
         if not geojson_files:
             logger.warning(f"No LAU geodata files found in {GEODATA_PATH} or {LAU_GEOJSON_FALLBACK_PATH}, skipping geodata load")
@@ -236,7 +359,8 @@ def main():
             )
             logger.info(f"Geodata load completed: {geodata_info}")
 
-        nuts_geojson_files = list(NUTS_GEODATA_PATH.glob("NUTS_RG_01M_*_3035.geojson"))
+        nuts_geojson_files = (_geodaten_nuts_files(geodaten) if geodaten else []) or \
+                             list(NUTS_GEODATA_PATH.glob("NUTS_RG_01M_*_3035.geojson"))
         if not nuts_geojson_files:
             logger.warning(f"No NUTS geodata files found in {NUTS_GEODATA_PATH}, skipping NUTS geodata load")
             nuts_geodata_info = None

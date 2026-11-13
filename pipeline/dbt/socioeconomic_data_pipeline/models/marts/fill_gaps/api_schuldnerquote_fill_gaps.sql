@@ -1,1 +1,1 @@
-{{ render_nuts3_fill_gaps_view('stg_schuldnerquote_kreise', 'schuldnerquote', 'schuldnerquote') }}
+{{ render_nuts3_fill_gaps_view('stg_schuldnerquote_kreise', 'schuldnerquote', 'schuldnerquote_prozent') }}

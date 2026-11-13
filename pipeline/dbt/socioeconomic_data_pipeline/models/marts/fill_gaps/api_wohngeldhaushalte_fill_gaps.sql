@@ -1,1 +1,1 @@
-{{ render_nuts3_fill_gaps_view('stg_wohngeldhaushalte_kreise', 'wohngeldhaushalte', 'wohngeldhaushalte') }}
+{{ render_nuts3_fill_gaps_view('stg_wohngeldhaushalte_kreise', 'wohngeldhaushalte', 'wohngeldhaushalte_je_1000') }}

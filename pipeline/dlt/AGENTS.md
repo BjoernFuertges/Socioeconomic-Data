@@ -84,6 +84,11 @@ python load_soziodata_generic.py <dataset>/results_<dataset>_kreise
   no cached downloads), `load_geodata_to_postgis.py` silently falls back
   to a `geo-importer`-sourced CSV (external sibling repo, not part of this repo) that only has `ID,Name` columns, leaving
   `gisco_id`/`nuts_3_code`/`population` NULL for every LAU row.
+- `load_geodata_to_postgis.py` prefers the `Geodaten` folder
+  (`data-exchange/geodata` or `<DATA_EXCHANGE_PATH>/Geodaten`, `GEODATEN_PATH`
+  overrides) over the legacy GISCO/`geo-mapper` paths; its WGS84 files are
+  reprojected to EPSG:3035 and mapped to the legacy column layout
+  (`_lau_record`/`_nuts_record`). No LAU 2018, no NUTS levels 0/1 there.
 - `fetch_ba_sv_beschaeftigte.py` is the only Kreis dataset not prepared by
   hand: it builds `sv_beschaeftigte/results_sv_beschaeftigte_kreise/`
   (`mapped_pairs.csv` + `meta.yaml` + `unmapped.csv`) under

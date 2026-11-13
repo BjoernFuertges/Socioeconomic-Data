@@ -93,9 +93,19 @@ the whole run. On the server, `data-exchange/1_friedrich-bjoern` is an
 10 minutes), so the generated folder should also be uploaded to Nextcloud
 there; otherwise every pipeline run fetches it again.
 
-### Geodata with fallback paths
+### Geodata: Geodaten folder with legacy fallbacks
 
-`load_geodata_to_postgis.py` first looks for pre-processed files in the
+`load_geodata_to_postgis.py` prefers the `Geodaten` folder of the data
+exchange (`geojson/LAU/<year>/lau_<year>_level_0.geojson`,
+`geojson/NUTS_<level>/<year>/nuts_<year>_level_<level>.geojson`). In
+production it is mirrored to `data-exchange/geodata`; locally it may sit in
+`<DATA_EXCHANGE_PATH>/Geodaten` (override: `GEODATEN_PATH`). Those files are
+WGS84 and only carry ids and names, so the loader reprojects them to
+EPSG:3035 and derives the columns dbt expects (`gisco_id = DE_<AGS>`,
+`levl_code` from the file name, `cntr_code`). The folder holds Germany only,
+LAU 2011-2024 without 2018, NUTS levels 2 and 3 only (no levels 0/1).
+
+If the folder is absent, the loader looks for pre-processed files in the
 configured `GEODATA_BASE_PATH` output (compressed, `*.geojson.gz`) and
 otherwise falls back to uncompressed files in local `geo-mapper/` or
 `geo-importer/` checkouts next to the repo (environment variables
