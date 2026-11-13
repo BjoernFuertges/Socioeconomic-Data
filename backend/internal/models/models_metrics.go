@@ -8,8 +8,8 @@ type MetricsFilter struct {
 	NutsParentID  string `form:"nuts_parent_id"`
 	GeodataIDNUTS string `form:"geodata_id_nuts"`
 	// NutsVersion selects the NUTS-3 target version of the harmonized values
-	// (mart_nuts3_sociodata_harmonized.target_version); default 2024, allowed
-	// values as for SozioKreisFilter.NutsVersion.
+	// (mart_nuts3_sociodata_harmonized.target_version); default and allowed
+	// values as for SozioKreisFilter.NutsVersion (newest available, GET /versions).
 	NutsVersion *int `form:"nuts_version"`
 }
 

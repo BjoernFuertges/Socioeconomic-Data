@@ -151,9 +151,17 @@ def load_geodata() -> Iterator[Dict[str, Any]]:
             year = extract_year_from_filename(file_path.name)
             logger.info(f"Processing LAU geodata (Geodaten) for year {year}: {file_path.name}")
             try:
+                skipped = 0
                 with open(file_path, "rb") as f:
                     for feature in ijson.items(f, "features.item"):
-                        yield _lau_record(feature.get("properties") or {}, feature.get("geometry"), year)
+                        props = feature.get("properties") or {}
+                        # A feature without id cannot be joined to anything (gisco_id would be NULL).
+                        if not str(props.get("id") or "").strip():
+                            skipped += 1
+                            continue
+                        yield _lau_record(props, feature.get("geometry"), year)
+                if skipped:
+                    logger.warning(f"{file_path.name}: skipped {skipped} feature(s) without id")
                 gc.collect()
             except Exception as e:
                 # Re-raise: with "replace" a partial extract would wipe the good table.

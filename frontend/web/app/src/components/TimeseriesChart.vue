@@ -570,10 +570,46 @@ function drawChart() {
     svg.appendChild(text);
   });
 
-  // Line
-  const pathData = points.map((p, i) => `${i === 0 ? "M" : "L"}${xFor(p.year)} ${yFor(p.value)}`).join(" ");
+  // Line. Years without a value (e.g. invalid source values that could not be
+  // interpolated) are shown as a gap: the solid line breaks and a dashed muted
+  // segment bridges it. The regular step is the smallest distance between
+  // neighbouring years, so series with a coarser grid (e.g. every 2 years) do not break
+  // everywhere and a series with many missing years still shows its gaps.
+  const steps = points
+    .slice(1)
+    .map((p, i) => p.year - points[i].year)
+    .sort((a, b) => a - b);
+  const regularStep = steps.length ? Math.max(1, steps[0]) : 1;
+  let solidPath = "";
+  let gapPath = "";
+  points.forEach((p, i) => {
+    const x = xFor(p.year);
+    const y = yFor(p.value);
+    const isGap = i > 0 && p.year - points[i - 1].year > regularStep;
+    if (i === 0 || isGap) {
+      if (isGap) {
+        gapPath += `M${xFor(points[i - 1].year)} ${yFor(points[i - 1].value)} L${x} ${y} `;
+      }
+      solidPath += `M${x} ${y} `;
+    } else {
+      solidPath += `L${x} ${y} `;
+    }
+  });
+  if (gapPath) {
+    const gap = document.createElementNS(svgNS, "path");
+    gap.setAttribute("d", gapPath.trim());
+    gap.setAttribute("fill", "none");
+    gap.setAttribute("stroke", "var(--text-muted)");
+    gap.setAttribute("stroke-width", "1.5");
+    gap.setAttribute("stroke-dasharray", "3 4");
+    gap.setAttribute("opacity", "0.7");
+    const gapTitle = document.createElementNS(svgNS, "title");
+    gapTitle.textContent = "Keine Daten in diesem Zeitraum";
+    gap.appendChild(gapTitle);
+    svg.appendChild(gap);
+  }
   const path = document.createElementNS(svgNS, "path");
-  path.setAttribute("d", pathData);
+  path.setAttribute("d", solidPath.trim());
   path.setAttribute("fill", "none");
   path.setAttribute("stroke", "var(--series-1)");
   path.setAttribute("stroke-width", "2");

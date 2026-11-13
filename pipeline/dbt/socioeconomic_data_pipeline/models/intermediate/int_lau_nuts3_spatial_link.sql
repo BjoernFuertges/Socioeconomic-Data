@@ -8,7 +8,7 @@
     )
 }}
 
-{% set reference_nuts_version = 2024 %}
+{% set reference_nuts_version = var('reference_nuts_version') %}
 
 /*
   Spatial assignment of each German LAU Gemeinde to its NUTS-3 region

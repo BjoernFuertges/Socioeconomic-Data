@@ -82,3 +82,13 @@ join lifespans tl on tl.gisco_id = pp.target_gisco_id
 cross join lateral generate_series(sl.min_valid_from, sl.max_valid_to) as sy(year)
 cross join lateral generate_series(tl.min_valid_from, tl.max_valid_to) as ty(year)
 where sy.year != ty.year
+  -- Only year pairs that span the change: if the source Gemeinde still
+  -- exists in the target year AND the target Gemeinde already existed in
+  -- the source year, nothing happened between them (e.g. a merger survivor
+  -- and its later-absorbed partner, both before the merger: the survivor's
+  -- canonical geometry is the enlarged one and would otherwise hand part
+  -- of its value to the partner).
+  and not (
+        ty.year between sl.min_valid_from and sl.max_valid_to
+    and sy.year between tl.min_valid_from and tl.max_valid_to
+  )

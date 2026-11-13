@@ -9,7 +9,7 @@
     )
 }}
 
-{% set reference_nuts_version = 2024 %}
+{% set reference_nuts_version = var('reference_nuts_version') %}
 {% set containment_threshold = 0.99 %}
 
 /*

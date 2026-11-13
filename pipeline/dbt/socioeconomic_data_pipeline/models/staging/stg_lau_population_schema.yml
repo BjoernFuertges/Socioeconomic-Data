@@ -15,7 +15,7 @@ models:
         data_type: text
 
       - name: lau_nat_code
-        description: "National LAU identifier"
+        description: "National LAU identifier (AGS), normalized to 8 digits (no .0, leading zero restored)"
         data_type: text
 
       - name: lau_name_national

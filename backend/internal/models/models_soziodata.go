@@ -52,13 +52,14 @@ type SozioKreisFilter struct {
 	FillGaps bool `form:"fill_gaps" example:"false"`
 	// NutsVersion selects the NUTS-3 target version for the harmonized time
 	// series (getKreisTimeseriesEndpoint). Relevant only together with the
-	// /timeseries endpoint; allowed values see supportedNutsVersions in
-	// kreis_generic.go. Default: 2024 (previous behaviour).
+	// /timeseries endpoint (or fill_gaps=true). Allowed values and the default
+	// (newest available version) are read from the harmonized marts at
+	// startup, see handlers/target_versions.go and GET /versions.
 	NutsVersion *int `form:"nuts_version" example:"2021"`
 	// LauVersion selects the LAU target version for the harmonized time series
 	// of a LAU dataset (getLauTimeseriesEndpoint). Analogous to NutsVersion, but
-	// for LAU datasets (IsHarmonizedLau); allowed values see supportedLauVersions
-	// in lau_generic.go. Default: latest version.
+	// for LAU datasets (IsHarmonizedLau); allowed values and default (newest)
+	// see handlers/target_versions.go and GET /versions.
 	LauVersion *int `form:"lau_version" example:"2021"`
 	Limit      int  `form:"limit" binding:"omitempty,min=1,max=10000" example:"100"`
 	Offset     int  `form:"offset" binding:"omitempty,min=0" example:"0"`
@@ -97,7 +98,8 @@ type KreisDatasetConfig struct {
 type NutsTimeseriesPoint struct {
 	NutsID      string `db:"nuts3_id"        json:"nuts_id"        example:"DE226"`
 	DatasetSlug string `db:"dataset_slug"    json:"dataset_slug"   example:"wohngeldhaushalte"`
-	// NutsVersion is the NUTS-3 target version of this time-series point (2016, 2021 or 2024).
+	// NutsVersion is the NUTS-3 target version of this time-series point (resolved
+	// value: the requested nuts_version or the default, see GET /versions).
 	NutsVersion int     `db:"target_version"  json:"nuts_version"   example:"2021"`
 	Year        int     `db:"year"            json:"year"           example:"2021"`
 	Value       float64 `db:"value"           json:"value"          example:"8.78"`
@@ -120,7 +122,8 @@ type NutsTimeseriesPoint struct {
 type LauTimeseriesPoint struct {
 	GiscoID     string `db:"gisco_id"      json:"gisco_id"      example:"DE_11000000"`
 	DatasetSlug string `db:"dataset_slug"  json:"dataset_slug"  example:"beschaeftigungsquote-gemeinden"`
-	// LauVersion is the LAU target version of this time-series point (2011-2024).
+	// LauVersion is the LAU target version of this time-series point (resolved
+	// value: the requested lau_version or the default, see GET /versions).
 	LauVersion int     `db:"target_version" json:"lau_version"   example:"2021"`
 	Year       int     `db:"year"          json:"year"          example:"2021"`
 	Value      float64 `db:"value"         json:"value"         example:"58.3"`

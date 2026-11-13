@@ -56,7 +56,7 @@ models:
         description: "Number of years with population data for this LAU"
 
   - name: mart_nuts3_summary
-    description: "All available socioeconomic indicators per NUTS-3 region and year."
+    description: "All available socioeconomic indicators per NUTS-3 region and year, read from mart_nuts3_sociodata_harmonized on a single NUTS-3 boundary version (target_version 2024), so a row never mixes NUTS vintages."
     columns:
       - name: nuts_id
         description: "NUTS-3 code of the region (e.g. DE111)"
@@ -290,7 +290,7 @@ models:
         tests:
           - not_null
       - name: harmonized_value
-        description: "Value converted to target_version; summed proportionally when several source regions merge into one"
+        description: "Value converted to target_version; summed proportionally when several source regions merge into one (counts), or averaged weighted by population (rates/averages) resp. by the employee count of employee_slug (auszubildende: sv_beschaeftigte, population fallback where that count is missing)"
         tests:
           - not_null
       - name: is_crosswalked
@@ -305,6 +305,38 @@ models:
         description: "False if any contributing source value fails the has_valid_value rule of its stg_*_kreise model (valid_when in the model); harmonized_value is still computed, consumers that need plausible values (GET /metrics) skip these rows"
         tests:
           - not_null
+
+  - name: mart_nuts_version_crosswalk
+    description: >
+      Population-weighted crosswalk between NUTS-3 boundary versions
+      (Germany), one direct row per (source region, target region, version
+      pair). Weights are always in inhabitants (weight_basis says whether they
+      come from LAU population or, for a source group without any, from the
+      area share times the region population); singular test
+      assert_nuts_crosswalk_weights_consistent.
+    columns:
+      - name: source_nuts_id
+        tests:
+          - not_null
+      - name: target_nuts_id
+        tests:
+          - not_null
+      - name: population_weight
+        description: "Share of the source region's value going to the target region; sums to 1 per (source_nuts_id, source_version, target_version)"
+        tests:
+          - not_null
+      - name: absolute_weight
+        description: "Inhabitants of the source region attributed to the target region (before normalization); weight for weighted_avg merges"
+        tests:
+          - not_null
+      - name: weight_basis
+        description: "'population' (LAU population, areal interpolation within split Gemeinden) or 'area' (whole source group without LAU population: area_fraction x region population)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['population', 'area']
+      - name: source_population
+        description: "Inhabitants of the whole source region for this version pair (LAU population of the reference year)"
 
   - name: mart_nuts3_timeseries_interpolated
     description: >
@@ -529,7 +561,7 @@ models:
         description: "Share of the NUTS-3 region's area that falls into this district (rows per NUTS-3 region sum to approximately 1.0)"
 
   - name: mart_dataset_aggregation_meta
-    description: "Aggregation metadata per indicator: level, measure type (sum, weighted_avg, or weighted_avg_employees for values per employed person such as arbeitsvolumen/bruttoverdienst), kind, and whether the aggregation is an approximation."
+    description: "Aggregation metadata per indicator: level, measure type (sum, weighted_avg, or weighted_avg_employees for values per employed person such as arbeitsvolumen/bruttoverdienst, or per SV-Beschaeftigte such as auszubildende), the employee-count dataset used as weight (employee_slug), kind, and whether the aggregation is an approximation."
     columns:
       - name: dataset_slug
         tests:
@@ -549,6 +581,11 @@ models:
         tests:
           - accepted_values:
               values: ['count', 'rate', 'mean', 'median']
+      - name: employee_slug
+        description: "Only for measure_type weighted_avg_employees: dataset whose (harmonized, target version 2024) count is the weight - erwerbstaetige_pro_1000_einwohner (employed persons, thousands) or sv_beschaeftigte (auszubildende). NULL otherwise."
+        tests:
+          - accepted_values:
+              values: ['erwerbstaetige_pro_1000_einwohner', 'sv_beschaeftigte']
 
   - name: mart_custom_region_unit_values
     description: "Harmonised values per level (LAU, NUTS-3, employment agency district), including population as weight. Basis for custom region aggregation. NUTS-3 and LAU are fixed to target version 2024."

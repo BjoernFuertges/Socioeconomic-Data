@@ -9,11 +9,38 @@
 }}
 
 /*
-  Spatial assignment of each Gemeinde (LAU) to its NUTS-3 region per NUTS
-  version (2003, 2006, 2010, 2013, 2016, 2021, 2024).
+  Spatial split of each Gemeinde (LAU) across the NUTS-3 regions of each NUTS
+  version (2003, 2006, 2010, 2013, 2016, 2021, 2024). One row per
+  (gisco_id, year, version_year, nuts_id) piece.
 
-  Assignment by largest intersection area (instead of plain ST_Contains) to
-  absorb numerical inaccuracies and boundary touches at Gemeinde borders.
+  Why pieces instead of "whole Gemeinde -> region with the largest share":
+  a LAU vintage (2019-2024) does not fit older NUTS boundaries - e.g. the
+  2007 Kreisreform in Sachsen-Anhalt or the 2003 Potsdam incorporations put
+  large parts of today's Gemeinden into a different NUTS-3 region of 2003.
+  Assigning such a Gemeinde wholesale to one region gave a (source, target)
+  pair of int_lau_nuts3_population_weight no population at all unless some
+  Gemeinde had its largest share exactly in source ∩ target, so the
+  crosswalk silently fell back to area shares and lost up to ~75 % of a
+  source region's population.
+
+  Columns:
+    area_share   = ST_Area(gemeinde ∩ region) / ST_Area(gemeinde)
+    weight_share = share of the Gemeinde's population attributed to this
+                   region. The area shares are first renormalized over the
+                   Gemeinde's covered area (parts outside every German NUTS-3
+                   geometry, e.g. coast lines generalized differently, would
+                   otherwise lose population). If one region then holds at
+                   least var('lau_nuts3_snap_share') (default 0.95) of the
+                   Gemeinde, the Gemeinde is "snapped" wholly to that region
+                   (weight_share = 1, single row): LAU and NUTS geometries
+                   are generalized independently, so small splits are
+                   boundary noise, not real territory.
+    is_split     = true if the Gemeinde is genuinely split across regions of
+                   this version (several rows, weight_share sums to 1); the
+                   exact gemeinde ∩ source ∩ target area is then computed in
+                   int_lau_nuts3_population_weight.
+    is_largest_share = the region with the largest area share (the former
+                   single assignment).
 
   Only computed for the LAU population years present in
   int_lau_population_geo, to keep the spatial join small.
@@ -24,6 +51,8 @@
   join hang. The mart stores a GiST-indexed geometry per validity period
   (valid_from/valid_to), so version_year is filtered against that range.
 */
+
+{% set snap_share = var('lau_nuts3_snap_share', 0.95) %}
 
 with version_years as (
     select distinct year as version_year
@@ -52,25 +81,45 @@ lau_years as (
     from {{ ref('int_lau_population_geo') }}
 ),
 
-ranked as (
+pieces as (
     select
         l.gisco_id,
         l.year,
         n.version_year,
         n.nuts_id,
-        row_number() over (
-            partition by l.gisco_id, l.year, n.version_year
-            order by ST_Area(ST_Intersection(l.geometry_3035, n.geometry_3035)) desc
-        ) as rn
+        ST_Area(ST_Intersection(l.geometry_3035, n.geometry_3035))
+            / nullif(ST_Area(l.geometry_3035), 0) as area_share
     from lau_years l
     join nuts_de n
         on ST_Intersects(l.geometry_3035, n.geometry_3035)
+),
+
+normalized as (
+    select
+        *,
+        area_share / sum(area_share) over w      as share_norm,
+        max(area_share) over w / sum(area_share) over w as max_share_norm,
+        row_number() over (
+            partition by gisco_id, year, version_year
+            order by area_share desc, nuts_id
+        ) as rn
+    from pieces
+    where area_share > 0
+    window w as (partition by gisco_id, year, version_year)
 )
 
 select
     gisco_id,
     year,
     version_year,
-    nuts_id
-from ranked
-where rn = 1
+    nuts_id,
+    area_share,
+    case
+        when max_share_norm >= {{ snap_share }} then 1.0
+        else share_norm
+    end                                    as weight_share,
+    max_share_norm < {{ snap_share }}      as is_split,
+    rn = 1                                 as is_largest_share
+from normalized
+where max_share_norm < {{ snap_share }}
+   or rn = 1

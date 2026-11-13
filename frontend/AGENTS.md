@@ -79,7 +79,10 @@ Findability, requirement F12.1):
   — the map's full selection state lives in the query string; `region=`
   optionally highlights and centers on one region, `nutsLevel=` (0-3,
   default 3/Kreise) picks which NUTS level is the interactive layer when
-  `geo=nuts`.
+  `geo=nuts`. The NUTS/LAU version lists and the default (newest) come
+  from `GET /versions` (`loadTargetVersions()` in `MapView.vue`; the
+  hard-coded lists there are only the fallback) - do not hard-code a
+  version elsewhere.
 - `/eigene-region` — "Eigene Region": paste/upload a GeoJSON
   Polygon/MultiPolygon, or combine existing regions by clicking them
   (`components/CombineRegionsPicker.vue`: own Leaflet map, levels
@@ -95,6 +98,15 @@ Findability, requirement F12.1):
   GeoJSON precheck; the region is never stored server-side (only the last
   GeoJSON in localStorage as a convenience). Not part of the query-string
   state model of the other views.
+- **API client resilience** (`src/api/client.ts` + framework-free
+  `src/api/resilience.ts`): Traefik rate-limits expensive GETs (HTTP 429, per
+  IP 4 concurrent / 20 per min). The client retries 429/503 (max. 3 attempts,
+  exponential backoff + jitter, honours `Retry-After`; POST only for the pure
+  query endpoints `/custom-regions/dataset-aggregate` and `/geo/query`),
+  limits geometry requests (`/geo` with `include_geometry=true`, `/regions/*`)
+  to 2 concurrent, and caches/deduplicates them per URL (LRU 20, 30 min TTL,
+  errors never cached). A final 429 becomes `RATE_LIMIT_MESSAGE`; views show
+  an "Erneut laden" button via `isRateLimitText()`.
 - `/katalog/:slug?` — optionally deep-links to and highlights one catalog
   entry; `?q=&level=&license=` mirror the search/filter state.
 

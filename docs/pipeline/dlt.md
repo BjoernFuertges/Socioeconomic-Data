@@ -103,7 +103,7 @@ production it is mirrored to `data-exchange/geodata`; locally it may sit in
 WGS84 and only carry ids and names, so the loader reprojects them to
 EPSG:3035 and derives the columns dbt expects (`gisco_id = DE_<AGS>`,
 `levl_code` from the file name, `cntr_code`). The folder holds Germany only,
-LAU 2011-2024 without 2018, NUTS levels 2 and 3 only (no levels 0/1).
+LAU 2011-2024, NUTS levels 2 and 3 only (no levels 0/1).
 
 If the folder is absent, the loader looks for pre-processed files in the
 configured `GEODATA_BASE_PATH` output (compressed, `*.geojson.gz`) and

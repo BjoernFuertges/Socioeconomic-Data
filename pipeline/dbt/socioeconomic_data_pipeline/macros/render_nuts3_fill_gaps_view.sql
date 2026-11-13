@@ -1,5 +1,5 @@
 {% macro render_nuts3_fill_gaps_view(stage_model, dataset_slug, value_column) %}
-{% set target_versions = [2003, 2006, 2010, 2013, 2016, 2021, 2024] %}
+{% set target_versions = var('nuts_versions') %}
 
 with timeseries as (
     select

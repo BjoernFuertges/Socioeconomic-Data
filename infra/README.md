@@ -23,11 +23,11 @@ Die Anwendung selbst deployt [`.github/workflows/main.yml`](../.github/workflows
    Der lokale State (`terraform.tfstate`) ist nicht im Repo (`.gitignore`); geht er verloren, lässt sich der Bucket
    per `terraform import aws_s3_bucket.state <bucket>` wieder aufnehmen.
 4. **Deploy-Key erzeugen**: `ssh-keygen -t ed25519 -f deploy_key -C soziodata-deploy` (ohne Passphrase; `deploy_key` → Secret `SSH_PRIVATE_KEY`, `deploy_key.pub` → Secret `DEPLOY_SSH_PUBLIC_KEY`).
-5. **GitHub Secrets/Variablen** setzen (siehe unten).
-6. **Environments** `infra` und `production` anlegen (empfohlen: Required reviewers).
+5. **GitHub Secrets/Variablen** setzen (siehe unten), darunter `API_DB_PASSWORD` und `PIPELINE_DB_PASSWORD` (je `openssl rand -hex 32`, zwei verschiedene Werte). Die Secrets müssen **vor dem Merge/Deploy** existieren, sonst schlägt der Deploy fehl; bei einem bestehenden Server legt der nächste Deploy die Rollen `api_ro` und `pipeline_rw` automatisch an. Bei einem bestehenden Server vorher prüfen, dass `pipeline/dbt/socioeconomic_data_pipeline/profiles.yml` (gitignored, liegt nur auf dem Server) `user`/`password` per `env_var('DB_USER')`/`env_var('DB_PASSWORD')` liest wie `profiles.example.yml` - sonst läuft dbt weiter als Superuser (`deploy_remote.sh apply` warnt dann).
+6. **Environments** `infra` und `production` anlegen (empfohlen: Required reviewers), dazu `production-ops` (siehe „Environments“ unten).
 7. **`infra.yml` ausführen** (Actions → „Infrastruktur (Terraform)“ → Run workflow, danach `apply` freigeben).
    Die Zusammenfassung des Laufs zeigt die IPv4/IPv6 des Servers.
-8. **DNS setzen**: A-Record (und optional AAAA) für `APP_HOST` auf die Server-IP.
+8. **DNS setzen**: A-Record (und optional AAAA) für `APP_HOST` auf die Server-IP. Den AAAA-Record erst setzen, wenn geprüft ist, dass Traefik über IPv6 die echte Client-Adresse sieht (sonst teilen sich alle IPv6-Clients ein Rate-Limit, siehe `docs/operations.md`, Abschnitt „Rate limits and memory limits“).
 9. **Repo-Variable `SSH_HOST`** auf die Server-IP setzen und Host-Key holen:
    ```bash
    ssh-keyscan -H <SSH_HOST>   # Ausgabe als Secret SSH_KNOWN_HOSTS speichern
@@ -48,6 +48,8 @@ Die Anwendung selbst deployt [`.github/workflows/main.yml`](../.github/workflows
 | `SSH_PRIVATE_KEY` | Secret | privater Deploy-Key |
 | `SSH_KNOWN_HOSTS` | Secret | Ausgabe von `ssh-keyscan -H <SSH_HOST>` |
 | `DB_PASSWORD`, `LE_EMAIL` | Secret | Compose-`.env` auf dem Server |
+| `API_DB_PASSWORD` | Secret | Passwort der read-only DB-Rolle `api_ro` des Backends (nur `[A-Za-z0-9]`, z. B. `openssl rand -hex 32`; `$` würde Compose interpolieren). Der Deploy legt die Rolle an bzw. zieht das Passwort nach (`backend/scripts/ensure_api_role.sql`); ohne das Secret bricht `Prepare configuration files` ab. |
+| `PIPELINE_DB_PASSWORD` | Secret | Passwort der Nicht-Superuser-Rolle `pipeline_rw` von dlt/dbt im `pipeline`-Container (gleiche Regeln: nur `[A-Za-z0-9]`). Der Deploy legt die Rolle an, übereignet ihr die Pipeline-Schemas bzw. zieht das Passwort nach (`backend/scripts/ensure_pipeline_role.sql`); ohne das Secret bricht `Prepare configuration files` ab. |
 | `RCLONE_CONF` | Secret | Inhalt der `rclone.conf` für den Nextcloud-Sync (optional) |
 | `PAT_SEMANTIC_RELEASE` | Secret | Personal Access Token für Semantic Release (Push des Release-Commits) |
 | `TF_STATE_BUCKET`, `TF_STATE_REGION` | Variable | z. B. `soziodata-tfstate`, `fsn1` |
@@ -60,6 +62,33 @@ Die Anwendung selbst deployt [`.github/workflows/main.yml`](../.github/workflows
 | `PGDATA_DIR` | Variable | optional, Default `/mnt/pgdata/data` (Hetzner-Volume) |
 
 Die GHCR-Images sind öffentlich zu stellen (Package-Einstellungen → Visibility), damit der Server sie ohne Login ziehen kann.
+
+## Environments
+
+| Environment | Jobs | Einstellung |
+|---|---|---|
+| `infra` | `apply` in `infra.yml` | Required reviewers empfohlen |
+| `production` | `deploy-hetzner` | Required reviewers empfohlen; Deployment branches: nur `main` |
+| `production-ops` | `mark-good`, `rollback` | **keine** Required reviewers (der automatische Rollback nach fehlgeschlagenem E2E darf nicht auf eine Freigabe warten); Deployment branches: nur `main` |
+
+`production-ops` legt GitHub beim ersten Lauf automatisch ohne Schutzregeln an, falls es fehlt; der Workflow bricht also nicht,
+Branch-Regel und Secrets müssen aber manuell gesetzt werden. Die Secrets `SSH_PRIVATE_KEY` und `SSH_KNOWN_HOSTS` sind zunächst
+Repo-Secrets und damit in allen Environments lesbar. Zum Eingrenzen: in `production` **und** `production-ops` jeweils als
+Environment-Secret anlegen und danach das Repo-Secret löschen (sonst bleibt der Zugriff über andere Workflows/PRs desselben Repos offen).
+Die Variablen `SSH_HOST`/`SSH_USER` können Repo-Variablen bleiben.
+
+## Hinweise zum Deploy-Ablauf
+
+- **Bind-Mount und Scheduler vor dem E2E**: Der Rollout tauscht Code und Pipeline-Bind-Mount schon im Deploy-Job, also vor
+  `e2e-production`. Der stündliche Scheduler kann neue dbt-/dlt-Stände gegen die Datenbank laufen lassen, bevor das E2E grün ist.
+  Ein Rollback setzt nur Code/Images zurück, nicht Datenbank oder Snapshots.
+- **Release-Tag vor dem Deploy**: `semantic-release-final` läuft vor `deploy-hetzner`. Ein fehlgeschlagener Deploy
+  (oder Rollback) hinterlässt trotzdem Release-Tag, Changelog-Commit und GitHub-Release.
+- **Abbruch**: `deploy-hetzner` hat eine eigene Concurrency-Gruppe ohne `cancel-in-progress`; ein neuer Push bricht einen
+  laufenden Deploy nicht ab. Bei manuellem Abbruch oder Timeout während des Rollouts löst der Rollback-Step im Deploy-Job
+  ebenfalls aus. Wird erst `e2e-production` abgebrochen, erfolgt **kein** automatischer Rollback (nur bei `failure`).
+- **Action-Pins**: Fremd-Actions (`cycjimmy/semantic-release-action`, `docker/*`, `hashicorp/setup-terraform`) sind per Commit-SHA
+  gepinnt, Dependabot (`github-actions`) hält sie aktuell. `actions/*` bleiben auf Major-Tags.
 
 ## Datenbank-Backup
 
@@ -79,6 +108,8 @@ als root anmelden; Alternativen: Rescue-System oder Server neu aufbauen. `infra.
 `DEPLOY_SSH_PUBLIC_KEY` nicht zusammenpassen.
 Adminer ist nicht öffentlich, sondern nur per SSH-Tunnel erreichbar, siehe `docs/operations.md`
 (Abschnitt „Server hardening and Adminer“).
+Rate-Limits (Traefik) und `mem_limit` der Container stehen in `backend/deployments/docker-compose.yml`, Überblick in
+`docs/operations.md` (Abschnitt „Rate limits and memory limits“).
 
 ## Hinweise
 

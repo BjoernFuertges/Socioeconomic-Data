@@ -179,6 +179,18 @@ export interface LauTimeseriesPoint extends TimeseriesPoint {
   lau_version: number;
 }
 
+// GET /versions: supported nuts_version / lau_version values (ascending) and
+// the default the API uses when the parameter is omitted (the newest one).
+export interface TargetVersionList {
+  versions: number[];
+  default: number;
+}
+
+export interface TargetVersionsResponse {
+  nuts: TargetVersionList;
+  lau: TargetVersionList;
+}
+
 export interface DatasetCatalogEntry {
   route_slug: string;
   available_years: number[];
@@ -290,6 +302,7 @@ export interface CustomRegionDataset {
   measure_type: "sum" | "weighted_avg";
   kind: "count" | "rate" | "mean" | "median";
   finer_slug?: string | null;
+  employee_slug?: string | null;
 }
 
 // Row of POST /custom-regions/dataset-aggregate
@@ -307,4 +320,6 @@ export interface CustomRegionAggregateRow {
   // Set when the polygon matches an existing unit exactly.
   matched_unit?: string;
   is_crosswalked?: boolean;
+  // Preferred weighting count of weighted_avg_employees indicators (also set on fallback rows).
+  employee_slug?: string | null;
 }

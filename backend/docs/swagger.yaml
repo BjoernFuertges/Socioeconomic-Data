@@ -25,7 +25,9 @@ definitions:
           area-weighted average (fallback when population is missing for a
           contributing Kreis); "weighted_avg_employees" = average weighted by the
           number of employed persons (for values per employed person, e.g.
-          arbeitsvolumen). The averages are an approximation, not an exact
+          arbeitsvolumen; auszubildende: by SV-Beschaeftigte; if that weight is
+          missing, e.g. before 2007, the row falls back to
+          "weighted_avg_population"). The averages are an approximation, not an exact
           recomputation.
         enum:
         - sum
@@ -1362,8 +1364,9 @@ definitions:
         example: true
         type: boolean
       lau_version:
-        description: LauVersion is the LAU target version of this time-series point
-          (2011-2024).
+        description: |-
+          LauVersion is the LAU target version of this time-series point (resolved
+          value: the requested lau_version or the default, see GET /versions).
         example: 2021
         type: integer
       n_peer_regions:
@@ -1525,6 +1528,12 @@ definitions:
     type: object
   github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsLauAggregatePoint:
     properties:
+      lau_beschaeftigungsquote_region_count:
+        description: |-
+          Number of Gemeinden with a valid Beschäftigungsquote that went into the average
+          (0 without quote). Independent of the population counts above.
+        example: 21
+        type: integer
       lau_beschaeftigungsquote_weighted_avg:
         description: Population-weighted average of the Gemeinde Beschäftigungsquote;
           null without data coverage.
@@ -1675,8 +1684,9 @@ definitions:
         example: DE226
         type: string
       nuts_version:
-        description: NutsVersion is the NUTS-3 target version of this time-series
-          point (2016, 2021 or 2024).
+        description: |-
+          NutsVersion is the NUTS-3 target version of this time-series point (resolved
+          value: the requested nuts_version or the default, see GET /versions).
         example: 2021
         type: integer
       value:
@@ -2193,6 +2203,13 @@ definitions:
       dataset_slug:
         example: schuldnerquote
         type: string
+      employee_slug:
+        description: |-
+          EmployeeSlug names the employee-count dataset that is the preferred weight
+          of this indicator (e.g. sv_beschaeftigte for auszubildende), also when the
+          row fell back to the population weight; so clients can label the weighting.
+        example: sv_beschaeftigte
+        type: string
       indicator:
         example: schuldnerquote
         type: string
@@ -2228,10 +2245,47 @@ definitions:
         example: 2023
         type: integer
     type: object
+  internal_handlers.TargetVersionList:
+    properties:
+      default:
+        description: 'Version used when the request omits the parameter: the newest
+          one'
+        example: 2024
+        type: integer
+      versions:
+        description: Ascending list of the supported target versions
+        example:
+        - 2003
+        - 2006
+        - 2010
+        - 2013
+        - 2016
+        - 2021
+        - 2024
+        items:
+          type: integer
+        type: array
+    type: object
+  internal_handlers.TargetVersionsResponse:
+    properties:
+      lau:
+        allOf:
+        - $ref: '#/definitions/internal_handlers.TargetVersionList'
+        description: Values of lau_version (LAU harmonized datasets)
+      nuts:
+        allOf:
+        - $ref: '#/definitions/internal_handlers.TargetVersionList'
+        description: Values of nuts_version (NUTS-3 harmonized datasets, /metrics)
+    type: object
   internal_handlers.customRegionMeta:
     properties:
       dataset_slug:
         example: schuldnerquote
+        type: string
+      employee_slug:
+        description: 'EmployeeSlug: weighting count of ''weighted_avg_employees''
+          indicators.'
+        example: sv_beschaeftigte
         type: string
       finer_slug:
         type: string
@@ -2807,8 +2861,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
-          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -2889,8 +2944,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -3010,8 +3065,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
-          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -3092,8 +3148,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -3214,8 +3270,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
-          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -3297,8 +3354,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -3419,8 +3476,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-LAU-Version (2011-2024,
-          Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-LAU-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: lau_version
@@ -3502,7 +3560,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-LAU-Version (2011-2024, Default 2024)
+      - description: 'Ziel-LAU-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: lau_version
@@ -3692,8 +3751,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -3813,8 +3872,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
-          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -3895,8 +3955,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -4016,8 +4076,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
-          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -4098,8 +4159,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -4461,8 +4522,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
-          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -4543,8 +4605,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -4665,8 +4727,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
-          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -4747,8 +4810,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -5168,8 +5231,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
-          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -5250,8 +5314,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -5578,8 +5642,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
-          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -5660,8 +5725,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -5730,7 +5795,7 @@ paths:
         Mehrere 'dataset'-Parameter kombinieren unterschiedliche Datensätze in einer Antwort.
         Mit 'geodata_id_nuts' werden zusätzlich der Regionalwert und das Ranking der Region zurückgegeben.
         Für aufeinanderfolgende Jahre wird die prozentuale Veränderung (YoY) berechnet.
-        Harmonisierte Kreis-Datensätze werden aus mart_nuts3_sociodata_harmonized im NUTS-3-Stand 'nuts_version' berechnet (Default 2024; die Antwort nennt ihn in nuts_version), sodass jede Region je Jahr genau einmal zählt.
+        Harmonisierte Kreis-Datensätze werden aus mart_nuts3_sociodata_harmonized im NUTS-3-Stand 'nuts_version' berechnet (ohne Angabe die neueste verfügbare Version, siehe GET /versions; die Antwort nennt ihn in nuts_version), sodass jede Region je Jahr genau einmal zählt.
         Nur gültige Werte gehen ein (has_valid_value; harmonisierte Werte nur, wenn alle beteiligten Quellwerte gültig sind); ausgeschlossene Werte zählt excluded_invalid_count je Jahr und Spalte, excluded_regions die betroffenen Regionen, meta.note erklärt das.
         Spalten ohne harmonisierte Entsprechung (beschaeftigungsquote_median, beschaeftigungsquote_ungewichtet, gemeinden_count von beschaeftigungsquote-nuts3) und nicht harmonisierte Datensätze (beschaeftigungsquote-gemeinden) kommen weiter ungeharmonisiert aus der Staging-Tabelle (nuts_version fehlt dann in der Antwort).
       parameters:
@@ -5769,16 +5834,10 @@ paths:
         in: query
         name: geodata_id_nuts
         type: string
-      - default: 2024
-        description: NUTS-3-Zielversion der harmonisierten Werte
-        enum:
-        - 2003
-        - 2006
-        - 2010
-        - 2013
-        - 2016
-        - 2021
-        - 2024
+      - description: 'NUTS-3-Zielversion der harmonisierten Werte; ohne Angabe die
+          neueste verfügbare Version (Liste: GET /versions). Für stabile Regions-IDs
+          explizit angeben.'
+        example: 2021
         in: query
         name: nuts_version
         type: integer
@@ -5846,7 +5905,7 @@ paths:
         Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine
         abgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²; Auszubildende absolut = Auszubildende je 1.000 SV-Beschäftigte × SV-Beschäftigte / 1.000).
         Sind alle beteiligten Datensätze harmonisiert, werden Zähler und Nenner bzw. Faktor aus mart_nuts3_sociodata_harmonized im
-        NUTS-3-Stand 'nuts_version' gelesen (Default 2024) und die Fläche aus der Geometrie desselben Stands; die Antwort nennt ihn in nuts_version.
+        NUTS-3-Stand 'nuts_version' gelesen (ohne Angabe die neueste verfügbare Version, siehe GET /versions) und die Fläche aus der Geometrie desselben Stands; die Antwort nennt ihn in nuts_version.
         Formeltyp ratio: Nur Regionen mit gültigem Zähler und Nenner gehen ein. Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Nenner oder Nenner 0),
         regions_without_geometry (keine Geometrie für den Flächennenner) und regions_without_denominator (kein Nennerwert) je Jahr.
         Formeltyp product: Nur Regionen mit gültigem Zähler und Faktor gehen ein (ein Faktor 0 ist gültig). Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Faktor)
@@ -5884,16 +5943,10 @@ paths:
         in: query
         name: geodata_id_nuts
         type: string
-      - default: 2024
-        description: NUTS-3-Zielversion der harmonisierten Werte
-        enum:
-        - 2003
-        - 2006
-        - 2010
-        - 2013
-        - 2016
-        - 2021
-        - 2024
+      - description: 'NUTS-3-Zielversion der harmonisierten Werte; ohne Angabe die
+          neueste verfügbare Version (Liste: GET /versions). Für stabile Regions-IDs
+          explizit angeben.'
+        example: 2021
         in: query
         name: nuts_version
         type: integer
@@ -6319,8 +6372,10 @@ paths:
         LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung),
         scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus
         Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert). NUTS-0/1/2 haben keine
-        Rohwerte, LAU keine aggregierten Werte. Format per Accept-Header (application/json
-        oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.'
+        Rohwerte, LAU keine aggregierten Werte. Die NUTS-3-/LAU-Rohwerte stehen immer
+        im neuesten verfügbaren NUTS-/LAU-Stand (default von GET /versions). Format
+        per Accept-Header (application/json oder text/csv) oder ?format=csv|json;
+        ?download=1 setzt Content-Disposition.'
       parameters:
       - description: Regionstyp
         enum:
@@ -6464,8 +6519,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
-          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -6546,8 +6602,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -6667,8 +6723,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
-          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -6749,8 +6806,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -6917,8 +6974,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
-          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -6999,8 +7057,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -7121,8 +7179,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
-          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -7204,8 +7263,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -7266,6 +7325,27 @@ paths:
         with derived observation date and quality flag.
       tags:
       - SvBeschaeftigte
+  /versions:
+    get:
+      description: |-
+        Listet die Werte, die nuts_version (harmonisierte Kreis-Datensätze, /metrics) und lau_version (harmonisierte LAU-Datensätze) annehmen können, und den jeweiligen Default.
+        Ohne Angabe von nuts_version/lau_version liefert die API immer die neueste verfügbare Version (default = Maximum von versions). Kommt eine neue NUTS-/LAU-Version hinzu, ändern sich der Default und damit Regions-IDs (z.B. nach Kreisreformen); wer stabile IDs braucht, gibt die Version explizit an.
+        Die Liste wird beim Start des Backends aus den harmonisierten Marts gelesen.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_handlers.TargetVersionsResponse'
+              type: object
+      summary: Unterstützte NUTS-/LAU-Zielversionen
+      tags:
+      - Meta
   /wohngeldhaushalte:
     get:
       consumes:
@@ -7326,8 +7406,9 @@ paths:
         in: query
         name: fill_gaps
         type: boolean
-      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
-          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe
+          die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs
+          explizit angeben'
         example: 2021
         in: query
         name: nuts_version
@@ -7408,8 +7489,8 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
-          Default 2024)
+      - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
+          (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
         in: query
         name: nuts_version

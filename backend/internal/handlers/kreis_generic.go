@@ -8,24 +8,8 @@ import (
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
-// supportedNutsVersions are the NUTS-3 target versions for which
-// mart_nuts3_sociodata_harmonized / mart_nuts3_timeseries_interpolated carry
-// rows (see target_versions there). Must be kept in sync manually, like
-// harmonizedRouteSlugs in cmd/gen-models/main.go.
-var supportedNutsVersions = []int{2003, 2006, 2010, 2013, 2016, 2021, 2024}
-
-// defaultNutsVersion is the target version when nuts_version is not set -
-// matches the previous (pre-multi-version) behaviour.
-const defaultNutsVersion = 2024
-
-func isSupportedNutsVersion(v int) bool {
-	for _, sv := range supportedNutsVersions {
-		if sv == v {
-			return true
-		}
-	}
-	return false
-}
+// Supported nuts_version values and the default (newest) come from the
+// harmonized marts at startup - see target_versions.go.
 
 // sozioKreisBaseColumns is the SELECT column list shared by all Kreis datasets.
 // observation_date is explicitly cast to text so sqlx can scan it into a string field.
@@ -80,12 +64,12 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 		table = cfg.InterpolatedTable
 		if cfg.IsHarmonizedLau {
 			extraColumns = ", d.is_interpolated, d.value_linear, d.value_peer_trend, d.n_peer_regions, d.lau_version"
-			v := defaultLauVersion
+			v := defaultLauVersion()
 			if filter.LauVersion != nil {
 				if !isSupportedLauVersion(*filter.LauVersion) {
 					respondBadRequest(c, fmt.Sprintf(
 						"lau_version %d wird nicht unterstützt (erlaubt: %v)",
-						*filter.LauVersion, supportedLauVersions,
+						*filter.LauVersion, supportedLauVersions(),
 					))
 					return
 				}
@@ -94,12 +78,12 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 			lauVersion = &v
 		} else {
 			extraColumns = ", d.is_interpolated, d.value_linear, d.value_peer_trend, d.n_peer_regions, d.nuts_version"
-			v := defaultNutsVersion
+			v := defaultNutsVersion()
 			if filter.NutsVersion != nil {
 				if !isSupportedNutsVersion(*filter.NutsVersion) {
 					respondBadRequest(c, fmt.Sprintf(
 						"nuts_version %d wird nicht unterstützt (erlaubt: %v)",
-						*filter.NutsVersion, supportedNutsVersions,
+						*filter.NutsVersion, supportedNutsVersions(),
 					))
 					return
 				}
@@ -290,12 +274,12 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 		return
 	}
 
-	nutsVersion := defaultNutsVersion
+	nutsVersion := defaultNutsVersion()
 	if filter.NutsVersion != nil {
 		if !isSupportedNutsVersion(*filter.NutsVersion) {
 			respondBadRequest(c, fmt.Sprintf(
 				"nuts_version %d wird nicht unterstützt (erlaubt: %v)",
-				*filter.NutsVersion, supportedNutsVersions,
+				*filter.NutsVersion, supportedNutsVersions(),
 			))
 			return
 		}

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -424,5 +425,94 @@ func TestDBNutsLimitNullWithChunkSize(t *testing.T) {
 	_ = json.Unmarshal(resp.Data, &data)
 	if len(data) != 1 || data[0].NutsID != "DE003" || resp.Meta.Total != 3 {
 		t.Errorf("chunk 1 = %+v meta %+v", data, resp.Meta)
+	}
+}
+
+// source_region_count of the Beschäftigungsquote must come from its own count
+// column, not from the population counts (0 in years without a LAU vintage).
+func TestDBLauAggregateQuoteSourceCount(t *testing.T) {
+	db := openIntegrationDB(t)
+	if _, err := db.Exec(`
+CREATE TABLE transformed_data.mart_nuts3_lau_aggregate (
+  nuts3_id text, year int, lau_population_sum numeric, lau_region_count int,
+  lau_region_count_with_population int, lau_beschaeftigungsquote_weighted_avg numeric,
+  lau_beschaeftigungsquote_region_count int);
+INSERT INTO transformed_data.mart_nuts3_lau_aggregate VALUES
+  ('DE001', 2019, NULL, 0, 0, 61.5, 7),
+  ('DE001', 2024, 1000, 9, 8, 62.5, 7);`); err != nil {
+		t.Fatalf("fixture: %v", err)
+	}
+	h := NewHandler(db, nil)
+	rows, err := h.lauAggregateRows(context.Background(), "DE001", nil, regionDataFilter{})
+	if err != nil {
+		t.Fatalf("lauAggregateRows: %v", err)
+	}
+	got := map[string]int{}
+	for _, r := range rows {
+		if r.SourceRegionCount == nil {
+			t.Fatalf("nil count: %+v", r)
+		}
+		got[fmt.Sprintf("%s/%d", r.DatasetSlug, r.Year)] = *r.SourceRegionCount
+	}
+	want := map[string]int{
+		slugLauBeschQuoteAvg + "/2019": 7, slugLauBeschQuoteAvg + "/2024": 7,
+		slugLauPopulationSum + "/2019": 0, slugLauPopulationSum + "/2024": 8,
+	}
+	for k, v := range want {
+		if got[k] != v {
+			t.Errorf("%s: count = %d, want %d", k, got[k], v)
+		}
+	}
+}
+
+// Target versions come from the harmonized marts; a new version becomes the
+// default without code changes, a missing mart falls back to the static list.
+func TestDBConfigureTargetVersions(t *testing.T) {
+	db := openIntegrationDB(t)
+	t.Cleanup(resetTargetVersions)
+
+	nuts, lau := ConfigureTargetVersions(db)
+	if nuts.Fallback || !slices.Equal(nuts.Versions, []int{2024}) || nuts.Default != 2024 {
+		t.Errorf("nuts = %+v", nuts)
+	}
+	// The fixture has no LAU mart: static fallback with an error.
+	if !lau.Fallback || lau.Err == nil || lau.Default != 2024 || !slices.Equal(lau.Versions, fallbackLauVersions) {
+		t.Errorf("lau = %+v", lau)
+	}
+
+	if _, err := db.Exec(`INSERT INTO transformed_data.mart_nuts3_sociodata_harmonized VALUES
+		('schuldnerquote', 'DE001', 2020, 2027, 9, false, 2024, 1, true),
+		('schuldnerquote', 'DE001', 2020, 2016, 4, false, 2016, 0, true)`); err != nil {
+		t.Fatal(err)
+	}
+	nuts, _ = ConfigureTargetVersions(db)
+	if nuts.Fallback || !slices.Equal(nuts.Versions, []int{2016, 2024, 2027}) || nuts.Default != 2027 {
+		t.Fatalf("nuts = %+v", nuts)
+	}
+	r := integrationRouter(db)
+	code, resp := getJSON(t, r, "/metrics?dataset=schuldnerquote")
+	if code != http.StatusOK {
+		t.Fatalf("status %d: %s", code, resp.Error)
+	}
+	var results []models.DatasetMetricsResult
+	if err := json.Unmarshal(resp.Data, &results); err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 || results[0].NutsVersion == nil || *results[0].NutsVersion != 2027 ||
+		len(results[0].ByYear) != 1 || results[0].ByYear[0].Max != 9 {
+		t.Errorf("default must be 2027: %+v", results)
+	}
+	code, resp = getJSON(t, r, "/metrics?dataset=schuldnerquote&nuts_version=2021")
+	if code != http.StatusBadRequest || !strings.Contains(resp.Error, "[2016 2024 2027]") {
+		t.Errorf("status %d: %s", code, resp.Error)
+	}
+
+	// Empty mart: fallback.
+	if _, err := db.Exec(`TRUNCATE transformed_data.mart_nuts3_sociodata_harmonized`); err != nil {
+		t.Fatal(err)
+	}
+	nuts, _ = ConfigureTargetVersions(db)
+	if !nuts.Fallback || nuts.Default != 2024 || !slices.Equal(nuts.Versions, fallbackNutsVersions) {
+		t.Errorf("nuts = %+v", nuts)
 	}
 }

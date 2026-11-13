@@ -76,6 +76,122 @@ cd /opt/soziooekonomische-daten/backend/deployments && docker compose up -d admi
 docker compose stop adminer            # when done
 ```
 
+## DB roles
+
+Only `postgis` (init, healthcheck), Adminer and the role/backup scripts use the superuser
+`sozio_data_compose_user` (`DB_PASSWORD`). The application containers log in as two
+non-superuser roles, both created/updated by `deploy_remote.sh apply` after `postgis` is up
+and before the other containers start (idempotent SQL files in `backend/scripts/`):
+
+- **`api_ro`** (backend; `DB_USER` of the `backend` service, password `API_DB_PASSWORD`,
+  `ensure_api_role.sql`): may only `SELECT` in schema `transformed_data` (plus PostGIS in
+  `public`), has `default_transaction_read_only=on`, a 60 s statement timeout and a limit of
+  40 connections; `loaded_data` and `snapshots` are not readable. dbt re-grants `SELECT` after
+  every run (`on-run-end` hook `grant_api_read`, no-op if the role is missing).
+- **`pipeline_rw`** (dlt + dbt in the `pipeline` container, incl. the hourly ofelia job;
+  `DB_USER`/`DESTINATION__POSTGRES__CREDENTIALS__USERNAME` of the `pipeline` service, password
+  `PIPELINE_DB_PASSWORD`, `ensure_pipeline_role.sql`): owns the schemas `loaded_data`,
+  `loaded_data_staging` (dlt staging for the `dataset_metadata` merge), `transformed_data`,
+  `snapshots` and everything in them (dbt/dlt need ownership for `DROP`/`ALTER`/`RENAME`).
+  Database privileges are only `CONNECT` + `TEMPORARY` (dbt snapshots use temp tables) - no
+  `CREATE`, no superuser/`CREATEDB`/`CREATEROLE`, so no `COPY ... PROGRAM`, server file access
+  or new extensions. Role settings: `statement_timeout=2h` (long spatial joins),
+  `idle_in_transaction_session_timeout=30min`, `lock_timeout=5min` (a dbt table swap gives up
+  instead of blocking the API for long), `CONNECTION LIMIT 10`. The script also creates the
+  extensions `postgis`/`pg_trgm` (so `lau_integrated`'s `create extension if not exists pg_trgm`
+  is a no-op), hands every existing relation in those schemas to `pipeline_rw`, and sets
+  `ALTER DEFAULT PRIVILEGES FOR ROLE pipeline_rw ... GRANT SELECT ON TABLES TO api_ro`.
+  **A new pipeline schema must be added to `ensure_pipeline_role.sql`** (`pipeline_rw` cannot
+  create schemas). Before running it, `deploy_remote.sh` stops the scheduler and waits for a
+  running `run_all_pipelines.sh` (max. `PIPELINE_WAIT_TIMEOUT`, default 60 min, then the deploy
+  aborts - e.g. during a long initial load; deploy again later).
+
+dbt takes its credentials from `profiles.yml` next to `dbt_project.yml`
+(`pipeline/dbt/socioeconomic_data_pipeline/profiles.yml`, gitignored, bind-mounted into the
+container via `DBT_PROFILES_DIR`). It only uses `pipeline_rw` if it reads
+`user`/`password` from `DB_USER`/`DB_PASSWORD` like `profiles.example.yml`; check this on the
+server before the first deploy with the role (`deploy_remote.sh apply` warns otherwise). dlt
+reads the `DESTINATION__POSTGRES__CREDENTIALS__*` env vars, which take precedence over
+`.dlt/secrets.toml`.
+
+**Manual pipeline runs** on the server must go through the container
+(`docker exec pipeline bash /app/dlt/run_all_pipelines.sh`), i.e. as `pipeline_rw` - not as
+the superuser (e.g. dbt with the owner credentials): objects it creates would belong to the
+superuser, `pipeline_rw` could no longer drop/replace them, and later runs fail until the next
+`deploy_remote.sh apply` (or `ensure_pipeline_role.sql`) hands them back. On a new server
+(e.g. after `restore_db.sh`), run `deploy_remote.sh apply` (or both SQL files, API role first)
+once before the pipeline.
+
+Check (as superuser, `docker exec -it postgis psql -U sozio_data_compose_user -d soziooekonomische-daten`):
+
+```sql
+SELECT rolname, rolcanlogin, rolsuper, rolconnlimit, rolconfig FROM pg_roles WHERE rolname IN ('api_ro', 'pipeline_rw');
+SELECT has_schema_privilege('api_ro', 'transformed_data', 'USAGE'),
+       has_schema_privilege('api_ro', 'loaded_data', 'USAGE'),
+       has_schema_privilege('api_ro', 'snapshots', 'USAGE');   -- t, f, f
+-- owners: only pipeline_rw expected
+SELECT nspname, pg_get_userbyid(nspowner) FROM pg_namespace
+ WHERE nspname IN ('loaded_data', 'loaded_data_staging', 'transformed_data', 'snapshots');
+SELECT n.nspname, pg_get_userbyid(c.relowner) AS owner, count(*)
+  FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+ WHERE n.nspname IN ('loaded_data', 'loaded_data_staging', 'transformed_data', 'snapshots')
+   AND c.relkind IN ('r', 'p', 'v', 'm', 'S', 'f')
+ GROUP BY 1, 2 ORDER BY 1, 2;
+```
+
+Manual rollback, backend back to the superuser: set `DB_USER: sozio_data_compose_user` and
+`DB_PASSWORD: ${DB_PASSWORD:?}` in the `backend` service, redeploy, then optionally drop the
+role: `REVOKE ALL ON SCHEMA transformed_data FROM api_ro; REVOKE ALL ON ALL TABLES IN SCHEMA transformed_data FROM api_ro; ALTER DEFAULT PRIVILEGES FOR ROLE sozio_data_compose_user IN SCHEMA transformed_data REVOKE SELECT ON TABLES FROM api_ro; ALTER DEFAULT PRIVILEGES FOR ROLE pipeline_rw IN SCHEMA transformed_data REVOKE SELECT ON TABLES FROM api_ro; REVOKE CONNECT ON DATABASE "soziooekonomische-daten" FROM api_ro; DROP ROLE api_ro;`
+
+Manual rollback, pipeline back to the superuser: set `DB_USER`/`DB_PASSWORD` and
+`DESTINATION__POSTGRES__CREDENTIALS__USERNAME`/`PASSWORD` of the `pipeline` service back to
+`sozio_data_compose_user`/`${DB_PASSWORD:?}` and redeploy. The superuser can replace
+`pipeline_rw`-owned objects, and the old `FOR ROLE sozio_data_compose_user` default privileges
+for `api_ro` are still in place, so nothing else is needed (a `deploy_remote.sh rollback` to a
+commit before the role does exactly this). To drop the role afterwards, first remove
+`ensure_pipeline_role` from `deploy_remote.sh`, then: `REASSIGN OWNED BY pipeline_rw TO sozio_data_compose_user; DROP OWNED BY pipeline_rw; DROP ROLE pipeline_rw;`
+
+Adminer can log in as `api_ro` as well (System PostgreSQL, Server `postgis`) for read-only browsing.
+
+## Rate limits and memory limits
+
+The API is public on a 1 vCPU / 2 GB server, so Traefik protects it via labels
+in `backend/deployments/docker-compose.yml` (values and reasons are commented
+there):
+
+- Three API routers: `backend` (normal requests, per IP 10 req/s, burst 50,
+  16 concurrent), `backend-heavy` (geometries, `/geo`, `/regions/.../data`,
+  `/metrics`, `/datasets/{slug}/source`, CSV/`download`, unfiltered
+  `limit=null`: per IP 20/min, burst 15, 4 concurrent, plus a global cap of 5
+  concurrent) and `backend-post` (POST, per IP like heavy, global cap 2, bodies
+  over 6 MiB rejected with 413). Frontend and docs have a generous per-IP limit.
+  Exceeding a limit returns **429**.
+- Entrypoint timeouts: read 30 s, idle 90 s, write 150 s (above the backend's
+  120 s `WriteTimeout`).
+- Clients behind one NAT address (e.g. a university network, the CI E2E runner)
+  share the per-IP limits.
+- IPv6: if Docker does not pass IPv6 through to the containers, Traefik sees the
+  gateway address and all IPv6 clients share one per-IP bucket. Before setting
+  an AAAA record, check with `curl -6 https://<APP_HOST>/api/v1/health` that the
+  access log shows the real client address.
+- Known limits of the protection: the "heavy" classification is based on path
+  and query parameters and can be bypassed with a meaningless filter (e.g.
+  `limit=null&year=x` on an endpoint that ignores `year`); then only the normal
+  per-IP limits, the `limit=null` row cap, the 60 s `statement_timeout` and the
+  `api_ro` connection limit apply. Request bodies must be fully received within
+  the 30 s read timeout (a 6 MiB GeoJSON needs about 1.6 Mbit/s).
+- Diagnose: `docker logs traefik` (access log, rotated) shows status and router
+  name per request, e.g. `docker logs traefik 2>&1 | grep '" 429 '`.
+- `mem_limit`: `postgis` 1 GB, `pipeline` 1 GB, `backend` 512 MB (caps against one
+  runaway container, plus swap). An OOM-killed container is restarted
+  (`docker inspect <name> --format '{{.State.OOMKilled}}'`).
+- The hourly ofelia pipeline job has `no-overlap`, so a run that takes longer
+  than an hour is not started twice.
+
+To adjust or roll back, edit the labels/limits in the Compose file and run
+`docker compose up -d` in `backend/deployments` (Traefik picks up label
+changes when the container is recreated).
+
 ## Database backup and restore
 
 Only data the pipeline cannot rebuild is backed up: the `snapshots` schema
@@ -86,7 +202,7 @@ recomputed from the sources by `run_all_pipelines.sh`.
   `deploy` user's crontab, set up by the deploy job. It dumps both parts with
   `pg_dump`, verifies the archive, uploads it to the Hetzner Object Storage
   bucket (`soziodata_<UTC timestamp>.dump`) and deletes dumps older than
-  30 days (`BACKUP_RETENTION_DAYS`). Log: `~/backup.log`. It needs the
+  30 days (`BACKUP_RETENTION_DAYS`; skipped if the new dump has no `snapshots` tables). It exits non-zero if the database is unreachable and pings `HEALTHCHECK_URL` on success, if set. Log: `~/backup.log`. It needs the
   variables/secrets `BACKUP_S3_BUCKET`, `BACKUP_S3_REGION`,
   `BACKUP_S3_ACCESS_KEY`, `BACKUP_S3_SECRET_KEY`; without them no backup is
   configured.
@@ -113,7 +229,11 @@ cd backend/deployments && docker compose start scheduler
 On a fresh server, deploy first *without* `initial_load`, restore, then run
 the pipeline as shown (or re-run the workflow with `initial_load`). The
 metadata restore is optional because the pipeline rewrites
-`dataset_metadata` from the `meta.yaml` files on every run.
+`dataset_metadata` from the `meta.yaml` files on every run. The restore
+creates the tables as `pipeline_rw` if that role exists (it does after the
+first deploy); otherwise run `deploy_remote.sh apply` (or
+`ensure_pipeline_role.sql`) again before the pipeline, so `pipeline_rw` owns
+them.
 
 Test a restore into a scratch database occasionally; an untested backup is
 not a backup.

@@ -37,7 +37,7 @@
   pipeline/dlt/AGENTS.md).
 */
 
-{% set target_versions = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024] %}
+{% set target_versions = var('lau_versions') %}
 
 -- Must match harmonizedLauRouteSlugs in backend/cmd/gen-models/main.go 1:1
 -- (see the comment there).
@@ -47,7 +47,7 @@
 
 with gisco_lookup as (
     select distinct on (lau_nat_code)
-        regexp_replace(cast(lau_nat_code as text), '\.0+$', '') as ars_code,
+        lau_nat_code as ars_code,
         gisco_id
     from {{ ref('stg_lau_population') }}
     where lau_nat_code is not null and gisco_id is not null
@@ -64,8 +64,13 @@ all_source_data as (
         s.{{ ds.value_col }}::numeric as value
     from {{ ref(ds.model) }} s
     join gisco_lookup gl
-        on gl.ars_code = coalesce(s.geodata_id_ars, s.geodata_id_lau)
+        -- geodata_id_ars/lau may be the 7-digit BBSR key (states 01-09); ars_code is the 8-digit AGS
+    on gl.ars_code = lpad(coalesce(s.geodata_id_ars, s.geodata_id_lau), 8, '0')
+    -- Invalid source values (e.g. the placeholder 0 of the employment rate)
+    -- must not enter crosswalk weights or averages: they would be blended in
+    -- as real values. The gap is left open and filled by interpolation.
     where s.{{ ds.value_col }} is not null
+      and s.has_valid_value
     {% if not loop.last %}union all{% endif %}
     {% endfor %}
 ),

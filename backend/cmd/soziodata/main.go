@@ -97,6 +97,26 @@ func main() {
 	} else {
 		log.Printf("limit=null row cap: %d", rows)
 	}
+	if rows, applied, err := handlers.ApplyUnlimitedRowsCapEnv(); err != nil {
+		log.Printf("Warning: %v (ignored)", err)
+	} else if applied {
+		log.Printf("limit=null row cap overridden by UNLIMITED_ROWS_CAP: %d", rows)
+	}
+
+	// Supported nuts_version/lau_version values and their default (the newest)
+	// come from the harmonized marts; static fallback lists if that fails.
+	nutsTV, lauTV := handlers.ConfigureTargetVersions(db)
+	for _, tv := range []struct {
+		kind string
+		res  handlers.TargetVersionsResult
+	}{{"NUTS", nutsTV}, {"LAU", lauTV}} {
+		if tv.res.Fallback {
+			log.Printf("Warning: could not read %s target versions from the database, using static fallback %v (default %d): %v",
+				tv.kind, tv.res.Versions, tv.res.Default, tv.res.Err)
+		} else {
+			log.Printf("%s target versions: %v (default %d)", tv.kind, tv.res.Versions, tv.res.Default)
+		}
+	}
 
 	derivedCatalog, err := models.LoadMetricsCatalog("metrics_catalog.yaml")
 	if err != nil {

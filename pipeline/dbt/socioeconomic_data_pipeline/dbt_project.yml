@@ -26,6 +26,11 @@ clean-targets:         # directories to be removed by `dbt clean`
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
 
+# Re-grants read access on transformed_data to the backend's read-only role
+# (no-op if the role api_ro does not exist, e.g. local dev).
+on-run-end:
+  - "{{ grant_api_read() }}"
+
 snapshots:
   socioeconomic_data_pipeline:
     +target_schema: snapshots
@@ -40,6 +45,15 @@ vars:
   # dropped as boundary slivers); override with
   # --vars '{crosswalk_min_share: 0}' to see all intersections.
   crosswalk_min_share: 0.10
+
+  # Target versions of the version harmonization. A new NUTS/LAU version
+  # needs: (1) these vars, (2) geodata loaded (geo-importer -> dlt), (3) the
+  # dlt/crosswalk side. tests/assert_reference_versions_current.sql fails
+  # until the vars match the loaded geometry vintages.
+  reference_nuts_version: 2024   # NUTS version all aggregates/summaries use
+  reference_lau_version: 2024    # LAU vintage used for LAU-level marts
+  nuts_versions: [2003, 2006, 2010, 2013, 2016, 2021, 2024]
+  lau_versions: [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
 
 models:
   socioeconomic_data_pipeline:

@@ -71,7 +71,11 @@ built/tested independently as shown above.
 
 - **The backend never transforms data.** It only reads finished
   views/tables from the `transformed_data` schema. Any data cleaning,
-  joining, or aggregation logic belongs in dbt, not in Go handlers.
+  joining, or aggregation logic belongs in dbt, not in Go handlers. The DB
+  enforces this: the backend logs in as the read-only role `api_ro` (SELECT on
+  `transformed_data` only, see [docs/operations.md](docs/operations.md#db-roles)),
+  so a relation the backend should read must live in `transformed_data`
+  (dbt `+schema`), not in `loaded_data`/`snapshots`.
 - **dlt never historizes.** History over time is exclusively built by dbt
   snapshots (`snapshots/snap_results_*.sql`). Do not add historization
   logic to a dlt script. Every dataset-content resource in `pipeline/dlt/`
@@ -153,6 +157,12 @@ built/tested independently as shown above.
   the `snapshots` schema and `loaded_data.dataset_metadata` — to Hetzner
   Object Storage, 30 days retention; `restore_db.sh` restores into a fresh DB.
   If you add a new non-reproducible schema/table, extend `backup_db.sh`.
+- **DB roles**: in production dlt/dbt run as the non-superuser `pipeline_rw`
+  (owns `loaded_data`, `loaded_data_staging`, `transformed_data`,
+  `snapshots`, but cannot create schemas or extensions), the backend as
+  `api_ro`; only postgis/Adminer/scripts use the superuser. A new schema or
+  extension the pipeline needs goes into `backend/scripts/ensure_pipeline_role.sql`
+  (see [docs/operations.md](docs/operations.md#db-roles)).
 
 ## Verifying non-trivial changes
 

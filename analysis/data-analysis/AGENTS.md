@@ -20,6 +20,11 @@ python analysis/data-analysis/impute_missing_values.py
 pip install matplotlib ipykernel nbformat nbconvert
 jupyter nbconvert --to notebook --execute --inplace analysis/data-analysis/agentur_nuts3_crosswalk_shares.ipynb
 jupyter nbconvert --to notebook --execute --inplace analysis/data-analysis/impute_missing_values_evaluation.ipynb
+# nuts3_crosswalk_evaluation additionally needs pyarrow (parquet cache); run from
+# analysis/data-analysis/ so its results/*.csv land there. CW_EVAL_CACHE (default
+# <tmp>/nuts3_crosswalk_eval) caches the ~3-4 min geometry intersections; CW_EVAL_REFRESH=1 recomputes.
+pip install pyarrow
+cd analysis/data-analysis && jupyter nbconvert --to notebook --execute --inplace nuts3_crosswalk_evaluation.ipynb
 ```
 
 Connection defaults to `localhost:5432` / db `soziooekonomische-daten` /
@@ -80,3 +85,25 @@ that aren't real membership). Checked in with outputs already executed —
 rerun via `jupyter nbconvert --to notebook --execute --inplace` (see
 Commands above) to refresh against current data, not regenerated
 automatically.
+
+`nuts3_crosswalk_evaluation.ipynb` evaluates the population weighting of the
+NUTS-3 version crosswalk (`int_lau_nuts3_membership` /
+`int_lau_nuts3_population_weight` / `mart_nuts_version_crosswalk`) empirically
+before the method is fixed. It rebuilds the candidate methods itself in
+SQL/pandas (read-only, temp tables only; it does not use or depend on the dbt
+crosswalk models): A = whole Gemeinde to the region with the largest overlap
+(old state, incl. per-pair area fallback), A0 = A without that fallback,
+B = population split by Gemeinde area share with `lau_nuts3_snap_share`
+0.75/0.90/0.95/0.99/1.0 (new state), C = pure NUTS area share, D = Gemeinde
+point-on-surface. Truth: Gemeinde population 2019 (finer than the 2023
+Gemeinden production uses) aggregated by the Eurostat-declared NUTS code
+(targets 2016/2021) or by the historical AGS-5 Kreis of the LAU 2011/2015
+geometry vintages (2003-2013); Kreise whose truth is ambiguous (Gemeinden
+already split across old Kreise in 2011, e.g. Potsdam/Dessau/Sachsen-Anhalt
+2003) only get bounds. Outputs MAPE/bias per target version, error
+distribution, worst Kreise, the known examples, a synthetic and a real
+(`sgb_ii_quote`) ratio test, and a German Fazit cell.
+`results/nuts3_crosswalk_eval_*.csv` are its last outputs. Needs
+`stg_lau_population`, `stg_lau_geometry`, `int_lau_population_geo`,
+`mart_nuts_geometry_historized`, `stg_beschaeftigungsquote_gemeinden`,
+`stg_sgb_ii_quote_kreise` built. Checked in with outputs already executed.

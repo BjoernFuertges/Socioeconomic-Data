@@ -174,6 +174,8 @@ jobs:
           APP_HOST: example.org
           GHCR_OWNER: example
           DB_PASSWORD: dummy
+          API_DB_PASSWORD: dummy
+          PIPELINE_DB_PASSWORD: dummy
           LE_EMAIL: admin@example.org
         run: |
           cp .env.backend.example .env.backend
@@ -203,7 +205,7 @@ jobs:
 
       - name: Semantic Release (dry run)
         id: semantic
-        uses: cycjimmy/semantic-release-action@v6
+        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6 (Branch v6 == v6.0.0)
         with:
           extra_plugins: |
             @semantic-release/changelog@7.0.0
@@ -251,9 +253,9 @@ jobs:
         with:
           fetch-depth: 0 # tags needed for the fallback version (see below)
 
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -286,7 +288,7 @@ jobs:
           echo "version=${version}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
@@ -320,7 +322,7 @@ jobs:
 
       - name: Semantic Release
         id: semantic
-        uses: cycjimmy/semantic-release-action@v6
+        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6 (Branch v6 == v6.0.0)
         with:
           extra_plugins: |
             @semantic-release/changelog@7.0.0
@@ -380,6 +382,8 @@ jobs:
           APP_HOST: ${{ vars.APP_HOST }}
           LE_EMAIL: ${{ secrets.LE_EMAIL }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          API_DB_PASSWORD: ${{ secrets.API_DB_PASSWORD }}
+          PIPELINE_DB_PASSWORD: ${{ secrets.PIPELINE_DB_PASSWORD }}
           RCLONE_SOURCE: ${{ vars.RCLONE_SOURCE }}
           RCLONE_CONF: ${{ secrets.RCLONE_CONF }}
           PGDATA_DIR: ${{ vars.PGDATA_DIR }}
@@ -391,6 +395,10 @@ jobs:
           set -euo pipefail
           : "${LE_EMAIL:?Secret LE_EMAIL fehlt}"
           : "${DB_PASSWORD:?Secret DB_PASSWORD fehlt}"
+          : "${API_DB_PASSWORD:?Secret API_DB_PASSWORD fehlt}"
+          [[ "$API_DB_PASSWORD" =~ ^[A-Za-z0-9]+$ ]] || { echo "Secret API_DB_PASSWORD darf nur [A-Za-z0-9] enthalten" >&2; exit 1; }
+          : "${PIPELINE_DB_PASSWORD:?Secret PIPELINE_DB_PASSWORD fehlt}"
+          [[ "$PIPELINE_DB_PASSWORD" =~ ^[A-Za-z0-9]+$ ]] || { echo "Secret PIPELINE_DB_PASSWORD darf nur [A-Za-z0-9] enthalten" >&2; exit 1; }
           umask 077
           mkdir -p "$RUNNER_TEMP/incoming"
           owner="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
@@ -398,6 +406,8 @@ jobs:
             echo "APP_HOST=${APP_HOST}"
             echo "LE_EMAIL=${LE_EMAIL}"
             echo "DB_PASSWORD=${DB_PASSWORD}"
+            echo "API_DB_PASSWORD=${API_DB_PASSWORD}"
+            echo "PIPELINE_DB_PASSWORD=${PIPELINE_DB_PASSWORD}"
             echo "GHCR_OWNER=${owner}"
             echo "IMAGE_TAG=sha-${GITHUB_SHA::7}"
             echo "PGDATA_DIR=${PGDATA_DIR:-/mnt/pgdata/data}"
@@ -455,7 +465,9 @@ jobs:
       # Only if the rollout itself started (earlier failures, e.g. DNS/SSH, do not change the server).
       # Without a saved good state (very first deploy) the rollback fails with a clear message.
       - name: Roll back after failed rollout
-        if: always() && (steps.rollout.outcome == 'failure' || steps.health.outcome == 'failure')
+        # cancelled: manual cancel or job timeout in the middle of the rollout leaves a half-rolled-out state.
+        # A new push does not cancel this job (own concurrency group, cancel-in-progress: false).
+        if: always() && (contains(fromJSON('["failure","cancelled"]'), steps.rollout.outcome) || contains(fromJSON('["failure","cancelled"]'), steps.health.outcome))
         run: |
           ssh hetzner "bash '$REMOTE_REPO/backend/scripts/deploy_remote.sh' rollback"
           echo "::error::Rollout fehlgeschlagen - auf den letzten guten Stand zurückgesetzt."
@@ -501,6 +513,8 @@ jobs:
     name: Mark deployed state as good
     needs: [e2e-production]
     runs-on: ubuntu-latest
+    # No required reviewers (see infra/README.md); the SSH secrets resolve from repo level if the environment has none.
+    environment: production-ops
     steps:
       - uses: actions/checkout@v7
 
@@ -518,7 +532,8 @@ jobs:
     needs: [deploy-hetzner, e2e-production]
     if: always() && needs.deploy-hetzner.result == 'success' && needs.e2e-production.result == 'failure'
     runs-on: ubuntu-latest
-    environment: production
+    # Not `production`: its required reviewers would make the automatic rollback wait for manual approval.
+    environment: production-ops
     steps:
       - uses: actions/checkout@v7
 

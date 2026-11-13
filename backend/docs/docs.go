@@ -830,7 +830,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -948,7 +948,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -1119,7 +1119,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -1237,7 +1237,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -1408,7 +1408,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -1526,7 +1526,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -1697,7 +1697,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-LAU-Version (2011-2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-LAU-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "lau_version",
                         "in": "query"
                     },
@@ -1815,7 +1815,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-LAU-Version (2011-2024, Default 2024)",
+                        "description": "Ziel-LAU-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "lau_version",
                         "in": "query"
                     },
@@ -2090,7 +2090,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -2261,7 +2261,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -2379,7 +2379,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -2550,7 +2550,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -2668,7 +2668,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -3192,7 +3192,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -3310,7 +3310,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -3481,7 +3481,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -3599,7 +3599,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -4203,7 +4203,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -4321,7 +4321,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -4811,7 +4811,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -4929,7 +4929,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -5012,7 +5012,7 @@ const docTemplate = `{
         },
         "/metrics": {
             "get": {
-                "description": "Berechnet Min, Max, Mittelwert, Median und Standardabweichung je Jahr für einen oder mehrere Datensätze.\nMehrere 'dataset'-Parameter kombinieren unterschiedliche Datensätze in einer Antwort.\nMit 'geodata_id_nuts' werden zusätzlich der Regionalwert und das Ranking der Region zurückgegeben.\nFür aufeinanderfolgende Jahre wird die prozentuale Veränderung (YoY) berechnet.\nHarmonisierte Kreis-Datensätze werden aus mart_nuts3_sociodata_harmonized im NUTS-3-Stand 'nuts_version' berechnet (Default 2024; die Antwort nennt ihn in nuts_version), sodass jede Region je Jahr genau einmal zählt.\nNur gültige Werte gehen ein (has_valid_value; harmonisierte Werte nur, wenn alle beteiligten Quellwerte gültig sind); ausgeschlossene Werte zählt excluded_invalid_count je Jahr und Spalte, excluded_regions die betroffenen Regionen, meta.note erklärt das.\nSpalten ohne harmonisierte Entsprechung (beschaeftigungsquote_median, beschaeftigungsquote_ungewichtet, gemeinden_count von beschaeftigungsquote-nuts3) und nicht harmonisierte Datensätze (beschaeftigungsquote-gemeinden) kommen weiter ungeharmonisiert aus der Staging-Tabelle (nuts_version fehlt dann in der Antwort).",
+                "description": "Berechnet Min, Max, Mittelwert, Median und Standardabweichung je Jahr für einen oder mehrere Datensätze.\nMehrere 'dataset'-Parameter kombinieren unterschiedliche Datensätze in einer Antwort.\nMit 'geodata_id_nuts' werden zusätzlich der Regionalwert und das Ranking der Region zurückgegeben.\nFür aufeinanderfolgende Jahre wird die prozentuale Veränderung (YoY) berechnet.\nHarmonisierte Kreis-Datensätze werden aus mart_nuts3_sociodata_harmonized im NUTS-3-Stand 'nuts_version' berechnet (ohne Angabe die neueste verfügbare Version, siehe GET /versions; die Antwort nennt ihn in nuts_version), sodass jede Region je Jahr genau einmal zählt.\nNur gültige Werte gehen ein (has_valid_value; harmonisierte Werte nur, wenn alle beteiligten Quellwerte gültig sind); ausgeschlossene Werte zählt excluded_invalid_count je Jahr und Spalte, excluded_regions die betroffenen Regionen, meta.note erklärt das.\nSpalten ohne harmonisierte Entsprechung (beschaeftigungsquote_median, beschaeftigungsquote_ungewichtet, gemeinden_count von beschaeftigungsquote-nuts3) und nicht harmonisierte Datensätze (beschaeftigungsquote-gemeinden) kommen weiter ungeharmonisiert aus der Staging-Tabelle (nuts_version fehlt dann in der Antwort).",
                 "consumes": [
                     "application/json"
                 ],
@@ -5072,18 +5072,9 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "enum": [
-                            2003,
-                            2006,
-                            2010,
-                            2013,
-                            2016,
-                            2021,
-                            2024
-                        ],
                         "type": "integer",
-                        "default": 2024,
-                        "description": "NUTS-3-Zielversion der harmonisierten Werte",
+                        "example": 2021,
+                        "description": "NUTS-3-Zielversion der harmonisierten Werte; ohne Angabe die neueste verfügbare Version (Liste: GET /versions). Für stabile Regions-IDs explizit angeben.",
                         "name": "nuts_version",
                         "in": "query"
                     }
@@ -5171,7 +5162,7 @@ const docTemplate = `{
         },
         "/metrics/derived/{slug}": {
             "get": {
-                "description": "Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine\nabgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²; Auszubildende absolut = Auszubildende je 1.000 SV-Beschäftigte × SV-Beschäftigte / 1.000).\nSind alle beteiligten Datensätze harmonisiert, werden Zähler und Nenner bzw. Faktor aus mart_nuts3_sociodata_harmonized im\nNUTS-3-Stand 'nuts_version' gelesen (Default 2024) und die Fläche aus der Geometrie desselben Stands; die Antwort nennt ihn in nuts_version.\nFormeltyp ratio: Nur Regionen mit gültigem Zähler und Nenner gehen ein. Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Nenner oder Nenner 0),\nregions_without_geometry (keine Geometrie für den Flächennenner) und regions_without_denominator (kein Nennerwert) je Jahr.\nFormeltyp product: Nur Regionen mit gültigem Zähler und Faktor gehen ein (ein Faktor 0 ist gültig). Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Faktor)\nund regions_without_factor (kein Faktorwert) je Jahr. excluded_regions nennt die betroffenen Regionen insgesamt.\nmeta.note nennt die Regel des Formeltyps und, falls im Katalog hinterlegt, den Hinweis der Metrik (note, z.B. bei Rückrechnungen aus zwei Quellen).",
+                "description": "Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine\nabgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²; Auszubildende absolut = Auszubildende je 1.000 SV-Beschäftigte × SV-Beschäftigte / 1.000).\nSind alle beteiligten Datensätze harmonisiert, werden Zähler und Nenner bzw. Faktor aus mart_nuts3_sociodata_harmonized im\nNUTS-3-Stand 'nuts_version' gelesen (ohne Angabe die neueste verfügbare Version, siehe GET /versions) und die Fläche aus der Geometrie desselben Stands; die Antwort nennt ihn in nuts_version.\nFormeltyp ratio: Nur Regionen mit gültigem Zähler und Nenner gehen ein. Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Nenner oder Nenner 0),\nregions_without_geometry (keine Geometrie für den Flächennenner) und regions_without_denominator (kein Nennerwert) je Jahr.\nFormeltyp product: Nur Regionen mit gültigem Zähler und Faktor gehen ein (ein Faktor 0 ist gültig). Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Faktor)\nund regions_without_factor (kein Faktorwert) je Jahr. excluded_regions nennt die betroffenen Regionen insgesamt.\nmeta.note nennt die Regel des Formeltyps und, falls im Katalog hinterlegt, den Hinweis der Metrik (note, z.B. bei Rückrechnungen aus zwei Quellen).",
                 "consumes": [
                     "application/json"
                 ],
@@ -5227,18 +5218,9 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "enum": [
-                            2003,
-                            2006,
-                            2010,
-                            2013,
-                            2016,
-                            2021,
-                            2024
-                        ],
                         "type": "integer",
-                        "default": 2024,
-                        "description": "NUTS-3-Zielversion der harmonisierten Werte",
+                        "example": 2021,
+                        "description": "NUTS-3-Zielversion der harmonisierten Werte; ohne Angabe die neueste verfügbare Version (Liste: GET /versions). Für stabile Regions-IDs explizit angeben.",
                         "name": "nuts_version",
                         "in": "query"
                     }
@@ -5845,7 +5827,7 @@ const docTemplate = `{
         },
         "/regions/{region_type}/{region_id}/data": {
             "get": {
-                "description": "Stellt die gewünschten Datensätze einer Region (NUTS, LAU oder Agenturbezirk) aus den bestehenden Marts zusammen und liefert sie in einem einheitlichen Long-Format (region_type, region_id, dataset_slug, year, month, value, is_computed, is_interpolated, aggregation_method, value_kind, source_region_count). scope=raw liefert die Ursprungswerte der Region (NUTS-3: interpolierte Kreis-Zeitreihe; LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung), scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert). NUTS-0/1/2 haben keine Rohwerte, LAU keine aggregierten Werte. Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
+                "description": "Stellt die gewünschten Datensätze einer Region (NUTS, LAU oder Agenturbezirk) aus den bestehenden Marts zusammen und liefert sie in einem einheitlichen Long-Format (region_type, region_id, dataset_slug, year, month, value, is_computed, is_interpolated, aggregation_method, value_kind, source_region_count). scope=raw liefert die Ursprungswerte der Region (NUTS-3: interpolierte Kreis-Zeitreihe; LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung), scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert). NUTS-0/1/2 haben keine Rohwerte, LAU keine aggregierten Werte. Die NUTS-3-/LAU-Rohwerte stehen immer im neuesten verfügbaren NUTS-/LAU-Stand (default von GET /versions). Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.",
                 "consumes": [
                     "application/json"
                 ],
@@ -6065,7 +6047,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -6183,7 +6165,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -6354,7 +6336,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -6472,7 +6454,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -6716,7 +6698,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -6834,7 +6816,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -7005,7 +6987,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -7123,7 +7105,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -7199,6 +7181,38 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/versions": {
+            "get": {
+                "description": "Listet die Werte, die nuts_version (harmonisierte Kreis-Datensätze, /metrics) und lau_version (harmonisierte LAU-Datensätze) annehmen können, und den jeweiligen Default.\nOhne Angabe von nuts_version/lau_version liefert die API immer die neueste verfügbare Version (default = Maximum von versions). Kommt eine neue NUTS-/LAU-Version hinzu, ändern sich der Default und damit Regions-IDs (z.B. nach Kreisreformen); wer stabile IDs braucht, gibt die Version explizit an.\nDie Liste wird beim Start des Backends aus den harmonisierten Marts gelesen.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Meta"
+                ],
+                "summary": "Unterstützte NUTS-/LAU-Zielversionen",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_handlers.TargetVersionsResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -7294,7 +7308,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -7412,7 +7426,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "example": 2021,
-                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
                         "name": "nuts_version",
                         "in": "query"
                     },
@@ -7520,7 +7534,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "aggregation_method": {
-                    "description": "How the value was derived (see mart_agentur_dataset_aggregate):\n\"sum\" = sum of the Kreis values; \"weighted_avg_population\" =\npopulation-weighted average of the Kreis values; \"weighted_avg_area\" =\narea-weighted average (fallback when population is missing for a\ncontributing Kreis); \"weighted_avg_employees\" = average weighted by the\nnumber of employed persons (for values per employed person, e.g.\narbeitsvolumen). The averages are an approximation, not an exact\nrecomputation.",
+                    "description": "How the value was derived (see mart_agentur_dataset_aggregate):\n\"sum\" = sum of the Kreis values; \"weighted_avg_population\" =\npopulation-weighted average of the Kreis values; \"weighted_avg_area\" =\narea-weighted average (fallback when population is missing for a\ncontributing Kreis); \"weighted_avg_employees\" = average weighted by the\nnumber of employed persons (for values per employed person, e.g.\narbeitsvolumen; auszubildende: by SV-Beschaeftigte; if that weight is\nmissing, e.g. before 2007, the row falls back to\n\"weighted_avg_population\"). The averages are an approximation, not an exact\nrecomputation.",
                     "type": "string",
                     "enum": [
                         "sum",
@@ -9178,7 +9192,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "lau_version": {
-                    "description": "LauVersion is the LAU target version of this time-series point (2011-2024).",
+                    "description": "LauVersion is the LAU target version of this time-series point (resolved\nvalue: the requested lau_version or the default, see GET /versions).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -9374,6 +9388,11 @@ const docTemplate = `{
         "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsLauAggregatePoint": {
             "type": "object",
             "properties": {
+                "lau_beschaeftigungsquote_region_count": {
+                    "description": "Number of Gemeinden with a valid Beschäftigungsquote that went into the average\n(0 without quote). Independent of the population counts above.",
+                    "type": "integer",
+                    "example": 21
+                },
                 "lau_beschaeftigungsquote_weighted_avg": {
                     "description": "Population-weighted average of the Gemeinde Beschäftigungsquote; null without data coverage.",
                     "type": "number",
@@ -9580,7 +9599,7 @@ const docTemplate = `{
                     "example": "DE226"
                 },
                 "nuts_version": {
-                    "description": "NutsVersion is the NUTS-3 target version of this time-series point (2016, 2021 or 2024).",
+                    "description": "NutsVersion is the NUTS-3 target version of this time-series point (resolved\nvalue: the requested nuts_version or the default, see GET /versions).",
                     "type": "integer",
                     "example": 2021
                 },
@@ -10218,6 +10237,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "schuldnerquote"
                 },
+                "employee_slug": {
+                    "description": "EmployeeSlug names the employee-count dataset that is the preferred weight\nof this indicator (e.g. sv_beschaeftigte for auszubildende), also when the\nrow fell back to the population weight; so clients can label the weighting.",
+                    "type": "string",
+                    "example": "sv_beschaeftigte"
+                },
                 "indicator": {
                     "type": "string",
                     "example": "schuldnerquote"
@@ -10258,12 +10282,64 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_handlers.TargetVersionList": {
+            "type": "object",
+            "properties": {
+                "default": {
+                    "description": "Version used when the request omits the parameter: the newest one",
+                    "type": "integer",
+                    "example": 2024
+                },
+                "versions": {
+                    "description": "Ascending list of the supported target versions",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "example": [
+                        2003,
+                        2006,
+                        2010,
+                        2013,
+                        2016,
+                        2021,
+                        2024
+                    ]
+                }
+            }
+        },
+        "internal_handlers.TargetVersionsResponse": {
+            "type": "object",
+            "properties": {
+                "lau": {
+                    "description": "Values of lau_version (LAU harmonized datasets)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/internal_handlers.TargetVersionList"
+                        }
+                    ]
+                },
+                "nuts": {
+                    "description": "Values of nuts_version (NUTS-3 harmonized datasets, /metrics)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/internal_handlers.TargetVersionList"
+                        }
+                    ]
+                }
+            }
+        },
         "internal_handlers.customRegionMeta": {
             "type": "object",
             "properties": {
                 "dataset_slug": {
                     "type": "string",
                     "example": "schuldnerquote"
+                },
+                "employee_slug": {
+                    "description": "EmployeeSlug: weighting count of 'weighted_avg_employees' indicators.",
+                    "type": "string",
+                    "example": "sv_beschaeftigte"
                 },
                 "finer_slug": {
                     "type": "string"

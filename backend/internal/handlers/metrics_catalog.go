@@ -34,7 +34,7 @@ func (h *Handler) GetDerivedMetricsCatalog(c *gin.Context) {
 // @Description Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine
 // @Description abgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²; Auszubildende absolut = Auszubildende je 1.000 SV-Beschäftigte × SV-Beschäftigte / 1.000).
 // @Description Sind alle beteiligten Datensätze harmonisiert, werden Zähler und Nenner bzw. Faktor aus mart_nuts3_sociodata_harmonized im
-// @Description NUTS-3-Stand 'nuts_version' gelesen (Default 2024) und die Fläche aus der Geometrie desselben Stands; die Antwort nennt ihn in nuts_version.
+// @Description NUTS-3-Stand 'nuts_version' gelesen (ohne Angabe die neueste verfügbare Version, siehe GET /versions) und die Fläche aus der Geometrie desselben Stands; die Antwort nennt ihn in nuts_version.
 // @Description Formeltyp ratio: Nur Regionen mit gültigem Zähler und Nenner gehen ein. Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Nenner oder Nenner 0),
 // @Description regions_without_geometry (keine Geometrie für den Flächennenner) und regions_without_denominator (kein Nennerwert) je Jahr.
 // @Description Formeltyp product: Nur Regionen mit gültigem Zähler und Faktor gehen ein (ein Faktor 0 ist gültig). Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Faktor)
@@ -49,7 +49,7 @@ func (h *Handler) GetDerivedMetricsCatalog(c *gin.Context) {
 // @Param to_year query int false "Jahresbereich bis" example(2022)
 // @Param nuts_parent_id query string false "Auf NUTS-Präfix einschränken (z.B. DE1)" example(DE1)
 // @Param geodata_id_nuts query string false "NUTS-ID einer Region für Regionalwert und Ranking (im Stand nuts_version)" example(DEF01)
-// @Param nuts_version query int false "NUTS-3-Zielversion der harmonisierten Werte" Enums(2003,2006,2010,2013,2016,2021,2024) default(2024)
+// @Param nuts_version query int false "NUTS-3-Zielversion der harmonisierten Werte; ohne Angabe die neueste verfügbare Version (Liste: GET /versions). Für stabile Regions-IDs explizit angeben." example(2021)
 // @Success 200 {object} models.APIResponse{data=models.DatasetMetricsResult}
 // @Failure 400 {object} models.APIResponse
 // @Failure 404 {object} models.APIResponse

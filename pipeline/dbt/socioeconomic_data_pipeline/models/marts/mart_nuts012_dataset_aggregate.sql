@@ -14,7 +14,7 @@
   not just Kreis level - see GetNutsDatasetAggregateTimeseries
   (backend/internal/handlers/nuts.go).
 
-  Source: mart_nuts3_sociodata_harmonized, fixed to target_version 2024
+  Source: mart_nuts3_sociodata_harmonized, fixed to the reference version (var reference_nuts_version)
   (latest Kreis territorial structure - analogous to the fixed
   target_version in mart_nuts3_lau_aggregate.sql), NOT the
   interpolated/gap-filled version (mart_nuts3_timeseries_interpolated):
@@ -32,15 +32,22 @@
   distorting with weight 0) - a plain mean would weight large and small
   Kreise equally. 'weighted_avg_employees' (arbeitsvolumen, bruttoverdienst:
   values per employed person) averages weighted by the number of employed
-  persons (dataset erwerbstaetige_pro_1000_einwohner - despite its slug the
-  absolute count in thousands) of the same year; Kreise without it are
-  excluded, and without any weight the plain mean is used.
+  persons of the same year: by default dataset erwerbstaetige_pro_1000_einwohner
+  (despite its slug the absolute count in thousands); an entry may name
+  another employee-count dataset via 'employee_slug' (auszubildende: per
+  1,000 SV-Beschaeftigte -> 'sv_beschaeftigte'). Only valid (has_valid_value,
+  > 0) employee counts are used, and only if EVERY contributing Kreis has one;
+  otherwise the whole row falls back to the 'weighted_avg' population rule
+  above (the two weights are never mixed, and no Kreis is silently dropped
+  just because its employee count is missing) - e.g. auszubildende before
+  2007, when sv_beschaeftigte starts. Same "complete or fall back" rule as
+  in mart_agentur_dataset_aggregate (whose fallback is the area weight).
 */
 
 {% set source_datasets = [
     {'slug': 'arbeitslose', 'measure_type': 'sum'},
     {'slug': 'arbeitsvolumen', 'measure_type': 'weighted_avg_employees'},
-    {'slug': 'auszubildende', 'measure_type': 'weighted_avg'},
+    {'slug': 'auszubildende', 'measure_type': 'weighted_avg_employees', 'employee_slug': 'sv_beschaeftigte'},
     {'slug': 'bevoelkerung', 'measure_type': 'sum'},
     {'slug': 'bruttoverdienst', 'measure_type': 'weighted_avg_employees'},
     {'slug': 'durchschnittsalter', 'measure_type': 'weighted_avg'},
@@ -54,6 +61,7 @@
     {'slug': 'wohngeldhaushalte', 'measure_type': 'weighted_avg'},
     {'slug': 'beschaeftigungsquote-nuts3', 'measure_type': 'weighted_avg'},
 ] %}
+{% set default_employee_slug = 'erwerbstaetige_pro_1000_einwohner' %}
 
 with harmonized as (
     select
@@ -62,7 +70,7 @@ with harmonized as (
         year,
         harmonized_value as value
     from {{ ref('mart_nuts3_sociodata_harmonized') }}
-    where target_version = 2024
+    where target_version = {{ var('reference_nuts_version') }}
 ),
 
 population as (
@@ -71,10 +79,23 @@ population as (
     where bevoelkerung is not null
 ),
 
+-- Employee-count base per weighted_avg_employees dataset (see header)
+employee_base as (
+    select * from (
+        values
+        {% for ds in source_datasets if ds.measure_type == 'weighted_avg_employees' %}
+            ('{{ ds.slug }}', '{{ ds.employee_slug or default_employee_slug }}'){% if not loop.last %},{% endif %}
+        {% endfor %}
+    ) as t (dataset_slug, employee_slug)
+),
+
 employees as (
-    select nuts_id, year, value as employees
-    from harmonized
-    where dataset_slug = 'erwerbstaetige_pro_1000_einwohner'
+    select dataset_slug as employee_slug, target_nuts_id as nuts_id, year, harmonized_value as employees
+    from {{ ref('mart_nuts3_sociodata_harmonized') }}
+    where target_version = {{ var('reference_nuts_version') }}
+      and dataset_slug in (select employee_slug from employee_base)
+      and has_valid_value
+      and harmonized_value > 0
 ),
 
 weighted as (
@@ -89,9 +110,12 @@ weighted as (
     left join population p
         on  p.nuts_id = h.nuts_id
         and p.year    = h.year
+    left join employee_base eb
+        on  eb.dataset_slug = h.dataset_slug
     left join employees e
-        on  e.nuts_id = h.nuts_id
-        and e.year    = h.year
+        on  e.employee_slug = eb.employee_slug
+        and e.nuts_id       = h.nuts_id
+        and e.year          = h.year
 ),
 
 {% for lvl, prefix_len in [(0, 2), (1, 3), (2, 4)] %}
@@ -114,9 +138,13 @@ level_{{ lvl }} as (
                 end
                 {% elif ds.measure_type == 'weighted_avg_employees' %}
                 case
-                    when sum(case when emp_weight is not null and emp_weight > 0 then emp_weight else 0 end) > 0
-                        then sum(case when emp_weight is not null and emp_weight > 0 then value * emp_weight else 0 end)
-                             / nullif(sum(case when emp_weight is not null and emp_weight > 0 then emp_weight else 0 end), 0)
+                    -- every Kreis has an employee weight (> 0 guaranteed by the employees CTE)
+                    when count(emp_weight) = count(*) and sum(emp_weight) > 0
+                        then sum(value * emp_weight) / sum(emp_weight)
+                    -- fallback: population rule of 'weighted_avg'
+                    when sum(case when weight is not null and weight > 0 then weight else 0 end) > 0
+                        then sum(case when weight is not null and weight > 0 then value * weight else 0 end)
+                             / nullif(sum(case when weight is not null and weight > 0 then weight else 0 end), 0)
                     else avg(value)
                 end
                 {% else %}

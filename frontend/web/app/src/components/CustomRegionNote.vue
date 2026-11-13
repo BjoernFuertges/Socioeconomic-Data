@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { formatPercent } from "../format";
+import { employeeBasis } from "../employeeWeight";
 
 // Describes how a dataset was aggregated over a custom region
 // (fields from POST /custom-regions/dataset-aggregate): level used,
@@ -13,6 +14,7 @@ type NotePoint = {
   source_region_count?: number;
   matched_unit?: string;
   is_crosswalked?: boolean;
+  employee_slug?: string | null;
 };
 const props = defineProps<{ points: NotePoint[] }>();
 
@@ -39,9 +41,13 @@ const notes = computed(() => {
   if (methods.has("sum")) out.push("Summe der Einheitenwerte, flächenanteilig.");
   if (methods.has("weighted_avg_population")) {
     out.push("Quoten/Durchschnitte sind bevölkerungsgewichtete Mittel der Einheitenwerte – eine Näherung.");
+    if (pts.some((p) => p.aggregation_method === "weighted_avg_population" && p.employee_slug)) {
+      out.push("Wo die Beschäftigtenzahl fehlt (z. B. SV-Beschäftigte vor 2007), wird stattdessen nach der Bevölkerung gewichtet.");
+    }
   }
   if (methods.has("weighted_avg_employees")) {
-    out.push("Werte je Erwerbstätigen sind nach der Zahl der Erwerbstätigen gewichtete Mittel der Einheitenwerte – eine Näherung.");
+    const bases = [...new Set(pts.filter((p) => p.aggregation_method === "weighted_avg_employees").map((p) => employeeBasis(p.employee_slug)))];
+    out.push(`Mittel der Einheitenwerte, gewichtet nach der Zahl der ${bases.join(" bzw. ")} – eine Näherung.`);
   }
   if (methods.has("weighted_avg_area")) {
     out.push("Teilweise flächengewichtet (für mindestens eine Einheit fehlt die Gewichtung) – Näherung.");

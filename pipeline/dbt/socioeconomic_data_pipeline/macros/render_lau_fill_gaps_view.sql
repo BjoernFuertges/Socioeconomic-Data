@@ -39,7 +39,7 @@ source_rows as (
 -- no gisco_id) back to the time series.
 gisco_lookup as (
     select distinct on (lau_nat_code)
-        regexp_replace(cast(lau_nat_code as text), '\.0+$', '') as ars_code,
+        lau_nat_code as ars_code,
         gisco_id
     from {{ ref('stg_lau_population') }}
     where lau_nat_code is not null and gisco_id is not null
@@ -73,7 +73,10 @@ select
     ts.target_version as lau_version,
     ts.year,
     coalesce(src.observation_date, make_date(ts.year, 1, 1)) as observation_date,
-    coalesce(src.has_valid_value, true) as has_valid_value,
+    -- Invalid source rows are excluded from the time series (see
+    -- mart_lau_sociodata_harmonized); a value shown here is then interpolated
+    -- and valid.
+    (coalesce(ts.is_interpolated, false) or coalesce(src.has_valid_value, true)) as has_valid_value,
 {% for f in flag_columns %}    coalesce(src.{{ f }}, false) as {{ f }},
 {% endfor %}    ts.value as {{ value_column }},
     ts.is_interpolated,
@@ -84,7 +87,7 @@ from timeseries ts
 left join gisco_lookup gl
     on gl.gisco_id = ts.gisco_id
 left join source_rows src
-    on  coalesce(src.geodata_id_ars, src.geodata_id_lau) = gl.ars_code
+    on  lpad(coalesce(src.geodata_id_ars, src.geodata_id_lau), 8, '0') = gl.ars_code
     and src.year = ts.year
 left join target_regions geo
     on  geo.gisco_id = ts.gisco_id

@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -52,6 +52,10 @@ type CustomRegionAggregateRow struct {
 	// IsCrosswalked: at least one contributing unit value was converted across a
 	// version boundary (not a direct value).
 	IsCrosswalked bool `json:"is_crosswalked" example:"false"`
+	// EmployeeSlug names the employee-count dataset that is the preferred weight
+	// of this indicator (e.g. sv_beschaeftigte for auszubildende), also when the
+	// row fell back to the population weight; so clients can label the weighting.
+	EmployeeSlug *string `json:"employee_slug,omitempty" example:"sv_beschaeftigte"`
 }
 
 type customRegionMeta struct {
@@ -61,6 +65,8 @@ type customRegionMeta struct {
 	MeasureType string  `db:"measure_type" json:"measure_type" example:"weighted_avg"`
 	Kind        string  `db:"kind" json:"kind" example:"rate"`
 	FinerSlug   *string `db:"finer_slug" json:"finer_slug"`
+	// EmployeeSlug: weighting count of 'weighted_avg_employees' indicators.
+	EmployeeSlug *string `db:"employee_slug" json:"employee_slug,omitempty" example:"sv_beschaeftigte"`
 }
 
 // customRegionAggRow is an intermediate SQL row (per year/month) from which
@@ -83,21 +89,29 @@ type customRegionAggRow struct {
 	IsCrosswalked     bool            `db:"is_crosswalked"`
 }
 
-// customRegionUnitsSQL returns the unit geometries per level (EPSG:3035,
-// reference vintage 2024, as in mart_agentur_nuts3_crosswalk). Fixed fragments
-// only, never user input.
-var customRegionUnitsSQL = map[string]string{
-	"nuts3": `SELECT nuts_id AS unit_id, geometry_3035 AS g
+// customRegionUnitsSQL returns the unit geometries of a level (EPSG:3035,
+// reference vintage = defaultNutsVersion() / defaultLauVersion(), as in
+// mart_agentur_nuts3_crosswalk). Built per request because the default
+// versions are read from the DB at startup. Fixed fragments only (the versions
+// are ints, the level is checked by the caller), never user input.
+func customRegionUnitsSQL(level string) string {
+	switch level {
+	case "nuts3":
+		return fmt.Sprintf(`SELECT nuts_id AS unit_id, geometry_3035 AS g
 		FROM transformed_data.mart_nuts_geometry_historized
 		WHERE levl_code = 3 AND country_code = 'DE' AND has_valid_geometry
-		  AND valid_from <= 2024 AND (valid_to IS NULL OR valid_to >= 2024)`,
-	"lau": `SELECT gisco_id AS unit_id, geometry_3035 AS g
+		  AND valid_from <= %[1]d AND (valid_to IS NULL OR valid_to >= %[1]d)`, defaultNutsVersion())
+	case "lau":
+		return fmt.Sprintf(`SELECT gisco_id AS unit_id, geometry_3035 AS g
 		FROM transformed_data.mart_lau_geometry_historized
 		WHERE has_valid_geometry AND country_code = 'DE'
-		  AND valid_from <= 2024 AND max_vintage_year >= 2024`,
-	"agentur": `SELECT ba_schl AS unit_id, ST_Transform(geometry_wgs84, 3035) AS g
+		  AND valid_from <= %[1]d AND max_vintage_year >= %[1]d`, defaultLauVersion())
+	case "agentur":
+		return `SELECT ba_schl AS unit_id, ST_Transform(geometry_wgs84, 3035) AS g
 		FROM transformed_data.stg_agenturbezirk_geometry
-		WHERE has_valid_geometry`,
+		WHERE has_valid_geometry`
+	}
+	return ""
 }
 
 // customRegionPolyCTE prepares the polygon ($1) like every GeoJSON input
@@ -232,7 +246,9 @@ func customRegionLevelChain(requested customRegionMeta, bySlug map[string][]cust
 // share; 'weighted_avg' weights by the population of the overlapping part if
 // available, else by the area share of the region, else unweighted;
 // 'weighted_avg_employees' (values per employed person) weights by the number
-// of employed persons of the overlapping part, with the same fallbacks.
+// of employed persons of the overlapping part; if that weight is incomplete
+// (e.g. auszubildende before 2007) it falls back to the population weight, then
+// area, then unweighted. Weights are never mixed within one row.
 // Medians are only approximations (see value_kind).
 func computeCustomRegionValue(measureType string, r customRegionAggRow) (value float64, method string, ok bool) {
 	if measureType != "weighted_avg" && measureType != "weighted_avg_employees" {
@@ -244,7 +260,7 @@ func computeCustomRegionValue(measureType string, r customRegionAggRow) (value f
 	switch {
 	case measureType == "weighted_avg_employees" && r.EmpComplete && r.EmpDen.Valid && r.EmpDen.Float64 > 0 && r.EmpNum.Valid:
 		return r.EmpNum.Float64 / r.EmpDen.Float64, "weighted_avg_employees", true
-	case measureType == "weighted_avg" && r.PopComplete && r.PopDen.Valid && r.PopDen.Float64 > 0 && r.PopNum.Valid:
+	case (measureType == "weighted_avg" || measureType == "weighted_avg_employees") && r.PopComplete && r.PopDen.Valid && r.PopDen.Float64 > 0 && r.PopNum.Valid:
 		return r.PopNum.Float64 / r.PopDen.Float64, "weighted_avg_population", true
 	case r.AreaDen.Valid && r.AreaDen.Float64 > 0 && r.AreaNum.Valid:
 		return r.AreaNum.Float64 / r.AreaDen.Float64, "weighted_avg_area", true
@@ -274,6 +290,7 @@ func customRegionRows(m customRegionMeta, agg []customRegionAggRow, matchedUnit 
 			MatchedUnit:       matchedUnit,
 			IsCrosswalked:     r.IsCrosswalked,
 		}
+		row.EmployeeSlug = m.EmployeeSlug
 		if r.Month.Valid {
 			month := int(r.Month.Int64)
 			row.Month = &month
@@ -303,7 +320,7 @@ func (h *Handler) ListCustomRegionDatasets(c *gin.Context) {
 func (h *Handler) loadCustomRegionMetas(ctx context.Context) ([]customRegionMeta, error) {
 	metas := []customRegionMeta{}
 	err := h.DB.SelectContext(ctx, &metas, `
-		SELECT dataset_slug, indicator, level, measure_type, kind, finer_slug
+		SELECT dataset_slug, indicator, level, measure_type, kind, finer_slug, employee_slug
 		FROM transformed_data.mart_dataset_aggregation_meta
 		ORDER BY dataset_slug, indicator`)
 	return metas, err
@@ -372,7 +389,7 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 			return m, nil
 		}
 		var ids []string
-		err := h.DB.SelectContext(c.Request.Context(), &ids, fmt.Sprintf(customRegionExactMatchSQL, customRegionUnitsSQL[level]),
+		err := h.DB.SelectContext(c.Request.Context(), &ids, fmt.Sprintf(customRegionExactMatchSQL, customRegionUnitsSQL(level)),
 			geometryJSON, customRegionExactMatchIoU)
 		if err != nil {
 			return nil, err
@@ -395,7 +412,7 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 					return
 				}
 				var agg []customRegionAggRow
-				query := fmt.Sprintf(customRegionAggregateSQL, customRegionUnitsSQL[candidate.Level])
+				query := fmt.Sprintf(customRegionAggregateSQL, customRegionUnitsSQL(candidate.Level))
 				err = h.DB.SelectContext(c.Request.Context(), &agg, query, geometryJSON, minShare, candidate.Level,
 					candidate.DatasetSlug, candidate.Indicator, req.FromYear, req.ToYear, matched)
 				if err != nil {

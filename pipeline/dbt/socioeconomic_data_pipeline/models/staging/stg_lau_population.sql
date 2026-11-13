@@ -11,7 +11,10 @@ SELECT
         ELSE gisco_id
     END as gisco_id,
     nuts_3_code,
-    lau_nat_code,
+    -- Official Gemeindeschluessel (AGS), normalized to 8 digits: Eurostat omits
+    -- the leading zero for states 01-09 (7 digits) and sometimes appends '.0'.
+    -- Consumers can use it as-is (no regexp_replace/lpad needed).
+    lpad(regexp_replace(cast(lau_nat_code as text), '\.0+$', ''), 8, '0') as lau_nat_code,
     lau_name_national,
     lau_name_latin,
     -- Convert population to bigint, handling potential float-string values like "13351.0"

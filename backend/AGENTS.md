@@ -51,6 +51,15 @@ go generate ./internal/models/...
 
 Enable the pre-commit hook (repo root: `git config core.hooksPath backend/githooks`) to run swag + go generate + go test automatically before each commit; see [githooks/README.md](githooks/README.md).
 
+## Database access
+
+In production the backend connects as the read-only role `api_ro`
+(`DB_USER` in `deployments/docker-compose.yml`, password `API_DB_PASSWORD`;
+created by `scripts/ensure_api_role.sql` in `deploy_remote.sh apply`): `SELECT`
+on `transformed_data` only, sessions read-only. Any new query must only touch
+`transformed_data` (or `public`/PostGIS and catalogs); no writes, no temp
+tables. Locally `DB_USER` may remain the owner.
+
 ## Architecture
 
 - `cmd/soziodata/main.go` is the actual API entrypoint (Gin router, loads
@@ -69,7 +78,12 @@ Enable the pre-commit hook (repo root: `git config core.hooksPath backend/githoo
   `agenturbezirk.go`, `metrics.go`, `metrics_catalog.go`,
   `socioeconomic_inventory.go`, and `dataset_catalog.go` are hand-written
   cross-cutting endpoints (region metadata, geometry, dataset
-  inventory/catalog). `negotiate.go` holds the shared response layer:
+  inventory/catalog). `target_versions.go` holds the supported
+  `nuts_version`/`lau_version` values (read at startup from the distinct
+  `target_version` of the harmonized marts, default = newest, static
+  fallback without DB) and `GET /versions`; never hard-code a version
+  default or list elsewhere - use `defaultNutsVersion()` /
+  `supportedNutsVersions()` (LAU analogous). `negotiate.go` holds the shared response layer:
   `respondList`/`respondNegotiated` pick JSON or CSV per the `Accept`
   header (`?format=csv|json` overrides it for browser links, `?download=1`
   adds `Content-Disposition`), and a gin `render.Render` implementation
@@ -155,7 +169,8 @@ Enable the pre-commit hook (repo root: `git config core.hooksPath backend/githoo
   factor × scale, e.g. `auszubildende-absolut` = rate per 1,000 × count /
   1,000); an optional `note` is appended to `meta.note`.
   `metrics.go`/`metrics_catalog.go` read harmonized datasets from
-  `mart_nuts3_sociodata_harmonized` for `?nuts_version=` (default 2024);
+  `mart_nuts3_sociodata_harmonized` for `?nuts_version=` (default: newest
+  version, see `target_versions.go`);
   columns without a harmonized counterpart (`harmonizedMetricsColumns`)
   fall back to the staging tables. Every `metricsSource` keeps invalid rows
   but marks them (`excluded_reason`: `invalid`, `no_geometry`,

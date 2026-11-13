@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { apiGet } from "../api/client";
+import { apiGet, isRateLimitText } from "../api/client";
 import type { RegionGeometry } from "../customRegion";
 import type { GeoRegionSummary } from "../types/api";
 
@@ -240,7 +240,10 @@ defineExpose({
 
     <p v-if="loading" class="hint">Lade Regionen …</p>
     <p v-else-if="level === 'lau' && !lauParent" class="hint">Für Gemeinden zuerst einen Kreis wählen.</p>
-    <p v-if="loadError" class="error-text" role="alert">{{ loadError }}</p>
+    <p v-if="loadError" class="error-text" role="alert">
+      {{ loadError }}
+      <button v-if="isRateLimitText(loadError)" type="button" class="link-button" @click="loadLevel">Erneut laden</button>
+    </p>
 
     <div ref="mapContainer" class="map-container combine-map" aria-label="Regionen auswählen"></div>
 

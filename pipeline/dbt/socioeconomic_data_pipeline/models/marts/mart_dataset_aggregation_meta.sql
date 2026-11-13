@@ -14,6 +14,12 @@
     measure_type - 'sum' (count) | 'weighted_avg' (ratio/average) |
                    'weighted_avg_employees' (value per employed person,
                    weighted by employees; see custom_region.go)
+    employee_slug - only for 'weighted_avg_employees': the employee-count
+                   dataset used as weight (default
+                   erwerbstaetige_pro_1000_einwohner; auszubildende, per
+                   1,000 SV-Beschaeftigte: sv_beschaeftigte). Read by
+                   mart_custom_region_unit_values to fill its employees
+                   column per dataset.
     kind         - 'count' | 'rate' | 'mean' | 'median' (labels the
                    approximation, same meaning as in
                    mart_agentur_dataset_aggregate)
@@ -35,7 +41,7 @@
 {% set nuts3_datasets = [
     {'slug': 'arbeitslose', 'measure_type': 'sum', 'kind': 'count'},
     {'slug': 'arbeitsvolumen', 'measure_type': 'weighted_avg_employees', 'kind': 'mean'},
-    {'slug': 'auszubildende', 'measure_type': 'weighted_avg', 'kind': 'rate'},
+    {'slug': 'auszubildende', 'measure_type': 'weighted_avg_employees', 'employee_slug': 'sv_beschaeftigte', 'kind': 'rate'},
     {'slug': 'bevoelkerung', 'measure_type': 'sum', 'kind': 'count'},
     {'slug': 'bruttoverdienst', 'measure_type': 'weighted_avg_employees', 'kind': 'mean'},
     {'slug': 'durchschnittsalter', 'measure_type': 'weighted_avg', 'kind': 'mean'},
@@ -59,16 +65,19 @@
     {'slug': 'arbeitslosenzahlen-afa-agenturbezirke', 'indicator': 'unterbeschaeftigung', 'measure_type': 'sum', 'kind': 'count'},
 ] %}
 
+{% set default_employee_slug = 'erwerbstaetige_pro_1000_einwohner' %}
+
 select * from (
     values
     {% for ds in nuts3_datasets %}
         ('{{ ds.slug }}', '{{ ds.slug }}', 'nuts3', '{{ ds.measure_type }}', '{{ ds.kind }}',
-         {% if ds.finer_slug %}'{{ ds.finer_slug }}'{% else %}null{% endif %}),
+         {% if ds.finer_slug %}'{{ ds.finer_slug }}'{% else %}null{% endif %},
+         {% if ds.measure_type == 'weighted_avg_employees' %}'{{ ds.employee_slug or default_employee_slug }}'{% else %}null{% endif %}),
     {% endfor %}
     {% for ds in lau_datasets %}
-        ('{{ ds.slug }}', '{{ ds.slug }}', 'lau', '{{ ds.measure_type }}', '{{ ds.kind }}', null),
+        ('{{ ds.slug }}', '{{ ds.slug }}', 'lau', '{{ ds.measure_type }}', '{{ ds.kind }}', null, null),
     {% endfor %}
     {% for ds in agentur_datasets %}
-        ('{{ ds.slug }}', '{{ ds.indicator }}', 'agentur', '{{ ds.measure_type }}', '{{ ds.kind }}', null){% if not loop.last %},{% endif %}
+        ('{{ ds.slug }}', '{{ ds.indicator }}', 'agentur', '{{ ds.measure_type }}', '{{ ds.kind }}', null, null){% if not loop.last %},{% endif %}
     {% endfor %}
-) as t (dataset_slug, indicator, level, measure_type, kind, finer_slug)
+) as t (dataset_slug, indicator, level, measure_type, kind, finer_slug, employee_slug)

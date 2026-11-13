@@ -24,9 +24,16 @@ From [`backend/.env.example`](https://github.com/BjoernFuertges/Socioeconomic-Da
 | `PORT` | `8081` | Port of the API server |
 | `DB_HOST` | `localhost` | Postgres host |
 | `DB_PORT` | `5432` | Postgres port |
-| `DB_USER` | `sozio_data_compose_user` | Postgres user |
+| `DB_USER` | `sozio_data_compose_user` | Postgres user (in production the read-only role `api_ro`; locally the owner may stay) |
 | `DB_PASSWORD` | – | Postgres password |
 | `DB_NAME` | `soziooekonomische-daten` | Database name |
+
+Optional variables, commented out in `.env.example` and not required at startup:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `UNLIMITED_ROWS_CAP` | 1.25 × largest table, at least 300000 | Row cap for `limit=null` (see [API](api.md)) |
+| `TRUSTED_PROXIES` | loopback, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` | Comma-separated IPs/CIDRs whose `X-Forwarded-For` header is trusted for the client IP (Traefik reaches the backend over the private compose network); an invalid value stops the server at startup |
 
 `internal/config.Load()` checks at startup that every variable listed in
 `.env.example` is actually set (from `.env` or the environment) and fails

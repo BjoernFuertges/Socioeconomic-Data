@@ -34,6 +34,15 @@ python load_soziodata_generic.py <dataset>/results_<dataset>_kreise
 ./run_all_pipelines.sh
 ```
 
+Credentials: `DESTINATION__POSTGRES__CREDENTIALS__*` env vars take precedence
+over `.dlt/secrets.toml` (dlt's provider order: env, then secrets.toml, then
+config.toml). The production `pipeline` container sets them to the
+non-superuser role `pipeline_rw`, which owns `loaded_data` and
+`loaded_data_staging` (dlt's staging dataset for the `dataset_metadata`
+merge) but cannot create schemas: a loader writing to a new `dataset_name`
+needs that schema added to `backend/scripts/ensure_pipeline_role.sql` first
+(see [docs/operations.md](../../docs/operations.md#db-roles)).
+
 ## Architecture
 
 - `load_soziodata_generic.py` is the workhorse: a single generic

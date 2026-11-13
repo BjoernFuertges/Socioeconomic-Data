@@ -235,7 +235,7 @@ func TestShippedDerivedCatalogResolves(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, e := range cat {
-		src, err := derivedMetricSource(e, defaultNutsVersion)
+		src, err := derivedMetricSource(e, defaultNutsVersion())
 		if err != nil {
 			t.Errorf("%s: %v", e.Slug, err)
 			continue

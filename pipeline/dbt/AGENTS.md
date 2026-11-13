@@ -40,8 +40,33 @@ dbt test --select stg_arbeitslose_kreise
 env vars; copy it to wherever `DBT_PROFILES_DIR` points and set those, or
 point `DBT_PROFILES_DIR` at the deployment's existing `profiles.yml`.
 
+In production dbt runs as the non-superuser role `pipeline_rw` (`DB_USER` of
+the `pipeline` service; the server's gitignored `profiles.yml` must read
+`DB_USER`/`DB_PASSWORD` like `profiles.example.yml`). It owns `transformed_data`
+and `snapshots` but has no `CREATE` on the database: a model/snapshot in a new
+schema, or a hook needing a new extension, needs that schema/extension added to
+`backend/scripts/ensure_pipeline_role.sql` first (`lau_integrated`'s
+`create extension if not exists pg_trgm` stays as a no-op because the script
+pre-creates it). Do not run dbt against production as the superuser - its
+objects would block later `pipeline_rw` runs (see
+[docs/operations.md](../../docs/operations.md#db-roles)).
+
 `README.md` in the project directory is the unmodified dbt-init
 boilerplate, not project documentation.
+
+## Reference versions
+
+Target NUTS/LAU versions are vars in `dbt_project.yml`
+(`reference_nuts_version`, `reference_lau_version`, `nuts_versions`,
+`lau_versions`) - never hard-code `2024` in models/macros, use
+`{{ var('...') }}`. `tests/assert_reference_versions_current.sql` fails when
+the vars lag behind the loaded geometry vintages (it fails on the tiny
+synthetic fixture, which has fewer vintages: override with `--vars`). The
+backend reads its supported/default versions from the distinct
+`target_version` of `mart_nuts3_sociodata_harmonized` /
+`mart_lau_sociodata_harmonized` at startup (default = newest), so a new
+version only needs the dbt vars + data (+ backend restart); keep
+`target_version` as the column name of both marts.
 
 ## Architecture
 
@@ -105,7 +130,10 @@ and `mart_nuts0_summary` are views):
     `tests/assert_harmonized_validity_matches_staging.sql`). The aggregation marts
     (`mart_nuts012_dataset_aggregate`, `mart_agentur_dataset_aggregate`,
     custom regions) add 'weighted_avg_employees' for values per employed
-    person (`arbeitsvolumen`, `bruttoverdienst`), weighted by the
+    person (`arbeitsvolumen`, `bruttoverdienst`; `auszubildende` with
+    `employee_slug: sv_beschaeftigte`, which also drives its NUTS-3 version
+    crosswalk weight; fallback if the count is missing, e.g. before 2007:
+    population weight, then area), weighted by the
     `erwerbstaetige_pro_1000_einwohner` count (absolute, in thousands - the
     slug is a misnomer kept for the public API route).
   - `mart_nuts3_timeseries_interpolated` / `mart_lau_timeseries_interpolated`
@@ -206,4 +234,8 @@ and `mart_nuts0_summary` are views):
   `render_lau_fill_gaps_view.sql` (shared gap-filling logic behind
   `marts/fill_gaps/*`),
   `generate_schema_name.sql` (schemas are taken verbatim from
-  `+schema:` config, not prefixed with the target schema).
+  `+schema:` config, not prefixed with the target schema),
+  `grant_api_read.sql` (`on-run-end` hook in `dbt_project.yml`: re-grants
+  `SELECT` on `transformed_data` to the backend's read-only role `api_ro`;
+  no-op if the role does not exist. New relations the backend reads must be in
+  `transformed_data`).

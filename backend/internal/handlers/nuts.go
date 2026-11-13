@@ -537,7 +537,7 @@ func (h *Handler) GetNutsLauAggregate(c *gin.Context) {
 	}
 
 	series := []models.NutsLauAggregatePoint{}
-	query := `SELECT year, lau_population_sum, lau_region_count, lau_region_count_with_population, lau_beschaeftigungsquote_weighted_avg
+	query := `SELECT year, lau_population_sum, lau_region_count, lau_region_count_with_population, lau_beschaeftigungsquote_weighted_avg, lau_beschaeftigungsquote_region_count
 		FROM transformed_data.mart_nuts3_lau_aggregate
 		WHERE nuts3_id = $1
 		ORDER BY year DESC`

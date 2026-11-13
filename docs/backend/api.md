@@ -38,6 +38,8 @@ curl -H 'Accept: text/csv' '<host>/api/v1/bevoelkerung/timeseries?geodata_id_nut
   `beschaeftigungsquote-gemeinden` with ~252,000 rows, stays downloadable). A larger
   result is rejected with `400` and a hint to page with `chunk_size` —
   never silently truncated.
+  Operators can override the cap with the env variable `UNLIMITED_ROWS_CAP`
+  (positive integer; replaces the automatic value, invalid values are ignored).
 - `chunk_size` (max. 10,000, otherwise `400`) + `chunk` (0-based) is an
   alternative to `limit`/`offset` and takes precedence when set — also over
   `limit=null`, whose cap then does not apply (the response is paged).
@@ -78,6 +80,8 @@ aggregation itself still happens in dbt.
 - `scope=aggregated` returns computed values (NUTS-0/1/2 and Agenturbezirke
   aggregated from Kreise; NUTS-3 aggregated from Gemeinden, as
   `lau_population_sum` / `lau_beschaeftigungsquote_weighted_avg`).
+  Their `source_region_count` is the number of Gemeinden behind the value
+  (population: with a population value; quote: with a valid quote).
 - `scope=both` (the default) returns both in one file; `is_computed`
   separates them.
 - NUTS-0/1/2 have no raw rows, LAU has no aggregated ones.
@@ -108,6 +112,46 @@ release report `<last tag>+sha.<commit>`, local builds `dev`) is also the
 Swagger UI (`/api/docs/index.html`). It is injected at build time via
 `-ldflags` into `backend/internal/version`; the committed `docs/swagger.*`
 files only carry the placeholder `dev`.
+
+## Target versions (`nuts_version` / `lau_version`)
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/versions` | Supported `nuts_version` / `lau_version` values and their defaults |
+
+```json
+{"success": true, "data": {
+  "nuts": {"versions": [2003, 2006, 2010, 2013, 2016, 2021, 2024], "default": 2024},
+  "lau":  {"versions": [2011, 2012, "...", 2024], "default": 2024}}}
+```
+
+NUTS-3 and LAU region IDs are not stable over time (Kreis reforms, municipal
+mergers), so harmonized values exist per target version. **Without
+`nuts_version` / `lau_version`, the API always serves the newest available
+version** (`default` = maximum of `versions`). This applies to
+`/{slug}/timeseries`, `fill_gaps=true`, `/metrics`, `/metrics/derived/{slug}`,
+the NUTS-3/LAU raw values of `/regions/{type}/{id}/data` (no parameter there)
+and the custom-region unit geometries.
+
+- The list is read once at backend startup from the harmonized marts
+  (distinct `target_version` of `mart_nuts3_sociodata_harmonized` /
+  `mart_lau_sociodata_harmonized`). A new version therefore needs no code
+  change: rebuild the marts with the extended dbt vars
+  ([Reference versions](../pipeline/dbt.md#reference-versions-nuts-lau)) and
+  restart the backend. If the query fails or finds no rows, a static
+  fallback list (default 2024) is used and a warning is logged.
+- When a new version arrives, the default moves and region IDs in default
+  responses can change. Clients that store IDs or need reproducible results
+  should **pin the version explicitly** (`?nuts_version=2021`) and pick it
+  from `GET /versions`. An unsupported value returns `400` naming the
+  allowed list.
+- Responses state the resolved version: `nuts_version` / `lau_version` on
+  every `/timeseries` and `fill_gaps` row and on `/metrics` results
+  (`/regions/.../data` does not carry it).
+- Limitation: marts pinned to the dbt var `reference_nuts_version` /
+  `reference_lau_version` (NUTS-0/1/2 and Agentur aggregates, custom-region
+  unit values) only follow the new default if that var is raised as well;
+  the dbt test `assert_reference_versions_current` enforces that.
 
 ## LAU regions (municipalities)
 
@@ -167,8 +211,11 @@ aggregated on that level. Counts (`sum`) are distributed by area share,
 rates/means (`weighted_avg`) are population-weighted where every
 contributing unit has a population, otherwise area-weighted; values per
 employed person (`weighted_avg_employees`, e.g. `arbeitsvolumen`,
-`bruttoverdienst`) are weighted by the number of employed persons, with the
-same area fallback. Every row
+`bruttoverdienst`) are weighted by the number of employed persons
+(`auszubildende`, per 1,000 SV-Beschäftigte: by `sv_beschaeftigte`, available
+from 2007 – earlier years fall back to the population weight, and only
+without population to the area weight; `aggregation_method` shows which).
+Every row
 carries `level_used`, `aggregation_method`, `value_kind` (approximation
 flag, e.g. medians) and `coverage` (share of the polygon area that has
 data). Supports JSON/CSV like the other endpoints. Details in Swagger.
@@ -301,7 +348,8 @@ only used by `ratio`), and a factor of 0 is a valid value.
 
 Both statistics endpoints read harmonized datasets from
 `mart_nuts3_sociodata_harmonized` for one NUTS-3 version, selected with
-`?nuts_version=` (2003–2024, default 2024, like `/{slug}/timeseries`), so
+`?nuts_version=` (default: newest available version, see
+[Target versions](#target-versions-nuts_version-lau_version); like `/{slug}/timeseries`), so
 every region counts once per year and `geodata_id_nuts` refers to that
 version. Derived metrics with an area denominator use the area of the same
 NUTS version. The response states the version in `nuts_version`; it is
@@ -396,7 +444,7 @@ exist in the interpolated mart).
 `beschaeftigungsquote-gemeinden` is the LAU-grain counterpart: it is fed by
 [`mart_lau_sociodata_harmonized`](../pipeline/dbt.md#lau-version-harmonization)
 instead and exposes the same `fill_gaps=true` / `/timeseries` mechanism, but
-with `lau_version` (2011–2024) instead of `nuts_version`, `geodata_id_lau`
+with `lau_version` (see [Target versions](#target-versions-nuts_version-lau_version)) instead of `nuts_version`, `geodata_id_lau`
 instead of `geodata_id_nuts` for a direct region filter (`nuts_parent_id`
 still works, filtering via the canonical LAU→NUTS-3 link in
 `lau_integrated.nuts3_id`), and `gisco_id`/Kreis-peer-group fields instead

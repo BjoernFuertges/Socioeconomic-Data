@@ -8,24 +8,8 @@ import (
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
-// supportedLauVersions are the LAU target versions for which
-// mart_lau_sociodata_harmonized / mart_lau_timeseries_interpolated carry rows
-// (see target_versions there). Must be kept in sync manually, like
-// supportedNutsVersions in kreis_generic.go and harmonizedLauRouteSlugs in
-// cmd/gen-models/main.go.
-var supportedLauVersions = []int{2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024}
-
-// defaultLauVersion is the target version when lau_version is not set.
-const defaultLauVersion = 2024
-
-func isSupportedLauVersion(v int) bool {
-	for _, sv := range supportedLauVersions {
-		if sv == v {
-			return true
-		}
-	}
-	return false
-}
+// Supported lau_version values and the default (newest) come from the
+// harmonized marts at startup - see target_versions.go.
 
 // getLauTimeseriesEndpoint returns the type-stable time-series response for
 // harmonized LAU datasets - the LAU counterpart of getKreisTimeseriesEndpoint.
@@ -69,12 +53,12 @@ func getLauTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetCon
 		return
 	}
 
-	lauVersion := defaultLauVersion
+	lauVersion := defaultLauVersion()
 	if filter.LauVersion != nil {
 		if !isSupportedLauVersion(*filter.LauVersion) {
 			respondBadRequest(c, fmt.Sprintf(
 				"lau_version %d wird nicht unterstützt (erlaubt: %v)",
-				*filter.LauVersion, supportedLauVersions,
+				*filter.LauVersion, supportedLauVersions(),
 			))
 			return
 		}

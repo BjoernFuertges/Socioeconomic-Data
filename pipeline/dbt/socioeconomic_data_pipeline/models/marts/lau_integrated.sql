@@ -1,3 +1,5 @@
+{# "create extension if not exists pg_trgm": needed locally (superuser); in prod pre-created by
+   backend/scripts/ensure_pipeline_role.sql, so it is a no-op for the non-superuser pipeline_rw. #}
 {{
   config(
     materialized='table',

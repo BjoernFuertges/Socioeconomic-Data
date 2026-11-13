@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onActivated, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onActivated, onMounted, onUnmounted, ref, watch } from "vue";
 import type { RouteLocationRaw } from "vue-router";
 import { useRoute, useRouter } from "vue-router";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { apiGet, unwrapNull } from "../api/client";
+import { apiGet, isRateLimitText, unwrapNull } from "../api/client";
 import AgenturAggregationNote from "./AgenturAggregationNote.vue";
 import type {
   AgenturbezirkLatestValue,
@@ -16,6 +16,7 @@ import type {
   InventoryEntry,
   LauTimeseriesPoint,
   NutsDatasetAggregatePoint,
+  TargetVersionsResponse,
   NutsTimeseriesPoint,
   TimeseriesPoint,
 } from "../types/api";
@@ -38,17 +39,11 @@ const router = useRouter();
 const BOUNDARY_COLOR_LIGHT = "#1a1a1a";
 const BOUNDARY_COLOR_DARK = "#f5f5f5";
 
-// Supported NUTS-3 target versions - must match supportedNutsVersions in
-// backend/internal/handlers/kreis_generic.go. Corresponds to the vintage years
-// present in stg_nuts_geometry; mart_nuts_version_crosswalk computes a direct
-// (1-hop) mapping for every pair of them.
-const NUTS_VERSIONS = [2003, 2006, 2010, 2013, 2016, 2021, 2024] as const;
-
-// Supported LAU target versions - must match supportedLauVersions in
-// backend/internal/handlers/lau_generic.go. Corresponds to the vintage years
-// present in mart_lau_geometry_historized; mart_lau_version_crosswalk computes a
-// mapping for every pair of them.
-const LAU_VERSIONS = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024] as const;
+// Fallback NUTS-3 / LAU target versions, used only until GET /versions has
+// answered (or if it fails). The real lists and defaults come from the backend,
+// which reads them from the harmonized marts (newest version = default).
+const FALLBACK_NUTS_VERSIONS: readonly number[] = [2003, 2006, 2010, 2013, 2016, 2021, 2024];
+const FALLBACK_LAU_VERSIONS: readonly number[] = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024];
 
 type GeoType = "nuts" | "lau" | "agentur";
 
@@ -115,6 +110,9 @@ let suppressAgenturPeriodWatch = false;
 // earlier by focusOnRegion() with a buildLayer() over the full set of regions.
 let suppressGeoTypeReload = false;
 let suppressNutsLevelReload = false;
+// Set while onMounted() applies the API default versions (loadTargetVersions):
+// the first geometry/value load runs right after it anyway.
+let suppressVersionReload = false;
 
 const agenturYearOptions = computed(() =>
   Array.from(new Set(agenturPeriods.value.map((p) => p.year))).sort((a, b) => b - a),
@@ -176,8 +174,36 @@ const datasetYearsNuts012 = ref<Map<string, number[]>>(new Map());
 // "" = no dataset selected -> map shows only the borders, no values.
 const selectedDataset = ref<string>("");
 const selectedYear = ref<number | null>(null);
-const selectedNutsVersion = ref<number>(2024);
-const selectedLauVersion = ref<number>(2024);
+const nutsVersions = ref<readonly number[]>(FALLBACK_NUTS_VERSIONS);
+const lauVersions = ref<readonly number[]>(FALLBACK_LAU_VERSIONS);
+const selectedNutsVersion = ref<number>(FALLBACK_NUTS_VERSIONS[FALLBACK_NUTS_VERSIONS.length - 1]);
+const selectedLauVersion = ref<number>(FALLBACK_LAU_VERSIONS[FALLBACK_LAU_VERSIONS.length - 1]);
+
+// Loads the supported versions and starts the selection on the API default
+// (newest version), unless the URL pins a version (?nutsVersion=/?lauVersion=)
+// that the API supports - initFromRoute() has only checked that against the
+// fallback lists. On failure the fallback lists and selection stay in effect.
+async function loadTargetVersions() {
+  try {
+    const body = await apiGet<TargetVersionsResponse>("/versions");
+    const pick = (versions: number[], fallback: number, pinned: unknown) => {
+      const v = Number(pinned);
+      return pinned !== undefined && versions.includes(v) ? v : fallback;
+    };
+    const nuts = body.data?.nuts;
+    const lau = body.data?.lau;
+    if (nuts?.versions?.length) {
+      nutsVersions.value = nuts.versions;
+      selectedNutsVersion.value = pick(nuts.versions, nuts.default, route.query.nutsVersion);
+    }
+    if (lau?.versions?.length) {
+      lauVersions.value = lau.versions;
+      selectedLauVersion.value = pick(lau.versions, lau.default, route.query.lauVersion);
+    }
+  } catch (err) {
+    console.warn("GET /versions failed, using fallback version lists", err);
+  }
+}
 const selectedGeoType = ref<GeoType>("nuts");
 const selectedNutsLevel = ref<NutsLevel>(3);
 
@@ -389,6 +415,14 @@ async function loadBoundaries() {
   } catch (err) {
     boundaryError.value = err instanceof Error ? err.message : String(err);
   }
+}
+
+// "Erneut laden" button after a final HTTP 429 (see api/client.ts).
+async function retryGeometries() {
+  await Promise.all([loadGeometries(), loadBoundaries()]);
+  buildLayer();
+  buildBoundaryLayer();
+  await loadValues();
 }
 
 function buildBoundaryLayer() {
@@ -812,7 +846,7 @@ function initFromRoute() {
   }
   if (q.nutsVersion) {
     const v = Number(q.nutsVersion);
-    if ((NUTS_VERSIONS as readonly number[]).includes(v)) selectedNutsVersion.value = v;
+    if (nutsVersions.value.includes(v)) selectedNutsVersion.value = v;
   }
   if (q.nutsLevel) {
     const l = Number(q.nutsLevel);
@@ -820,7 +854,7 @@ function initFromRoute() {
   }
   if (q.lauVersion) {
     const v = Number(q.lauVersion);
-    if ((LAU_VERSIONS as readonly number[]).includes(v)) selectedLauVersion.value = v;
+    if (lauVersions.value.includes(v)) selectedLauVersion.value = v;
   }
 }
 
@@ -932,6 +966,14 @@ onMounted(async () => {
   darkModeQuery = window.matchMedia?.("(prefers-color-scheme: dark)") ?? null;
   darkModeQuery?.addEventListener("change", handleDarkModeChange);
 
+  // Real version lists + API default before the first geometry load. The version
+  // watchers are suppressed for this initial change - the load below uses the
+  // new values anyway.
+  suppressVersionReload = true;
+  await loadTargetVersions();
+  await nextTick(); // let the (suppressed) version watchers run first
+  suppressVersionReload = false;
+
   await Promise.all([loadGeometries(), loadBoundaries()]);
   buildLayer();
   buildBoundaryLayer();
@@ -1039,6 +1081,7 @@ watch(isDark, () => {
 // harmonized mart) must be reloaded. The country/Bundesland borders belong to the
 // same version and are updated too, independent of the chosen level (NUTS/LAU).
 watch(selectedNutsVersion, async () => {
+  if (suppressVersionReload) return;
   await loadBoundaries();
   buildBoundaryLayer();
   if (selectedGeoType.value !== "nuts") return;
@@ -1048,7 +1091,7 @@ watch(selectedNutsVersion, async () => {
 });
 // Same for the LAU version (different target_version in the LAU-harmonized mart).
 watch(selectedLauVersion, async () => {
-  if (selectedGeoType.value !== "lau") return;
+  if (suppressVersionReload || selectedGeoType.value !== "lau") return;
   await loadGeometries();
   buildLayer();
   await loadValues();
@@ -1093,8 +1136,14 @@ watch(selectedNutsLevel, async () => {
 
 <template>
   <div class="map-view">
-    <p v-if="geoError" class="error-text">Geometrien konnten nicht geladen werden: {{ geoError }}</p>
-    <p v-if="boundaryError" class="error-text">Staats-/Bundeslandgrenzen konnten nicht geladen werden: {{ boundaryError }}</p>
+    <p v-if="geoError" class="error-text">
+      Geometrien konnten nicht geladen werden: {{ geoError }}
+      <button v-if="isRateLimitText(geoError)" type="button" class="link-button" @click="retryGeometries">Erneut laden</button>
+    </p>
+    <p v-if="boundaryError" class="error-text">
+      Staats-/Bundeslandgrenzen konnten nicht geladen werden: {{ boundaryError }}
+      <button v-if="isRateLimitText(boundaryError)" type="button" class="link-button" @click="retryGeometries">Erneut laden</button>
+    </p>
     <p v-if="inventoryError" class="error-text">Datensatz-Übersicht konnte nicht geladen werden: {{ inventoryError }}</p>
     <p v-if="agenturAggError" class="error-text">Aggregierte Agenturbezirk-Datensätze konnten nicht geladen werden: {{ agenturAggError }}</p>
     <p v-if="agenturPeriodsError" class="error-text">Berichtsmonate der Agenturbezirke konnten nicht geladen werden: {{ agenturPeriodsError }}</p>
@@ -1177,13 +1226,13 @@ watch(selectedNutsLevel, async () => {
       <template v-if="selectedGeoType === 'nuts'">
         <label for="map-nuts-version-select">NUTS-Version</label>
         <select id="map-nuts-version-select" v-model.number="selectedNutsVersion">
-          <option v-for="version in NUTS_VERSIONS" :key="version" :value="version">{{ version }}</option>
+          <option v-for="version in nutsVersions" :key="version" :value="version">{{ version }}</option>
         </select>
       </template>
       <template v-else-if="selectedGeoType === 'lau'">
         <label for="map-lau-version-select">LAU-Version</label>
         <select id="map-lau-version-select" v-model.number="selectedLauVersion">
-          <option v-for="version in LAU_VERSIONS" :key="version" :value="version">{{ version }}</option>
+          <option v-for="version in lauVersions" :key="version" :value="version">{{ version }}</option>
         </select>
       </template>
 
@@ -1216,7 +1265,7 @@ watch(selectedNutsLevel, async () => {
             <p class="map-legend-note">
               <span class="map-legend-swatch map-legend-swatch--nodata"></span>keine Daten
             </p>
-            <AgenturAggregationNote v-if="selectedAgenturDataset" :points="Array.from(valuesByRegion.values())" />
+            <AgenturAggregationNote v-if="selectedAgenturDataset" :points="Array.from(valuesByRegion.values())" :dataset-slug="selectedAgenturDataset" />
           </template>
           <template v-else-if="selectedDataset">
             <p class="map-legend-title">{{ formatDatasetLabel(selectedDataset) }}<template v-if="selectedYear"> · {{ selectedYear }}</template></p>

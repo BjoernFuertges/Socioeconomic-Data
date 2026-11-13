@@ -2,6 +2,9 @@ package routes
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"strings"
 
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/handlers"
 	"github.com/gin-gonic/gin"
@@ -15,6 +18,11 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 
 	// gin.New instead of gin.Default: Default adds its own logger, which would duplicate loggingMiddleware.
 	router := gin.New()
+	// Behind Traefik only (shared Docker network): trust X-Forwarded-For from private ranges,
+	// not from arbitrary clients (gin's default trusts every proxy).
+	if err := router.SetTrustedProxies(trustedProxies()); err != nil {
+		log.Fatalf("invalid TRUSTED_PROXIES: %v", err)
+	}
 	router.Use(gin.Recovery())
 	router.Use(corsMiddleware())
 	router.Use(loggingMiddleware())
@@ -23,6 +31,9 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 	{
 		// Health check
 		v1.GET("/health", handler.HealthCheck)
+
+		// Supported nuts_version / lau_version values and their defaults
+		v1.GET("/versions", handler.GetTargetVersions)
 
 		// LAU regions (Local Administrative Units)
 		lau := v1.Group("/lau")
@@ -147,4 +158,22 @@ func loggingMiddleware() gin.HandlerFunc {
 			param.ErrorMessage,
 		)
 	})
+}
+
+// defaultTrustedProxies covers loopback and the private ranges Docker bridge networks are
+// allocated from (Traefik reaches the backend over the compose network "backend-net").
+var defaultTrustedProxies = []string{"127.0.0.1", "::1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"}
+
+// trustedProxies returns the comma-separated TRUSTED_PROXIES env (CIDRs/IPs) or the private defaults.
+func trustedProxies() []string {
+	var out []string
+	for _, p := range strings.Split(os.Getenv("TRUSTED_PROXIES"), ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+	if len(out) == 0 {
+		return defaultTrustedProxies
+	}
+	return out
 }

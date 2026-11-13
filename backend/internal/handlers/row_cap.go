@@ -2,6 +2,10 @@ package handlers
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -53,4 +57,25 @@ func ConfigureUnlimitedRowsCap(db *sqlx.DB) (int64, error) {
 	c := capForLargestTable(largest)
 	unlimitedRowsCap.Store(c)
 	return c, nil
+}
+
+// unlimitedRowsCapEnv names the optional operator override of the limit=null
+// cap (positive integer). It replaces the automatically sized value, so it can
+// lower the cap as well as raise it; note that a value below the largest
+// dataset makes that dataset's full export impossible in one request.
+const unlimitedRowsCapEnv = "UNLIMITED_ROWS_CAP"
+
+// ApplyUnlimitedRowsCapEnv applies the UNLIMITED_ROWS_CAP override, if set.
+// Invalid or non-positive values are ignored (returned as error, cap unchanged).
+func ApplyUnlimitedRowsCapEnv() (int64, bool, error) {
+	raw := strings.TrimSpace(os.Getenv(unlimitedRowsCapEnv))
+	if raw == "" {
+		return UnlimitedRowsCap(), false, nil
+	}
+	v, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || v <= 0 {
+		return UnlimitedRowsCap(), false, fmt.Errorf("%s=%q ist keine positive Zahl", unlimitedRowsCapEnv, raw)
+	}
+	unlimitedRowsCap.Store(v)
+	return v, true, nil
 }

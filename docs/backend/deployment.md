@@ -5,7 +5,7 @@ In production, the stack runs via Docker Compose on a Hetzner Cloud server
 a backend container, and a `pipeline` container for dlt/dbt.
 
 The Postgres password is not stored in the compose file: `docker compose`
-reads `DB_PASSWORD`, `APP_HOST`, `LE_EMAIL`, `GHCR_OWNER` and `IMAGE_TAG` from an untracked `backend/deployments/.env` on the server (written by the deploy job)
+reads `DB_PASSWORD`, `API_DB_PASSWORD` (password of the backend's read-only role `api_ro`), `PIPELINE_DB_PASSWORD` (password of the pipeline's non-superuser role `pipeline_rw`; both roles see [Operations](../operations.md#db-roles)), `APP_HOST`, `LE_EMAIL`, `GHCR_OWNER` and `IMAGE_TAG` from an untracked `backend/deployments/.env` on the server (written by the deploy job)
 (template: `backend/deployments/.env.example`) and refuses to start without it.
 
 ## CI/CD (GitHub Actions)
@@ -27,7 +27,9 @@ build and deploy stages only run on push to `main` (or manually via
 5. **Deploy to Hetzner** – over SSH: check out the built commit on the
    server, write `.env`/`.env.nextcloud-sync` from GitHub secrets,
    `docker compose pull` (first, so a registry failure changes nothing),
-   run the Nextcloud sync, then `docker compose up -d --wait` (all in
+   run the Nextcloud sync, start `postgis` and create/update the DB roles
+   `api_ro` and `pipeline_rw` (the scheduler is stopped and a running pipeline
+   run is awaited first, max. 60 min), then `docker compose up -d --wait` (all in
    `backend/scripts/deploy_remote.sh`). `--wait` uses the healthchecks of
    `postgis`, `backend` and `pipeline`; if the rollout or the subsequent
    health request fails, the job rolls the server back to the last state

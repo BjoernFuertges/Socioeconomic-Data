@@ -73,7 +73,7 @@ models:
               max_value: 2030
 
       - name: beschaeftigungsquote_prozent
-        description: "Employment rate in percent. Can exceed 100 in commuter hubs and very small municipalities (workplace-based numerator); see is_low_confidence"
+        description: "Employment rate in percent. Can exceed 100 in commuter hubs and very small municipalities (workplace-based numerator); see is_low_confidence. A value of 0 means 'not defined / missing' in the source and is flagged invalid via has_valid_value"
         data_type: numeric
         tests:
           - not_null
@@ -89,7 +89,7 @@ models:
           - not_null
 
       - name: has_valid_value
-        description: "True if the employment rate is plausible (0-1000 %). Values above 100 % are kept; only negative values and extreme outliers are excluded"
+        description: "True if the employment rate is plausible (above 0 and up to 1000 %). A rate of 0 is treated as invalid, because the source uses 0 for undefined or missing values (e.g. municipality-free areas). Values above 100 % are kept; negative values, 0 and extreme outliers are excluded"
         data_type: boolean
 
       - name: is_low_confidence

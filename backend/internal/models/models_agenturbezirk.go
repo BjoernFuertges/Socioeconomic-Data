@@ -94,7 +94,9 @@ type AgenturDatasetAggregatePoint struct {
 	// area-weighted average (fallback when population is missing for a
 	// contributing Kreis); "weighted_avg_employees" = average weighted by the
 	// number of employed persons (for values per employed person, e.g.
-	// arbeitsvolumen). The averages are an approximation, not an exact
+	// arbeitsvolumen; auszubildende: by SV-Beschaeftigte; if that weight is
+	// missing, e.g. before 2007, the row falls back to
+	// "weighted_avg_population"). The averages are an approximation, not an exact
 	// recomputation.
 	AggregationMethod string `db:"aggregation_method" json:"aggregation_method" example:"weighted_avg_population" enums:"sum,weighted_avg_population,weighted_avg_employees,weighted_avg_area"`
 	// Kind of quantity: "count", "rate", "mean" or "median". Medians cannot be

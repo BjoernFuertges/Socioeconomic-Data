@@ -19,6 +19,10 @@
   Note: Arbeitslose figures (arbeitslose_kreise) may be incomplete, since
   stg_arbeitslose_kreise does not cover every Kreis in every year (cf.
   mart_nuts3_summary).
+
+  mart_nuts3_summary is harmonized onto a single NUTS-3 boundary version
+  (2024, via mart_nuts3_sociodata_harmonized), so the left(nuts_id, n)
+  roll-up never mixes Kreise of different NUTS vintages.
 */
 
 with nuts3 as (

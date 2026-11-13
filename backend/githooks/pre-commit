@@ -48,8 +48,7 @@ echo -e "\n${YELLOW} Checking for dbt schema changes...${NC}"
 if git diff --cached --name-only | grep -qE "pipeline/dbt/socioeconomic_data_pipeline/models/staging/stg_.*_kreise_schema\.yml|backend/cmd/gen-models/"; then
     echo -e "${YELLOW} dbt schema changes detected – regenerating Go models...${NC}"
     cd "$(git rev-parse --show-toplevel)/backend/internal/models" || exit 1
-    go generate .
-    if [ $? -ne 0 ]; then
+    if ! go generate .; then
         echo -e "${RED} go generate failed${NC}"
         exit 1
     fi
@@ -66,8 +65,7 @@ fi
 
 # 3. Run Go tests (after potential regeneration)
 echo -e "\n${YELLOW} Running Go tests...${NC}"
-go test ./...
-if [ $? -eq 0 ]; then
+if go test ./...; then
     echo -e "${GREEN} All tests passed${NC}"
 else
     echo -e "${RED} Tests failed${NC}"

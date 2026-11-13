@@ -131,7 +131,7 @@ func addYearRange(query string, args []interface{}, yearCol string, filter regio
 // GetRegionData returns raw and/or aggregated values of a region as a
 // long-format table
 // @Summary Kombinierter Daten-Export einer Region (roh und/oder aggregiert)
-// @Description Stellt die gewünschten Datensätze einer Region (NUTS, LAU oder Agenturbezirk) aus den bestehenden Marts zusammen und liefert sie in einem einheitlichen Long-Format (region_type, region_id, dataset_slug, year, month, value, is_computed, is_interpolated, aggregation_method, value_kind, source_region_count). scope=raw liefert die Ursprungswerte der Region (NUTS-3: interpolierte Kreis-Zeitreihe; LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung), scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert). NUTS-0/1/2 haben keine Rohwerte, LAU keine aggregierten Werte. Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.
+// @Description Stellt die gewünschten Datensätze einer Region (NUTS, LAU oder Agenturbezirk) aus den bestehenden Marts zusammen und liefert sie in einem einheitlichen Long-Format (region_type, region_id, dataset_slug, year, month, value, is_computed, is_interpolated, aggregation_method, value_kind, source_region_count). scope=raw liefert die Ursprungswerte der Region (NUTS-3: interpolierte Kreis-Zeitreihe; LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung), scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert). NUTS-0/1/2 haben keine Rohwerte, LAU keine aggregierten Werte. Die NUTS-3-/LAU-Rohwerte stehen immer im neuesten verfügbaren NUTS-/LAU-Stand (default von GET /versions). Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.
 // @Tags Regionen
 // @Accept json
 // @Produce json,text/csv
@@ -227,7 +227,7 @@ func (h *Handler) regionDataNuts(ctx context.Context, regionID string, scope reg
 					false AS is_computed, is_interpolated, NULL::text AS aggregation_method, NULL::text AS value_kind, NULL::int AS source_region_count
 					FROM transformed_data.mart_nuts3_timeseries_interpolated
 					WHERE nuts3_id = $1 AND target_version = $2`
-				args := []interface{}{id, defaultNutsVersion}
+				args := []interface{}{id, defaultNutsVersion()}
 				if !all {
 					args = append(args, pq.Array(picked))
 					query += fmt.Sprintf(" AND dataset_slug = ANY($%d)", len(args))
@@ -293,7 +293,7 @@ func (h *Handler) lauAggregateRows(ctx context.Context, nuts3ID string, slugs []
 		return nil, nil
 	}
 
-	query := `SELECT year, lau_population_sum, lau_region_count, lau_region_count_with_population, lau_beschaeftigungsquote_weighted_avg
+	query := `SELECT year, lau_population_sum, lau_region_count, lau_region_count_with_population, lau_beschaeftigungsquote_weighted_avg, lau_beschaeftigungsquote_region_count
 		FROM transformed_data.mart_nuts3_lau_aggregate WHERE nuts3_id = $1`
 	args := []interface{}{nuts3ID}
 	query, args = addYearRange(query, args, "year", filter)
@@ -316,7 +316,7 @@ func (h *Handler) lauAggregateRows(ctx context.Context, nuts3ID string, slugs []
 			rows = append(rows, newRow(slugLauPopulationSum, p, p.LauPopulationSum, "sum", p.LauRegionCountWithPopulation))
 		}
 		if wantQuote {
-			rows = append(rows, newRow(slugLauBeschQuoteAvg, p, p.LauBeschaeftigungsquoteWeightedAvg, "weighted_avg_population", p.LauRegionCountWithPopulation))
+			rows = append(rows, newRow(slugLauBeschQuoteAvg, p, p.LauBeschaeftigungsquoteWeightedAvg, "weighted_avg_population", p.LauBeschaeftigungsquoteRegionCount))
 		}
 	}
 	return rows, nil
@@ -338,7 +338,7 @@ func (h *Handler) regionDataLau(ctx context.Context, regionID string, scope regi
 		false AS is_computed, is_interpolated, NULL::text AS aggregation_method, NULL::text AS value_kind, NULL::int AS source_region_count
 		FROM transformed_data.mart_lau_timeseries_interpolated
 		WHERE gisco_id = $1 AND target_version = $2`
-	args := []interface{}{id, defaultLauVersion}
+	args := []interface{}{id, defaultLauVersion()}
 	if !all {
 		args = append(args, pq.Array(picked))
 		query += fmt.Sprintf(" AND dataset_slug = ANY($%d)", len(args))

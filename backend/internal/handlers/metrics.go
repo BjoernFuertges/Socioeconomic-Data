@@ -74,7 +74,7 @@ type metricsRankRow struct {
 // @Description Mehrere 'dataset'-Parameter kombinieren unterschiedliche Datensätze in einer Antwort.
 // @Description Mit 'geodata_id_nuts' werden zusätzlich der Regionalwert und das Ranking der Region zurückgegeben.
 // @Description Für aufeinanderfolgende Jahre wird die prozentuale Veränderung (YoY) berechnet.
-// @Description Harmonisierte Kreis-Datensätze werden aus mart_nuts3_sociodata_harmonized im NUTS-3-Stand 'nuts_version' berechnet (Default 2024; die Antwort nennt ihn in nuts_version), sodass jede Region je Jahr genau einmal zählt.
+// @Description Harmonisierte Kreis-Datensätze werden aus mart_nuts3_sociodata_harmonized im NUTS-3-Stand 'nuts_version' berechnet (ohne Angabe die neueste verfügbare Version, siehe GET /versions; die Antwort nennt ihn in nuts_version), sodass jede Region je Jahr genau einmal zählt.
 // @Description Nur gültige Werte gehen ein (has_valid_value; harmonisierte Werte nur, wenn alle beteiligten Quellwerte gültig sind); ausgeschlossene Werte zählt excluded_invalid_count je Jahr und Spalte, excluded_regions die betroffenen Regionen, meta.note erklärt das.
 // @Description Spalten ohne harmonisierte Entsprechung (beschaeftigungsquote_median, beschaeftigungsquote_ungewichtet, gemeinden_count von beschaeftigungsquote-nuts3) und nicht harmonisierte Datensätze (beschaeftigungsquote-gemeinden) kommen weiter ungeharmonisiert aus der Staging-Tabelle (nuts_version fehlt dann in der Antwort).
 // @Tags Metriken
@@ -86,7 +86,7 @@ type metricsRankRow struct {
 // @Param to_year query int false "Jahresbereich bis" example(2022)
 // @Param nuts_parent_id query string false "Auf NUTS-Präfix einschränken (z.B. DE1 für alle Kreise in Bayern)" example(DE1)
 // @Param geodata_id_nuts query string false "NUTS-ID einer Region für Regionalwert und Ranking (im Stand nuts_version)" example(DEF01)
-// @Param nuts_version query int false "NUTS-3-Zielversion der harmonisierten Werte" Enums(2003,2006,2010,2013,2016,2021,2024) default(2024)
+// @Param nuts_version query int false "NUTS-3-Zielversion der harmonisierten Werte; ohne Angabe die neueste verfügbare Version (Liste: GET /versions). Für stabile Regions-IDs explizit angeben." example(2021)
 // @Success 200 {object} models.APIResponse{data=[]models.DatasetMetricsResult}
 // @Failure 400 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
@@ -210,14 +210,15 @@ func runIndexedLimited(parent context.Context, n int, limit int, fn func(ctx con
 	return -1, parent.Err()
 }
 
-// resolveMetricsNutsVersion validates ?nuts_version= (default 2024), with the
+// resolveMetricsNutsVersion validates ?nuts_version= (default: newest
+// supported version, see target_versions.go), with the
 // same allowed values as SozioKreisFilter.NutsVersion on /{slug}/timeseries.
 func resolveMetricsNutsVersion(filter models.MetricsFilter) (int, error) {
 	if filter.NutsVersion == nil {
-		return defaultNutsVersion, nil
+		return defaultNutsVersion(), nil
 	}
 	if !isSupportedNutsVersion(*filter.NutsVersion) {
-		return 0, fmt.Errorf("nuts_version %d wird nicht unterstützt (erlaubt: %v)", *filter.NutsVersion, supportedNutsVersions)
+		return 0, fmt.Errorf("nuts_version %d wird nicht unterstützt (erlaubt: %v)", *filter.NutsVersion, supportedNutsVersions())
 	}
 	return *filter.NutsVersion, nil
 }

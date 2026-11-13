@@ -69,6 +69,74 @@ install_config() {
   chmod 600 "${deploy_dir}/letsencrypt/acme.json"
 }
 
+# Creates/updates the backend's read-only login role api_ro (idempotent). Needs the running
+# postgis container; the password comes from .env (API_DB_PASSWORD) and is passed via the
+# environment (docker exec -e NAME without value), so it never shows up in a process list.
+ensure_api_role() {
+  local api_pw db_user db_name
+  api_pw="$(sed -n 's/^API_DB_PASSWORD=//p' "${deploy_dir}/.env" | tail -n 1)"
+  [[ -n "${api_pw}" ]] || { echo "API_DB_PASSWORD fehlt in ${deploy_dir}/.env" >&2; return 1; }
+  db_user="$(compose exec -T postgis printenv POSTGRES_USER | tr -d '\r')"
+  db_name="$(compose exec -T postgis printenv POSTGRES_DB | tr -d '\r')"
+  echo "Stelle DB-Rolle api_ro sicher ..."
+  API_DB_PASSWORD="${api_pw}" docker exec -i -e API_DB_PASSWORD postgis \
+    psql -q -v ON_ERROR_STOP=1 -U "${db_user}" -d "${db_name}" \
+    < "${repo_root}/backend/scripts/ensure_api_role.sql"
+}
+
+# Stops the scheduler and waits for a running run_all_pipelines.sh (hourly ofelia job, initial
+# load or a manual docker exec) to finish, so ensure_pipeline_role does not change owners/the
+# password under a running dlt/dbt. No-op without a running pipeline container (fresh server).
+# The following "compose up" starts the scheduler again.
+quiesce_pipeline() {
+  local timeout="${PIPELINE_WAIT_TIMEOUT:-3600}" waited=0 running
+  compose stop scheduler || true
+  running="$(docker inspect -f '{{.State.Running}}' pipeline 2> /dev/null || echo false)"
+  [[ "${running}" == "true" ]] || return 0
+  # docker top lists the container's processes from the host (python:slim has no pgrep)
+  # grep without -q reads all input: an early exit could SIGPIPE docker top (pipefail -> false)
+  while docker top pipeline 2> /dev/null | grep 'run_all_pipelines\.sh' > /dev/null; do
+    if (( waited >= timeout )); then
+      echo "Abbruch: run_all_pipelines.sh läuft seit über ${timeout}s weiter (initialer Load?)." >&2
+      echo "Später erneut deployen oder den Lauf prüfen: docker top pipeline / deploy_remote.sh initial-load-status" >&2
+      # Leave the stack as it was: restart the scheduler unless the initial-load wrapper restarts it itself
+      if [[ "$(cat "${state_dir}/initial_load.status" 2> /dev/null)" != running* ]]; then
+        compose start scheduler || true
+      fi
+      return 1
+    fi
+    echo "Warte auf laufenden Pipeline-Lauf (${waited}s/${timeout}s) ..."
+    sleep 30
+    waited=$((waited + 30))
+  done
+}
+
+# Creates/updates the pipeline's non-superuser write role pipeline_rw (dlt + dbt) and hands it
+# ownership of the pipeline schemas and everything in them (idempotent, after ensure_api_role:
+# it also sets api_ro's default privileges for objects pipeline_rw creates).
+ensure_pipeline_role() {
+  local pipeline_pw db_user db_name
+  pipeline_pw="$(sed -n 's/^PIPELINE_DB_PASSWORD=//p' "${deploy_dir}/.env" | tail -n 1)"
+  [[ -n "${pipeline_pw}" ]] || { echo "PIPELINE_DB_PASSWORD fehlt in ${deploy_dir}/.env" >&2; return 1; }
+  db_user="$(compose exec -T postgis printenv POSTGRES_USER | tr -d '\r')"
+  db_name="$(compose exec -T postgis printenv POSTGRES_DB | tr -d '\r')"
+  echo "Stelle DB-Rolle pipeline_rw sicher ..."
+  PIPELINE_DB_PASSWORD="${pipeline_pw}" docker exec -i -e PIPELINE_DB_PASSWORD postgis \
+    psql -q -v ON_ERROR_STOP=1 -U "${db_user}" -d "${db_name}" \
+    < "${repo_root}/backend/scripts/ensure_pipeline_role.sql"
+}
+
+# dbt reads its connection from the gitignored profiles.yml next to dbt_project.yml (bind mount,
+# DBT_PROFILES_DIR). Only a profile that takes user/password from DB_USER/DB_PASSWORD uses pipeline_rw.
+check_dbt_profile() {
+  local profile="${repo_root}/pipeline/dbt/socioeconomic_data_pipeline/profiles.yml"
+  if [[ ! -f "${profile}" ]]; then
+    echo "Warnung: ${profile} fehlt - dbt im pipeline-Container schlägt fehl (Vorlage: profiles.example.yml)." >&2
+  elif ! grep -q "env_var('DB_USER')" "${profile}" || ! grep -q "env_var('DB_PASSWORD')" "${profile}"; then
+    echo "Warnung: ${profile} liest user/password nicht aus DB_USER/DB_PASSWORD - dbt läuft dann NICHT als pipeline_rw (siehe profiles.example.yml)." >&2
+  fi
+}
+
 wait_for_pipeline_healthy() {
   echo "Warte auf Healthcheck des pipeline-Containers (pip install läuft beim Start) ..."
   for _ in $(seq 1 60); do
@@ -132,6 +200,15 @@ cmd_apply() {
   else
     echo "Hinweis: .env.nextcloud-sync fehlt, Nextcloud-Sync wird übersprungen."
   fi
+
+  # The backend logs in as api_ro, the pipeline as pipeline_rw; both must exist before the
+  # containers start: bring up postgis first, then create/update the roles (idempotent).
+  # The pipeline role takes over table ownership, so no pipeline run may be active meanwhile.
+  compose up -d --wait --wait-timeout "${WAIT_TIMEOUT:-600}" postgis
+  ensure_api_role
+  quiesce_pipeline
+  ensure_pipeline_role
+  check_dbt_profile
 
   # --wait: waits for the healthchecks (backend, postgis, pipeline) and fails if a container does not become healthy
   compose up -d --remove-orphans --wait --wait-timeout "${WAIT_TIMEOUT:-600}"

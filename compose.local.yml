@@ -65,6 +65,8 @@ services:
       GEODATA_BASE_PATH: /app/data-exchange/eurostat_lau_population
       DB_HOST: postgis
       DB_PORT: 5432
+      # Locally dlt/dbt run as the superuser; production uses the non-superuser role pipeline_rw
+      # (backend/scripts/ensure_pipeline_role.sql, see docs/operations.md "DB roles").
       DB_USER: sozio_data_compose_user
       DB_PASSWORD: local_dev_password
       DB_NAME: soziooekonomische-daten

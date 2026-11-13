@@ -84,6 +84,9 @@ type NutsLauAggregatePoint struct {
 	LauRegionCountWithPopulation int `db:"lau_region_count_with_population" json:"lau_region_count_with_population" example:"21"`
 	// Population-weighted average of the Gemeinde Beschäftigungsquote; null without data coverage.
 	LauBeschaeftigungsquoteWeightedAvg *float64 `db:"lau_beschaeftigungsquote_weighted_avg" json:"lau_beschaeftigungsquote_weighted_avg" example:"64.2"`
+	// Number of Gemeinden with a valid Beschäftigungsquote that went into the average
+	// (0 without quote). Independent of the population counts above.
+	LauBeschaeftigungsquoteRegionCount int `db:"lau_beschaeftigungsquote_region_count" json:"lau_beschaeftigungsquote_region_count" example:"21"`
 }
 
 // NutsLauAggregateResponse bundles the time series of LAU aggregates for a NUTS-3 region.

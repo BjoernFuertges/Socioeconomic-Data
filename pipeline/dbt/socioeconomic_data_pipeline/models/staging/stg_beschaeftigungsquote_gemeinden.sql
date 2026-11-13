@@ -46,7 +46,9 @@ cleaned as (
         mapper,
         parameter,
         coalesce(nullif(cast(geodata_level as text), ''), 'LAU') as geodata_level,
-        coalesce(geodata_year::integer, 2024) as geodata_year,
+        -- No default: a missing geodata_year (meta.yaml) must fail the not_null test
+        -- instead of silently falling back to a vintage.
+        geodata_year::integer as geodata_year,
 
         -- Observation fields
         year::integer as year,
@@ -59,9 +61,15 @@ cleaned as (
         -- workplace-based, so commuter hubs and tiny municipalities (few
         -- residents aged 15-64) can exceed 100 %. Only negative values and
         -- extreme outliers are excluded; see is_low_confidence for small bases.
+        -- A rate of exactly 0 is invalid: the source uses 0 as a placeholder for
+        -- "not defined / missing" (municipality-free areas are 0 in every year,
+        -- many municipalities are 0 in single years only), not as a measured
+        -- rate. Left valid, such zeros would drag the NUTS-3 means/medians
+        -- and the LAU crosswalk values down. There is deliberately no
+        -- exception for tiny municipalities.
         case
             when value is null     then false
-            when value < 0         then false
+            when value <= 0        then false
             when value > 1000      then false
             else true
         end as has_valid_value
@@ -75,15 +83,14 @@ cleaned as (
 -- Eurostat vintage, and a same-year join leaves early observation years
 -- without a NUTS-3 code and maps later ones onto the wrong vintage.
 latest_lau as (
-    select distinct on (regexp_replace(cast(lau_nat_code as text), '\.0+$', ''))
-        regexp_replace(cast(lau_nat_code as text), '\.0+$', '') as ars_key,
-        lau_nat_code,
+    select distinct on (lau_nat_code)
+        lau_nat_code as ars_key,
         nuts_3_code,
         case when has_valid_population and population_count > 0
              then population_count end as population_count
     from {{ ref('stg_lau_population') }}
     where lau_nat_code is not null
-    order by regexp_replace(cast(lau_nat_code as text), '\.0+$', ''), year desc
+    order by lau_nat_code, year desc
 ),
 
 mapped as (
@@ -92,8 +99,8 @@ mapped as (
         coalesce(c.original_name, '') as original_name,
         coalesce(c.geodata_name, c.original_name, '') as geodata_name,
         coalesce(c.geodata_id_nuts, p.nuts_3_code, '') as geodata_id_nuts,
-        coalesce(c.geodata_id_lau, regexp_replace(cast(p.lau_nat_code as text), '\.0+$', ''), c.original_id_1, '') as geodata_id_lau,
-        coalesce(c.geodata_id_ars, c.geodata_id_lau, regexp_replace(cast(p.lau_nat_code as text), '\.0+$', ''), c.original_id_1, '') as geodata_id_ars,
+        coalesce(c.geodata_id_lau, c.original_id_1, '') as geodata_id_lau,
+        coalesce(c.geodata_id_ars, c.geodata_id_lau, c.original_id_1, '') as geodata_id_ars,
         coalesce(c.mapper, '') as mapper,
         coalesce(c.parameter, '') as parameter,
         c.geodata_level,
@@ -108,7 +115,8 @@ mapped as (
         coalesce(p.population_count < {{ var('low_confidence_population', 500) }}, false) as is_low_confidence
     from cleaned c
     left join latest_lau p
-        on p.ars_key = c.original_id_1
+        -- original_id_1 is the BBSR key (7 digits for states 01-09), ars_key the 8-digit AGS
+    on p.ars_key = lpad(c.original_id_1, 8, '0')
 ),
 
 final as (

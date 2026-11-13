@@ -27,6 +27,8 @@ select
     'aggregation_lau_to_nuts3'::text as mapper,
     'population_weighted_and_median'::text as parameter,
     'NUTS_3'::text as geodata_level,
+    -- Follows meta.yaml (geodata_year 2024) of the underlying Gemeinden series;
+    -- keep in sync with the Gemeinden/LAU vintage.
     2024::integer as geodata_year,
     year,
     observation_date,

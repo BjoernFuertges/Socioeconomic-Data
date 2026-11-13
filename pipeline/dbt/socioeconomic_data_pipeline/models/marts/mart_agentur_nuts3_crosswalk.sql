@@ -9,7 +9,7 @@
     )
 }}
 
-{% set reference_nuts_version = 2024 %}
+{% set reference_nuts_version = var('reference_nuts_version') %}
 {% set min_share = var('crosswalk_min_share', 0.10) %}
 
 /*

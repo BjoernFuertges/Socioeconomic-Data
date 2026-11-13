@@ -163,6 +163,7 @@ async function loadSlug(slug: string) {
           source_region_count: r.source_region_count,
           matched_unit: r.matched_unit,
           is_crosswalked: r.is_crosswalked,
+          employee_slug: r.employee_slug,
         })),
       });
     } catch (err) {
@@ -334,7 +335,7 @@ watch(
     <template v-for="ds in selectedDatasets" :key="ds.route_slug">
       <div v-if="activeTabSlug === ds.route_slug">
         <DatasetInfo v-if="metadataBySlug.get(ds.route_slug)" :metadata="metadataBySlug.get(ds.route_slug)!" />
-        <AgenturAggregationNote v-if="kind === 'agentur'" :points="pointsOf(ds.route_slug)" />
+        <AgenturAggregationNote v-if="kind === 'agentur'" :points="pointsOf(ds.route_slug)" :dataset-slug="baseSlug(ds.route_slug)" />
         <CustomRegionNote v-else-if="kind === 'custom'" :points="pointsOf(ds.route_slug) as any" />
         <p v-if="results.get(ds.route_slug)?.kind === 'loading'" class="hint">Lade Daten…</p>
         <p v-else-if="results.get(ds.route_slug)?.kind === 'error'" class="error-text">
@@ -365,7 +366,7 @@ watch(
     <section v-for="ds in selectedDatasets" :key="ds.route_slug" class="dataset-block">
       <h3 v-if="selectedDatasets.length > 1" class="dataset-block-title">{{ labelOf(ds.route_slug) }}</h3>
       <DatasetInfo v-if="metadataBySlug.get(ds.route_slug)" :metadata="metadataBySlug.get(ds.route_slug)!" />
-      <AgenturAggregationNote v-if="kind === 'agentur'" :points="pointsOf(ds.route_slug)" />
+      <AgenturAggregationNote v-if="kind === 'agentur'" :points="pointsOf(ds.route_slug)" :dataset-slug="baseSlug(ds.route_slug)" />
         <CustomRegionNote v-else-if="kind === 'custom'" :points="pointsOf(ds.route_slug) as any" />
       <p v-if="results.get(ds.route_slug)?.kind === 'loading'" class="hint">Lade Daten…</p>
       <p v-else-if="results.get(ds.route_slug)?.kind === 'error'" class="error-text">

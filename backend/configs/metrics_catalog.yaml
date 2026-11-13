@@ -52,8 +52,11 @@ derived_metrics:
     note: >-
       Auszubildende absolut ist eine Rückrechnung (BBSR-Quote × BA-Beschäftigte / 1.000),
       kein gemessener Wert: BBSR und BA können unterschiedliche Revisionsstände haben,
-      bei umgeschlüsselten NUTS-3-Regionen ist die harmonisierte Quote ein gewichteter
-      Mittelwert, das Produkt also eine Näherung. Zeitraum derzeit 2007–2023 (BA-Beschäftigte ab 2007, BBSR-Quote bis 2023).
+      bei umgeschlüsselten NUTS-3-Regionen ist die harmonisierte Quote ein mit den
+      SV-Beschäftigten gewichteter Mittelwert; das Produkt ist dort exakt die Summe der
+      absoluten Werte, da Gewicht und Faktor dieselbe Größe sind. (Der Rückfall auf die
+      Bevölkerungsgewichtung vor 2007 betrifft diese Kennzahl nicht, weil dort der
+      BA-Faktor fehlt.) Zeitraum derzeit 2007–2023 (BA-Beschäftigte ab 2007, BBSR-Quote bis 2023).
       Jahre davor sind ohne BA-Faktor ausgeschlossen: ohne Jahresfilter erscheinen daher
       alle Regionen in excluded_regions/regions_without_factor (mit from_year=2007 nicht).
     formula:

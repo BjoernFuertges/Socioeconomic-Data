@@ -253,3 +253,23 @@ func TestPaginationLimitNullWithChunkSizeIgnoresCap(t *testing.T) {
 		t.Error("chunk_size above maxChunkSize must fail in parsePagination")
 	}
 }
+
+func TestApplyUnlimitedRowsCapEnv(t *testing.T) {
+	prev := UnlimitedRowsCap()
+	t.Cleanup(func() { unlimitedRowsCap.Store(prev) })
+
+	t.Setenv(unlimitedRowsCapEnv, "")
+	if _, applied, err := ApplyUnlimitedRowsCapEnv(); applied || err != nil {
+		t.Fatalf("unset: applied=%v err=%v", applied, err)
+	}
+	for _, bad := range []string{"abc", "0", "-5"} {
+		t.Setenv(unlimitedRowsCapEnv, bad)
+		if _, applied, err := ApplyUnlimitedRowsCapEnv(); applied || err == nil || UnlimitedRowsCap() != prev {
+			t.Errorf("%q: applied=%v err=%v cap=%d", bad, applied, err, UnlimitedRowsCap())
+		}
+	}
+	t.Setenv(unlimitedRowsCapEnv, "1234")
+	if v, applied, err := ApplyUnlimitedRowsCapEnv(); !applied || err != nil || v != 1234 || UnlimitedRowsCap() != 1234 {
+		t.Errorf("valid: v=%d applied=%v err=%v", v, applied, err)
+	}
+}
