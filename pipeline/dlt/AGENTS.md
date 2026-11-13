@@ -26,6 +26,7 @@ python load_arbeitslosenzahlen_afa.py
 python fetch_lau_population.py       # before load_geodata_to_postgis.py
 python load_geodata_to_postgis.py
 python load_agenturbezirke_geodata.py
+python fetch_ba_sv_beschaeftigte.py  # writes the sv_beschaeftigte input files, skips if present
 python load_soziodata_generic.py <dataset>/results_<dataset>_kreise
 
 # Run all loaders except load_beschaeftigungsquote.py, then dbt deps/snapshot/run
@@ -83,6 +84,21 @@ python load_soziodata_generic.py <dataset>/results_<dataset>_kreise
   no cached downloads), `load_geodata_to_postgis.py` silently falls back
   to a `geo-importer`-sourced CSV (external sibling repo, not part of this repo) that only has `ID,Name` columns, leaving
   `gisco_id`/`nuts_3_code`/`population` NULL for every LAU row.
+- `fetch_ba_sv_beschaeftigte.py` is the only Kreis dataset not prepared by
+  hand: it builds `sv_beschaeftigte/results_sv_beschaeftigte_kreise/`
+  (`mapped_pairs.csv` + `meta.yaml` + `unmapped.csv`) under
+  `DATA_EXCHANGE_PATH` from the BA `EckwerteZeitreiheBST` API (June value
+  per year, ~400 requests), which `load_soziodata_generic.py` then loads
+  like any other Kreis dataset. NUTS-3 IDs come from an ARS lookup in an
+  existing NUTS-2024 `mapped_pairs.csv` (`--nuts-lookup`); BA Kreise newer
+  than NUTS 2024 are summed into their former Kreis (`TERRITORIAL_MERGES`,
+  currently Hanau -> Main-Kinzig-Kreis), anything else unmatched lands in
+  `unmapped.csv`. Called by `run_all_pipelines.sh` but skips when the
+  output exists (`--force` to rebuild, `--cache-dir` to reuse raw
+  responses); it writes nothing if any Kreis fails, so a `"replace"` load
+  never sees a partial file. On the server the folder must also live in
+  Nextcloud, since the `rclone sync` of `data-exchange/1_friedrich-bjoern`
+  deletes files that are not there (then every run fetches again).
 - `load_agenturbezirke_geodata.py` loads the official BA-Gebietsstruktur
   shapefile (all ~146 Agenturbezirke, same source ZIP as
   `analysis/arbeitsagentur/fetch_geodata.sh` used for its 3-district
@@ -98,7 +114,7 @@ python load_soziodata_generic.py <dataset>/results_<dataset>_kreise
   exit 1.
 - `bbsr_license.py` supplies `license`/`license_url` for the metadata
   resource automatically — no meta.yaml maintenance needed. Every BBSR-
-  sourced dataset (currently all of them, detected via `source` mentioning
+  sourced dataset (all except `sv_beschaeftigte`, detected via `source` mentioning
   "BBSR") has its license looked up via `bbsr_license.get_license()`
   inside `load_soziodata_generic.py`'s metadata resource on every run: a
   fresh (<24h) on-disk cache (`pipeline/dlt/.dlt/bbsr_license_cache.json`,

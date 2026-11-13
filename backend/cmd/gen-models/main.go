@@ -85,6 +85,7 @@ var harmonizedRouteSlugs = map[string]bool{
 	"schuldnerquote":                    true,
 	"sgb_ii_quote":                      true,
 	"studierende":                       true,
+	"sv_beschaeftigte":                  true,
 	"wohngeldhaushalte":                 true,
 }
 

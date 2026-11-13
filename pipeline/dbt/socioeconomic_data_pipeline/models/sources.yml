@@ -350,7 +350,7 @@ sources:
             description: "Dataset name (results_wohngeldhaushalte_kreise)"
 
       - name: results_auszubildende_kreise
-        description: "Trainees per district (Kreis), long format, one record per region and year (per 1,000 employees subject to social insurance contributions)"
+        description: "Trainee rate per district (Kreis): trainees per 1,000 employees subject to social insurance contributions, long format, one record per region and year"
         columns:
           - name: original_id_1
             tests:
@@ -423,3 +423,18 @@ sources:
               - not_null
           - name: value
             description: "Students per 1,000 inhabitants"
+
+      - name: results_sv_beschaeftigte_kreise
+        description: "Employees subject to social insurance contributions at place of work per district (Kreis), Statistik der Bundesagentur für Arbeit (June value, fetch_ba_sv_beschaeftigte.py), long format, one record per region and year"
+        columns:
+          - name: original_id_1
+            tests:
+              - not_null
+          - name: geodata_id_nuts
+            tests:
+              - not_null
+          - name: year
+            tests:
+              - not_null
+          - name: value
+            description: "Number of employees subject to social insurance contributions (absolute)"

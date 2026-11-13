@@ -3,7 +3,7 @@ version: 2
 models:
 
   - name: stg_auszubildende_kreise
-    description: Cleaned trainee counts per district (Kreis), with derived observation date and quality flag.
+    description: Cleaned trainee rate per district (Kreis), i.e. trainees per 1,000 employees subject to social insurance contributions, with derived observation date and quality flag.
     columns:
       - name: auszubildende_pk
         description: Surrogate key built from geodata_id_nuts and year
@@ -66,5 +66,5 @@ models:
         tests:
           - not_null
       - name: has_valid_value
-        description: True if the trainee value is plausible (>= 0)
+        description: True if the trainee rate is plausible (>= 0)
         data_type: boolean

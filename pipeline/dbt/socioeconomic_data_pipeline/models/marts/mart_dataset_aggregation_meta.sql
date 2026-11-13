@@ -11,7 +11,9 @@
   indicator):
 
     level        - level of the source data: 'lau' | 'nuts3' | 'agentur'
-    measure_type - 'sum' (count) | 'weighted_avg' (ratio/average)
+    measure_type - 'sum' (count) | 'weighted_avg' (ratio/average) |
+                   'weighted_avg_employees' (value per employed person,
+                   weighted by employees; see custom_region.go)
     kind         - 'count' | 'rate' | 'mean' | 'median' (labels the
                    approximation, same meaning as in
                    mart_agentur_dataset_aggregate)
@@ -43,6 +45,7 @@
     {'slug': 'schuldnerquote', 'measure_type': 'weighted_avg', 'kind': 'rate'},
     {'slug': 'sgb_ii_quote', 'measure_type': 'weighted_avg', 'kind': 'rate'},
     {'slug': 'studierende', 'measure_type': 'weighted_avg', 'kind': 'rate'},
+    {'slug': 'sv_beschaeftigte', 'measure_type': 'sum', 'kind': 'count'},
     {'slug': 'wohngeldhaushalte', 'measure_type': 'weighted_avg', 'kind': 'rate'},
     {'slug': 'beschaeftigungsquote-nuts3', 'measure_type': 'weighted_avg', 'kind': 'rate', 'finer_slug': 'beschaeftigungsquote-gemeinden'},
 ] %}

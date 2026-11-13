@@ -53,7 +53,7 @@ models:
         data_type: text
 
       - name: number_type
-        description: "absolute or relative"
+        description: "absolute or relative, passed through from meta.yaml (not normalized); legacy BBSR files may say 'absolut'"
         data_type: text
 
       - name: geodata_level

@@ -1320,7 +1320,7 @@ const docTemplate = `{
         },
         "/auszubildende": {
             "get": {
-                "description": "Cleaned trainee counts per district (Kreis), with derived observation date and quality flag.",
+                "description": "Cleaned trainee rate per district (Kreis), i.e. trainees per 1,000 employees subject to social insurance contributions, with derived observation date and quality flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1331,7 +1331,7 @@ const docTemplate = `{
                 "tags": [
                     "Auszubildende"
                 ],
-                "summary": "Cleaned trainee counts per district (Kreis), with derived observation date and quality flag.",
+                "summary": "Cleaned trainee rate per district (Kreis), i.e. trainees per 1,000 employees subject to social insurance contributions, with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -1486,7 +1486,7 @@ const docTemplate = `{
                 "tags": [
                     "Auszubildende"
                 ],
-                "summary": "Lückenlose Zeitreihe für Cleaned trainee counts per district (Kreis), with derived observation date and quality flag.",
+                "summary": "Lückenlose Zeitreihe für Cleaned trainee rate per district (Kreis), i.e. trainees per 1,000 employees subject to social insurance contributions, with derived observation date and quality flag.",
                 "parameters": [
                     {
                         "type": "string",
@@ -5133,7 +5133,7 @@ const docTemplate = `{
         },
         "/metrics/derived": {
             "get": {
-                "description": "Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,\neigenberechnete Arbeitslosenquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.\nMit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.\nmeta.note: Es gehen nur gültige Werte ein; Zähler und Nenner müssen gültig sein.",
+                "description": "Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,\neigenberechnete Arbeitslosenquote, Auszubildende absolut). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet:\nratio = Zähler / Nenner × scale, product = Zähler × Faktor × scale.\nMit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.\nmeta.note: Es gehen nur gültige Werte ein; bei ratio müssen Zähler und Nenner, bei product Zähler und Faktor gültig sein.",
                 "consumes": [
                     "application/json"
                 ],
@@ -5171,7 +5171,7 @@ const docTemplate = `{
         },
         "/metrics/derived/{slug}": {
             "get": {
-                "description": "Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine\nabgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²).\nSind alle beteiligten Datensätze harmonisiert, werden Zähler und Nenner aus mart_nuts3_sociodata_harmonized im\nNUTS-3-Stand 'nuts_version' gelesen (Default 2024) und die Fläche aus der Geometrie desselben Stands; die Antwort nennt ihn in nuts_version.\nNur Regionen mit gültigem Zähler und Nenner gehen ein. Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Nenner oder Nenner 0),\nregions_without_geometry (keine Geometrie für den Flächennenner) und regions_without_denominator (kein Nennerwert) je Jahr; excluded_regions nennt die betroffenen Regionen insgesamt.",
+                "description": "Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine\nabgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²; Auszubildende absolut = Auszubildende je 1.000 SV-Beschäftigte × SV-Beschäftigte / 1.000).\nSind alle beteiligten Datensätze harmonisiert, werden Zähler und Nenner bzw. Faktor aus mart_nuts3_sociodata_harmonized im\nNUTS-3-Stand 'nuts_version' gelesen (Default 2024) und die Fläche aus der Geometrie desselben Stands; die Antwort nennt ihn in nuts_version.\nFormeltyp ratio: Nur Regionen mit gültigem Zähler und Nenner gehen ein. Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Nenner oder Nenner 0),\nregions_without_geometry (keine Geometrie für den Flächennenner) und regions_without_denominator (kein Nennerwert) je Jahr.\nFormeltyp product: Nur Regionen mit gültigem Zähler und Faktor gehen ein (ein Faktor 0 ist gültig). Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Faktor)\nund regions_without_factor (kein Faktorwert) je Jahr. excluded_regions nennt die betroffenen Regionen insgesamt.\nmeta.note nennt die Regel des Formeltyps und, falls im Katalog hinterlegt, den Hinweis der Metrik (note, z.B. bei Rückrechnungen aus zwei Quellen).",
                 "consumes": [
                     "application/json"
                 ],
@@ -6915,6 +6915,295 @@ const docTemplate = `{
                 }
             }
         },
+        "/sv_beschaeftigte": {
+            "get": {
+                "description": "Cleaned counts of employees subject to social insurance contributions (at place of work, 30 June) per district (Kreis), with derived observation date and quality flag.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "SvBeschaeftigte"
+                ],
+                "summary": "Cleaned counts of employees subject to social insurance contributions (at place of work, 30 June) per district (Kreis), with derived observation date and quality flag.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "stuttgart",
+                        "description": "Teilstring-Suche nach Gebietsnamen",
+                        "name": "geodata_name_contains",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2007-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen und mit Interpolationsmetadaten kennzeichnen",
+                        "name": "fill_gaps",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SvBeschaeftigteData"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/sv_beschaeftigte/timeseries": {
+            "get": {
+                "description": "Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated. Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend gekennzeichnet.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/csv"
+                ],
+                "tags": [
+                    "SvBeschaeftigte"
+                ],
+                "summary": "Lückenlose Zeitreihe für Cleaned counts of employees subject to social insurance contributions (at place of work, 30 June) per district (Kreis), with derived observation date and quality flag.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "DEF01",
+                        "description": "NUTS-3-Code der Region",
+                        "name": "geodata_id_nuts",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "DE1",
+                        "description": "NUTS-Präfix für Hierarchieabfragen (z.B. DE1)",
+                        "name": "nuts_parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2020,
+                        "description": "Jahr der Beobachtung (2007-2030)",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2018,
+                        "description": "Nur Jahre \u003e= from_year zurückgeben",
+                        "name": "from_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2022,
+                        "description": "Nur Jahre \u003c= to_year zurückgeben",
+                        "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 2021,
+                        "description": "Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024, Default 2024)",
+                        "name": "nuts_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1000,
+                        "example": 100,
+                        "description": "Anzahl der Ergebnisse (1-10000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "example": 0,
+                        "description": "Offset für Pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "csv"
+                        ],
+                        "type": "string",
+                        "description": "Überschreibt den Accept-Header",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Content-Disposition: attachment setzen",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                        }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/wohngeldhaushalte": {
             "get": {
                 "description": "Cleaned housing benefit households per district (Kreis), with derived observation date and quality flag.",
@@ -8174,7 +8463,7 @@ const docTemplate = `{
                     "example": 5
                 },
                 "excluded_regions": {
-                    "description": "ExcludedRegions is the number of distinct regions with at least one\nvalue left out for any reason (invalid, no geometry, no denominator).",
+                    "description": "ExcludedRegions is the number of distinct regions with at least one\nvalue left out for any reason (invalid, no geometry, no denominator,\nno factor).",
                     "type": "integer",
                     "example": 3
                 },
@@ -8187,8 +8476,12 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 0
                 },
+                "regions_without_factor": {
+                    "type": "integer",
+                    "example": 0
+                },
                 "regions_without_geometry": {
-                    "description": "RegionsWithoutGeometry / RegionsWithoutDenominator: distinct regions\nleft out at least once for that reason (derived metrics only).",
+                    "description": "RegionsWithoutGeometry / RegionsWithoutDenominator (ratio) and\nRegionsWithoutFactor (product): distinct regions left out at least once\nfor that reason (derived metrics only).",
                     "type": "integer",
                     "example": 1
                 }
@@ -8249,7 +8542,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "excluded_invalid_count": {
-                    "description": "ExcludedInvalidCount is the number of region values of this year left\nout as invalid (has_valid_value = false, missing value; for derived\nmetrics: numerator or denominator invalid, or a zero denominator).",
+                    "description": "ExcludedInvalidCount is the number of region values of this year left\nout as invalid (has_valid_value = false, missing value; for derived\nmetrics: numerator, denominator or factor invalid, or a zero\ndenominator of a ratio; a zero factor of a product is valid).",
                     "type": "integer",
                     "example": 2
                 },
@@ -8290,6 +8583,11 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 0
                 },
+                "regions_without_factor": {
+                    "description": "RegionsWithoutFactor (derived metrics of formula type product only)\ncounts regions of this year without a factor value.",
+                    "type": "integer",
+                    "example": 0
+                },
                 "regions_without_geometry": {
                     "description": "RegionsWithoutGeometry (derived metrics with the area denominator only)\ncounts regions of this year left out because no NUTS-3 geometry matches.",
                     "type": "integer",
@@ -8326,6 +8624,11 @@ const docTemplate = `{
                 "label": {
                     "type": "string",
                     "example": "Bevölkerungsdichte"
+                },
+                "note": {
+                    "description": "Note is an optional metric-specific caveat (e.g. a back-calculation from\ntwo sources); GET /metrics/derived/{slug} appends it to meta.note.",
+                    "type": "string",
+                    "example": "Rückrechnung, kein gemessener Wert."
                 },
                 "slug": {
                     "type": "string",
@@ -8517,6 +8820,9 @@ const docTemplate = `{
                 "denominator": {
                     "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaSource"
                 },
+                "factor": {
+                    "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaSource"
+                },
                 "numerator": {
                     "$ref": "#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaSource"
                 },
@@ -8526,6 +8832,10 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string",
+                    "enum": [
+                        "ratio",
+                        "product"
+                    ],
                     "example": "ratio"
                 }
             }
@@ -9668,6 +9978,93 @@ const docTemplate = `{
                     "example": "id_ars"
                 },
                 "studierende": {
+                    "type": "number",
+                    "example": 0
+                },
+                "value_linear": {
+                    "type": "number",
+                    "example": 8.78
+                },
+                "value_peer_trend": {
+                    "type": "number",
+                    "example": 8.5
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2020
+                }
+            }
+        },
+        "github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SvBeschaeftigteData": {
+            "type": "object",
+            "properties": {
+                "geodata_id_ars": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "geodata_id_lau": {
+                    "type": "string",
+                    "example": "01001000"
+                },
+                "geodata_id_nuts": {
+                    "type": "string",
+                    "example": "DEF01"
+                },
+                "geodata_level": {
+                    "type": "string",
+                    "example": "NUTS_3"
+                },
+                "geodata_name": {
+                    "type": "string",
+                    "example": "Flensburg"
+                },
+                "geodata_year": {
+                    "type": "integer",
+                    "example": 2024
+                },
+                "has_valid_value": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "lau_version": {
+                    "description": "LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.\nbeschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an\nIsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).",
+                    "type": "integer",
+                    "example": 2021
+                },
+                "mapper": {
+                    "type": "string",
+                    "example": "exact_id"
+                },
+                "n_peer_regions": {
+                    "type": "integer",
+                    "example": 11
+                },
+                "nuts_version": {
+                    "description": "NutsVersion is the NUTS-3 target version of this row. Populated only with\nfill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and\n/timeseries?nuts_version= consistently return the same target version for\nthe same dataset.",
+                    "type": "integer",
+                    "example": 2021
+                },
+                "observation_date": {
+                    "type": "string",
+                    "example": "2020-01-01"
+                },
+                "original_id_1": {
+                    "type": "string",
+                    "example": "01001"
+                },
+                "original_name": {
+                    "type": "string",
+                    "example": "Flensburg, Stadt"
+                },
+                "parameter": {
+                    "type": "string",
+                    "example": "id_ars"
+                },
+                "sv_beschaeftigte": {
                     "type": "number",
                     "example": 0
                 },

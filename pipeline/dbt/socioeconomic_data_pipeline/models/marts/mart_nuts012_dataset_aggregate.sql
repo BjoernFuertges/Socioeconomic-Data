@@ -50,6 +50,7 @@
     {'slug': 'schuldnerquote', 'measure_type': 'weighted_avg'},
     {'slug': 'sgb_ii_quote', 'measure_type': 'weighted_avg'},
     {'slug': 'studierende', 'measure_type': 'weighted_avg'},
+    {'slug': 'sv_beschaeftigte', 'measure_type': 'sum'},
     {'slug': 'wohngeldhaushalte', 'measure_type': 'weighted_avg'},
     {'slug': 'beschaeftigungsquote-nuts3', 'measure_type': 'weighted_avg'},
 ] %}

@@ -52,7 +52,7 @@ them as fallbacks).
 # Backend (Go)
 cd backend && go run cmd/soziodata/main.go   # run locally (needs Postgres + .env)
 cd backend && go test ./...                  # tests
-cd backend && swag init -g cmd/soziodata/main.go -o docs  # regenerate Swagger
+cd backend && swag init -g cmd/soziodata/main.go -o docs --parseDependency --parseInternal  # regenerate Swagger (same flags as the pre-commit hook; without them the output is valid but names definitions differently)
 
 # dbt (needs a configured profiles.yml / DBT_PROFILES_DIR + reachable Postgres/PostGIS)
 cd pipeline/dbt/socioeconomic_data_pipeline && dbt deps && dbt snapshot && dbt run && dbt test
@@ -118,8 +118,12 @@ built/tested independently as shown above.
      [pipeline/dbt/AGENTS.md](pipeline/dbt/AGENTS.md))
   5. `cd backend && go generate ./internal/models/...` regenerates the Go
      models/handlers/routes from the staging schema YAML — do not hand-write
-     a handler. Exception: the hard-coded `harmonizedRouteSlugs` map in
-     `backend/cmd/gen-models/main.go` must be extended by hand.
+     a handler. Exceptions, both extended by hand: the hard-coded
+     `harmonizedRouteSlugs` map in `backend/cmd/gen-models/main.go`, and
+     `AllSoziodataConfigs()` in `backend/internal/models/models_soziodata.go`
+     (add the new `<Dataset>Config`; without it the dataset is missing from
+     `GET /nuts/{id}/datasets` and unknown to `DatasetConfigBySlug`, i.e. to
+     `/metrics` and derived metrics).
 - **Go**: `internal/` packages are private to this module; only put code in
   `pkg/` if it is genuinely meant to be imported elsewhere. Files ending in
   `_generated.go` are produced by `cmd/gen-models` from dbt schema YAMLs —

@@ -792,7 +792,8 @@ definitions:
       excluded_regions:
         description: |-
           ExcludedRegions is the number of distinct regions with at least one
-          value left out for any reason (invalid, no geometry, no denominator).
+          value left out for any reason (invalid, no geometry, no denominator,
+          no factor).
         example: 3
         type: integer
       nuts_version:
@@ -805,10 +806,14 @@ definitions:
       regions_without_denominator:
         example: 0
         type: integer
+      regions_without_factor:
+        example: 0
+        type: integer
       regions_without_geometry:
         description: |-
-          RegionsWithoutGeometry / RegionsWithoutDenominator: distinct regions
-          left out at least once for that reason (derived metrics only).
+          RegionsWithoutGeometry / RegionsWithoutDenominator (ratio) and
+          RegionsWithoutFactor (product): distinct regions left out at least once
+          for that reason (derived metrics only).
         example: 1
         type: integer
     type: object
@@ -854,7 +859,8 @@ definitions:
         description: |-
           ExcludedInvalidCount is the number of region values of this year left
           out as invalid (has_valid_value = false, missing value; for derived
-          metrics: numerator or denominator invalid, or a zero denominator).
+          metrics: numerator, denominator or factor invalid, or a zero
+          denominator of a ratio; a zero factor of a product is valid).
         example: 2
         type: integer
       max:
@@ -887,6 +893,12 @@ definitions:
           only) counts regions of this year without a denominator value.
         example: 0
         type: integer
+      regions_without_factor:
+        description: |-
+          RegionsWithoutFactor (derived metrics of formula type product only)
+          counts regions of this year without a factor value.
+        example: 0
+        type: integer
       regions_without_geometry:
         description: |-
           RegionsWithoutGeometry (derived metrics with the area denominator only)
@@ -915,6 +927,12 @@ definitions:
         $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaDefinition'
       label:
         example: Bevölkerungsdichte
+        type: string
+      note:
+        description: |-
+          Note is an optional metric-specific caveat (e.g. a back-calculation from
+          two sources); GET /metrics/derived/{slug} appends it to meta.note.
+        example: Rückrechnung, kein gemessener Wert.
         type: string
       slug:
         example: bevoelkerungsdichte
@@ -1071,12 +1089,17 @@ definitions:
     properties:
       denominator:
         $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaSource'
+      factor:
+        $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaSource'
       numerator:
         $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.FormulaSource'
       scale:
         example: 100
         type: number
       type:
+        enum:
+        - ratio
+        - product
         example: ratio
         type: string
     type: object
@@ -1979,6 +2002,78 @@ definitions:
         example: id_ars
         type: string
       studierende:
+        example: 0
+        type: number
+      value_linear:
+        example: 8.78
+        type: number
+      value_peer_trend:
+        example: 8.5
+        type: number
+      year:
+        example: 2020
+        type: integer
+    type: object
+  github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SvBeschaeftigteData:
+    properties:
+      geodata_id_ars:
+        example: "01001"
+        type: string
+      geodata_id_lau:
+        example: "01001000"
+        type: string
+      geodata_id_nuts:
+        example: DEF01
+        type: string
+      geodata_level:
+        example: NUTS_3
+        type: string
+      geodata_name:
+        example: Flensburg
+        type: string
+      geodata_year:
+        example: 2024
+        type: integer
+      has_valid_value:
+        example: true
+        type: boolean
+      is_interpolated:
+        example: true
+        type: boolean
+      lau_version:
+        description: |-
+          LauVersion is the counterpart of NutsVersion for LAU datasets (e.g.
+          beschaeftigungsquote-gemeinden). Populated only with fill_gaps=true on an
+          IsHarmonizedLau dataset (see api_*_fill_gaps views for LAU).
+        example: 2021
+        type: integer
+      mapper:
+        example: exact_id
+        type: string
+      n_peer_regions:
+        example: 11
+        type: integer
+      nuts_version:
+        description: |-
+          NutsVersion is the NUTS-3 target version of this row. Populated only with
+          fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
+          /timeseries?nuts_version= consistently return the same target version for
+          the same dataset.
+        example: 2021
+        type: integer
+      observation_date:
+        example: "2020-01-01"
+        type: string
+      original_id_1:
+        example: "01001"
+        type: string
+      original_name:
+        example: Flensburg, Stadt
+        type: string
+      parameter:
+        example: id_ars
+        type: string
+      sv_beschaeftigte:
         example: 0
         type: number
       value_linear:
@@ -3059,7 +3154,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Cleaned trainee counts per district (Kreis), with derived observation
+      description: Cleaned trainee rate per district (Kreis), i.e. trainees per 1,000
+        employees subject to social insurance contributions, with derived observation
         date and quality flag.
       parameters:
       - description: NUTS-3-Code der Region
@@ -3160,7 +3256,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
-      summary: Cleaned trainee counts per district (Kreis), with derived observation
+      summary: Cleaned trainee rate per district (Kreis), i.e. trainees per 1,000
+        employees subject to social insurance contributions, with derived observation
         date and quality flag.
       tags:
       - Auszubildende
@@ -3254,7 +3351,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
-      summary: Lückenlose Zeitreihe für Cleaned trainee counts per district (Kreis),
+      summary: Lückenlose Zeitreihe für Cleaned trainee rate per district (Kreis),
+        i.e. trainees per 1,000 employees subject to social insurance contributions,
         with derived observation date and quality flag.
       tags:
       - Auszubildende
@@ -5716,9 +5814,10 @@ paths:
       - application/json
       description: |-
         Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,
-        eigenberechnete Arbeitslosenquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.
+        eigenberechnete Arbeitslosenquote, Auszubildende absolut). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet:
+        ratio = Zähler / Nenner × scale, product = Zähler × Faktor × scale.
         Mit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.
-        meta.note: Es gehen nur gültige Werte ein; Zähler und Nenner müssen gültig sein.
+        meta.note: Es gehen nur gültige Werte ein; bei ratio müssen Zähler und Nenner, bei product Zähler und Faktor gültig sein.
       produces:
       - application/json
       responses:
@@ -5742,11 +5841,14 @@ paths:
       - application/json
       description: |-
         Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine
-        abgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²).
-        Sind alle beteiligten Datensätze harmonisiert, werden Zähler und Nenner aus mart_nuts3_sociodata_harmonized im
+        abgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²; Auszubildende absolut = Auszubildende je 1.000 SV-Beschäftigte × SV-Beschäftigte / 1.000).
+        Sind alle beteiligten Datensätze harmonisiert, werden Zähler und Nenner bzw. Faktor aus mart_nuts3_sociodata_harmonized im
         NUTS-3-Stand 'nuts_version' gelesen (Default 2024) und die Fläche aus der Geometrie desselben Stands; die Antwort nennt ihn in nuts_version.
-        Nur Regionen mit gültigem Zähler und Nenner gehen ein. Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Nenner oder Nenner 0),
-        regions_without_geometry (keine Geometrie für den Flächennenner) und regions_without_denominator (kein Nennerwert) je Jahr; excluded_regions nennt die betroffenen Regionen insgesamt.
+        Formeltyp ratio: Nur Regionen mit gültigem Zähler und Nenner gehen ein. Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Nenner oder Nenner 0),
+        regions_without_geometry (keine Geometrie für den Flächennenner) und regions_without_denominator (kein Nennerwert) je Jahr.
+        Formeltyp product: Nur Regionen mit gültigem Zähler und Faktor gehen ein (ein Faktor 0 ist gültig). Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Faktor)
+        und regions_without_factor (kein Faktorwert) je Jahr. excluded_regions nennt die betroffenen Regionen insgesamt.
+        meta.note nennt die Regel des Formeltyps und, falls im Katalog hinterlegt, den Hinweis der Metrik (note, z.B. bei Rückrechnungen aus zwei Quellen).
       parameters:
       - description: Slug der abgeleiteten Metrik
         example: bevoelkerungsdichte
@@ -6955,6 +7057,212 @@ paths:
         derived observation date and quality flag.
       tags:
       - Studierende
+  /sv_beschaeftigte:
+    get:
+      consumes:
+      - application/json
+      description: Cleaned counts of employees subject to social insurance contributions
+        (at place of work, 30 June) per district (Kreis), with derived observation
+        date and quality flag.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Teilstring-Suche nach Gebietsnamen
+        example: stuttgart
+        in: query
+        name: geodata_name_contains
+        type: string
+      - description: Jahr der Beobachtung (2007-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Punktabfrage im Format lon,lat (WGS84)
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: true = fehlende Jahre via interpoliertem Ausgabe-View auffüllen
+          und mit Interpolationsmetadaten kennzeichnen
+        example: false
+        in: query
+        name: fill_gaps
+        type: boolean
+      - description: 'Nur zusammen mit fill_gaps=true: Ziel-NUTS-Version (2003, 2006,
+          2010, 2013, 2016, 2021 oder 2024, Default 2024)'
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.SvBeschaeftigteData'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Cleaned counts of employees subject to social insurance contributions
+        (at place of work, 30 June) per district (Kreis), with derived observation
+        date and quality flag.
+      tags:
+      - SvBeschaeftigte
+  /sv_beschaeftigte/timeseries:
+    get:
+      consumes:
+      - application/json
+      description: Liefert die harmonisierte NUTS-3-Zeitreihe aus mart_nuts3_timeseries_interpolated.
+        Fehlende Jahre innerhalb der bekannten Spanne werden transparent mit is_interpolated/value_linear/value_peer_trend
+        gekennzeichnet.
+      parameters:
+      - description: NUTS-3-Code der Region
+        example: DEF01
+        in: query
+        name: geodata_id_nuts
+        type: string
+      - description: NUTS-Präfix für Hierarchieabfragen (z.B. DE1)
+        example: DE1
+        in: query
+        name: nuts_parent_id
+        type: string
+      - description: Jahr der Beobachtung (2007-2030)
+        example: 2020
+        in: query
+        name: year
+        type: integer
+      - description: Nur Jahre >= from_year zurückgeben
+        example: 2018
+        in: query
+        name: from_year
+        type: integer
+      - description: Nur Jahre <= to_year zurückgeben
+        example: 2022
+        in: query
+        name: to_year
+        type: integer
+      - description: Ziel-NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021 oder 2024,
+          Default 2024)
+        example: 2021
+        in: query
+        name: nuts_version
+        type: integer
+      - default: 1000
+        description: Anzahl der Ergebnisse (1-10000)
+        example: 100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset für Pagination
+        example: 0
+        in: query
+        name: offset
+        type: integer
+      - description: Überschreibt den Accept-Header
+        enum:
+        - json
+        - csv
+        in: query
+        name: format
+        type: string
+      - description: 'Content-Disposition: attachment setzen'
+        example: false
+        in: query
+        name: download
+        type: boolean
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.NutsTimeseriesPoint'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.APIResponse'
+      summary: Lückenlose Zeitreihe für Cleaned counts of employees subject to social
+        insurance contributions (at place of work, 30 June) per district (Kreis),
+        with derived observation date and quality flag.
+      tags:
+      - SvBeschaeftigte
   /wohngeldhaushalte:
     get:
       consumes:

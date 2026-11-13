@@ -91,6 +91,15 @@ wohngeldhaushalte as (
     where has_valid_value = true
 ),
 
+sv_beschaeftigte as (
+    select
+        geodata_id_nuts,
+        year,
+        sv_beschaeftigte
+    from {{ ref('stg_sv_beschaeftigte_kreise') }}
+    where has_valid_value = true
+),
+
 beschaeftigungsquote as (
     select
         geodata_id_nuts,
@@ -143,6 +152,7 @@ joined as (
         da.durchschnittsalter,
         sq.sgb_ii_quote_prozent,
         wg.wohngeldhaushalte_je_1000,
+        svb.sv_beschaeftigte,
         bq.beschaeftigungsquote_prozent,
         bq.beschaeftigungsquote_median
     from nuts_base n
@@ -164,6 +174,9 @@ joined as (
     left join wohngeldhaushalte wg
         on  wg.geodata_id_nuts = n.nuts_id
         and wg.year            = n.year
+    left join sv_beschaeftigte svb
+        on  svb.geodata_id_nuts = n.nuts_id
+        and svb.year            = n.year
     left join beschaeftigungsquote bq
         on  bq.geodata_id_nuts = n.nuts_id
         and bq.year            = n.year

@@ -1,0 +1,1 @@
+{{ render_nuts3_fill_gaps_view('stg_sv_beschaeftigte_kreise', 'sv_beschaeftigte', 'sv_beschaeftigte') }}

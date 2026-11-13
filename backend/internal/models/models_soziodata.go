@@ -230,6 +230,7 @@ func AllSoziodataConfigs() []KreisDatasetConfig {
 		SchuldnerquoteConfig,
 		SgbIiQuoteConfig,
 		StudierendeConfig,
+		SvBeschaeftigteConfig,
 		WohngeldhaushalteConfig,
 	}
 }

@@ -89,8 +89,12 @@ go test ./...
 
 ```bash
 cd backend
-swag init -g cmd/soziodata/main.go -o docs
+swag init -g cmd/soziodata/main.go -o docs --parseDependency --parseInternal
 ```
+
+Use the same flags as the pre-commit hook: the committed spec is generated
+with them, and swag v1.16.4 without them renames every model definition
+(large, meaningless diff). Verified with swag v1.16.4 on Go 1.26.
 
 CI additionally checks via `backend/scripts/check_swagger_router_annotations.sh`
 whether all routes carry matching Swagger annotations.

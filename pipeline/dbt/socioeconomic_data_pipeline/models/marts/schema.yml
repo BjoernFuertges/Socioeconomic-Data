@@ -529,7 +529,7 @@ models:
         description: "Share of the NUTS-3 region's area that falls into this district (rows per NUTS-3 region sum to approximately 1.0)"
 
   - name: mart_dataset_aggregation_meta
-    description: "Aggregation metadata per indicator: level, measure type (sum vs. weighted_avg), kind, and whether the aggregation is an approximation."
+    description: "Aggregation metadata per indicator: level, measure type (sum, weighted_avg, or weighted_avg_employees for values per employed person such as arbeitsvolumen/bruttoverdienst), kind, and whether the aggregation is an approximation."
     columns:
       - name: dataset_slug
         tests:
@@ -544,7 +544,7 @@ models:
       - name: measure_type
         tests:
           - accepted_values:
-              values: ['sum', 'weighted_avg']
+              values: ['sum', 'weighted_avg', 'weighted_avg_employees']
       - name: kind
         tests:
           - accepted_values:

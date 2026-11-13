@@ -42,6 +42,7 @@
     {'slug': 'schuldnerquote',                     'table': 'results_schuldnerquote_kreise'},
     {'slug': 'sgb_ii_quote',                       'table': 'results_sgb_ii_quote_kreise'},
     {'slug': 'studierende',                        'table': 'results_studierende_kreise'},
+    {'slug': 'sv_beschaeftigte',                   'table': 'results_sv_beschaeftigte_kreise'},
     {'slug': 'wohngeldhaushalte',                  'table': 'results_wohngeldhaushalte_kreise'},
 ] %}
 

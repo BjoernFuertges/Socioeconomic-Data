@@ -43,7 +43,7 @@ var ArbeitsvolumenConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// AuszubildendeData represents Cleaned trainee counts per district (Kreis), with derived observation date and quality flag.
+// AuszubildendeData represents Cleaned trainee rate per district (Kreis), i.e. trainees per 1,000 employees subject to social insurance contributions, with derived observation date and quality flag.
 type AuszubildendeData struct {
 	SozioBaseData
 	Auszubildende float64 `json:"auszubildende" db:"auszubildende" example:"0"`
@@ -282,6 +282,26 @@ var StudierendeConfig = KreisDatasetConfig{
 	DefaultLimit:      1000,
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "studierende",
+	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
+}
+
+// SvBeschaeftigteData represents Cleaned counts of employees subject to social insurance contributions (at place of work, 30 June) per district (Kreis), with derived observation date and quality flag.
+type SvBeschaeftigteData struct {
+	SozioBaseData
+	SvBeschaeftigte float64 `json:"sv_beschaeftigte" db:"sv_beschaeftigte" example:"0"`
+}
+
+// SvBeschaeftigteConfig is the dataset configuration for SvBeschaeftigte data,
+// generated from pipeline/dbt/.../models/staging/stg_sv_beschaeftigte_kreise_schema.yml
+var SvBeschaeftigteConfig = KreisDatasetConfig{
+	Schema:            "transformed_data",
+	Table:             "stg_sv_beschaeftigte_kreise",
+	InterpolatedTable: "api_sv_beschaeftigte_fill_gaps",
+	ValueColumns:      []string{"sv_beschaeftigte"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "sv_beschaeftigte",
 	IsHarmonized:      true,
 	IsHarmonizedLau:   false,
 }

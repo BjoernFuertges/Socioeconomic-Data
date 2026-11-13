@@ -10,6 +10,11 @@ echo "=== dlt: Geodaten ==="
 python load_geodata_to_postgis.py
 python load_agenturbezirke_geodata.py
 
+# Builds data-exchange/.../sv_beschaeftigte/ itself from the BA API (~400
+# requests); skipped when the output already exists, so usually offline.
+echo "=== dlt: SV-Beschäftigte (BA-Zeitreihe, nur falls noch nicht vorhanden) ==="
+python fetch_ba_sv_beschaeftigte.py
+
 echo "=== dlt: Sozioökonomische Daten ==="
 python load_soziodata_generic.py arbeitslose/results_arbeitslose_kreise
 python load_soziodata_generic.py arbeitsvolumen/results_arbeitsvolumen_kreise
@@ -24,6 +29,7 @@ python load_soziodata_generic.py medianeinkommen/results_medianeinkommen_kreise
 python load_soziodata_generic.py schuldnerquote/results_schuldnerquote_kreise
 python load_soziodata_generic.py sgb_ii_quote/results_sgb_ii_quote_kreise
 python load_soziodata_generic.py studierende/results_studierende_kreise
+python load_soziodata_generic.py sv_beschaeftigte/results_sv_beschaeftigte_kreise
 python load_soziodata_generic.py wohngeldhaushalte/results_wohngeldhaushalte_kreise
 
 echo "=== dlt: Arbeitslosenzahlen (Agenturbezirke, AfA Lange Zeitreihen) ==="

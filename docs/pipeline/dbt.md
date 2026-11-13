@@ -74,10 +74,12 @@ flowchart TB
   of NUTS-3 vintages (2003/2006/2010/2013/2016/2021/2024) gets a direct
   mapping from its own spatial intersection; there is no chaining through
   intermediate versions (`n_hops` is always 1, kept for compatibility).
-- **`mart_nuts3_sociodata_harmonized`** – converts 14 datasets onto every
+- **`mart_nuts3_sociodata_harmonized`** – converts 15 datasets onto every
   available target NUTS version simultaneously (2003/2006/2010/2013/2016/
-  2021/2024, distinguished by the `target_version` column): the 13
-  county (Kreis) datasets (sourced directly from `loaded_data.results_*`)
+  2021/2024, distinguished by the `target_version` column): the 14
+  county (Kreis) datasets (sourced directly from `loaded_data.results_*`;
+  `sv_beschaeftigte` comes from the Bundesagentur für Arbeit via
+  `fetch_ba_sv_beschaeftigte.py`, all others from BBSR/INKAR)
   plus `beschaeftigungsquote-nuts3` (sourced via `ref()` from
   `stg_beschaeftigungsquote_nuts3`, since it is itself a population-weighted
   LAU→NUTS-3 aggregation rather than a raw loaded table; built in

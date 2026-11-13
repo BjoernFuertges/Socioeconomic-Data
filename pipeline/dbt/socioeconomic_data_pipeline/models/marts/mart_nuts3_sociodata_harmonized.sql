@@ -70,6 +70,7 @@
     {'slug': 'schuldnerquote',     'table': 'results_schuldnerquote_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value between 0 and 100'},
     {'slug': 'sgb_ii_quote',       'table': 'results_sgb_ii_quote_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value between 0 and 100'},
     {'slug': 'studierende',        'table': 'results_studierende_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value >= 0'},
+    {'slug': 'sv_beschaeftigte',   'table': 'results_sv_beschaeftigte_kreise', 'measure_type': 'sum', 'valid_when': 'value > 0'},
     {'slug': 'wohngeldhaushalte',  'table': 'results_wohngeldhaushalte_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value > 0'},
 ] %}
 {% set beschaeftigungsquote_nuts3_measure_type = 'weighted_avg' %}

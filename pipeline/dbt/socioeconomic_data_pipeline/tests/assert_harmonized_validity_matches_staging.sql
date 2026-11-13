@@ -17,6 +17,7 @@
     'schuldnerquote': 'stg_schuldnerquote_kreise',
     'sgb_ii_quote': 'stg_sgb_ii_quote_kreise',
     'studierende': 'stg_studierende_kreise',
+    'sv_beschaeftigte': 'stg_sv_beschaeftigte_kreise',
     'wohngeldhaushalte': 'stg_wohngeldhaushalte_kreise',
 } %}
 
