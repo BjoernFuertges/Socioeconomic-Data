@@ -8005,7 +8005,7 @@ const docTemplate = `{
             "properties": {
                 "beschaeftigungsquote_prozent": {
                     "type": "number",
-                    "example": 50
+                    "example": 500
                 },
                 "geodata_id_ars": {
                     "type": "string",
@@ -8036,6 +8036,10 @@ const docTemplate = `{
                     "example": true
                 },
                 "is_interpolated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_low_confidence": {
                     "type": "boolean",
                     "example": true
                 },
@@ -8096,7 +8100,7 @@ const docTemplate = `{
                 },
                 "beschaeftigungsquote_prozent": {
                     "type": "number",
-                    "example": 50
+                    "example": 500
                 },
                 "beschaeftigungsquote_ungewichtet": {
                     "type": "number",

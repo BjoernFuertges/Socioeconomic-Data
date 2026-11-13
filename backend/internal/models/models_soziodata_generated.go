@@ -66,7 +66,8 @@ var AuszubildendeConfig = KreisDatasetConfig{
 // BeschaeftigungsquoteGemeindenData represents Staging model for the employment rate per municipality (LAU), cleaned, with derived observation date and quality flag.
 type BeschaeftigungsquoteGemeindenData struct {
 	SozioBaseData
-	BeschaeftigungsquoteProzent float64 `json:"beschaeftigungsquote_prozent" db:"beschaeftigungsquote_prozent" example:"50.00"`
+	BeschaeftigungsquoteProzent float64 `json:"beschaeftigungsquote_prozent" db:"beschaeftigungsquote_prozent" example:"500.00"`
+	IsLowConfidence             bool    `json:"is_low_confidence" db:"is_low_confidence" example:"true"`
 }
 
 // BeschaeftigungsquoteGemeindenConfig is the dataset configuration for BeschaeftigungsquoteGemeinden data,
@@ -75,7 +76,7 @@ var BeschaeftigungsquoteGemeindenConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_beschaeftigungsquote_gemeinden",
 	InterpolatedTable: "api_beschaeftigungsquote_gemeinden_fill_gaps",
-	ValueColumns:      []string{"beschaeftigungsquote_prozent"},
+	ValueColumns:      []string{"beschaeftigungsquote_prozent", "is_low_confidence"},
 	DefaultLimit:      1000,
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "beschaeftigungsquote-gemeinden",
@@ -86,7 +87,7 @@ var BeschaeftigungsquoteGemeindenConfig = KreisDatasetConfig{
 // BeschaeftigungsquoteNuts3Data represents Staging model for the employment rate per NUTS-3 region, aggregated from municipality level and weighted by population.
 type BeschaeftigungsquoteNuts3Data struct {
 	SozioBaseData
-	BeschaeftigungsquoteProzent     float64 `json:"beschaeftigungsquote_prozent" db:"beschaeftigungsquote_prozent" example:"50.00"`
+	BeschaeftigungsquoteProzent     float64 `json:"beschaeftigungsquote_prozent" db:"beschaeftigungsquote_prozent" example:"500.00"`
 	BeschaeftigungsquoteMedian      float64 `json:"beschaeftigungsquote_median" db:"beschaeftigungsquote_median" example:"0"`
 	BeschaeftigungsquoteUngewichtet float64 `json:"beschaeftigungsquote_ungewichtet" db:"beschaeftigungsquote_ungewichtet" example:"0"`
 	GemeindenCount                  int     `json:"gemeinden_count" db:"gemeinden_count" example:"0"`

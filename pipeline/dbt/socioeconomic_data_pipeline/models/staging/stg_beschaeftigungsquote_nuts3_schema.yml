@@ -33,13 +33,13 @@ models:
           - not_null
 
       - name: beschaeftigungsquote_prozent
-        description: "Employment rate in percent (0-100): mean of the municipal rates weighted by each municipality's total population from the newest Eurostat LAU vintage containing it, the same weight for every year (approximation - the rate refers to residents aged 15-64, and Eurostat's LAU population is not a reliable historical series). Municipalities without a weight are left out; mart_beschaeftigungsquote_nuts3.weight_coverage shows the share that has one."
+        description: "Employment rate in percent: mean of the municipal rates weighted by each municipality's total population from the newest Eurostat LAU vintage containing it, the same weight for every year (approximation - the rate refers to residents aged 15-64, and Eurostat's LAU population is not a reliable historical series). Municipalities without a weight are left out; mart_beschaeftigungsquote_nuts3.weight_coverage shows the share that has one."
         data_type: numeric
         tests:
           - not_null
           - dbt_utils.accepted_range:
               min_value: 0
-              max_value: 100
+              max_value: 1000
               inclusive: true
 
       - name: beschaeftigungsquote_median

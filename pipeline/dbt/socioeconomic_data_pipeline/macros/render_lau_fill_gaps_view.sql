@@ -1,4 +1,6 @@
-{% macro render_lau_fill_gaps_view(stage_model, dataset_slug, value_column) %}
+{#- flag_columns: extra boolean columns of the stage model passed through to the
+    API (false where a row has no source row, e.g. interpolated years). -#}
+{% macro render_lau_fill_gaps_view(stage_model, dataset_slug, value_column, flag_columns=[]) %}
 
 with timeseries as (
     select
@@ -28,7 +30,8 @@ source_rows as (
         src.geodata_level,
         src.geodata_year,
         src.observation_date,
-        src.has_valid_value
+        src.has_valid_value{% for f in flag_columns %},
+        src.{{ f }}{% endfor %}
     from {{ ref(stage_model) }} src
 ),
 
@@ -71,7 +74,8 @@ select
     ts.year,
     coalesce(src.observation_date, make_date(ts.year, 1, 1)) as observation_date,
     coalesce(src.has_valid_value, true) as has_valid_value,
-    ts.value as {{ value_column }},
+{% for f in flag_columns %}    coalesce(src.{{ f }}, false) as {{ f }},
+{% endfor %}    ts.value as {{ value_column }},
     ts.is_interpolated,
     ts.value_linear,
     ts.value_peer_trend,

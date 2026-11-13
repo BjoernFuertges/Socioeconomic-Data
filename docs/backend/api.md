@@ -401,6 +401,10 @@ instead of `geodata_id_nuts` for a direct region filter (`nuts_parent_id`
 still works, filtering via the canonical LAU→NUTS-3 link in
 `lau_integrated.nuts3_id`), and `gisco_id`/Kreis-peer-group fields instead
 of `nuts_id`/NUTS-2-peer-group ones in the timeseries response.
+The rate is workplace-based, so values above 100 % occur (commuter hubs, very
+small municipalities) and are kept. Rows carry `is_low_confidence = true` for
+municipalities with fewer than 500 inhabitants, whose rate rests on very few
+people and is volatile.
 
 `beschaeftigungsquote-nuts3` remains a special case: its route still has a
 dedicated `/timeseries` endpoint, but `fill_gaps=true` is not supported on the

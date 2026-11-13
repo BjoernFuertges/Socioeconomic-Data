@@ -430,7 +430,9 @@ func buildDataset(m dbtModel) dataset {
 			Example: exampleForType(gt, ar),
 		})
 	}
-	if (ds.IsHarmonized || ds.IsHarmonizedLau) && len(ds.ValueFields) == 1 {
+	// LAU fill-gaps views can carry extra flag columns (render_lau_fill_gaps_view
+	// flag_columns); NUTS-3 views only have the single value column.
+	if ds.IsHarmonizedLau || (ds.IsHarmonized && len(ds.ValueFields) == 1) {
 		ds.InterpolatedTable = "api_" + strings.ReplaceAll(routeSlug, "-", "_") + "_fill_gaps"
 	}
 	return ds

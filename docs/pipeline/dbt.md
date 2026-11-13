@@ -89,7 +89,11 @@ flowchart TB
   municipalities), the same weight for every year,
   although the rate refers to residents aged 15–64 and Eurostat's LAU
   population is no reliable historical series (see
-  `pipeline/dlt/fetch_lau_population.py`); `weight_coverage` in that mart
+  `pipeline/dlt/fetch_lau_population.py`); the rate is workplace-based, so values above 100 % (commuter hubs, tiny
+  municipalities) are kept: only negative values and outliers above 1000 are
+  excluded, and municipalities with fewer than 500 inhabitants carry
+  `is_low_confidence = true` in `stg_beschaeftigungsquote_gemeinden` (var
+  `low_confidence_population`) but still enter the weighted mean; `weight_coverage` in that mart
   gives the share of municipalities per NUTS-3 region and year that have a
   weight. Dataset slugs are
   chosen to match the corresponding backend API route slug 1:1 (e.g.

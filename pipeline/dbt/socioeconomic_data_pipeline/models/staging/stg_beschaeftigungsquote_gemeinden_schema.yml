@@ -73,13 +73,13 @@ models:
               max_value: 2030
 
       - name: beschaeftigungsquote_prozent
-        description: "Employment rate in percent (0-100)"
+        description: "Employment rate in percent. Can exceed 100 in commuter hubs and very small municipalities (workplace-based numerator); see is_low_confidence"
         data_type: numeric
         tests:
           - not_null
           - dbt_utils.accepted_range:
               min_value: 0
-              max_value: 100
+              max_value: 1000
               inclusive: true
 
       - name: observation_date
@@ -89,5 +89,11 @@ models:
           - not_null
 
       - name: has_valid_value
-        description: "True if the employment rate is plausible (0-100 %)"
+        description: "True if the employment rate is plausible (0-1000 %). Values above 100 % are kept; only negative values and extreme outliers are excluded"
         data_type: boolean
+
+      - name: is_low_confidence
+        description: "True if the municipality has fewer than 500 inhabitants (latest Eurostat LAU vintage), so the rate rests on very few people and is volatile. The value is still included in aggregations; false when the population is unknown"
+        data_type: boolean
+        tests:
+          - not_null

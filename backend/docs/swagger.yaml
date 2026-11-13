@@ -410,7 +410,7 @@ definitions:
   github_com_BjoernFuertges_Socioeconomic-Data_backend_internal_models.BeschaeftigungsquoteGemeindenData:
     properties:
       beschaeftigungsquote_prozent:
-        example: 50
+        example: 500
         type: number
       geodata_id_ars:
         example: "01001"
@@ -434,6 +434,9 @@ definitions:
         example: true
         type: boolean
       is_interpolated:
+        example: true
+        type: boolean
+      is_low_confidence:
         example: true
         type: boolean
       lau_version:
@@ -485,7 +488,7 @@ definitions:
         example: 0
         type: number
       beschaeftigungsquote_prozent:
-        example: 50
+        example: 500
         type: number
       beschaeftigungsquote_ungewichtet:
         example: 0

@@ -55,11 +55,14 @@ cleaned as (
         -- Derived observation date: 1 January of the year
         make_date(year::integer, 1, 1) as observation_date,
 
-        -- Data quality flag: percentage must be 0-100
+        -- Data quality flag. Values above 100 are legitimate: the rate is
+        -- workplace-based, so commuter hubs and tiny municipalities (few
+        -- residents aged 15-64) can exceed 100 %. Only negative values and
+        -- extreme outliers are excluded; see is_low_confidence for small bases.
         case
             when value is null     then false
             when value < 0         then false
-            when value > 100       then false
+            when value > 1000      then false
             else true
         end as has_valid_value
 
@@ -75,7 +78,9 @@ latest_lau as (
     select distinct on (regexp_replace(cast(lau_nat_code as text), '\.0+$', ''))
         regexp_replace(cast(lau_nat_code as text), '\.0+$', '') as ars_key,
         lau_nat_code,
-        nuts_3_code
+        nuts_3_code,
+        case when has_valid_population and population_count > 0
+             then population_count end as population_count
     from {{ ref('stg_lau_population') }}
     where lau_nat_code is not null
     order by regexp_replace(cast(lau_nat_code as text), '\.0+$', ''), year desc
@@ -96,7 +101,11 @@ mapped as (
         c.year,
         c.beschaeftigungsquote_prozent,
         c.observation_date,
-        c.has_valid_value
+        c.has_valid_value,
+        -- Small denominator: below {{ var('low_confidence_population', 500) }} inhabitants a handful of people moves the
+        -- rate by tens of percentage points. Total population is only a proxy
+        -- for the residents aged 15-64 behind the rate. Unknown -> false.
+        coalesce(p.population_count < {{ var('low_confidence_population', 500) }}, false) as is_low_confidence
     from cleaned c
     left join latest_lau p
         on p.ars_key = c.original_id_1
