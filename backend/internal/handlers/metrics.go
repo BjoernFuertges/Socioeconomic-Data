@@ -25,6 +25,7 @@ type metricsAggRow struct {
 	ExcludedInvalidCount      int      `db:"excluded_invalid_count"`
 	RegionsWithoutGeometry    int      `db:"regions_without_geometry"`
 	RegionsWithoutDenominator int      `db:"regions_without_denominator"`
+	RegionsWithoutFactor      int      `db:"regions_without_factor"`
 	ExcludedRegions           int      `db:"excluded_regions"`
 }
 
@@ -33,12 +34,27 @@ const (
 	metricsExcludedInvalid       = "invalid"
 	metricsExcludedNoGeometry    = "no_geometry"
 	metricsExcludedNoDenominator = "no_denominator"
+	metricsExcludedNoFactor      = "no_factor"
 )
 
-// metricsValidityNote is the meta.note of the metrics endpoints.
-const metricsValidityNote = "Nur gültige Werte gehen in die Statistik ein (has_valid_value der Staging-Modelle; harmonisierte Werte nur, wenn alle beteiligten Quellwerte gültig sind). " +
-	"Ausgeschlossene Werte stehen in excluded_invalid_count, betroffene Regionen in excluded_regions; " +
-	"bei abgeleiteten Kennzahlen müssen Zähler und Nenner gültig sein, Regionen ohne Geometrie bzw. Nennerwert stehen in regions_without_geometry bzw. regions_without_denominator."
+// metricsValidityNoteBase is the general validity rule of all metrics
+// endpoints; the formula-specific sentences below complete it.
+const metricsValidityNoteBase = "Nur gültige Werte gehen in die Statistik ein (has_valid_value der Staging-Modelle; harmonisierte Werte nur, wenn alle beteiligten Quellwerte gültig sind). " +
+	"Ausgeschlossene Werte stehen in excluded_invalid_count, betroffene Regionen in excluded_regions."
+
+// metricsRatioNote / metricsProductNote describe the derived-metric rules of
+// formula type ratio resp. product.
+const (
+	metricsRatioNote = "Bei abgeleiteten Kennzahlen vom Typ ratio müssen Zähler und Nenner gültig sein (Nenner 0 gilt als ungültig), " +
+		"Regionen ohne Geometrie bzw. Nennerwert stehen in regions_without_geometry bzw. regions_without_denominator."
+	metricsProductNote = "Bei abgeleiteten Kennzahlen vom Typ product müssen Zähler und Faktor gültig sein (Faktor 0 ist gültig), " +
+		"Regionen ohne Faktorwert stehen in regions_without_factor."
+)
+
+// metricsValidityNote is the meta.note of GET /metrics and GET
+// /metrics/derived (all formula types); GET /metrics/derived/{slug} uses
+// derivedMetricNote (only the sentence of its formula type).
+const metricsValidityNote = metricsValidityNoteBase + " " + metricsRatioNote + " " + metricsProductNote
 
 // metricsMaxParallel bounds the concurrent DB queries of one GET /metrics
 // request (one per dataset column).
@@ -324,6 +340,7 @@ func metricsResultFromAggRows(rows []metricsAggRow) (models.DatasetMetricsResult
 			result.ExcludedRegions = row.ExcludedRegions
 			result.RegionsWithoutGeometry = row.RegionsWithoutGeometry
 			result.RegionsWithoutDenominator = row.RegionsWithoutDenominator
+			result.RegionsWithoutFactor = row.RegionsWithoutFactor
 			continue
 		}
 		if row.RegionCount == 0 {
@@ -340,6 +357,7 @@ func metricsResultFromAggRows(rows []metricsAggRow) (models.DatasetMetricsResult
 			ExcludedInvalidCount:      row.ExcludedInvalidCount,
 			RegionsWithoutGeometry:    row.RegionsWithoutGeometry,
 			RegionsWithoutDenominator: row.RegionsWithoutDenominator,
+			RegionsWithoutFactor:      row.RegionsWithoutFactor,
 		})
 	}
 	return result, byYear
@@ -370,6 +388,7 @@ func metricsAggregateQuery(src metricsSource, filter models.MetricsFilter) (stri
 		` COUNT(*) FILTER (WHERE excluded_reason = '` + metricsExcludedInvalid + `') AS excluded_invalid_count,` +
 		` COUNT(DISTINCT geodata_id_nuts) FILTER (WHERE excluded_reason = '` + metricsExcludedNoGeometry + `') AS regions_without_geometry,` +
 		` COUNT(DISTINCT geodata_id_nuts) FILTER (WHERE excluded_reason = '` + metricsExcludedNoDenominator + `') AS regions_without_denominator,` +
+		` COUNT(DISTINCT geodata_id_nuts) FILTER (WHERE excluded_reason = '` + metricsExcludedNoFactor + `') AS regions_without_factor,` +
 		` COUNT(DISTINCT geodata_id_nuts) FILTER (WHERE excluded_reason IS NOT NULL) AS excluded_regions` +
 		` FROM ` + src.SQL +
 		` WHERE true` + where +

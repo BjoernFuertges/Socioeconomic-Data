@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -100,6 +101,19 @@ func derivedEntry(num, numCol, den, denCol, builtin string) models.DerivedMetric
 	return e
 }
 
+// derivedProductEntry is a product formula num x factor x scale.
+func derivedProductEntry(num, numCol, factor, factorCol string, scale float64) models.DerivedMetricEntry {
+	var e models.DerivedMetricEntry
+	e.Slug = "test-product"
+	e.Formula.Type = "product"
+	e.Formula.Numerator.Dataset = num
+	e.Formula.Numerator.Column = numCol
+	e.Formula.Factor.Dataset = factor
+	e.Formula.Factor.Column = factorCol
+	e.Formula.Scale = scale
+	return e
+}
+
 func TestDerivedMetricSource(t *testing.T) {
 	t.Run("area of the same NUTS version", func(t *testing.T) {
 		src, err := derivedMetricSource(derivedEntry("bevoelkerung", "bevoelkerung", "", "", "nuts_geometry_area_sqkm"), 2016)
@@ -149,7 +163,54 @@ func TestDerivedMetricSource(t *testing.T) {
 		}
 	})
 
+	t.Run("product joins the factor like a denominator and multiplies", func(t *testing.T) {
+		src, err := derivedMetricSource(derivedProductEntry("auszubildende", "auszubildende", "sv_beschaeftigte", "sv_beschaeftigte", 0.001), 2021)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, want := range []string{"((n.harmonized_value::float8 * dc.harmonized_value::float8) * 0.001) AS value",
+			"LEFT JOIN transformed_data.mart_nuts3_sociodata_harmonized dc",
+			"dc.target_version = n.target_version AND dc.dataset_slug = $3",
+			"THEN 'no_factor'", "NOT (n.has_valid_value) OR NOT (dc.has_valid_value)"} {
+			if !strings.Contains(src.SQL, want) {
+				t.Errorf("product SQL lacks %q: %s", want, src.SQL)
+			}
+		}
+		if strings.Contains(src.SQL, "no_denominator") {
+			t.Errorf("a product must mark a missing factor as no_factor: %s", src.SQL)
+		}
+		if strings.Contains(src.SQL, "NULLIF") {
+			t.Errorf("a product must not treat a zero factor as missing: %s", src.SQL)
+		}
+		if len(src.Args) != 3 || src.Args[0] != "auszubildende" || src.Args[1] != 2021 || src.Args[2] != "sv_beschaeftigte" || src.NutsVersion == nil || *src.NutsVersion != 2021 {
+			t.Errorf("args=%v version=%v", src.Args, src.NutsVersion)
+		}
+	})
+
+	t.Run("product on the staging fallback", func(t *testing.T) {
+		src, err := derivedMetricSource(derivedProductEntry("beschaeftigungsquote-nuts3", "gemeinden_count", "bevoelkerung", "bevoelkerung", 2), 2024)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(src.SQL, `((n."gemeinden_count" * dc."bevoelkerung") * 2) AS value`) || !strings.Contains(src.SQL, "THEN 'no_factor'") || src.NutsVersion != nil {
+			t.Errorf("staging product SQL wrong: %s", src.SQL)
+		}
+	})
+
 	for name, e := range map[string]models.DerivedMetricEntry{
+		"product with builtin factor": func() models.DerivedMetricEntry {
+			e := derivedProductEntry("bevoelkerung", "bevoelkerung", "", "", 1)
+			e.Formula.Factor.Builtin = "nuts_geometry_area_sqkm"
+			return e
+		}(),
+		"product without factor": func() models.DerivedMetricEntry {
+			// A denominator is not a factor: product only reads Factor.
+			e := derivedProductEntry("auszubildende", "auszubildende", "", "", 1)
+			e.Formula.Denominator.Dataset = "sv_beschaeftigte"
+			e.Formula.Denominator.Column = "sv_beschaeftigte"
+			return e
+		}(),
+		"product factor column not allowed": derivedProductEntry("auszubildende", "auszubildende", "sv_beschaeftigte", "x", 1),
 		"unknown formula": func() models.DerivedMetricEntry {
 			e := derivedEntry("bevoelkerung", "bevoelkerung", "", "", "nuts_geometry_area_sqkm")
 			e.Formula.Type = "sum"
@@ -162,6 +223,43 @@ func TestDerivedMetricSource(t *testing.T) {
 		if _, err := derivedMetricSource(e, 2024); err == nil {
 			t.Errorf("%s: expected a config error", name)
 		}
+	}
+}
+
+// Every entry of the shipped catalog must resolve to a source (known datasets,
+// allowed columns, supported formula type), harmonized for the default version.
+func TestShippedDerivedCatalogResolves(t *testing.T) {
+	t.Chdir("../..")
+	cat, err := models.LoadMetricsCatalog("metrics_catalog.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range cat {
+		src, err := derivedMetricSource(e, defaultNutsVersion)
+		if err != nil {
+			t.Errorf("%s: %v", e.Slug, err)
+			continue
+		}
+		if src.NutsVersion == nil {
+			t.Errorf("%s: expected harmonized source", e.Slug)
+		}
+	}
+	e, ok := cat.FindBySlug("auszubildende-absolut")
+	if !ok || e.Formula.Type != "product" || e.Unit != "Personen" || e.Note == "" ||
+		!strings.Contains(e.Description, "Eigene Berechnung aus BBSR auszubildende und BA sv_beschaeftigte") {
+		t.Errorf("auszubildende-absolut = %+v (found %v)", e, ok)
+	}
+	// GET /metrics/derived: a product shows its factor, no empty denominator.
+	if js, _ := json.Marshal(e.Formula); !strings.Contains(string(js), `"factor":{"dataset":"sv_beschaeftigte"`) || strings.Contains(string(js), "denominator") {
+		t.Errorf("formula JSON = %s", js)
+	}
+	// meta.note of a product names the factor rule, not the denominator rule.
+	if note := derivedMetricNote(e); !strings.HasPrefix(note, metricsValidityNoteBase+" "+metricsProductNote) ||
+		strings.Contains(note, "Nenner") || !strings.Contains(note, "regions_without_factor") || !strings.Contains(note, "Rückrechnung") {
+		t.Errorf("meta.note = %q", note)
+	}
+	if d, ok := cat.FindBySlug("bevoelkerungsdichte"); !ok || derivedMetricNote(d) != metricsValidityNoteBase+" "+metricsRatioNote {
+		t.Errorf("ratio meta.note = %q", derivedMetricNote(d))
 	}
 }
 

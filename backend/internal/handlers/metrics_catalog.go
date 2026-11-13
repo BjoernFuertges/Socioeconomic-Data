@@ -12,9 +12,10 @@ import (
 // GetDerivedMetricsCatalog returns all derived-metric definitions.
 // @Summary Abgeleitete Metriken-Definitionen
 // @Description Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,
-// @Description eigenberechnete Arbeitslosenquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.
+// @Description eigenberechnete Arbeitslosenquote, Auszubildende absolut). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet:
+// @Description ratio = Zähler / Nenner × scale, product = Zähler × Faktor × scale.
 // @Description Mit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.
-// @Description meta.note: Es gehen nur gültige Werte ein; Zähler und Nenner müssen gültig sein.
+// @Description meta.note: Es gehen nur gültige Werte ein; bei ratio müssen Zähler und Nenner, bei product Zähler und Faktor gültig sein.
 // @Tags Metriken
 // @Accept json
 // @Produce json
@@ -31,11 +32,14 @@ func (h *Handler) GetDerivedMetricsCatalog(c *gin.Context) {
 // GetDerivedMetricsCatalogEntry computes statistics for a derived metric.
 // @Summary Statistiken für eine abgeleitete Metrik
 // @Description Berechnet Min, Max, Mittelwert, Median, Stddev und YoY-Veränderung für eine
-// @Description abgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²).
-// @Description Sind alle beteiligten Datensätze harmonisiert, werden Zähler und Nenner aus mart_nuts3_sociodata_harmonized im
+// @Description abgeleitete Metrik (z.B. Bevölkerungsdichte = Bevölkerung / Fläche in km²; Auszubildende absolut = Auszubildende je 1.000 SV-Beschäftigte × SV-Beschäftigte / 1.000).
+// @Description Sind alle beteiligten Datensätze harmonisiert, werden Zähler und Nenner bzw. Faktor aus mart_nuts3_sociodata_harmonized im
 // @Description NUTS-3-Stand 'nuts_version' gelesen (Default 2024) und die Fläche aus der Geometrie desselben Stands; die Antwort nennt ihn in nuts_version.
-// @Description Nur Regionen mit gültigem Zähler und Nenner gehen ein. Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Nenner oder Nenner 0),
-// @Description regions_without_geometry (keine Geometrie für den Flächennenner) und regions_without_denominator (kein Nennerwert) je Jahr; excluded_regions nennt die betroffenen Regionen insgesamt.
+// @Description Formeltyp ratio: Nur Regionen mit gültigem Zähler und Nenner gehen ein. Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Nenner oder Nenner 0),
+// @Description regions_without_geometry (keine Geometrie für den Flächennenner) und regions_without_denominator (kein Nennerwert) je Jahr.
+// @Description Formeltyp product: Nur Regionen mit gültigem Zähler und Faktor gehen ein (ein Faktor 0 ist gültig). Ausgeschlossene Werte zählen excluded_invalid_count (ungültiger Zähler/Faktor)
+// @Description und regions_without_factor (kein Faktorwert) je Jahr. excluded_regions nennt die betroffenen Regionen insgesamt.
+// @Description meta.note nennt die Regel des Formeltyps und, falls im Katalog hinterlegt, den Hinweis der Metrik (note, z.B. bei Rückrechnungen aus zwei Quellen).
 // @Tags Metriken
 // @Accept json
 // @Produce json
@@ -93,8 +97,22 @@ func (h *Handler) GetDerivedMetricsCatalogEntry(c *gin.Context) {
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data:    result,
-		Meta:    &models.MetaInfo{Note: metricsValidityNote},
+		Meta:    &models.MetaInfo{Note: derivedMetricNote(entry)},
 	})
+}
+
+// derivedMetricNote is the meta.note of one derived metric: the general
+// validity rule, the rule of its formula type and the metric's own caveat
+// from the catalog, if any.
+func derivedMetricNote(entry models.DerivedMetricEntry) string {
+	note := metricsValidityNoteBase + " " + metricsRatioNote
+	if entry.Formula.Type == formulaProduct {
+		note = metricsValidityNoteBase + " " + metricsProductNote
+	}
+	if entry.Note == "" {
+		return note
+	}
+	return note + " " + entry.Note
 }
 
 // columnAllowed checks whether a column is allowed in a dataset's ValueColumns.
@@ -108,10 +126,22 @@ func columnAllowed(cfg models.KreisDatasetConfig, col string) bool {
 	return false
 }
 
+// Formula types of configs/metrics_catalog.yaml.
+const (
+	formulaRatio   = "ratio"
+	formulaProduct = "product"
+)
+
 // derivedMetricSource builds the row source (geodata_id_nuts, year, value) of
-// a derived metric. Currently supports type=ratio (numerator/denominator x
-// Scale); denominator sources: dataset (RouteSlug + column) or the builtin
-// "nuts_geometry_area_sqkm". Errors are catalog misconfigurations.
+// a derived metric. Supported types: ratio (numerator/denominator x Scale;
+// denominator sources: dataset (RouteSlug + column) or the builtin
+// "nuts_geometry_area_sqkm") and product (numerator x factor x Scale; factor
+// is a dataset). Errors are catalog misconfigurations.
+//
+// For product, the factor takes the place of the denominator in the join and
+// the excluded_reason handling, but a region without a factor value is marked
+// no_factor (counted as regions_without_factor, not
+// regions_without_denominator); a zero factor is a valid value (result 0).
 //
 // If every dataset involved is available in mart_nuts3_sociodata_harmonized,
 // numerator and denominator are read there for nutsVersion and the area is
@@ -119,8 +149,17 @@ func columnAllowed(cfg models.KreisDatasetConfig, col string) bool {
 // refer to the same region boundaries. Otherwise the previous, unharmonized
 // staging join is used (NutsVersion of the source stays nil).
 func derivedMetricSource(entry models.DerivedMetricEntry, nutsVersion int) (metricsSource, error) {
-	if entry.Formula.Type != "ratio" {
-		return metricsSource{}, fmt.Errorf("unbekannter Formeltyp: %q (unterstützt: ratio)", entry.Formula.Type)
+	formulaType := entry.Formula.Type
+	second, secondLabel := entry.Formula.Denominator, "Nenner"
+	switch formulaType {
+	case formulaRatio:
+	case formulaProduct:
+		second, secondLabel = entry.Formula.Factor, "Faktor"
+		if second.Builtin != "" {
+			return metricsSource{}, fmt.Errorf("Formeltyp product unterstützt keinen builtin-Faktor: %q", second.Builtin)
+		}
+	default:
+		return metricsSource{}, fmt.Errorf("unbekannter Formeltyp: %q (unterstützt: ratio, product)", formulaType)
 	}
 
 	// Validate numerator
@@ -132,22 +171,22 @@ func derivedMetricSource(entry models.DerivedMetricEntry, nutsVersion int) (metr
 		return metricsSource{}, fmt.Errorf("unbekannte Spalte im Zähler: %q", entry.Formula.Numerator.Column)
 	}
 
-	// Validate denominator
+	// Validate the second operand (denominator of a ratio, factor of a product)
 	var denCfg models.KreisDatasetConfig
 	areaDenominator := false
 	switch {
-	case entry.Formula.Denominator.Builtin == "nuts_geometry_area_sqkm":
+	case second.Builtin == "nuts_geometry_area_sqkm":
 		areaDenominator = true
-	case entry.Formula.Denominator.Dataset != "":
-		denCfg, ok = models.DatasetConfigBySlug(entry.Formula.Denominator.Dataset)
+	case second.Dataset != "":
+		denCfg, ok = models.DatasetConfigBySlug(second.Dataset)
 		if !ok {
-			return metricsSource{}, fmt.Errorf("unbekannter Datensatz im Nenner: %q", entry.Formula.Denominator.Dataset)
+			return metricsSource{}, fmt.Errorf("unbekannter Datensatz im %s: %q", secondLabel, second.Dataset)
 		}
-		if !columnAllowed(denCfg, entry.Formula.Denominator.Column) {
-			return metricsSource{}, fmt.Errorf("unbekannte Spalte im Nenner: %q", entry.Formula.Denominator.Column)
+		if !columnAllowed(denCfg, second.Column) {
+			return metricsSource{}, fmt.Errorf("unbekannte Spalte im %s: %q", secondLabel, second.Column)
 		}
 	default:
-		return metricsSource{}, fmt.Errorf("keine gültige Nenner-Quelle definiert (dataset oder builtin erforderlich)")
+		return metricsSource{}, fmt.Errorf("keine gültige %s-Quelle definiert (dataset oder builtin erforderlich)", secondLabel)
 	}
 
 	scale := entry.Formula.Scale
@@ -157,22 +196,43 @@ func derivedMetricSource(entry models.DerivedMetricEntry, nutsVersion int) (metr
 	scaleLiteral := strconv.FormatFloat(scale, 'f', -1, 64)
 
 	harmonized := harmonizedMetricsColumn(numCfg, entry.Formula.Numerator.Column) &&
-		(areaDenominator || harmonizedMetricsColumn(denCfg, entry.Formula.Denominator.Column))
+		(areaDenominator || harmonizedMetricsColumn(denCfg, second.Column))
 	if harmonized {
-		return harmonizedDerivedMetricSource(numCfg, denCfg, areaDenominator, scaleLiteral, nutsVersion), nil
+		return harmonizedDerivedMetricSource(formulaType, numCfg, denCfg, areaDenominator, scaleLiteral, nutsVersion), nil
 	}
-	return stagingDerivedMetricSource(numCfg, entry.Formula.Numerator.Column, denCfg, entry.Formula.Denominator.Column, areaDenominator, scaleLiteral), nil
+	return stagingDerivedMetricSource(formulaType, numCfg, entry.Formula.Numerator.Column, denCfg, second.Column, areaDenominator, scaleLiteral), nil
+}
+
+// derivedValueExpr combines the numerator with the second operand: a ratio
+// divides (a zero denominator yields NULL, counted as invalid), a product
+// multiplies.
+func derivedValueExpr(formulaType, numExpr, otherExpr, scaleLiteral string) string {
+	if formulaType == formulaProduct {
+		return fmt.Sprintf(`((%s * %s) * %s)`, numExpr, otherExpr, scaleLiteral)
+	}
+	return fmt.Sprintf(`((%s / NULLIF(%s, 0)) * %s)`, numExpr, otherExpr, scaleLiteral)
+}
+
+// derivedMissingReason is the excluded_reason of a numerator row without a
+// second operand: no geometry (area denominator), no factor (product) or no
+// denominator (ratio with a dataset denominator).
+func derivedMissingReason(formulaType string, areaDenominator bool) string {
+	switch {
+	case areaDenominator:
+		return metricsExcludedNoGeometry
+	case formulaType == formulaProduct:
+		return metricsExcludedNoFactor
+	default:
+		return metricsExcludedNoDenominator
+	}
 }
 
 // derivedExcludedReasonSQL classifies a numerator row (alias n) against its
-// LEFT JOINed denominator (alias dc, present when dcPresent is true):
-// missing denominator row/geometry first, then validity of numerator and
-// denominator, then a zero denominator (value NULL). NULL means "used".
-func derivedExcludedReasonSQL(dcPresent, numValid, denValid, valueExpr string, areaDenominator bool) string {
-	missing := metricsExcludedNoDenominator
-	if areaDenominator {
-		missing = metricsExcludedNoGeometry
-	}
+// LEFT JOINed second operand (alias dc, present when dcPresent is true):
+// missing row/geometry first (reason missing), then validity of numerator and
+// second operand, then a NULL value (zero denominator of a ratio). NULL means
+// "used".
+func derivedExcludedReasonSQL(dcPresent, missing, numValid, denValid, valueExpr string) string {
 	return fmt.Sprintf(`CASE WHEN NOT (%s) THEN '%s'
 			WHEN NOT (%s) OR NOT (%s) OR %s IS NULL THEN '%s'
 		END`, dcPresent, missing, numValid, denValid, valueExpr, metricsExcludedInvalid)
@@ -186,7 +246,7 @@ func derivedExcludedReasonSQL(dcPresent, numValid, denValid, valueExpr string, a
 // LEFT JOINs: numerator regions without denominator/geometry are kept and
 // marked (excluded_reason) instead of silently disappearing; numerator and
 // denominator must both have has_valid_value.
-func harmonizedDerivedMetricSource(numCfg, denCfg models.KreisDatasetConfig, areaDenominator bool, scaleLiteral string, nutsVersion int) metricsSource {
+func harmonizedDerivedMetricSource(formulaType string, numCfg, denCfg models.KreisDatasetConfig, areaDenominator bool, scaleLiteral string, nutsVersion int) metricsSource {
 	args := []interface{}{numCfg.RouteSlug, nutsVersion}
 	var join, denomExpr, dcPresent, denValid string
 	if areaDenominator {
@@ -208,7 +268,7 @@ func harmonizedDerivedMetricSource(numCfg, denCfg models.KreisDatasetConfig, are
 		denValid = `dc.has_valid_value`
 		args = append(args, denCfg.RouteSlug)
 	}
-	valueExpr := fmt.Sprintf(`((n.harmonized_value::float8 / NULLIF(%s, 0)) * %s)`, denomExpr, scaleLiteral)
+	valueExpr := derivedValueExpr(formulaType, `n.harmonized_value::float8`, denomExpr, scaleLiteral)
 	v := nutsVersion
 	return metricsSource{
 		SQL: fmt.Sprintf(`(SELECT n.target_nuts_id AS geodata_id_nuts, n.year,
@@ -217,7 +277,7 @@ func harmonizedDerivedMetricSource(numCfg, denCfg models.KreisDatasetConfig, are
 			FROM transformed_data.mart_nuts3_sociodata_harmonized n
 			%s
 			WHERE n.dataset_slug = $1 AND n.target_version = $2::int) src`,
-			valueExpr, derivedExcludedReasonSQL(dcPresent, "n.has_valid_value", denValid, valueExpr, areaDenominator), join),
+			valueExpr, derivedExcludedReasonSQL(dcPresent, derivedMissingReason(formulaType, areaDenominator), "n.has_valid_value", denValid, valueExpr), join),
 		Args:        args,
 		NutsVersion: &v,
 	}
@@ -227,7 +287,7 @@ func harmonizedDerivedMetricSource(numCfg, denCfg models.KreisDatasetConfig, are
 // tables (area of the geometry period that contains the data year), with the
 // same LEFT JOIN/excluded_reason handling as harmonizedDerivedMetricSource.
 // Columns are validated against ValueColumns by the caller.
-func stagingDerivedMetricSource(numCfg models.KreisDatasetConfig, numCol string, denCfg models.KreisDatasetConfig, denCol string, areaDenominator bool, scaleLiteral string) metricsSource {
+func stagingDerivedMetricSource(formulaType string, numCfg models.KreisDatasetConfig, numCol string, denCfg models.KreisDatasetConfig, denCol string, areaDenominator bool, scaleLiteral string) metricsSource {
 	var join, denomExpr, dcPresent, denValid string
 	if areaDenominator {
 		join = `LEFT JOIN (
@@ -247,13 +307,13 @@ func stagingDerivedMetricSource(numCfg models.KreisDatasetConfig, numCol string,
 		dcPresent = `dc.geodata_id_nuts IS NOT NULL`
 		denValid = `dc.has_valid_value`
 	}
-	valueExpr := fmt.Sprintf(`((n."%s" / NULLIF(%s, 0)) * %s)`, numCol, denomExpr, scaleLiteral)
+	valueExpr := derivedValueExpr(formulaType, fmt.Sprintf(`n."%s"`, numCol), denomExpr, scaleLiteral)
 	return metricsSource{
 		SQL: fmt.Sprintf(`(SELECT n.geodata_id_nuts, n.year, %s AS value,
 			%s AS excluded_reason
 			FROM %s.%s n
 			%s) src`,
-			valueExpr, derivedExcludedReasonSQL(dcPresent, "n.has_valid_value", denValid, valueExpr, areaDenominator),
+			valueExpr, derivedExcludedReasonSQL(dcPresent, derivedMissingReason(formulaType, areaDenominator), "n.has_valid_value", denValid, valueExpr),
 			numCfg.Schema, numCfg.Table, join),
 	}
 }

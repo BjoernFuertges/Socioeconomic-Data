@@ -29,7 +29,8 @@ type DatasetYearMetrics struct {
 	RegionalRankTotal *int     `json:"regional_rank_total,omitempty" example:"400"`
 	// ExcludedInvalidCount is the number of region values of this year left
 	// out as invalid (has_valid_value = false, missing value; for derived
-	// metrics: numerator or denominator invalid, or a zero denominator).
+	// metrics: numerator, denominator or factor invalid, or a zero
+	// denominator of a ratio; a zero factor of a product is valid).
 	ExcludedInvalidCount int `json:"excluded_invalid_count" example:"2"`
 	// RegionsWithoutGeometry (derived metrics with the area denominator only)
 	// counts regions of this year left out because no NUTS-3 geometry matches.
@@ -37,6 +38,9 @@ type DatasetYearMetrics struct {
 	// RegionsWithoutDenominator (derived metrics with a dataset denominator
 	// only) counts regions of this year without a denominator value.
 	RegionsWithoutDenominator int `json:"regions_without_denominator,omitempty" example:"0"`
+	// RegionsWithoutFactor (derived metrics of formula type product only)
+	// counts regions of this year without a factor value.
+	RegionsWithoutFactor int `json:"regions_without_factor,omitempty" example:"0"`
 }
 
 // DatasetMetricsResult holds metrics for a dataset and a value column across all years.
@@ -52,11 +56,14 @@ type DatasetMetricsResult struct {
 	// missing from by_year).
 	ExcludedInvalidCount int `json:"excluded_invalid_count" example:"5"`
 	// ExcludedRegions is the number of distinct regions with at least one
-	// value left out for any reason (invalid, no geometry, no denominator).
+	// value left out for any reason (invalid, no geometry, no denominator,
+	// no factor).
 	ExcludedRegions int `json:"excluded_regions" example:"3"`
-	// RegionsWithoutGeometry / RegionsWithoutDenominator: distinct regions
-	// left out at least once for that reason (derived metrics only).
+	// RegionsWithoutGeometry / RegionsWithoutDenominator (ratio) and
+	// RegionsWithoutFactor (product): distinct regions left out at least once
+	// for that reason (derived metrics only).
 	RegionsWithoutGeometry    int                  `json:"regions_without_geometry,omitempty" example:"1"`
 	RegionsWithoutDenominator int                  `json:"regions_without_denominator,omitempty" example:"0"`
+	RegionsWithoutFactor      int                  `json:"regions_without_factor,omitempty" example:"0"`
 	ByYear                    []DatasetYearMetrics `json:"by_year"`
 }

@@ -17,22 +17,29 @@ type FormulaSource struct {
 }
 
 // FormulaDefinition describes a calculation formula for a derived metric.
-// Supported type: "ratio" (numerator / denominator x Scale).
+// Supported types: "ratio" (numerator / denominator x Scale) and "product"
+// (numerator x factor x Scale, e.g. a rate per 1,000 times its reference
+// count with Scale 0.001). Denominator is only used by ratio, Factor only by
+// product (a dataset; no builtin).
 type FormulaDefinition struct {
-	Type        string        `yaml:"type"        json:"type"        example:"ratio"`
+	Type        string        `yaml:"type"        json:"type"        example:"ratio" enums:"ratio,product"`
 	Numerator   FormulaSource `yaml:"numerator"   json:"numerator"`
-	Denominator FormulaSource `yaml:"denominator" json:"denominator"`
+	Denominator FormulaSource `yaml:"denominator" json:"denominator,omitzero"`
+	Factor      FormulaSource `yaml:"factor"      json:"factor,omitzero"`
 	Scale       float64       `yaml:"scale"       json:"scale"       example:"100"`
 }
 
 // DerivedMetricEntry describes a derived metric computed by formula from
 // several datasets (e.g. population density, Arbeitslosenquote).
 type DerivedMetricEntry struct {
-	Slug        string            `yaml:"slug"        json:"slug"        example:"bevoelkerungsdichte"`
-	Label       string            `yaml:"label"       json:"label"       example:"Bevölkerungsdichte"`
-	Description string            `yaml:"description" json:"description" example:"Einwohner je km²"`
-	Unit        string            `yaml:"unit"        json:"unit"        example:"EW/km²"`
-	Formula     FormulaDefinition `yaml:"formula"     json:"formula"`
+	Slug        string `yaml:"slug"        json:"slug"        example:"bevoelkerungsdichte"`
+	Label       string `yaml:"label"       json:"label"       example:"Bevölkerungsdichte"`
+	Description string `yaml:"description" json:"description" example:"Einwohner je km²"`
+	Unit        string `yaml:"unit"        json:"unit"        example:"EW/km²"`
+	// Note is an optional metric-specific caveat (e.g. a back-calculation from
+	// two sources); GET /metrics/derived/{slug} appends it to meta.note.
+	Note    string            `yaml:"note"        json:"note,omitempty" example:"Rückrechnung, kein gemessener Wert."`
+	Formula FormulaDefinition `yaml:"formula"     json:"formula"`
 }
 
 // DerivedMetricsCatalog is an ordered list of derived metrics.

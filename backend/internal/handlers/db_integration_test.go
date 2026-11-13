@@ -85,7 +85,17 @@ INSERT INTO transformed_data.mart_nuts3_sociodata_harmonized VALUES
 	('arbeitslose',    'DE003', 2020, 2024, 30,  false, 2024, 0, false),
 	('arbeitslose',    'DE005', 2020, 2024, 50,  false, 2024, 0, true),
 	('beschaeftigungsquote-nuts3', 'DE001', 2020, 2024, 60, false, 2024, 0, true),
-	('beschaeftigungsquote-nuts3', 'DE002', 2020, 2024, 70, false, 2024, 0, true);
+	('beschaeftigungsquote-nuts3', 'DE002', 2020, 2024, 70, false, 2024, 0, true),
+	-- Rate per 1,000 SV employees x SV employees (product metric).
+	('auszubildende',    'DE001', 2020, 2024, 50,   false, 2024, 0, true),
+	('auszubildende',    'DE002', 2020, 2024, 40,   false, 2024, 0, true),
+	('auszubildende',    'DE003', 2020, 2024, 30,   false, 2024, 0, false),
+	('auszubildende',    'DE004', 2020, 2024, 20,   false, 2024, 0, true),
+	('auszubildende',    'DE005', 2020, 2024, 60,   false, 2024, 0, true),
+	('sv_beschaeftigte', 'DE001', 2020, 2024, 2000, false, 2024, 0, true),
+	('sv_beschaeftigte', 'DE002', 2020, 2024, 3000, false, 2024, 0, false),
+	('sv_beschaeftigte', 'DE003', 2020, 2024, 1000, false, 2024, 0, true),
+	('sv_beschaeftigte', 'DE004', 2020, 2024, 4000, false, 2024, 0, true);
 
 CREATE TABLE transformed_data.stg_beschaeftigungsquote_nuts3 (
 	geodata_id_nuts text, year integer, has_valid_value boolean,
@@ -118,6 +128,12 @@ func integrationRouter(db *sqlx.DB) *gin.Engine {
 	h := NewHandler(db, models.DerivedMetricsCatalog{
 		derivedEntryFor("dichte", "bevoelkerung", "bevoelkerung", "", "", "nuts_geometry_area_sqkm", 1),
 		derivedEntryFor("quote", "arbeitslose", "arbeitslose", "bevoelkerung", "bevoelkerung", "", 100),
+		func() models.DerivedMetricEntry {
+			e := derivedProductEntry("auszubildende", "auszubildende", "sv_beschaeftigte", "sv_beschaeftigte", 0.001)
+			e.Slug = "azubi-absolut"
+			e.Note = "Rückrechnung."
+			return e
+		}(),
 	})
 	r := gin.New()
 	r.GET("/metrics", h.GetMetrics)
@@ -267,6 +283,45 @@ func TestDBDerivedMetricsReportExcludedRegions(t *testing.T) {
 	y = res.ByYear[0]
 	if y.RegionCount != 1 || y.Mean != 1 || y.ExcludedInvalidCount != 2 || y.RegionsWithoutDenominator != 1 || res.ExcludedRegions != 3 {
 		t.Errorf("quote = %+v / %+v", y, res)
+	}
+}
+
+// Product formula: rate per 1,000 x reference count / 1,000. DE002 has an
+// invalid factor, DE003 an invalid rate, DE005 no factor row (counted as
+// regions_without_factor, not regions_without_denominator); DE001 (50 x 2000
+// / 1000 = 100) and DE004 (20 x 4000 / 1000 = 80) are used.
+func TestDBDerivedProductMetric(t *testing.T) {
+	r := integrationRouter(openIntegrationDB(t))
+	code, resp := getJSON(t, r, "/metrics/derived/azubi-absolut?nuts_version=2024")
+	if code != http.StatusOK {
+		t.Fatalf("status %d: %s", code, resp.Error)
+	}
+	var res models.DatasetMetricsResult
+	_ = json.Unmarshal(resp.Data, &res)
+	if len(res.ByYear) != 1 || res.NutsVersion == nil || *res.NutsVersion != 2024 {
+		t.Fatalf("result = %+v", res)
+	}
+	near := func(a, b float64) bool { return a-b < 1e-9 && b-a < 1e-9 }
+	y := res.ByYear[0]
+	if y.RegionCount != 2 || !near(y.Min, 80) || !near(y.Max, 100) || !near(y.Mean, 90) ||
+		y.ExcludedInvalidCount != 2 || y.RegionsWithoutFactor != 1 || y.RegionsWithoutDenominator != 0 ||
+		res.RegionsWithoutFactor != 1 || res.RegionsWithoutDenominator != 0 || res.ExcludedRegions != 3 {
+		t.Errorf("product = %+v / %+v", y, res)
+	}
+	if resp.Meta == nil || !strings.HasPrefix(resp.Meta.Note, metricsValidityNoteBase+" "+metricsProductNote) || !strings.HasSuffix(resp.Meta.Note, " Rückrechnung.") {
+		t.Errorf("meta = %+v", resp.Meta)
+	}
+
+	// Regional value and rank: DE004 (80) is rank 1 of 2.
+	code, resp = getJSON(t, r, "/metrics/derived/azubi-absolut?geodata_id_nuts=DE004")
+	if code != http.StatusOK {
+		t.Fatalf("status %d: %s", code, resp.Error)
+	}
+	res = models.DatasetMetricsResult{}
+	_ = json.Unmarshal(resp.Data, &res)
+	if len(res.ByYear) != 1 || res.ByYear[0].RegionalValue == nil || !near(*res.ByYear[0].RegionalValue, 80) ||
+		*res.ByYear[0].RegionalRank != 1 || *res.ByYear[0].RegionalRankTotal != 2 {
+		t.Errorf("regional = %+v", res)
 	}
 }
 

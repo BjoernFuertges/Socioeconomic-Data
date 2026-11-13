@@ -33,12 +33,16 @@ SOZ_TEST_PG_DSN="host=127.0.0.1 port=5432 user=... password=... dbname=postgres 
 # docs.SwaggerInfo.Version at startup (OpenAPI info.version) and GET /health.
 # The `@version dev` annotation in cmd/soziodata/main.go is only the placeholder.
 
-# Regenerate Swagger docs (writes into docs/)
-swag init -g cmd/soziodata/main.go -o docs
-# NOTE: the pre-commit hook adds --parseDependency --parseInternal, which
-# fails with swag <=1.16.4 on Go >= 1.27 (it cannot parse the generics in
-# the stdlib's math/rand/v2). Without the flags the output is equivalent;
-# with them, commits need --no-verify until swag is updated.
+# Regenerate Swagger docs (writes into docs/) - always with the same flags as
+# the pre-commit hook:
+swag init -g cmd/soziodata/main.go -o docs --parseDependency --parseInternal
+# NOTE: the flags keep the output identical to the committed docs (definitions
+# named github_com_..._internal_models.X). Without them swag v1.16.4 still
+# produces a valid spec, but renames every definition to models.X (~1,800
+# changed lines per file).
+# Verified with swag v1.16.4 on Go 1.26. Not verified: the earlier claim that
+# --parseDependency fails on Go >= 1.27 (stdlib generics). The hook falls back
+# to the plain run if the flagged run fails - check the diff if that happens.
 
 # Regenerate models/handlers/routes from dbt schema YAMLs
 go generate ./internal/models/...
@@ -145,15 +149,20 @@ Enable the pre-commit hook (repo root: `git config core.hooksPath backend/githoo
 - `configs/metrics_catalog.yaml` is hand-maintained metadata (formulas/
   labels for the *derived* metrics, e.g. `bevoelkerungsdichte`) served by
   `internal/handlers/metrics_catalog.go` — independent of the codegen, so
-  it is edited by hand when a derived metric is added or changes.
+  it is edited by hand when a derived metric is added or changes. Formula
+  types: `ratio` (numerator / denominator × scale) and `product` (numerator ×
+  factor × scale, e.g. `auszubildende-absolut` = rate per 1,000 × count /
+  1,000); an optional `note` is appended to `meta.note`.
   `metrics.go`/`metrics_catalog.go` read harmonized datasets from
   `mart_nuts3_sociodata_harmonized` for `?nuts_version=` (default 2024);
   columns without a harmonized counterpart (`harmonizedMetricsColumns`)
   fall back to the staging tables. Every `metricsSource` keeps invalid rows
-  but marks them (`excluded_reason`: has_valid_value false, missing
-  geometry/denominator), so the statistics use only valid values and the
-  response counts the rest (`excluded_invalid_count`, `excluded_regions`,
-  `regions_without_geometry`/`_denominator`). `GET /metrics` runs its
+  but marks them (`excluded_reason`: `invalid`, `no_geometry`,
+  `no_denominator` for a ratio, `no_factor` for a product), so the
+  statistics use only valid values and the response counts the rest
+  (`excluded_invalid_count`, `excluded_regions`,
+  `regions_without_geometry`/`_denominator`/`_factor`); `meta.note` of
+  `GET /metrics/derived/{slug}` carries only the rule of its formula type. `GET /metrics` runs its
   columns via `runIndexedLimited` (≤ 4 parallel, request order kept).
 - `api/bruno/` is a Bruno HTTP-request collection for manually exercising
   the API against a running instance.

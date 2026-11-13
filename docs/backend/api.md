@@ -276,6 +276,29 @@ row — the `meta.yaml`-driven Kreis/Gemeinden datasets as well as
 | GET | `/metrics/derived` | Catalog of derived metrics (from `configs/metrics_catalog.yaml`) |
 | GET | `/metrics/derived/{slug}` | A single entry from the derived-metrics catalog |
 
+Derived metrics are defined in `configs/metrics_catalog.yaml` with one of two
+formula types: `ratio` (numerator / denominator × scale; denominator a dataset
+or the NUTS-3 area) and `product` (numerator × factor × scale; factor a
+dataset). Current entries:
+
+| Slug | Formula | Unit |
+|---|---|---|
+| `bevoelkerungsdichte` | `bevoelkerung` / NUTS-3 area (km²) | EW/km² |
+| `eigenberechnete-arbeitslosenquote` | `arbeitslose` / `bevoelkerung` × 100 | % |
+| `auszubildende-absolut` | `auszubildende` (per 1,000 SV employees, BBSR) × `sv_beschaeftigte` (BA) / 1,000 | Personen |
+
+`auszubildende-absolut` is a back-calculation, not a measured count: the two
+sources may be at different revision states, the harmonized rate of a
+re-mapped NUTS-3 region is a weighted average (so the product is an
+approximation), and only years covered by both exist (currently 2007–2023:
+BA from 2007, BBSR rate up to 2023). Without a year filter, the earlier years
+show up as excluded (`excluded_regions`, `regions_without_factor`); use
+`from_year=2007` to avoid that. The
+catalog's optional `note` carries this caveat and is appended to `meta.note`
+of `GET /metrics/derived/{slug}`. For a `product`, a region without a factor
+value counts in `regions_without_factor` (`regions_without_denominator` is
+only used by `ratio`), and a factor of 0 is a valid value.
+
 Both statistics endpoints read harmonized datasets from
 `mart_nuts3_sociodata_harmonized` for one NUTS-3 version, selected with
 `?nuts_version=` (2003–2024, default 2024, like `/{slug}/timeseries`), so
@@ -293,9 +316,12 @@ contributing source value was valid (`mart_nuts3_sociodata_harmonized.
 has_valid_value`). Each result reports what was left out instead of
 dropping it silently: `excluded_invalid_count` per year and in total,
 `excluded_regions` (distinct regions with at least one excluded value) and,
-for derived metrics (numerator and denominator must both be valid),
-`regions_without_geometry` (area denominator without a matching NUTS-3
-geometry) and `regions_without_denominator`. `meta.note` states this rule;
+for derived metrics, `regions_without_geometry` (area denominator without a
+matching NUTS-3 geometry) and `regions_without_denominator` for a `ratio`
+(numerator and denominator must both be valid, a zero denominator counts as
+invalid), resp. `regions_without_factor` for a `product` (numerator and
+factor must both be valid). `meta.note` states this rule (for
+`GET /metrics/derived/{slug}` only the sentence of its formula type);
 years with only invalid values are missing from `by_year` but counted in the
 totals. `GET /metrics` computes its dataset columns in parallel (at most 4
 at a time) and keeps the request order.
