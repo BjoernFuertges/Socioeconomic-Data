@@ -5716,7 +5716,7 @@ paths:
       - application/json
       description: |-
         Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,
-        Ausbildungsquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.
+        eigenberechnete Arbeitslosenquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.
         Mit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.
         meta.note: Es gehen nur gültige Werte ein; Zähler und Nenner müssen gültig sein.
       produces:

@@ -10,7 +10,10 @@
 }}
 
 /*
-  Wrapper view over mart_beschaeftigungsquote_nuts3 for API exposure.
+  Wrapper over int_beschaeftigungsquote_nuts3 for API exposure: the
+  code generator (cmd/gen-models) only knows staging schema YAMLs, so the
+  dataset is registered here. It reads the intermediate model, not the mart,
+  to keep the layering staging -> intermediate -> marts.
   Selects the weighted average as the primary metric for REST API.
 */
 
@@ -35,4 +38,4 @@ select
     beschaeftigungsquote_median,
     beschaeftigungsquote_ungewichtet,
     gemeinden_count
-from {{ ref('mart_beschaeftigungsquote_nuts3') }}
+from {{ ref('int_beschaeftigungsquote_nuts3') }}

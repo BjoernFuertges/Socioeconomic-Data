@@ -32,19 +32,19 @@ models:
         description: "LAU name in national language"
       - name: lau_name_latin
         description: "LAU name in Latin characters"
-      - name: cntr_code
+      - name: country_code
         description: "Country code (2-letter ISO)"
         tests:
           - not_null
-      - name: nuts_id
-        description: "NUTS region identifier"
+      - name: nuts_3_code
+        description: "NUTS-3 code as declared by the population source (may be empty; see nuts3_id for the canonical parent)"
       - name: nuts3_id
         description: "Canonical NUTS-3 parent: the declared source column if present, otherwise a spatial estimate (largest area overlap with the current NUTS-3 version)"
       - name: nuts3_link_source
         description: "'declared' (from source data) or 'spatial_estimate' (estimated spatially, not an official assignment)"
-      - name: geometry
+      - name: geometry_3035
         description: "Geometry (polygon) in EPSG:3035"
-      - name: population
+      - name: population_count
         description: "Population count for the year"
       - name: missing_population_data
         description: "True if population data is missing for this LAU and year"

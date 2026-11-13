@@ -97,7 +97,7 @@ with all_source_data as (
 
     -- beschaeftigungsquote-nuts3 is not a raw loaded_data source but already
     -- aggregated to NUTS-3 (2024) via the Gemeinde (LAU) population (see
-    -- stg_beschaeftigungsquote_nuts3.sql / mart_beschaeftigungsquote_nuts3.sql),
+    -- stg_beschaeftigungsquote_nuts3.sql / int_beschaeftigungsquote_nuts3.sql),
     -- hence ref() instead of source().
     select
         'beschaeftigungsquote-nuts3' as dataset_slug,

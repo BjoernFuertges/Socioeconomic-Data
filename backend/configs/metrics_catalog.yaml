@@ -1,6 +1,9 @@
 # Abgeleitete Metriken: per Formel aus mehreren Datensätzen berechnet.
 # Unterstützter Formeltyp: ratio (Zähler / Nenner × Scale).
 # Nenner-Quellen: dataset (RouteSlug + Spalte) oder builtin (nuts_geometry_area_sqkm).
+# Zähler und Nenner müssen absolute Größen sein: Datensätze, die schon Quoten
+# sind (z.B. auszubildende = Auszubildende je 1.000 SV-Beschäftigte), nicht
+# nochmals durch die Bevölkerung teilen.
 derived_metrics:
   - slug: bevoelkerungsdichte
     label: Bevölkerungsdichte
@@ -33,18 +36,3 @@ derived_metrics:
         dataset: bevoelkerung
         column: bevoelkerung
       scale: 100.0
-
-  - slug: ausbildungsquote
-    label: Ausbildungsquote
-    description: >
-      Auszubildende je 1.000 Einwohner.
-    unit: "je 1.000 EW"
-    formula:
-      type: ratio
-      numerator:
-        dataset: auszubildende
-        column: auszubildende
-      denominator:
-        dataset: bevoelkerung
-        column: bevoelkerung
-      scale: 1000.0

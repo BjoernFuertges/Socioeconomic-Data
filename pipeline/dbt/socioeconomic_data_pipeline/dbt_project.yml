@@ -35,9 +35,11 @@ snapshots:
     +invalidate_hard_deletes: false
 
 vars:
-  # Currently unused: mart_nuts3_sociodata_harmonized builds every version
-  # in its own target_versions list instead of reading this var.
-  target_nuts_version: 2024
+  # Minimum area share for an Agentur<->NUTS-3 pair in
+  # mart_agentur_nuts3_crosswalk (pairs where neither share exceeds it are
+  # dropped as boundary slivers); override with
+  # --vars '{crosswalk_min_share: 0}' to see all intersections.
+  crosswalk_min_share: 0.10
 
 models:
   socioeconomic_data_pipeline:

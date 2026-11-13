@@ -78,7 +78,10 @@ and `mart_nuts0_summary` are views):
   changes, its LAU-version counterpart (`int_lau_spatial_crosswalk`, feeds
   `mart_lau_version_crosswalk` / `mart_lau_sociodata_harmonized`), and the
   LAU→NUTS-3 spatial fallback link (`int_lau_nuts3_spatial_link`, feeds the
-  canonical `nuts3_id` in `lau_integrated`). `int_lau_spatial_crosswalk`
+  canonical `nuts3_id` in `lau_integrated`), and the LAU→NUTS-3
+  aggregation of the Beschäftigungsquote (`int_beschaeftigungsquote_nuts3`;
+  `stg_beschaeftigungsquote_nuts3` only wraps it for the API generator,
+  `mart_beschaeftigungsquote_nuts3` only exposes it). `int_lau_spatial_crosswalk`
   deliberately excludes same-`gisco_id` period pairs (handled cheaply as a
   trivial identity mapping directly in `mart_lau_version_crosswalk`
   instead) — LAU geometry vintages are re-generalized yearly by GISCO, so
@@ -201,6 +204,6 @@ and `mart_nuts0_summary` are views):
   exist via `adapter.get_columns_in_relation` — dlt must have loaded
   before `dbt snapshot` runs), `render_nuts3_fill_gaps_view.sql` /
   `render_lau_fill_gaps_view.sql` (shared gap-filling logic behind
-  `marts/fill_gaps/*`), `missing_data_summary.sql`,
+  `marts/fill_gaps/*`),
   `generate_schema_name.sql` (schemas are taken verbatim from
   `+schema:` config, not prefixed with the target schema).

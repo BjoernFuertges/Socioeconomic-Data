@@ -12,7 +12,7 @@ import (
 // GetDerivedMetricsCatalog returns all derived-metric definitions.
 // @Summary Abgeleitete Metriken-Definitionen
 // @Description Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,
-// @Description Ausbildungsquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.
+// @Description eigenberechnete Arbeitslosenquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.
 // @Description Mit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.
 // @Description meta.note: Es gehen nur gültige Werte ein; Zähler und Nenner müssen gültig sein.
 // @Tags Metriken

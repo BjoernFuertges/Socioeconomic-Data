@@ -80,7 +80,16 @@ flowchart TB
   county (Kreis) datasets (sourced directly from `loaded_data.results_*`)
   plus `beschaeftigungsquote-nuts3` (sourced via `ref()` from
   `stg_beschaeftigungsquote_nuts3`, since it is itself a population-weighted
-  LAU→NUTS-3 aggregation rather than a raw loaded table). Dataset slugs are
+  LAU→NUTS-3 aggregation rather than a raw loaded table; built in
+  `int_beschaeftigungsquote_nuts3`). That aggregation is an approximation:
+  the municipal rates are weighted by each municipality's total population
+  from the newest Eurostat LAU vintage containing it (2024 for current
+  municipalities), the same weight for every year,
+  although the rate refers to residents aged 15–64 and Eurostat's LAU
+  population is no reliable historical series (see
+  `pipeline/dlt/fetch_lau_population.py`); `weight_coverage` in that mart
+  gives the share of municipalities per NUTS-3 region and year that have a
+  weight. Dataset slugs are
   chosen to match the corresponding backend API route slug 1:1 (e.g.
   `erwerbstaetige_pro_1000_einwohner`, `beschaeftigungsquote-nuts3`) so the
   backend can join both sides without a separate mapping table – see

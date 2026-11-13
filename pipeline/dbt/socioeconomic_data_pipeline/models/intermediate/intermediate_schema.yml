@@ -201,3 +201,13 @@ models:
         data_type: numeric
         tests:
           - not_null
+
+  - name: int_beschaeftigungsquote_nuts3
+    description: "Beschäftigungsquote aggregated from municipalities (LAU) to NUTS-3: population-weighted mean (approximation, see weight_coverage), unweighted mean and median per NUTS-3 region and year. Feeds stg_beschaeftigungsquote_nuts3 (API) and mart_beschaeftigungsquote_nuts3."
+    columns:
+      - name: beschaeftigungsquote_nuts3_pk
+        description: "Surrogate key of NUTS-3 region and year"
+        data_type: text
+        tests:
+          - unique
+          - not_null

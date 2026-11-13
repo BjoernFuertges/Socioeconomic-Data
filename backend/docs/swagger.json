@@ -5129,7 +5129,7 @@
         },
         "/metrics/derived": {
             "get": {
-                "description": "Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,\nAusbildungsquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.\nMit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.\nmeta.note: Es gehen nur gültige Werte ein; Zähler und Nenner müssen gültig sein.",
+                "description": "Gibt alle abgeleiteten Metriken aus dem Katalog zurück (z.B. Bevölkerungsdichte,\neigenberechnete Arbeitslosenquote). Jede Metrik wird per Formel aus mehreren Datensätzen berechnet.\nMit GET /metrics/derived/:slug können die statistischen Werte abgerufen werden.\nmeta.note: Es gehen nur gültige Werte ein; Zähler und Nenner müssen gültig sein.",
                 "consumes": [
                     "application/json"
                 ],

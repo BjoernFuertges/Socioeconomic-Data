@@ -41,7 +41,7 @@ with metadata as (
 -- Unlike all other datasets here, beschaeftigungsquote-nuts3 has no loader
 -- or meta.yaml of its own - it is a pure dbt aggregation wrapper over
 -- beschaeftigungsquote-gemeinden (see stg_beschaeftigungsquote_nuts3.sql ->
--- mart_beschaeftigungsquote_nuts3.sql) and would never get its own
+-- int_beschaeftigungsquote_nuts3.sql) and would never get its own
 -- loaded_data.dataset_metadata row. Without this synthetic entry the slug
 -- would stay invisible in GET /datasets (and the frontend data catalog)
 -- although it exists as a dataset_slug via dbt graph discovery in
