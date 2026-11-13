@@ -41,8 +41,9 @@ swag init -g cmd/soziodata/main.go -o docs --parseDependency --parseInternal
 # produces a valid spec, but renames every definition to models.X (~1,800
 # changed lines per file).
 # Verified with swag v1.16.4 on Go 1.26. Not verified: the earlier claim that
-# --parseDependency fails on Go >= 1.27 (stdlib generics). The hook falls back
-# to the plain run if the flagged run fails - check the diff if that happens.
+# --parseDependency fails on Go >= 1.27 (stdlib generics). The hook has no
+# fallback: if the flagged run fails, the commit stops (fix swag, or
+# --no-verify and say so in the commit message).
 
 # Regenerate models/handlers/routes from dbt schema YAMLs
 go generate ./internal/models/...

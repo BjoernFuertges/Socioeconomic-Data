@@ -25,14 +25,17 @@ elif [ -f "$(go env GOPATH)/bin/swag" ]; then
 fi
 
 if [ -n "$SWAG_CMD" ]; then
-    # --parseDependency breaks on newer Go stdlib generics; fall back to the plain run
-    if $SWAG_CMD init -g cmd/soziodata/main.go -o ./docs --parseDependency --parseInternal \
-        || $SWAG_CMD init -g cmd/soziodata/main.go -o ./docs; then
+    # Always use the flags: without them swag renames every definition
+    # (models.X instead of github_com_..._internal_models.X) and the diff of
+    # docs/ explodes. A failure here must stop the commit, not silently
+    # produce a differently named spec.
+    if $SWAG_CMD init -g cmd/soziodata/main.go -o ./docs --parseDependency --parseInternal; then
         echo -e "${GREEN} Swagger documentation generated successfully${NC}"
         # Stage the generated files
         git add docs/docs.go docs/swagger.json docs/swagger.yaml
     else
         echo -e "${RED} Failed to generate Swagger documentation${NC}"
+        echo -e "${RED} Fix swag (see backend/AGENTS.md) or commit with --no-verify and say so in the message.${NC}"
         exit 1
     fi
 else
