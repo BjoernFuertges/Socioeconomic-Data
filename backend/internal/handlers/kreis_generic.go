@@ -77,7 +77,7 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 			}
 			lauVersion = &v
 		} else {
-			extraColumns = ", d.is_interpolated, d.value_linear, d.value_peer_trend, d.n_peer_regions, d.nuts_version"
+			extraColumns = ", d.is_interpolated, d.is_estimated, d.value_linear, d.value_peer_trend, d.n_peer_regions, d.nuts_version"
 			v := defaultNutsVersion()
 			if filter.NutsVersion != nil {
 				if !isSupportedNutsVersion(*filter.NutsVersion) {
@@ -290,7 +290,7 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 		filter.Limit = cfg.DefaultLimit
 	}
 
-	query := `SELECT nuts3_id, dataset_slug, target_version, year, value, is_interpolated, value_linear, value_peer_trend, n_peer_regions ` +
+	query := `SELECT nuts3_id, dataset_slug, target_version, year, value, is_interpolated, is_estimated, value_linear, value_peer_trend, n_peer_regions ` +
 		`FROM transformed_data.mart_nuts3_timeseries_interpolated WHERE dataset_slug = $1 AND target_version = $2`
 	args := []interface{}{cfg.RouteSlug, nutsVersion}
 	argPos := 3

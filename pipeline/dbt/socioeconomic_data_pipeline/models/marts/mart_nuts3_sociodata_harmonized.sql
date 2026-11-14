@@ -27,6 +27,13 @@
   is_crosswalked = true   -> value was converted across a version boundary
   is_crosswalked = false  -> direct value, no conversion needed
 
+  is_estimated = true     -> the value was converted via at least one crosswalk
+                             pair flagged is_estimate (weight_basis 'area', or
+                             Gemeinden straddling a region boundary assigned
+                             wholly by majority, e.g. Potsdam 2003 or the
+                             Sachsen-Anhalt reform 2007): treat as an estimate.
+                             Always false for direct (non-crosswalked) values.
+
   has_valid_value = false -> at least one source value fails the has_valid_value
                              rule of its staging model (e.g. a quota outside
                              0..100); consumers such as GET /metrics skip it
@@ -239,6 +246,7 @@ harmonized_{{ tv }} as (
         -- crosswalked piece into it weighs 0 anyway
         coalesce(nullif(rp.population, 0), 1.0)::numeric as absolute_weight,
         false               as is_crosswalked,
+        false               as is_estimated,
         s.geodata_id_nuts   as source_nuts_id,
         s.geodata_year      as source_version,
         0                   as n_hops,
@@ -261,6 +269,8 @@ harmonized_{{ tv }} as (
         c.population_weight as weight,
         c.absolute_weight,
         true                 as is_crosswalked,
+        -- weight > 0: a piece that contributes nothing cannot make it an estimate
+        (c.is_estimate and c.population_weight > 0) as is_estimated,
         s.geodata_id_nuts    as source_nuts_id,
         s.geodata_year       as source_version,
         c.n_hops,
@@ -308,6 +318,7 @@ aggregated_{{ tv }} as (
                 {% endif %}
         end                      as harmonized_value,
         bool_or(is_crosswalked)  as is_crosswalked,
+        bool_or(is_estimated)    as is_estimated,
         min(source_version)      as source_version,
         max(n_hops)              as n_hops,
         -- false as soon as one contributing source value fails the staging

@@ -8,6 +8,7 @@ with timeseries as (
         year,
         value,
         is_interpolated,
+        is_estimated,
         value_linear,
         value_peer_trend,
         n_peer_regions
@@ -71,6 +72,7 @@ select
     coalesce(src.has_valid_value, true) as has_valid_value,
     ts.value as {{ value_column }},
     ts.is_interpolated,
+    ts.is_estimated,
     ts.value_linear,
     ts.value_peer_trend,
     ts.n_peer_regions

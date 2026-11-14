@@ -19,6 +19,11 @@ type SozioBaseData struct {
 	ObservationDate string   `json:"observation_date" db:"observation_date" example:"2020-01-01"`
 	HasValidValue   bool     `json:"has_valid_value" db:"has_valid_value" example:"true"`
 	IsInterpolated  *bool    `json:"is_interpolated,omitempty" db:"is_interpolated" example:"true"`
+	// IsEstimated: the value was converted across NUTS versions via a crosswalk
+	// pair that rests on an estimate (Gemeinden straddling region boundaries
+	// assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+	// Populated only with fill_gaps=true on NUTS datasets.
+	IsEstimated     *bool    `json:"is_estimated,omitempty" db:"is_estimated" example:"false"`
 	ValueLinear     *float64 `json:"value_linear,omitempty" db:"value_linear" example:"8.78"`
 	ValuePeerTrend  *float64 `json:"value_peer_trend,omitempty" db:"value_peer_trend" example:"8.50"`
 	NPeerRegions    *int     `json:"n_peer_regions,omitempty" db:"n_peer_regions" example:"11"`
@@ -105,6 +110,10 @@ type NutsTimeseriesPoint struct {
 	Value       float64 `db:"value"           json:"value"          example:"8.78"`
 	// true = value was imputed (no original value exists for this year).
 	IsInterpolated bool `db:"is_interpolated" json:"is_interpolated" example:"true"`
+	// true = the value is an estimate: converted across NUTS versions via a
+	// crosswalk pair with Gemeinden that straddle region boundaries and are
+	// assigned wholly by majority (e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+	IsEstimated bool `db:"is_estimated" json:"is_estimated" example:"false"`
 	// Method-1 estimate (linear interpolation). Populated only if is_interpolated = true.
 	ValueLinear *float64 `db:"value_linear" json:"value_linear,omitempty" example:"8.78"`
 	// Method-3 estimate (extrapolation using the average relative change of

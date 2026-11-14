@@ -7788,6 +7788,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
@@ -7874,6 +7879,11 @@ const docTemplate = `{
                 "has_valid_value": {
                     "type": "boolean",
                     "example": true
+                },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
                 },
                 "is_interpolated": {
                     "type": "boolean",
@@ -7962,6 +7972,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
@@ -8048,6 +8063,11 @@ const docTemplate = `{
                 "has_valid_value": {
                     "type": "boolean",
                     "example": true
+                },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
                 },
                 "is_interpolated": {
                     "type": "boolean",
@@ -8152,6 +8172,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
@@ -8239,6 +8264,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
@@ -8325,6 +8355,11 @@ const docTemplate = `{
                 "has_valid_value": {
                     "type": "boolean",
                     "example": true
+                },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
                 },
                 "is_interpolated": {
                     "type": "boolean",
@@ -8693,6 +8728,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
@@ -8779,6 +8819,11 @@ const docTemplate = `{
                 "has_valid_value": {
                     "type": "boolean",
                     "example": true
+                },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
                 },
                 "is_interpolated": {
                     "type": "boolean",
@@ -9044,6 +9089,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
@@ -9251,6 +9301,11 @@ const docTemplate = `{
                 "has_valid_value": {
                     "type": "boolean",
                     "example": true
+                },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
                 },
                 "is_interpolated": {
                     "type": "boolean",
@@ -9584,6 +9639,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "wohngeldhaushalte"
                 },
+                "is_estimated": {
+                    "description": "true = the value is an estimate: converted across NUTS versions via a\ncrosswalk pair with Gemeinden that straddle region boundaries and are\nassigned wholly by majority (e.g. Potsdam 2003, Sachsen-Anhalt 2007).",
+                    "type": "boolean",
+                    "example": false
+                },
                 "is_interpolated": {
                     "description": "true = value was imputed (no original value exists for this year).",
                     "type": "boolean",
@@ -9755,6 +9815,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
@@ -9841,6 +9906,11 @@ const docTemplate = `{
                 "has_valid_value": {
                     "type": "boolean",
                     "example": true
+                },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
                 },
                 "is_interpolated": {
                     "type": "boolean",
@@ -9962,6 +10032,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
@@ -10049,6 +10124,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "is_interpolated": {
                     "type": "boolean",
                     "example": true
@@ -10135,6 +10215,11 @@ const docTemplate = `{
                 "has_valid_value": {
                     "type": "boolean",
                     "example": true
+                },
+                "is_estimated": {
+                    "description": "IsEstimated: the value was converted across NUTS versions via a crosswalk\npair that rests on an estimate (Gemeinden straddling region boundaries\nassigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).\nPopulated only with fill_gaps=true on NUTS datasets.",
+                    "type": "boolean",
+                    "example": false
                 },
                 "is_interpolated": {
                     "type": "boolean",

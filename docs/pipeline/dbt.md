@@ -71,12 +71,14 @@ flowchart TB
   population. Weighting by the total population of the NUTS-3 source region
   itself would always cancel out during normalization (see the comment in
   `mart_nuts_version_crosswalk.sql`) – only the finer LAU level makes the
-  population weighting actually effective. A municipality is split across
-  the regions it overlaps and its population distributed by area
-  (`pop × area(LAU ∩ source ∩ target) / area(LAU)`, i.e. evenly spread
-  within the municipality); municipalities with ≥ 95 % of their area in one
-  region (var `lau_nuts3_snap_share`) are assigned wholly, since smaller
-  splits are mostly generalization noise between LAU and NUTS geometries.
+  population weighting actually effective. Each municipality is assigned wholly to the NUTS-3
+  region holding the largest share of its area (per version); its population
+  goes to the resulting (source, target) pair. This majority assignment was
+  evaluated against 648 Kreis versions with known truth and is clearly more
+  accurate than area-proportional splitting
+  (`analysis/data-analysis/nuts3_crosswalk_evaluation.ipynb`). Back-calculations
+  to 2003/2006 for municipalities formed by incorporations (e.g. Potsdam,
+  Sachsen-Anhalt) are estimates; no ground truth exists there.
 - **`mart_nuts_version_crosswalk`** – combines area and population weight.
   `absolute_weight` is always in inhabitants; only a source region without
   any LAU population falls back to `area share × region population`
@@ -174,6 +176,18 @@ flags estimated rows; `value_linear` / `value_peer_trend` /
 `n_peer_regions` are only populated for interpolated rows
 (`is_interpolated = true`) so that non-estimated rows aren't cluttered with
 irrelevant alternative values.
+
+**Crosswalk estimates (`is_estimated`):** independent of gap filling, a value
+converted to another NUTS version (`target_version` ≠ source version) can
+itself be an estimate. Each municipality is assigned wholly to one Kreis
+(majority of its area); where it straddles a boundary (assigned region holds
+< `crosswalk_uncertain_area_share`, default 0.9, of its area) and such
+municipalities make up ≥ `crosswalk_estimate_min_share` (default 5 %) of a
+(source, target) pair's inhabitants, the pair is flagged `is_estimate` in
+`mart_nuts_version_crosswalk`. The flag propagates as `is_estimated` through
+`mart_nuts3_sociodata_harmonized` and `mart_nuts3_timeseries_interpolated` into
+the NUTS `api_*_fill_gaps` views (typical cases: Potsdam/Dessau 2003, the
+Sachsen-Anhalt reform 2007, Bremerhaven/Cuxhaven).
 
 **Evaluation methodology:** [`analysis/data-analysis/impute_missing_values.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/analysis/data-analysis/impute_missing_values.py)
 implements both methods (plus a third, regression-based method that is

@@ -297,6 +297,10 @@ models:
         description: "True if the value was converted across a boundary version; false if the source geodata_year already matched target_version"
         tests:
           - not_null
+      - name: is_estimated
+        description: "True if the value was converted via a crosswalk pair flagged is_estimate (no LAU population, or >= var crosswalk_estimate_min_share of the pair's inhabitants from Gemeinden straddling a region boundary, e.g. Potsdam 2003, Sachsen-Anhalt 2007); always false for direct values"
+        tests:
+          - not_null
       - name: source_version
         description: "Original NUTS-3 version of the source data (geodata_year); the smallest involved source version when regions merge"
       - name: n_hops
@@ -330,11 +334,15 @@ models:
         tests:
           - not_null
       - name: weight_basis
-        description: "'population' (LAU population, areal interpolation within split Gemeinden) or 'area' (whole source group without LAU population: area_fraction x region population)"
+        description: "'population' (LAU population, Gemeinden assigned wholly by majority area) or 'area' (whole source group without LAU population: area_fraction x region population)"
         tests:
           - not_null
           - accepted_values:
               values: ['population', 'area']
+      - name: is_estimate
+        description: "True if the pair weight is an estimate: weight_basis 'area', or >= var crosswalk_estimate_min_share of the pair's inhabitants come from Gemeinden whose assigned region holds < var crosswalk_uncertain_area_share of their area in the source or target version (assigned wholly by majority)"
+        tests:
+          - not_null
       - name: source_population
         description: "Inhabitants of the whole source region for this version pair (LAU population of the reference year)"
 
@@ -366,6 +374,8 @@ models:
         description: "Output value: the original value if available, otherwise the linear interpolation (method 1). Always populated for backward compatibility; no values outside the known year range."
         tests:
           - not_null
+      - name: is_estimated
+        description: "True if the underlying harmonized value is an estimate (see mart_nuts3_sociodata_harmonized.is_estimated); interpolated rows inherit it if any original value of the series is an estimate"
       - name: is_interpolated
         description: "True if the value was imputed (no original value); false if it is the original value from mart_nuts3_sociodata_harmonized"
         tests:

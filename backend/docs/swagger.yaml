@@ -219,6 +219,14 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
+        type: boolean
       is_interpolated:
         example: true
         type: boolean
@@ -290,6 +298,14 @@ definitions:
         type: integer
       has_valid_value:
         example: true
+        type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
         type: boolean
       is_interpolated:
         example: true
@@ -363,6 +379,14 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
+        type: boolean
       is_interpolated:
         example: true
         type: boolean
@@ -434,6 +458,14 @@ definitions:
         type: integer
       has_valid_value:
         example: true
+        type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
         type: boolean
       is_interpolated:
         example: true
@@ -519,6 +551,14 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
+        type: boolean
       is_interpolated:
         example: true
         type: boolean
@@ -591,6 +631,14 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
+        type: boolean
       is_interpolated:
         example: true
         type: boolean
@@ -662,6 +710,14 @@ definitions:
         type: integer
       has_valid_value:
         example: true
+        type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
         type: boolean
       is_interpolated:
         example: true
@@ -972,6 +1028,14 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
+        type: boolean
       is_interpolated:
         example: true
         type: boolean
@@ -1043,6 +1107,14 @@ definitions:
         type: integer
       has_valid_value:
         example: true
+        type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
         type: boolean
       is_interpolated:
         example: true
@@ -1242,6 +1314,14 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
+        type: boolean
       is_interpolated:
         example: true
         type: boolean
@@ -1414,6 +1494,14 @@ definitions:
         type: integer
       has_valid_value:
         example: true
+        type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
         type: boolean
       is_interpolated:
         example: true
@@ -1671,6 +1759,13 @@ definitions:
       dataset_slug:
         example: wohngeldhaushalte
         type: string
+      is_estimated:
+        description: |-
+          true = the value is an estimate: converted across NUTS versions via a
+          crosswalk pair with Gemeinden that straddle region boundaries and are
+          assigned wholly by majority (e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+        example: false
+        type: boolean
       is_interpolated:
         description: true = value was imputed (no original value exists for this year).
         example: true
@@ -1810,6 +1905,14 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
+        type: boolean
       is_interpolated:
         example: true
         type: boolean
@@ -1881,6 +1984,14 @@ definitions:
         type: integer
       has_valid_value:
         example: true
+        type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
         type: boolean
       is_interpolated:
         example: true
@@ -1978,6 +2089,14 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
+        type: boolean
       is_interpolated:
         example: true
         type: boolean
@@ -2050,6 +2169,14 @@ definitions:
       has_valid_value:
         example: true
         type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
+        type: boolean
       is_interpolated:
         example: true
         type: boolean
@@ -2121,6 +2248,14 @@ definitions:
         type: integer
       has_valid_value:
         example: true
+        type: boolean
+      is_estimated:
+        description: |-
+          IsEstimated: the value was converted across NUTS versions via a crosswalk
+          pair that rests on an estimate (Gemeinden straddling region boundaries
+          assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
+          Populated only with fill_gaps=true on NUTS datasets.
+        example: false
         type: boolean
       is_interpolated:
         example: true

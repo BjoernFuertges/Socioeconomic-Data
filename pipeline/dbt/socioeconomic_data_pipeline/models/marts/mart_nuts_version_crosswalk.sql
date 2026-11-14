@@ -53,6 +53,9 @@
   below the 1 % area threshold of int_nuts_spatial_crosswalk) is the
   matching weight for rows that need no crosswalk (identity rows there).
 
+  is_estimate marks pairs whose weight is an estimate (see raw_weights):
+  consumers propagate it as is_estimated on harmonized values.
+
   Example boundary reform:
     Kreis A (2016) spatially overlaps Kreis X and Kreis Y (2021). If 70 % of
     A's inhabitants live in the part that becomes X and 30 % in the part
@@ -97,6 +100,7 @@ joined as (
         s.target_nuts_id,
         s.area_fraction,
         lpw.lau_population,
+        coalesce(lpw.uncertain_population, 0) as uncertain_population,
         coalesce(sp.source_population, rp.region_population, 0) as source_population,
         coalesce(rp.region_population, 0)                       as region_population,
         coalesce(sum(lpw.lau_population) over (
@@ -138,7 +142,19 @@ raw_weights as (
         case
             when group_population > 0 then coalesce(lau_population, 0)
             else area_fraction
-        end as share_basis
+        end as share_basis,
+        -- Estimate flag: the pair weight rests on an unreliable allocation.
+        --  - 'area' basis: the whole source group has no LAU population
+        --  - 'population' basis: at least var crosswalk_estimate_min_share
+        --    of the pair's inhabitants come from Gemeinden that straddle a
+        --    region boundary and are assigned wholly by majority (e.g.
+        --    incorporations such as Potsdam 2003, Sachsen-Anhalt 2007)
+        case
+            when group_population > 0 then
+                coalesce(lau_population, 0) > 0
+                and uncertain_population >= {{ var('crosswalk_estimate_min_share', 0.05) }} * lau_population
+            else true
+        end as is_estimate
     from joined
 )
 
@@ -156,6 +172,7 @@ select
     absolute_weight::double precision as absolute_weight,
     weight_basis,
     source_population::double precision as source_population,
-    1                  as n_hops
+    1                  as n_hops,
+    is_estimate
 from raw_weights
 order by source_version, target_version, source_nuts_id, target_nuts_id

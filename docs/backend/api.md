@@ -427,6 +427,10 @@ missing, transparently flagged instead of a single, silently-chosen number:
   linear-interpolation estimate if the year was missing).
 - `is_interpolated` flags whether the row was estimated rather than an
   original observation.
+- `is_estimated` (NUTS datasets) flags values converted to another NUTS
+  version via a crosswalk pair that rests on an estimate (municipalities
+  straddling Kreis boundaries, e.g. Potsdam 2003, Sachsen-Anhalt 2007), see
+  [dbt: Interpolation methods](../pipeline/dbt.md#interpolation-methods-and-evaluation).
 - `value_linear` / `value_peer_trend` are only populated for interpolated
   rows and expose **both** estimation methods side by side (linear
   interpolation vs. peer-region trend carry-forward, see

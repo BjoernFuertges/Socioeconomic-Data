@@ -20,23 +20,12 @@
   so the result would be purely area-based despite being called
   "population-weighted".
 
-  Instead, each Gemeinde's population is distributed over the (source,
-  target) region pairs it overlaps, proportional to the area of
-  gemeinde ∩ source ∩ target:
+  Instead, each Gemeinde's whole population goes to the (source, target)
+  region pair it lies in (majority assignment per version, see
+  int_lau_nuts3_membership):
 
-    lau_population(S, T) = sum over Gemeinden g of
-                           pop(g) * area(g ∩ S ∩ T) / area(g)
-
-  (areal interpolation within a Gemeinde, i.e. population is assumed to be
-  spread evenly over its territory). The pieces come from
-  int_lau_nuts3_membership:
-    - Gemeinde wholly in one region in both versions (the vast majority):
-      full population to that pair, no geometry work.
-    - split in only one of the two versions: weight_share of that side
-      (g ∩ S ∩ T = g ∩ T if g lies in S).
-    - split in both versions: the exact triple intersection is computed
-      here (only for these few Gemeinden), renormalized per Gemeinde so its
-      population is fully conserved.
+    lau_population(S, T) = sum of pop(g) over Gemeinden g in S (version A)
+                           and T (version B)
 
   Reference year per version pair: the younger of the two NUTS version
   years minus 1 (population just before the newer version took effect),
@@ -95,7 +84,7 @@ population as (
     from {{ ref('int_lau_population_geo') }}
 ),
 
--- Every (Gemeinde, source piece, target piece) combination per version pair
+-- Every Gemeinde with its source and target region per version pair
 pairs as (
     select
         r.source_version,
@@ -105,8 +94,11 @@ pairs as (
         pop.population_count,
         src.nuts_id                          as source_nuts_id,
         tgt.nuts_id                          as target_nuts_id,
-        src.is_split and tgt.is_split        as both_split,
-        src.weight_share * tgt.weight_share  as share
+        -- the Gemeinde lies (by area) not clearly inside its assigned region
+        -- in at least one of the two versions: its whole population is
+        -- allocated by majority assignment, so the pair weight is an estimate
+        least(src.area_share, tgt.area_share) < {{ var('crosswalk_uncertain_area_share', 0.9) }}
+                                             as is_uncertain
     from resolved r
     join population pop
         on pop.year = r.pop_year
@@ -120,79 +112,10 @@ pairs as (
         and tgt.version_year = r.target_version
 ),
 
--- NUTS-3 geometries per version, only needed for Gemeinden split in both
--- versions (same source as int_lau_nuts3_membership)
-nuts_de as (
-    select
-        vy.version_year,
-        g.nuts_id,
-        g.geometry_3035
-    from nuts_version_years vy
-    join {{ ref('mart_nuts_geometry_historized') }} g
-        on  g.levl_code    = 3
-        and g.country_code = 'DE'
-        and g.has_valid_geometry
-        and g.valid_from <= vy.version_year
-        and (g.valid_to is null or g.valid_to >= vy.version_year)
-),
-
-triple as (
-    select
-        p.source_version,
-        p.target_version,
-        p.gisco_id,
-        p.source_nuts_id,
-        p.target_nuts_id,
-        ST_Area(
-            ST_Intersection(
-                ST_Intersection(l.geometry_3035, s.geometry_3035),
-                t.geometry_3035
-            )
-        ) as triple_area
-    from pairs p
-    join {{ ref('int_lau_population_geo') }} l
-        on  l.gisco_id = p.gisco_id
-        and l.year     = p.year
-    join nuts_de s
-        on  s.version_year = p.source_version
-        and s.nuts_id      = p.source_nuts_id
-    join nuts_de t
-        on  t.version_year = p.target_version
-        and t.nuts_id      = p.target_nuts_id
-    where p.both_split
-),
-
-triple_share as (
-    select
-        source_version,
-        target_version,
-        gisco_id,
-        source_nuts_id,
-        target_nuts_id,
-        triple_area / nullif(
-            sum(triple_area) over (partition by source_version, target_version, gisco_id), 0
-        ) as share
-    from triple
-),
-
 pieces as (
-    select
-        p.source_version,
-        p.target_version,
-        p.source_nuts_id,
-        p.target_nuts_id,
-        p.population_count * case
-            when p.both_split then coalesce(ts.share, 0)
-            else p.share
-        end as population_piece
-    from pairs p
-    left join triple_share ts
-        on  p.both_split
-        and ts.source_version = p.source_version
-        and ts.target_version = p.target_version
-        and ts.gisco_id       = p.gisco_id
-        and ts.source_nuts_id = p.source_nuts_id
-        and ts.target_nuts_id = p.target_nuts_id
+    select source_version, target_version, source_nuts_id, target_nuts_id,
+           population_count as population_piece, is_uncertain
+    from pairs
 )
 
 select
@@ -200,7 +123,11 @@ select
     target_version,
     source_nuts_id,
     target_nuts_id,
-    sum(population_piece)  as lau_population
+    sum(population_piece)  as lau_population,
+    -- inhabitants of Gemeinden assigned wholly although they straddle a
+    -- region boundary (area share of the assigned region below
+    -- var crosswalk_uncertain_area_share) in the source or target version
+    coalesce(sum(population_piece) filter (where is_uncertain), 0) as uncertain_population
 from pieces
 group by source_version, target_version, source_nuts_id, target_nuts_id
 having sum(population_piece) > 0

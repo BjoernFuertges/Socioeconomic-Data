@@ -16,7 +16,7 @@ models:
         data_type: geometry
 
   - name: int_lau_nuts3_membership
-    description: "Split of each German LAU across the NUTS-3 regions it overlaps, per NUTS boundary version and population year (one row per piece; Gemeinden with >= var lau_nuts3_snap_share of their area in one region are snapped wholly to it)."
+    description: "Majority assignment of each German LAU to the NUTS-3 region holding the largest share of its area, per NUTS boundary version and population year (one row per LAU/year/version)."
     columns:
       - name: gisco_id
         description: "Unique LAU identifier from GISCO"
@@ -37,33 +37,19 @@ models:
           - not_null
 
       - name: nuts_id
-        description: "NUTS-3 region this piece of the LAU lies in"
+        description: "NUTS-3 region holding the largest share of the LAU"
         data_type: text
         tests:
           - not_null
 
       - name: area_share
-        description: "ST_Area(LAU ∩ region) / ST_Area(LAU)"
-
-      - name: weight_share
-        description: "Share of the LAU population attributed to this region (1 if snapped; otherwise area share renormalized over the covered area, summing to 1 per LAU/year/version)"
-        tests:
-          - not_null
-
-      - name: is_split
-        description: "True if the LAU is genuinely split across several regions of this version"
-        tests:
-          - not_null
-
-      - name: is_largest_share
-        description: "True for the region with the largest area share (the former single assignment)"
+        description: "ST_Area(LAU ∩ region) / ST_Area(LAU) of the assigned region (informational)"
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns:
             - gisco_id
             - year
             - version_year
-            - nuts_id
 
   - name: int_lau_nuts3_population_weight
     description: "Population-based weight for each NUTS-3 source/target region pair across NUTS boundary versions."
