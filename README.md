@@ -250,3 +250,9 @@ flowchart LR
 
     mart_arb & mart_lau & mart_dq --> api
 ```
+## Lizenz
+
+Der Quellcode steht unter der [Apache License 2.0](LICENSE) (siehe auch [NOTICE](NOTICE)).
+Die Lizenz gilt **nicht** für die bereitgestellten Daten: Diese unterliegen den Lizenzen ihrer
+Datenquellen (INKAR/BBSR, Bundesagentur für Arbeit u. a.), die in den Metadaten der Datensätze
+(`license`, `license_url`) ausgewiesen werden.

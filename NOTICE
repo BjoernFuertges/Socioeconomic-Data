@@ -1,0 +1,17 @@
+Sozioökonomische Daten (Socioeconomic-Data)
+Copyright 2026 Björn Fürtges
+
+Dieses Produkt enthält Software, die unter der Apache License 2.0 steht
+(siehe LICENSE).
+
+Lizenzhinweis zu den Daten:
+Die Lizenz dieses Repositorys gilt nur für den Quellcode. Die von der
+Pipeline verarbeiteten und bereitgestellten Daten (z. B. INKAR/BBSR,
+Bundesagentur für Arbeit, Geodaten) unterliegen den Lizenzen ihrer
+jeweiligen Datenquellen. Diese werden in den Metadaten der Datensätze
+(Felder license / license_url) ausgewiesen.
+
+Verwendete Drittsoftware (Auswahl, jeweils unter eigener Lizenz):
+- psycopg2-binary (LGPL mit Ausnahmen)
+- certifi (MPL-2.0)
+- PostGIS (GPL-2.0, nur als separater Container betrieben)
