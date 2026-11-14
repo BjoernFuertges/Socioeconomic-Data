@@ -99,7 +99,8 @@ with_values as (
         a.dataset_slug,
         a.target_version,
         a.year,
-        s.harmonized_value as value
+        s.harmonized_value as value,
+        s.is_estimated     as est
     from all_years a
     left join source s
         on  s.target_nuts_id  = a.nuts3_id
@@ -257,6 +258,15 @@ interpolated as (
         n.value is null
             and n.prev_value is not null
             and n.next_value is not null                      as is_interpolated,
+        -- Estimate flag of the harmonized value; interpolated / carried
+        -- rows inherit it if any original value of the series is an estimate.
+        coalesce(
+            n.est,
+            bool_or(n.est) over (
+                partition by n.nuts3_id, n.dataset_slug, n.target_version
+            ),
+            false
+        )                                                     as is_estimated,
         -- Method 1: only filled for actually interpolated rows, otherwise
         -- identical to "value" above (no duplicate needed).
         case
