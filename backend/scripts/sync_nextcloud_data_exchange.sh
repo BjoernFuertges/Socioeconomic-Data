@@ -31,8 +31,11 @@ common_args=(--delete-during --checksum)
 #    Remove this exclude once the folder has been uploaded to Nextcloud (data-exchange/TODO.md).
 #  - lau_population_<year>.csv: written by pipeline/dlt/fetch_lau_population.py into
 #    $GEODATA_BASE_PATH/statistics/lokale_verwaltungseinheiten_eu/output/ (= the geodata destination).
+#  - _downloads/: download cache of fetch_lau_population.py ($GEODATA_BASE_PATH/_downloads/lau_<year>.xlsx),
+#    written by the pipeline container (root), so the deploy user could not delete it anyway
+#    ("permission denied", sync aborts).
 local_excludes=(--exclude "/sv_beschaeftigte/results_sv_beschaeftigte_kreise/**")
-geodata_excludes=(--exclude "/statistics/lokale_verwaltungseinheiten_eu/output/lau_population_*.csv")
+geodata_excludes=(--exclude "/statistics/lokale_verwaltungseinheiten_eu/output/lau_population_*.csv" --exclude "/_downloads/**")
 
 if [[ -n "${RCLONE_CONFIG_FILE:-}" ]]; then
   common_args+=("--config" "${RCLONE_CONFIG_FILE}")
