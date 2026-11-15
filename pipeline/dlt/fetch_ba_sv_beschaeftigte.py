@@ -74,7 +74,9 @@ FIRST_YEAR = 2007  # first month of the BA series is January 2007
 DATASET_SUBDIR = Path("sv_beschaeftigte") / "results_sv_beschaeftigte_kreise"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUT_DIR = REPO_ROOT / "data-exchange" / "1_friedrich-bjoern"
-DEFAULT_NUTS_LOOKUP = DEFAULT_OUT_DIR / "auszubildende" / "results_auszubildende_kreise" / "mapped_pairs.csv"
+# relative to the data-exchange root (--out-dir / $DATA_EXCHANGE_PATH): in the pipeline container the
+# script lives in /app/dlt, so a path derived from REPO_ROOT would point to /data-exchange (missing)
+NUTS_LOOKUP_SUBPATH = Path("auszubildende") / "results_auszubildende_kreise" / "mapped_pairs.csv"
 LOOKUP_GEODATA_YEAR = 2024
 
 # BA Kreisschlüssel -> Kreisschlüssel of the NUTS-2024 Kreis it belonged to.
@@ -290,12 +292,14 @@ def main() -> None:
         default=os.environ.get("DATA_EXCHANGE_PATH") or str(DEFAULT_OUT_DIR),
         help=f"DATA_EXCHANGE_PATH-equivalent root; output lands under <out-dir>/{DATASET_SUBDIR}/",
     )
-    parser.add_argument("--nuts-lookup", default=str(DEFAULT_NUTS_LOOKUP),
-                        help="mapped_pairs.csv of an existing NUTS-2024 Kreis dataset (geodata_id_ars -> geodata_id_nuts)")
+    parser.add_argument("--nuts-lookup",
+                        help="mapped_pairs.csv of an existing NUTS-2024 Kreis dataset (geodata_id_ars -> geodata_id_nuts); "
+                             f"default: <out-dir>/{NUTS_LOOKUP_SUBPATH}")
     parser.add_argument("--cache-dir", help="Store/reuse raw API responses here (kreise.json, kreis_z/<BA_SCHL>.csv)")
     parser.add_argument("--last-year", type=int, default=2025, help="Last complete year to include (default: 2025)")
     parser.add_argument("--force", action="store_true", help="Rebuild even if the output already exists")
     args = parser.parse_args()
+    nuts_lookup_path = Path(args.nuts_lookup) if args.nuts_lookup else Path(args.out_dir) / NUTS_LOOKUP_SUBPATH
 
     out_dir = Path(args.out_dir) / DATASET_SUBDIR
     csv_path, meta_path, unmapped_path = out_dir / "mapped_pairs.csv", out_dir / "meta.yaml", out_dir / "unmapped.csv"
@@ -305,7 +309,7 @@ def main() -> None:
 
     years = list(range(FIRST_YEAR, args.last_year + 1))
     cache_dir = Path(args.cache_dir) if args.cache_dir else None
-    lookup = load_nuts_lookup(Path(args.nuts_lookup))
+    lookup = load_nuts_lookup(nuts_lookup_path)
     kreise = fetch_kreise(cache_dir)
     logger.info(f"{len(kreise)} BA Kreise, {len(lookup)} NUTS-2024 Kreise in lookup")
 
@@ -348,7 +352,7 @@ def main() -> None:
         match = lookup.get(key)
         if match is None:
             unmapped.append([key, names_by_key[key], f"no NUTS-{LOOKUP_GEODATA_YEAR} match for ARS {key}"])
-            logger.warning(f"Unmapped BA Kreis {key} {names_by_key[key]!r}: not in {args.nuts_lookup}")
+            logger.warning(f"Unmapped BA Kreis {key} {names_by_key[key]!r}: not in {nuts_lookup_path}")
             continue
         vals = values_by_key[key]
         missing_values += sum(1 for y in years if y not in vals)
