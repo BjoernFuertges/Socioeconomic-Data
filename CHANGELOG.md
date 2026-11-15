@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/BjoernFuertges/Socioeconomic-Data/compare/v1.0.1...v1.0.2) (2026-11-15)
+
+
+### Bug Fixes
+
+* **scripts:** nextcloud sync cache ([f721531](https://github.com/BjoernFuertges/Socioeconomic-Data/commit/f72153168e81ccb28623998af55020629d35d5eb))
+
 ## [1.0.1](https://github.com/BjoernFuertges/Socioeconomic-Data/compare/v1.0.0...v1.0.1) (2026-11-15)
 
 
