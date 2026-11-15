@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/BjoernFuertges/Socioeconomic-Data/compare/v1.0.0...v1.0.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* **dlt:** path fix ([8e8ddaa](https://github.com/BjoernFuertges/Socioeconomic-Data/commit/8e8ddaaa0e86ef4e323e3263268c28b3c95a632a))
+
 # 1.0.0 (2026-11-15)
 
 
