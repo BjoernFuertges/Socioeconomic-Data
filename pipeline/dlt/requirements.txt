@@ -2,7 +2,7 @@ dbt-postgres==1.9.1
 beautifulsoup4==4.15.0
 certifi==2025.8.3
 charset-normalizer==3.4.3
-click==8.2.1
+click==8.5.1
 dlt==1.16.0
 fsspec==2025.9.0
 gitdb==4.0.12
