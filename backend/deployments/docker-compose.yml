@@ -28,7 +28,7 @@ services:
       - scheduler-socket
 
   traefik:
-    image: traefik:v3.6.5
+    image: traefik:v3.7.0
     restart: always
     command:
       - "--providers.docker=true"
