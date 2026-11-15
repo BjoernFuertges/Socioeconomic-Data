@@ -6,7 +6,7 @@
         strategy='check',
         check_cols=['value'],
         target_schema='snapshots',
-        invalidate_hard_deletes=false
+        hard_deletes='ignore'
     )
 }}
 

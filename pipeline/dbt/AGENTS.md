@@ -126,10 +126,21 @@ and `mart_nuts0_summary` are views):
     [AGENTS.md](../../AGENTS.md)).
     Each entry carries a `measure_type` ('sum' for counts, 'weighted_avg'
     for rates/averages) that decides how values are combined when several
-    source regions map onto one target region. NUTS-3 entries also carry
-    `valid_when` (the staging `has_valid_value` rule, feeding the mart's
-    `has_valid_value`; checked by
-    `tests/assert_harmonized_validity_matches_staging.sql`). The aggregation marts
+    source regions map onto one target region. The NUTS-3 mart reads the
+    `stg_<slug>_kreise` models (entry: `staging` + `value_col`), not
+    `loaded_data`, and takes their `has_valid_value` over unchanged - the
+    validity rule exists only in staging. Raw-row collisions on
+    `(geodata_id_nuts, year)` (which the snapshot would silently collapse) fail
+    the `unique_combination_of_columns` test on each `results_*_kreise` source
+    in `models/sources.yml`; current snapshot rows no longer in `loaded_data`
+    (kept because `hard_deletes: ignore`) are flagged by
+    `tests/warn_snapshot_rows_missing_in_source.sql`. The Kreis roll-ups
+    (`mart_nuts012_dataset_aggregate`, `mart_agentur_dataset_aggregate`,
+    `mart_nuts0/1/2_summary`) leave the value as is but expose
+    `expected_region_count` + `is_complete` (resp. `bevoelkerung_/
+    arbeitslose_is_complete`): Kreise expected in the reference version
+    (`int_nuts_expected_kreis_count` / the Agentur crosswalk) vs. Kreise that
+    contributed. The aggregation marts
     (`mart_nuts012_dataset_aggregate`, `mart_agentur_dataset_aggregate`,
     custom regions) add 'weighted_avg_employees' for values per employed
     person (`arbeitsvolumen`, `bruttoverdienst`; `auszubildende` with

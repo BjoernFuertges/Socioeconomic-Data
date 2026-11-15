@@ -261,7 +261,7 @@ func (h *Handler) regionDataNuts(ctx context.Context, regionID string, scope reg
 		return rows, nil
 	}
 	query := `SELECT 'nuts' AS region_type, nuts_id AS region_id, dataset_slug, year, NULL::int AS month, value,
-		true AS is_computed, false AS is_interpolated, NULL::text AS aggregation_method, NULL::text AS value_kind, source_region_count
+		true AS is_computed, false AS is_interpolated, NULL::text AS aggregation_method, NULL::text AS value_kind, source_region_count, expected_region_count, is_complete
 		FROM transformed_data.mart_nuts012_dataset_aggregate
 		WHERE nuts_id = $1`
 	args := []interface{}{id}
@@ -408,7 +408,7 @@ func (h *Handler) regionDataAgentur(ctx context.Context, baSchl string, scope re
 		picked, all := pickSlugs(slugs, isNutsHarmonizedSlug)
 		if all || len(picked) > 0 {
 			query := `SELECT 'agentur' AS region_type, ba_schl AS region_id, dataset_slug, year, NULL::int AS month, value,
-				true AS is_computed, false AS is_interpolated, aggregation_method, value_kind, source_region_count
+				true AS is_computed, false AS is_interpolated, aggregation_method, value_kind, source_region_count, expected_region_count, is_complete
 				FROM transformed_data.mart_agentur_dataset_aggregate
 				WHERE ba_schl = $1`
 			args := []interface{}{baSchl}

@@ -42,6 +42,14 @@
   just because its employee count is missing) - e.g. auszubildende before
   2007, when sv_beschaeftigte starts. Same "complete or fall back" rule as
   in mart_agentur_dataset_aggregate (whose fallback is the area weight).
+
+  Coverage: value is computed over whatever Kreise have a value that year and
+  is NOT corrected for missing ones - a 'sum' over an incomplete set of
+  Kreise is simply too small. expected_region_count (Kreise of the region in
+  the reference version, int_nuts_expected_kreis_count) and is_complete (every
+  one of them contributed) let consumers tell a complete total from a
+  partial one; for averages is_complete = false only means "not all Kreise
+  represented".
 */
 
 {% set source_datasets = [
@@ -71,6 +79,13 @@ with harmonized as (
         harmonized_value as value
     from {{ ref('mart_nuts3_sociodata_harmonized') }}
     where target_version = {{ var('reference_nuts_version') }}
+),
+
+-- Kreise of the reference version (coverage flag, see header)
+reference_kreise as (
+    select distinct nuts_id
+    from {{ ref('int_nuts3_de_geometry') }}
+    where version_year = {{ var('reference_nuts_version') }}
 ),
 
 population as (
@@ -105,7 +120,8 @@ weighted as (
         h.year,
         h.value,
         p.bevoelkerung as weight,
-        e.employees    as emp_weight
+        e.employees    as emp_weight,
+        (rk.nuts_id is not null) as is_reference_kreis
     from harmonized h
     left join population p
         on  p.nuts_id = h.nuts_id
@@ -116,6 +132,8 @@ weighted as (
         on  e.employee_slug = eb.employee_slug
         and e.nuts_id       = h.nuts_id
         and e.year          = h.year
+    left join reference_kreise rk
+        on  rk.nuts_id = h.nuts_id
 ),
 
 {% for lvl, prefix_len in [(0, 2), (1, 3), (2, 4)] %}
@@ -126,6 +144,8 @@ level_{{ lvl }} as (
         dataset_slug,
         year,
         count(*) as source_region_count,
+        count(distinct nuts_id) filter (where is_reference_kreis and value is not null)
+            as contributing_reference_count,
         case dataset_slug
         {% for ds in source_datasets %}
             when '{{ ds.slug }}' then
@@ -154,10 +174,30 @@ level_{{ lvl }} as (
         end as value
     from weighted
     group by left(nuts_id, {{ prefix_len }}), dataset_slug, year
-){% if not loop.last %},{% endif %}
+),
 {% endfor %}
 
+all_levels as (
 {% for lvl, prefix_len in [(0, 2), (1, 3), (2, 4)] %}
-select * from level_{{ lvl }}
-{% if not loop.last %}union all{% endif %}
+    select * from level_{{ lvl }}
+    {% if not loop.last %}union all{% endif %}
 {% endfor %}
+)
+
+select
+    a.nuts_level,
+    a.nuts_id,
+    a.dataset_slug,
+    a.year,
+    a.source_region_count,
+    a.value,
+    coalesce(x.expected_region_count, 0) as expected_region_count,
+    coalesce(
+        x.expected_region_count > 0
+        and a.contributing_reference_count = x.expected_region_count,
+        false
+    ) as is_complete
+from all_levels a
+left join {{ ref('int_nuts_expected_kreis_count') }} x
+    on  x.nuts_level = a.nuts_level
+    and x.nuts_id    = a.nuts_id

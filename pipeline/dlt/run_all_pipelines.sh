@@ -56,6 +56,16 @@ python load_arbeitslosenzahlen_afa.py
 echo "=== dbt ==="
 cd "${DBT_PROJECT_DIR:-/app/dbt/socioeconomic_data_pipeline}"
 dbt deps
+
+# Source tests (e.g. unique (geodata_id_nuts, year) per results_*_kreise) must
+# pass BEFORE the snapshot: dbt snapshot reduces duplicate keys to one row
+# silently, so a collision is no longer visible afterwards. set -e aborts here.
+# cautious: only tests that depend solely on the sources; otherwise model tests with a
+# source as second parent (relationships to stg_*) are pulled in and fail on a fresh DB.
+echo "=== dbt test (sources) ==="
+dbt test --select "source:loaded_data" --indirect-selection=cautious
+
+echo "=== dbt snapshot ==="
 dbt snapshot
 
 echo "=== dbt run ==="

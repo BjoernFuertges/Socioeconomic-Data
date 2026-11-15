@@ -29,7 +29,7 @@ python load_agenturbezirke_geodata.py
 python fetch_ba_sv_beschaeftigte.py  # writes the sv_beschaeftigte input files, skips if present
 python load_soziodata_generic.py <dataset>/results_<dataset>_kreise
 
-# Run all loaders except load_beschaeftigungsquote.py, then dbt deps/snapshot/run
+# Run all loaders except load_beschaeftigungsquote.py, then dbt deps/source tests/snapshot/run
 # (deployed pipeline container; dbt dir defaults to /app/dbt/..., override via DBT_PROJECT_DIR):
 ./run_all_pipelines.sh
 ```
@@ -142,7 +142,7 @@ needs that schema added to `backend/scripts/ensure_pipeline_role.sql` first
   without touching any pipeline data.
 - `run_all_pipelines.sh` is the single source of truth for pipeline
   ordering: geodata + all `results_*_kreise` datasets load first, then
-  `dbt deps && dbt snapshot && dbt run` runs against the freshly loaded
+  `dbt deps && dbt test --select source:loaded_data --indirect-selection=cautious && dbt snapshot && dbt run` runs against the freshly loaded
   data. Any macro relying on `adapter.get_columns_in_relation` (e.g. the
   snapshot query macro) requires this ordering — dbt must never run before
   the corresponding dlt load in a given pipeline invocation.

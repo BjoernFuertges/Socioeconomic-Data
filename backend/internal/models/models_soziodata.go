@@ -5,15 +5,19 @@ package models
 // SozioBaseData holds the common fields of all Kreis datasets.
 // They correspond to the base columns in the dbt staging models.
 type SozioBaseData struct {
-	OriginalID1     string `json:"original_id_1" db:"original_id_1" example:"01001"`
-	OriginalName    string `json:"original_name" db:"original_name" example:"Flensburg, Stadt"`
-	GeodataName     string `json:"geodata_name" db:"geodata_name" example:"Flensburg"`
-	GeodataIDNUTS   string `json:"geodata_id_nuts" db:"geodata_id_nuts" example:"DEF01"`
-	GeodataIDLAU    string `json:"geodata_id_lau" db:"geodata_id_lau" example:"01001000"`
-	GeodataIDARS    string `json:"geodata_id_ars" db:"geodata_id_ars" example:"01001"`
-	Mapper          string `json:"mapper" db:"mapper" example:"exact_id"`
-	Parameter       string `json:"parameter" db:"parameter" example:"id_ars"`
-	GeodataLevel    string `json:"geodata_level" db:"geodata_level" example:"NUTS_3"`
+	OriginalID1   string `json:"original_id_1" db:"original_id_1" example:"01001"`
+	OriginalName  string `json:"original_name" db:"original_name" example:"Flensburg, Stadt"`
+	GeodataName   string `json:"geodata_name" db:"geodata_name" example:"Flensburg"`
+	GeodataIDNUTS string `json:"geodata_id_nuts" db:"geodata_id_nuts" example:"DEF01"`
+	GeodataIDLAU  string `json:"geodata_id_lau" db:"geodata_id_lau" example:"01001000"`
+	GeodataIDARS  string `json:"geodata_id_ars" db:"geodata_id_ars" example:"01001"`
+	Mapper        string `json:"mapper" db:"mapper" example:"exact_id"`
+	Parameter     string `json:"parameter" db:"parameter" example:"id_ars"`
+	GeodataLevel  string `json:"geodata_level" db:"geodata_level" example:"NUTS_3"`
+	// GeodataYear is the boundary version (vintage) of the SOURCE row. With
+	// fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+	// carry the target version instead. The reliable column for the target
+	// version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
 	GeodataYear     int    `json:"geodata_year" db:"geodata_year" example:"2024"`
 	Year            int    `json:"year" db:"year" example:"2020"`
 	ObservationDate string `json:"observation_date" db:"observation_date" example:"2020-01-01"`

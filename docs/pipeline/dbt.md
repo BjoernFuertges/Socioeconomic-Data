@@ -81,7 +81,8 @@ flowchart TB
   goes to the resulting (source, target) pair. This majority assignment was
   evaluated against 648 Kreis versions with known truth and is clearly more
   accurate than area-proportional splitting
-  (`analysis/data-analysis/nuts3_crosswalk_evaluation.ipynb`). Back-calculations
+  (`analysis/data-analysis/nuts3_crosswalk_evaluation.ipynb`). The thesis chapter on
+  methodology (`03_Methodologie.tex`) describes the same method. Back-calculations
   to 2003/2006 for municipalities formed by incorporations (e.g. Potsdam,
   Sachsen-Anhalt) are estimates; no ground truth exists there.
 - **`mart_nuts_version_crosswalk`** – combines area and population weight.
@@ -144,11 +145,16 @@ flowchart TB
   Agenturbezirke and custom regions alike; only without population the area
   weight follows). Weights are never mixed within a row. `sv_beschaeftigte` starts in
   2007, so `auszubildende` 1995–2006 always uses the fallback.
-  `has_valid_value` is false when any contributing source value fails the
-  `has_valid_value` rule of its `stg_<slug>_kreise` model (re-stated as
-  `valid_when` per dataset; `harmonized_value` itself is unchanged);
-  `GET /metrics` skips these rows. The singular test
-  `assert_harmonized_validity_matches_staging` keeps both rules in sync.
+  The mart reads the `stg_<slug>_kreise` models (current snapshot state), not
+  `loaded_data` directly. `has_valid_value` is false when any contributing
+  source value fails the `has_valid_value` rule of its staging model (taken
+  over unchanged, the rule exists only there; `harmonized_value` itself is
+  unchanged); `GET /metrics` skips these rows. Two raw rows on the same
+  `(geodata_id_nuts, year)` would be collapsed to one by the snapshot, so a
+  `unique_combination_of_columns` test on every `results_*_kreise` source
+  fails instead. Because snapshots keep `hard_deletes: ignore`,
+  rows removed from `loaded_data` stay current in staging and in this mart;
+  `warn_snapshot_rows_missing_in_source` warns about them.
 - **`mart_nuts3_timeseries_interpolated`** – fills missing years per region
   and dataset with two alternative imputation methods (no extrapolation
   beyond the known time range), see below.
@@ -162,6 +168,14 @@ flowchart TB
   `mart_nuts012_dataset_aggregate`) reads its indicators from the harmonized mart with
   `target_version = 2024`, not from staging per `geodata_year`, so one row
   never mixes Kreis datasets delivered on different NUTS vintages.
+- **Coverage of Kreis roll-ups** – `mart_nuts012_dataset_aggregate`,
+  `mart_agentur_dataset_aggregate` and `mart_nuts0/1/2_summary` sum/average
+  only the Kreise that have a value; a missing Kreis is not imputed, so a
+  `sum` is then too small. They expose `expected_region_count` (Kreise of the
+  region in the reference NUTS version, `int_nuts_expected_kreis_count`, resp.
+  of the Agenturbezirk in `mart_agentur_nuts3_crosswalk`) and `is_complete`
+  (the summaries: `bevoelkerung_is_complete` / `arbeitslose_is_complete`);
+  the value itself is unchanged.
 
 ### Interpolation methods and evaluation
 
@@ -259,6 +273,23 @@ flowchart TB
     lau_harmonized --> lau_interpolated["mart_lau_timeseries_interpolated\n(gap-free yearly series, per Kreis peer group)"]
     lau_link --> lau_integrated["lau_integrated.nuts3_id\n(declared source column, else spatial fallback)"]
 ```
+
+- **`mart_lau_geometry_historized`** – one row per `gisco_id` and
+  geometry period (islands technique over the vintages of
+  `stg_lau_geometry`). The comparison runs over the *existing* rows of a
+  `gisco_id`, not over consecutive vintage years: if a municipality has no
+  row in a middle vintage and the same geometry before and after, both
+  sides are merged into one continuous period, and a vintage missing right
+  before a geometry change is covered by the earlier period's `valid_to`.
+  This is deliberately **not** split; instead `has_gap` / `gap_years`
+  flag periods whose `[valid_from, coalesce(valid_to, max_vintage_year)]`
+  range contains vintage years (years present for any LAU in the source)
+  without a row for that `gisco_id`. Downstream models (`lau_integrated`,
+  `int_lau_geometry_canonical` → `int_lau_spatial_crosswalk` /
+  `int_lau_nuts3_spatial_link`, `mart_lau_version_crosswalk`) and the
+  backend therefore still treat such periods as valid in the missing
+  years; consumers that must not bridge them can filter on the flag. Why the rows are missing (source data, load, staging filter, ID
+  change) is not determined by the model.
 
 - **`int_lau_spatial_crosswalk`** – area intersections between LAU
   geometries of *different* `gisco_id`s only (real mergers/splits). To

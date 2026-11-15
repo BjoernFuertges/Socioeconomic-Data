@@ -94,9 +94,28 @@ aggregation itself still happens in dbt.
   `lau_population_sum` / `lau_beschaeftigungsquote_weighted_avg`).
   Their `source_region_count` is the number of Gemeinden behind the value
   (population: with a population value; quote: with a valid quote).
+  The Kreis aggregates (NUTS-0/1/2, Agenturbezirke) additionally carry
+  `expected_region_count` and `is_complete` (empty for other rows); see
+  [Coverage flags](#coverage-flags-of-aggregated-sums).
 - `scope=both` (the default) returns both in one file; `is_computed`
   separates them.
 - NUTS-0/1/2 have no raw rows, LAU has no aggregated ones.
+
+### Coverage flags of aggregated sums
+
+Aggregates over Kreise are **not corrected** for Kreise without a value.
+`GET /nuts/{nuts_id}/dataset-aggregate/{slug}`,
+`GET /agenturbezirke/.../dataset-aggregate...` and the aggregated rows of the
+region export carry `expected_region_count` (Kreise the region should consist
+of) and `is_complete` (`false` = fewer Kreise contributed than expected, so a
+sum is too small and an average only partial; `source_region_count` is the
+actual number). For NUTS-0/1/2, `GET /nuts/{nuts_id}` (`socioeconomic`)
+returns `expected_region_count`, `bevoelkerung_is_complete` and
+`arbeitslose_is_complete`; all three are `null` for NUTS-3. Semantics and
+tests live in the dbt marts (`mart_nuts012_dataset_aggregate`,
+`mart_agentur_dataset_aggregate`, `mart_nuts{0,1,2}_summary`). Custom regions
+(`/custom-regions/dataset-aggregate`) have no such flag; use `coverage`
+(area share) there.
 - `datasets=a,b` restricts the dataset slugs (empty = all available),
   `from_year`/`to_year` the period.
 
@@ -436,6 +455,18 @@ missing, transparently flagged instead of a single, silently-chosen number:
   "n_peer_regions": 11
 }
 ```
+
+- `geodata_year` (fill_gaps rows) is the boundary version of the **source
+  row**; for interpolated/estimated years without a source row it is the
+  target version. The reliable column for the target version is
+  `nuts_version` (`lau_version` on LAU datasets).
+- `point=lon,lat` (with `fill_gaps=true` and on `/timeseries`) is resolved
+  against the geometry of the target version (`nuts_version`, default newest)
+  and returns the whole series of that region; `year`/`from_year`/`to_year`
+  only restrict the years. On the raw route (no `fill_gaps`) `point` uses the
+  geometry of `year`, or the latest geometry without `year`; rows of older
+  boundary versions are then not returned (and `from_year`/`to_year` do not
+  change the geometry) - use `fill_gaps=true` for the complete series.
 
 - `value` is the value actually used downstream (original value, or the
   linear-interpolation estimate if the year was missing).

@@ -238,3 +238,31 @@ models:
         tests:
           - unique
           - not_null
+
+  - name: int_nuts_expected_kreis_count
+    description: "Expected number of Kreise (NUTS-3 regions) per NUTS-0/1/2 region in the reference NUTS version (var reference_nuts_version); denominator of the coverage flags of mart_nuts012_dataset_aggregate and mart_nuts0/1/2_summary."
+    columns:
+      - name: nuts_level
+        description: "NUTS level of the aggregation region (0, 1 or 2)"
+        data_type: integer
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1, 2]
+      - name: nuts_id
+        description: "NUTS-0/1/2 code (prefix of the contained NUTS-3 codes)"
+        data_type: text
+        tests:
+          - not_null
+      - name: expected_region_count
+        description: "Number of NUTS-3 regions of the reference version whose code starts with nuts_id"
+        data_type: bigint
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - nuts_level
+            - nuts_id

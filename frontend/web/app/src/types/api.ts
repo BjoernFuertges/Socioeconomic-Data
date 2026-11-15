@@ -141,6 +141,11 @@ export interface NutsSocioeconomicPoint {
   schuldnerquote_prozent?: Nullable<number>;
   arbeitslose?: Nullable<number>;
   yoy_change_percent?: Nullable<number>;
+  // Only NUTS-0/1/2 (sums over Kreise), null for NUTS-3: false = at least one
+  // Kreis has no value this year, so the sum is incomplete (value not corrected).
+  expected_region_count?: Nullable<number>;
+  bevoelkerung_is_complete?: Nullable<boolean>;
+  arbeitslose_is_complete?: Nullable<boolean>;
 }
 
 export interface NutsRegionTimeSeries {
@@ -233,6 +238,10 @@ export interface NutsDatasetAggregatePoint extends TimeseriesPoint {
   nuts_id: string;
   dataset_slug: string;
   source_region_count: number;
+  // Number of Kreise the region should consist of; is_complete=false: not every
+  // Kreis contributed (partial aggregate, value not corrected).
+  expected_region_count: number;
+  is_complete: boolean;
 }
 
 // Time-series point of GET /agenturbezirke/{ba_schl}/dataset-aggregate/{slug} -
@@ -242,6 +251,9 @@ export interface AgenturDatasetAggregatePoint extends TimeseriesPoint {
   ba_schl: string;
   dataset_slug: string;
   source_region_count: number;
+  // Kreise overlapping the Agenturbezirk; is_complete=false: not every one contributed.
+  expected_region_count: number;
+  is_complete: boolean;
   // "sum" = sum of the Kreis values; "weighted_avg_population" =
   // population-weighted average (approximation); "weighted_avg_employees" =
   // average weighted by employed persons (values per employed person,

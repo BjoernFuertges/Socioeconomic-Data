@@ -82,25 +82,29 @@
 -- dataset used as weight, see header); arbeitsvolumen/bruttoverdienst are
 -- kept as 'weighted_avg' in this list (population-weighted crosswalk) and are
 -- only employee-weighted in the aggregation marts.
--- valid_when mirrors the has_valid_value rule of stg_<slug>_kreise.sql (value
--- is never null here) - keep both in sync; the singular test
--- assert_harmonized_validity_matches_staging checks it. It only feeds the
--- has_valid_value flag, harmonized_value itself is unchanged.
+-- Each entry reads its staging model (staging, value_col = the renamed value
+-- column there) - NOT loaded_data directly: the has_valid_value rule lives
+-- only in stg_<slug>_kreise.sql and is taken over as is, and the rows are the
+-- current snapshot state (snap_results_<slug>_kreise, dbt_valid_to is null),
+-- i.e. the same rows the generated Kreis API endpoints serve. Collisions
+-- (two raw rows on one (geodata_id_nuts, year)) are caught before that by the
+-- unique_combination_of_columns test on each loaded_data.results_*_kreise
+-- source (models/sources.yml): the snapshot keeps only one of them.
 {% set source_datasets = [
-    {'slug': 'arbeitslose',        'table': 'results_arbeitslose_kreise', 'measure_type': 'sum', 'valid_when': 'value > 0'},
-    {'slug': 'arbeitsvolumen',     'table': 'results_arbeitsvolumen_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value > 0'},
-    {'slug': 'auszubildende',      'table': 'results_auszubildende_kreise', 'measure_type': 'weighted_avg_employees', 'employee_slug': 'sv_beschaeftigte', 'valid_when': 'value >= 0'},
-    {'slug': 'bevoelkerung',       'table': 'results_bevoelkerung_kreise', 'measure_type': 'sum', 'valid_when': 'value > 0'},
-    {'slug': 'bruttoverdienst',    'table': 'results_bruttoverdienst_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value > 0'},
-    {'slug': 'durchschnittsalter', 'table': 'results_durchschnittsalter_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value > 0'},
-    {'slug': 'erwerbstaetige_pro_1000_einwohner', 'table': 'results_erwerbstaetige_pro_1000_einwohner_kreise', 'measure_type': 'sum', 'valid_when': 'value >= 0'},
-    {'slug': 'kinderarmut',        'table': 'results_kinderarmut_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value between 0 and 100'},
-    {'slug': 'medianeinkommen',    'table': 'results_medianeinkommen_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value > 0'},
-    {'slug': 'schuldnerquote',     'table': 'results_schuldnerquote_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value between 0 and 100'},
-    {'slug': 'sgb_ii_quote',       'table': 'results_sgb_ii_quote_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value between 0 and 100'},
-    {'slug': 'studierende',        'table': 'results_studierende_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value >= 0'},
-    {'slug': 'sv_beschaeftigte',   'table': 'results_sv_beschaeftigte_kreise', 'measure_type': 'sum', 'valid_when': 'value > 0'},
-    {'slug': 'wohngeldhaushalte',  'table': 'results_wohngeldhaushalte_kreise', 'measure_type': 'weighted_avg', 'valid_when': 'value > 0'},
+    {'slug': 'arbeitslose',        'staging': 'stg_arbeitslose_kreise', 'value_col': 'arbeitslose', 'measure_type': 'sum'},
+    {'slug': 'arbeitsvolumen',     'staging': 'stg_arbeitsvolumen_kreise', 'value_col': 'arbeitsvolumen', 'measure_type': 'weighted_avg'},
+    {'slug': 'auszubildende',      'staging': 'stg_auszubildende_kreise', 'value_col': 'auszubildende', 'measure_type': 'weighted_avg_employees', 'employee_slug': 'sv_beschaeftigte'},
+    {'slug': 'bevoelkerung',       'staging': 'stg_bevoelkerung_kreise', 'value_col': 'bevoelkerung', 'measure_type': 'sum'},
+    {'slug': 'bruttoverdienst',    'staging': 'stg_bruttoverdienst_kreise', 'value_col': 'bruttoverdienst', 'measure_type': 'weighted_avg'},
+    {'slug': 'durchschnittsalter', 'staging': 'stg_durchschnittsalter_kreise', 'value_col': 'durchschnittsalter', 'measure_type': 'weighted_avg'},
+    {'slug': 'erwerbstaetige_pro_1000_einwohner', 'staging': 'stg_erwerbstaetige_pro_1000_einwohner_kreise', 'value_col': 'erwerbstaetige_pro_1000_einwohner', 'measure_type': 'sum'},
+    {'slug': 'kinderarmut',        'staging': 'stg_kinderarmut_kreise', 'value_col': 'kinderarmut', 'measure_type': 'weighted_avg'},
+    {'slug': 'medianeinkommen',    'staging': 'stg_medianeinkommen_kreise', 'value_col': 'medianeinkommen', 'measure_type': 'weighted_avg'},
+    {'slug': 'schuldnerquote',     'staging': 'stg_schuldnerquote_kreise', 'value_col': 'schuldnerquote_prozent', 'measure_type': 'weighted_avg'},
+    {'slug': 'sgb_ii_quote',       'staging': 'stg_sgb_ii_quote_kreise', 'value_col': 'sgb_ii_quote_prozent', 'measure_type': 'weighted_avg'},
+    {'slug': 'studierende',        'staging': 'stg_studierende_kreise', 'value_col': 'studierende', 'measure_type': 'weighted_avg'},
+    {'slug': 'sv_beschaeftigte',   'staging': 'stg_sv_beschaeftigte_kreise', 'value_col': 'sv_beschaeftigte', 'measure_type': 'sum'},
+    {'slug': 'wohngeldhaushalte',  'staging': 'stg_wohngeldhaushalte_kreise', 'value_col': 'wohngeldhaushalte_je_1000', 'measure_type': 'weighted_avg'},
 ] %}
 {% set beschaeftigungsquote_nuts3_measure_type = 'weighted_avg' %}
 {% set employee_weighted = [] %}
@@ -109,29 +113,27 @@
 
 with all_source_data as (
 
-    -- Union of all Kreis raw datasets. Loaded with write_disposition=replace,
-    -- so no duplicates per (geodata_id_nuts, year) are expected; DISTINCT is
-    -- a defensive guard because sum() measure types would silently add up
-    -- any accidentally reloaded duplicate into inflated values.
+    -- Union of all Kreis staging models. One row per (geodata_id_nuts, year)
+    -- each (snapshot unique_key, tested via the staging *_pk unique test), so
+    -- no DISTINCT is needed; has_valid_value is the staging flag unchanged.
     {% for ds in source_datasets %}
-    select distinct
-        '{{ ds.slug }}'       as dataset_slug,
+    select
+        '{{ ds.slug }}'              as dataset_slug,
         geodata_id_nuts,
-        geodata_year::integer as geodata_year,
-        year::integer         as year,
-        value::numeric        as value,
-        ({{ ds.valid_when }}) as has_valid_value
-    from {{ source('loaded_data', ds.table) }}
+        geodata_year::integer        as geodata_year,
+        year::integer                as year,
+        {{ ds.value_col }}::numeric  as value,
+        has_valid_value
+    from {{ ref(ds.staging) }}
     where geodata_id_nuts is not null
       and geodata_id_nuts != ''
-      and value           is not null
+      and {{ ds.value_col }} is not null
     union all
     {% endfor %}
 
-    -- beschaeftigungsquote-nuts3 is not a raw loaded_data source but already
-    -- aggregated to NUTS-3 (2024) via the Gemeinde (LAU) population (see
-    -- stg_beschaeftigungsquote_nuts3.sql / int_beschaeftigungsquote_nuts3.sql),
-    -- hence ref() instead of source().
+    -- beschaeftigungsquote-nuts3 has no Kreis snapshot: it is aggregated to
+    -- NUTS-3 (2024) from the Gemeinde (LAU) values via population (see
+    -- stg_beschaeftigungsquote_nuts3.sql / int_beschaeftigungsquote_nuts3.sql).
     select
         'beschaeftigungsquote-nuts3' as dataset_slug,
         geodata_id_nuts,
@@ -322,7 +324,7 @@ aggregated_{{ tv }} as (
         min(source_version)      as source_version,
         max(n_hops)              as n_hops,
         -- false as soon as one contributing source value fails the staging
-        -- validity rule (valid_when): the target value is then contaminated.
+        -- has_valid_value rule: the target value is then contaminated.
         bool_and(has_valid_value) as has_valid_value
     from harmonized_{{ tv }}
     group by dataset_slug, target_nuts_id, year

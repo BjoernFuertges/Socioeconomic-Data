@@ -327,7 +327,11 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		return
 	}
 
-	const selectCols = `nuts_id, region_name, year, CAST(geodata_id_ars AS text) AS geodata_id_ars, bevoelkerung, schuldnerquote_prozent, arbeitslose, yoy_change_percent`
+	selectCols := `nuts_id, region_name, year, CAST(geodata_id_ars AS text) AS geodata_id_ars, bevoelkerung, schuldnerquote_prozent, arbeitslose, yoy_change_percent`
+	if levelDetails.Number < 3 {
+		// Coverage flags exist only on the NUTS-0/1/2 roll-ups (NUTS-3 is not aggregated).
+		selectCols += `, expected_region_count, bevoelkerung_is_complete, arbeitslose_is_complete`
+	}
 	fromClause := ` FROM ` + levelDetails.Table + ` WHERE nuts_id = $1`
 
 	if allStr == "true" {
@@ -353,6 +357,10 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 				SchuldnerquoteProzent: record.SchuldnerquoteProzent,
 				Arbeitslose:           record.Arbeitslose,
 				YoYChangePercent:      record.YoYChangePercent,
+
+				ExpectedRegionCount:    record.ExpectedRegionCount,
+				BevoelkerungIsComplete: record.BevoelkerungComplete,
+				ArbeitsloseIsComplete:  record.ArbeitsloseComplete,
 			})
 		}
 
@@ -424,6 +432,10 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		SchuldnerquoteProzent: row.SchuldnerquoteProzent,
 		Arbeitslose:           row.Arbeitslose,
 		YoYChangePercent:      row.YoYChangePercent,
+
+		ExpectedRegionCount:    row.ExpectedRegionCount,
+		BevoelkerungIsComplete: row.BevoelkerungComplete,
+		ArbeitsloseIsComplete:  row.ArbeitsloseComplete,
 	}
 	response := models.NutsRegionResponse{
 		Metadata:      metadata,
@@ -601,7 +613,7 @@ func (h *Handler) GetNutsDatasetAggregateTimeseries(c *gin.Context) {
 	}
 
 	points := []models.NutsDatasetAggregatePoint{}
-	query := `SELECT nuts_id, dataset_slug, year, value, source_region_count, true AS is_computed
+	query := `SELECT nuts_id, dataset_slug, year, value, source_region_count, expected_region_count, is_complete, true AS is_computed
 		FROM transformed_data.mart_nuts012_dataset_aggregate
 		WHERE nuts_id = $1 AND dataset_slug = $2
 		ORDER BY year DESC`

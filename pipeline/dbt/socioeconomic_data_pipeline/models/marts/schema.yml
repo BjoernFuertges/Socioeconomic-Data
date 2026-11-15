@@ -154,6 +154,14 @@ models:
         description: "Geometry in WGS84 (EPSG:4326)"
       - name: has_valid_geometry
         description: "True if geometry_3035 is not null and not empty"
+      - name: has_gap
+        description: "True if vintage years are missing for this gisco_id inside the period's range [valid_from, coalesce(valid_to, max_vintage_year)] (see gap_years). The period is NOT split: consecutive vintages with identical geometry are merged even across missing vintages, and a missing vintage right before a geometry change is covered by valid_to. Flag only; the cause of the missing rows (source, load, staging filter, ID change) is not determined here."
+        tests:
+          - not_null
+      - name: gap_years
+        description: "Sorted integer array of the vintage years (years present for at least one LAU in stg_lau_geometry) inside the period's range in which this gisco_id has no stg_lau_geometry row; empty array if has_gap is false. Number of missing vintages = cardinality(gap_years)."
+        tests:
+          - not_null
 
   - name: mart_socioeconomic_inventory
     description: "Pre-aggregated inventory of the available socioeconomic data per dataset, year and geodata level."
@@ -306,7 +314,7 @@ models:
       - name: n_hops
         description: "Number of crosswalk steps between source_version and target_version (0 = no crosswalk needed)"
       - name: has_valid_value
-        description: "False if any contributing source value fails the has_valid_value rule of its stg_*_kreise model (valid_when in the model); harmonized_value is still computed, consumers that need plausible values (GET /metrics) skip these rows"
+        description: "False if any contributing source value fails the has_valid_value rule of its stg_*_kreise model (the mart reads the staging flag, the rule is defined only there); harmonized_value is still computed, consumers that need plausible values (GET /metrics) skip these rows"
         tests:
           - not_null
 
@@ -620,3 +628,145 @@ models:
         description: "True if the value was converted across a NUTS or LAU version boundary; false for a direct value"
         tests:
           - not_null
+
+  - name: mart_nuts012_dataset_aggregate
+    description: "Every harmonized Kreis dataset (reference NUTS version) rolled up to NUTS-0/1/2 by code prefix: 'sum' summed, rates/averages population- resp. employee-weighted. value is NOT corrected for missing Kreise; expected_region_count / is_complete tell a complete total from a partial one."
+    columns:
+      - name: nuts_level
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1, 2]
+      - name: nuts_id
+        tests:
+          - not_null
+      - name: dataset_slug
+        tests:
+          - not_null
+      - name: year
+        tests:
+          - not_null
+      - name: source_region_count
+        description: "Number of Kreis rows aggregated into this row"
+      - name: value
+        description: "Aggregated value over the Kreise present (unchanged by the coverage flag)"
+      - name: expected_region_count
+        description: "Number of Kreise of this NUTS-0/1/2 region in the reference NUTS version (int_nuts_expected_kreis_count); 0 if the code is not in the reference geometry"
+        tests:
+          - not_null
+      - name: is_complete
+        description: "True if every expected Kreis contributed a value this year. For measure_type 'sum' false means the total is too small (missing Kreise count as 0); for averages it only means not all Kreise are represented. Invalid values (has_valid_value false) still count as contributing - value includes them."
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [nuts_level, nuts_id, dataset_slug, year]
+      - dbt_utils.expression_is_true:
+          expression: "not is_complete or source_region_count >= expected_region_count"
+
+  - name: mart_agentur_dataset_aggregate
+    description: "Every harmonized Kreis dataset (reference NUTS version) rolled up to Agenturbezirk level via mart_agentur_nuts3_crosswalk. value is NOT corrected for missing Kreise; expected_region_count / is_complete tell a complete total from a partial one."
+    columns:
+      - name: ba_schl
+        tests:
+          - not_null
+      - name: dataset_slug
+        tests:
+          - not_null
+      - name: year
+        tests:
+          - not_null
+      - name: source_region_count
+        description: "Number of Kreis rows aggregated into this row"
+      - name: value
+        description: "Aggregated value over the Kreise present (unchanged by the coverage flag)"
+      - name: expected_region_count
+        description: "Number of Kreise overlapping this Agenturbezirk in mart_agentur_nuts3_crosswalk"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+      - name: is_complete
+        description: "True if every Kreis overlapping the Agenturbezirk contributed a value this year; for 'sum' false means the total is too small."
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [ba_schl, dataset_slug, year]
+      - dbt_utils.expression_is_true:
+          expression: "not is_complete or source_region_count >= expected_region_count"
+
+  - name: mart_nuts0_summary
+    description: "Population, Schuldnerquote and Arbeitslose of mart_nuts3_summary rolled up to NUTS-0. The sums are NOT corrected for missing Kreise; see the *_is_complete flags."
+    columns:
+      - name: nuts_id
+        tests:
+          - not_null
+      - name: year
+        tests:
+          - not_null
+      - name: expected_region_count
+        description: "Number of Kreise of this region in the reference NUTS version (int_nuts_expected_kreis_count)"
+        tests:
+          - not_null
+      - name: bevoelkerung_is_complete
+        description: "True if every expected Kreis has a (valid) bevoelkerung value this year, i.e. the sum bevoelkerung is complete"
+        tests:
+          - not_null
+      - name: arbeitslose_is_complete
+        description: "True if every expected Kreis has a (valid) arbeitslose value this year, i.e. the sum arbeitslose is complete"
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [nuts_id, year]
+
+  - name: mart_nuts1_summary
+    description: "Population, Schuldnerquote and Arbeitslose of mart_nuts3_summary rolled up to NUTS-1. The sums are NOT corrected for missing Kreise; see the *_is_complete flags."
+    columns:
+      - name: nuts_id
+        tests:
+          - not_null
+      - name: year
+        tests:
+          - not_null
+      - name: expected_region_count
+        description: "Number of Kreise of this region in the reference NUTS version (int_nuts_expected_kreis_count)"
+        tests:
+          - not_null
+      - name: bevoelkerung_is_complete
+        description: "True if every expected Kreis has a (valid) bevoelkerung value this year, i.e. the sum bevoelkerung is complete"
+        tests:
+          - not_null
+      - name: arbeitslose_is_complete
+        description: "True if every expected Kreis has a (valid) arbeitslose value this year, i.e. the sum arbeitslose is complete"
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [nuts_id, year]
+
+  - name: mart_nuts2_summary
+    description: "Population, Schuldnerquote and Arbeitslose of mart_nuts3_summary rolled up to NUTS-2. The sums are NOT corrected for missing Kreise; see the *_is_complete flags."
+    columns:
+      - name: nuts_id
+        tests:
+          - not_null
+      - name: year
+        tests:
+          - not_null
+      - name: expected_region_count
+        description: "Number of Kreise of this region in the reference NUTS version (int_nuts_expected_kreis_count)"
+        tests:
+          - not_null
+      - name: bevoelkerung_is_complete
+        description: "True if every expected Kreis has a (valid) bevoelkerung value this year, i.e. the sum bevoelkerung is complete"
+        tests:
+          - not_null
+      - name: arbeitslose_is_complete
+        description: "True if every expected Kreis has a (valid) arbeitslose value this year, i.e. the sum arbeitslose is complete"
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [nuts_id, year]

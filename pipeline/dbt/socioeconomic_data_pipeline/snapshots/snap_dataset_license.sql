@@ -4,7 +4,7 @@
     strategy='check',
     check_cols=['license', 'license_url'],
     unique_key='dataset_slug',
-    invalidate_hard_deletes=false
+    hard_deletes='ignore'
 ) }}
 select dataset_slug, license, license_url
 from {{ source('loaded_data', 'dataset_metadata') }}

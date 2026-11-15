@@ -110,6 +110,15 @@ sources:
 
       - name: results_arbeitslose_kreise
         description: "Unemployment counts per district (Kreis), long format, one record per region and year"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -160,6 +169,15 @@ sources:
 
       - name: results_bevoelkerung_kreise
         description: "Population per district (Kreis), Destatis, long format, one record per region and year"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             description: "Official regional key (ARS) from the source file"
@@ -236,6 +254,15 @@ sources:
 
       - name: results_schuldnerquote_kreise
         description: "Debtor quota per district (Kreis), Creditreform, long format, one record per region and year"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             description: "Official regional key from the source file"
@@ -274,6 +301,15 @@ sources:
 
       - name: results_arbeitsvolumen_kreise
         description: "Labour volume per district (Kreis), long format, one record per region and year (hours)"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -289,6 +325,15 @@ sources:
 
       - name: results_bruttoverdienst_kreise
         description: "Gross earnings per district (Kreis), long format, one record per region and year (euro)"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -304,6 +349,15 @@ sources:
 
       - name: results_durchschnittsalter_kreise
         description: "Average age per district (Kreis), long format, one record per region and year (years)"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -319,6 +373,15 @@ sources:
 
       - name: results_sgb_ii_quote_kreise
         description: "SGB II quota per district (Kreis), long format, one record per region and year (%)"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -334,6 +397,15 @@ sources:
 
       - name: results_wohngeldhaushalte_kreise
         description: "Housing benefit households per district (Kreis), long format, one record per region and year (per 1,000 inhabitants)"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -351,6 +423,15 @@ sources:
 
       - name: results_auszubildende_kreise
         description: "Trainee rate per district (Kreis): trainees per 1,000 employees subject to social insurance contributions, long format, one record per region and year"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -366,6 +447,15 @@ sources:
 
       - name: results_erwerbstaetige_pro_1000_einwohner_kreise
         description: "Employed persons per 1,000 inhabitants per district (Kreis), long format, one record per region and year"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -381,6 +471,15 @@ sources:
 
       - name: results_kinderarmut_kreise
         description: "Child poverty per district (Kreis): non-working SGB II recipients under 15 years per 100 inhabitants, long format"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -396,6 +495,15 @@ sources:
 
       - name: results_medianeinkommen_kreise
         description: "Median income per district (Kreis), long format, one record per region and year (euro)"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -411,6 +519,15 @@ sources:
 
       - name: results_studierende_kreise
         description: "Students per 1,000 inhabitants per district (Kreis), long format, one record per region and year"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -426,6 +543,15 @@ sources:
 
       - name: results_sv_beschaeftigte_kreise
         description: "Employees subject to social insurance contributions at place of work per district (Kreis), Statistik der Bundesagentur für Arbeit (June value, fetch_ba_sv_beschaeftigte.py), long format, one record per region and year"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:

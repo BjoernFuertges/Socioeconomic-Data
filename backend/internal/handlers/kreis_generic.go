@@ -22,6 +22,24 @@ const sozioKreisBaseColumns = `d.original_id_1, d.original_name, d.geodata_name,
 	`cast(d.geodata_id_ars as text) as geodata_id_ars, d.mapper, d.parameter, d.geodata_level, d.geodata_year, ` +
 	`d.year, d.observation_date::text, d.has_valid_value`
 
+// pointInTargetVersionClause returns an SQL condition restricting idColumn to
+// the NUTS-3 region whose geometry in target version `version` contains the
+// WGS84 point (lon,lat). Geometry periods in mart_nuts_geometry_historized are
+// matched like in the year-based branch (valid_from <= version <= valid_to).
+// Used with the harmonized series (fill_gaps / timeseries), whose IDs are
+// already expressed in the target version, so the whole series of that region
+// is returned irrespective of which boundary version each source row had.
+func pointInTargetVersionClause(idColumn string, argPos int) string {
+	return fmt.Sprintf(
+		` AND %s = (SELECT nuts_id FROM transformed_data.mart_nuts_geometry_historized `+
+			`WHERE levl_code = 3 AND has_valid_geometry `+
+			`AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d) `+
+			`AND ST_Contains(geometry_3035, ST_Transform(ST_SetSRID(ST_Point($%d, $%d), 4326), 3035)) `+
+			`ORDER BY valid_from DESC LIMIT 1)`,
+		idColumn, argPos, argPos, argPos+1, argPos+2,
+	)
+}
+
 // getKreisData is the generic handler core for all Kreis datasets.
 // T must embed SozioBaseData and map all cfg.ValueColumns via db tags.
 func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConfig) {
@@ -161,12 +179,18 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 			respondBadRequest(c, err.Error())
 			return
 		}
-		// If a concrete data year is requested, the Kreis boundary that was valid in
-		// that year is used (valid_from <= year <= valid_to). Without a year filter
-		// the latest geometry applies (valid_to IS NULL). This ensures the point
-		// filter uses the same geometry version as the socio data itself (compare
-		// geodata_year in SozioBaseData).
-		if filter.Year != nil {
+		// fill_gaps=true (harmonized series): the point is resolved against the
+		// geometry of the target version (nuts_version, default newest); year,
+		// from_year and to_year then only restrict the years of that region's
+		// series. A concrete year does not switch the geometry here.
+		if nutsVersion != nil {
+			query += pointInTargetVersionClause("d.geodata_id_nuts", argPos)
+			args = append(args, *nutsVersion, lon, lat)
+			argPos += 3
+		} else if filter.Year != nil {
+			// Raw route with a concrete data year: the Kreis boundary valid in that
+			// year is used (valid_from <= year <= valid_to), matching the source
+			// rows of that year (geodata_year in SozioBaseData).
 			query += fmt.Sprintf(
 				` AND d.geodata_id_nuts = (`+
 					`SELECT nuts_id FROM transformed_data.mart_nuts_geometry_historized `+
@@ -179,6 +203,10 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 			args = append(args, *filter.Year, lon, lat)
 			argPos += 3
 		} else {
+			// Raw route without a year: the latest geometry applies (valid_to IS
+			// NULL) and from_year/to_year do not influence it, so rows of older
+			// boundary versions (other geodata_id_nuts) are NOT returned. Use
+			// fill_gaps=true (or /timeseries) for the complete series of the region.
 			query += fmt.Sprintf(
 				` AND d.geodata_id_nuts = (`+
 					`SELECT nuts_id FROM transformed_data.mart_nuts_geometry_historized `+
@@ -251,8 +279,9 @@ func getKreisTimeseriesEndpoint(h *Handler, c *gin.Context, cfg models.KreisData
 // is_interpolated + value_linear + value_peer_trend instead of simply being
 // absent. Supports only the filters that are meaningful on
 // mart_nuts3_timeseries_interpolated (geodata_id_nuts, nuts_parent_id, year,
-// from_year, to_year); geodata_name and point filters need the original data
-// and are rejected.
+// from_year, to_year, point); the geodata_name filter needs the original data
+// and is rejected. point is resolved against the geometry of the target
+// version (nuts_version) and returns that region's whole series.
 func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetConfig, filter models.SozioKreisFilter, limitNull bool) {
 	if !cfg.IsHarmonized {
 		respondBadRequest(c, fmt.Sprintf(
@@ -265,12 +294,8 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 		respondBadRequest(c, "geodata_name_contains wird in Kombination mit fill_gaps nicht unterstützt")
 		return
 	}
-	if strings.TrimSpace(filter.Point) != "" {
-		respondBadRequest(c, "point wird in Kombination mit fill_gaps nicht unterstützt")
-		return
-	}
-	if filter.GeodataIDNUTS == "" && filter.Year == nil && filter.FromYear == nil && filter.ToYear == nil {
-		respondBadRequest(c, "ohne geodata_id_nuts muss year, from_year oder to_year gesetzt sein, um die Anfrage einzugrenzen")
+	if filter.GeodataIDNUTS == "" && strings.TrimSpace(filter.Point) == "" && filter.Year == nil && filter.FromYear == nil && filter.ToYear == nil {
+		respondBadRequest(c, "ohne geodata_id_nuts oder point muss year, from_year oder to_year gesetzt sein, um die Anfrage einzugrenzen")
 		return
 	}
 
@@ -306,6 +331,17 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 		query += fmt.Sprintf(" AND nuts3_id LIKE $%d", argPos)
 		args = append(args, normalizedParent+"%")
 		argPos++
+	}
+
+	if strings.TrimSpace(filter.Point) != "" {
+		lon, lat, err := parseLonLatPoint(filter.Point)
+		if err != nil {
+			respondBadRequest(c, err.Error())
+			return
+		}
+		query += pointInTargetVersionClause("nuts3_id", argPos)
+		args = append(args, nutsVersion, lon, lat)
+		argPos += 3
 	}
 
 	if filter.Year != nil {

@@ -42,6 +42,16 @@ definitions:
       dataset_slug:
         example: bevoelkerung
         type: string
+      expected_region_count:
+        description: Number of Kreise overlapping this Agenturbezirk (mart_agentur_nuts3_crosswalk).
+        example: 3
+        type: integer
+      is_complete:
+        description: |-
+          true = every overlapping Kreis contributed a value. false: partial aggregate
+          (for 'sum' datasets too small); the value itself is not corrected.
+        example: true
+        type: boolean
       is_computed:
         description: |-
           Always true: every point is an area-weighted aggregation over several
@@ -214,6 +224,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -294,6 +309,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -374,6 +394,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -454,6 +479,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -546,6 +576,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -626,6 +661,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -706,6 +746,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -1023,6 +1068,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -1103,6 +1153,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -1309,6 +1364,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -1490,6 +1550,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -1586,6 +1651,17 @@ definitions:
       dataset_slug:
         example: bevoelkerung
         type: string
+      expected_region_count:
+        description: Number of Kreise the NUTS region should consist of (reference
+          NUTS version).
+        example: 44
+        type: integer
+      is_complete:
+        description: |-
+          true = every expected Kreis contributed a value. false: the value is a partial
+          aggregate (for 'sum' datasets too small); the value itself is not corrected.
+        example: true
+        type: boolean
       is_computed:
         description: |-
           Always true (see SELECT true AS is_computed in GetNutsDatasetAggregateTimeseries):
@@ -1741,9 +1817,26 @@ definitions:
       arbeitslose:
         example: 17423
         type: number
+      arbeitslose_is_complete:
+        description: 'Only NUTS-0/1/2, null for NUTS-3: false = the arbeitslose sum
+          is incomplete.'
+        example: true
+        type: boolean
       bevoelkerung:
         example: 634830
         type: number
+      bevoelkerung_is_complete:
+        description: |-
+          Only NUTS-0/1/2, null for NUTS-3: false = at least one Kreis has no (valid)
+          bevoelkerung value this year, so the sum is incomplete (too small).
+        example: true
+        type: boolean
+      expected_region_count:
+        description: |-
+          Only NUTS-0/1/2 (sums over Kreise), null for NUTS-3: number of Kreise the region
+          should consist of.
+        example: 44
+        type: integer
       schuldnerquote_prozent:
         example: 9.8
         type: number
@@ -1813,6 +1906,16 @@ definitions:
       dataset_slug:
         example: bevoelkerung
         type: string
+      expected_region_count:
+        description: 'Only for NUTS-0/1/2 and Agentur aggregates: number of Kreise
+          the region should consist of.'
+        example: 44
+        type: integer
+      is_complete:
+        description: 'Only for NUTS-0/1/2 and Agentur aggregates: false = not every
+          expected Kreis contributed (partial aggregate).'
+        example: true
+        type: boolean
       is_computed:
         description: true = computed from several source regions, false = the region's
           original value.
@@ -1900,6 +2003,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -1980,6 +2088,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -2084,6 +2197,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -2164,6 +2282,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -2244,6 +2367,11 @@ definitions:
         example: Flensburg
         type: string
       geodata_year:
+        description: |-
+          GeodataYear is the boundary version (vintage) of the SOURCE row. With
+          fill_gaps=true, rows without a source row (is_interpolated / is_estimated)
+          carry the target version instead. The reliable column for the target
+          version of a fill_gaps row is nuts_version (lau_version on LAU datasets).
         example: 2024
         type: integer
       has_valid_value:
@@ -2973,7 +3101,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -3079,6 +3213,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
@@ -3177,7 +3317,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -3283,6 +3429,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
@@ -3382,7 +3534,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -3489,6 +3647,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
@@ -3588,7 +3752,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -3793,7 +3963,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -3886,6 +4062,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
@@ -3984,7 +4166,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -4090,6 +4278,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
@@ -4188,7 +4382,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -4294,6 +4494,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
@@ -4636,7 +4842,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -4742,6 +4954,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
@@ -4841,7 +5059,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -4947,6 +5171,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
@@ -5345,7 +5575,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -5451,6 +5687,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
@@ -5756,7 +5998,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -5862,6 +6110,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
@@ -6633,7 +6887,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -6739,6 +6999,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
@@ -6837,7 +7103,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -6943,6 +7215,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
@@ -7088,7 +7366,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -7194,6 +7478,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
@@ -7293,7 +7583,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -7400,6 +7696,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021
@@ -7520,7 +7822,13 @@ paths:
         in: query
         name: to_year
         type: integer
-      - description: Punktabfrage im Format lon,lat (WGS84)
+      - description: 'Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true:
+          Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard
+          neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year
+          schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses
+          Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht;
+          Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe
+          fill_gaps=true oder /timeseries nutzen)'
         example: 13.404954,52.520008
         in: query
         name: point
@@ -7626,6 +7934,12 @@ paths:
         in: query
         name: to_year
         type: integer
+      - description: Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der
+          Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region
+        example: 13.404954,52.520008
+        in: query
+        name: point
+        type: string
       - description: 'Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version
           (Liste: GET /versions); für stabile Regions-IDs explizit angeben'
         example: 2021

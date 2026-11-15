@@ -17,6 +17,7 @@ import TimeseriesChart from "./TimeseriesChart.vue";
 import DataTable from "./DataTable.vue";
 import DatasetInfo from "./DatasetInfo.vue";
 import AgenturAggregationNote from "./AgenturAggregationNote.vue";
+import CoverageNote from "./CoverageNote.vue";
 
 // Caps multi-select at the number of validated categorical color slots
 // (see SERIES_COLORS in TimeseriesChart.vue) - more series in the combined
@@ -102,6 +103,13 @@ const isCombined = computed(() => props.selectedSlugs.length > 0 && props.select
 function pointsOf(slug: string): { aggregation_method?: string; value_kind?: string }[] {
   const result = results.value.get(slug);
   return result?.kind === "timeseries" ? (result.points as AgenturDatasetAggregatePoint[]) : [];
+}
+
+// Aggregated Kreis sums (NUTS-0/1/2, Agenturbezirke) carry is_complete (see CoverageNote).
+const hasCoverage = computed(() => props.kind === "agentur" || (props.kind !== "custom" && (props.nutsLevel ?? 3) !== 3));
+function coveragePointsOf(slug: string): { year: number; is_complete?: boolean }[] {
+  const result = results.value.get(slug);
+  return hasCoverage.value && result?.kind === "timeseries" ? (result.points as AgenturDatasetAggregatePoint[]) : [];
 }
 
 const selectedDatasets = computed(() => props.datasets.filter((ds) => props.selectedSlugs.includes(ds.route_slug)));
@@ -337,6 +345,7 @@ watch(
         <DatasetInfo v-if="metadataBySlug.get(ds.route_slug)" :metadata="metadataBySlug.get(ds.route_slug)!" />
         <AgenturAggregationNote v-if="kind === 'agentur'" :points="pointsOf(ds.route_slug)" :dataset-slug="baseSlug(ds.route_slug)" />
         <CustomRegionNote v-else-if="kind === 'custom'" :points="pointsOf(ds.route_slug) as any" />
+        <CoverageNote v-if="hasCoverage" :points="coveragePointsOf(ds.route_slug)" />
         <p v-if="results.get(ds.route_slug)?.kind === 'loading'" class="hint">Lade Daten…</p>
         <p v-else-if="results.get(ds.route_slug)?.kind === 'error'" class="error-text">
           Fehler beim Laden: {{ (results.get(ds.route_slug) as { message: string }).message }}
@@ -368,6 +377,7 @@ watch(
       <DatasetInfo v-if="metadataBySlug.get(ds.route_slug)" :metadata="metadataBySlug.get(ds.route_slug)!" />
       <AgenturAggregationNote v-if="kind === 'agentur'" :points="pointsOf(ds.route_slug)" :dataset-slug="baseSlug(ds.route_slug)" />
         <CustomRegionNote v-else-if="kind === 'custom'" :points="pointsOf(ds.route_slug) as any" />
+      <CoverageNote v-if="hasCoverage" :points="coveragePointsOf(ds.route_slug)" />
       <p v-if="results.get(ds.route_slug)?.kind === 'loading'" class="hint">Lade Daten…</p>
       <p v-else-if="results.get(ds.route_slug)?.kind === 'error'" class="error-text">
         Fehler beim Laden: {{ (results.get(ds.route_slug) as { message: string }).message }}

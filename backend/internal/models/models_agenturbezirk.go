@@ -88,6 +88,11 @@ type AgenturDatasetAggregatePoint struct {
 	IsComputed bool `db:"is_computed" json:"is_computed" example:"true"`
 	// Number of Kreise that actually contributed a value for this year.
 	SourceRegionCount int `db:"source_region_count" json:"source_region_count" example:"3"`
+	// Number of Kreise overlapping this Agenturbezirk (mart_agentur_nuts3_crosswalk).
+	ExpectedRegionCount int `db:"expected_region_count" json:"expected_region_count" example:"3"`
+	// true = every overlapping Kreis contributed a value. false: partial aggregate
+	// (for 'sum' datasets too small); the value itself is not corrected.
+	IsComplete bool `db:"is_complete" json:"is_complete" example:"true"`
 	// How the value was derived (see mart_agentur_dataset_aggregate):
 	// "sum" = sum of the Kreis values; "weighted_avg_population" =
 	// population-weighted average of the Kreis values; "weighted_avg_area" =

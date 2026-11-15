@@ -800,7 +800,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -943,6 +943,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -1089,7 +1096,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -1232,6 +1239,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -1378,7 +1392,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -1521,6 +1535,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -1667,7 +1688,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -1956,7 +1977,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -2085,6 +2106,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -2231,7 +2259,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -2374,6 +2402,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -2520,7 +2555,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -2663,6 +2698,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -3162,7 +3204,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -3305,6 +3347,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -3451,7 +3500,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -3594,6 +3643,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -4173,7 +4229,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -4316,6 +4372,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -4781,7 +4844,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -4924,6 +4987,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -6017,7 +6087,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -6160,6 +6230,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -6306,7 +6383,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -6449,6 +6526,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -6668,7 +6752,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -6811,6 +6895,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -6957,7 +7048,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -7100,6 +7191,13 @@ const docTemplate = `{
                         "example": 2022,
                         "description": "Nur Jahre \u003c= to_year zurückgeben",
                         "name": "to_year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
                         "in": "query"
                     },
                     {
@@ -7278,7 +7376,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "13.404954,52.520008",
-                        "description": "Punktabfrage im Format lon,lat (WGS84)",
+                        "description": "Punktabfrage im Format lon,lat (WGS84). Mit fill_gaps=true: Auflösung gegen die Geometrie der Ziel-NUTS-Version (nuts_version, Standard neueste); die ganze Zeitreihe dieser Region wird geliefert, from_year/to_year/year schränken nur die Jahre ein. Ohne fill_gaps: mit year die Geometrie dieses Jahres, ohne year die neueste Geometrie (from_year/to_year ändern sie nicht; Zeilen älterer Gebietsversionen fehlen dann - für die vollständige Reihe fill_gaps=true oder /timeseries nutzen)",
                         "name": "point",
                         "in": "query"
                     },
@@ -7424,6 +7522,13 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "example": "13.404954,52.520008",
+                        "description": "Punktabfrage lon,lat (WGS84), aufgelöst gegen die Geometrie der Ziel-NUTS-Version (nuts_version); liefert die ganze Zeitreihe der Region",
+                        "name": "point",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "example": 2021,
                         "description": "Ziel-NUTS-Version; ohne Angabe die neueste verfügbare Version (Liste: GET /versions); für stabile Regions-IDs explizit angeben",
@@ -7551,6 +7656,16 @@ const docTemplate = `{
                 "dataset_slug": {
                     "type": "string",
                     "example": "bevoelkerung"
+                },
+                "expected_region_count": {
+                    "description": "Number of Kreise overlapping this Agenturbezirk (mart_agentur_nuts3_crosswalk).",
+                    "type": "integer",
+                    "example": 3
+                },
+                "is_complete": {
+                    "description": "true = every overlapping Kreis contributed a value. false: partial aggregate\n(for 'sum' datasets too small); the value itself is not corrected.",
+                    "type": "boolean",
+                    "example": true
                 },
                 "is_computed": {
                     "description": "Always true: every point is an area-weighted aggregation over several\nKreise, not a single observation read from one source.",
@@ -7781,6 +7896,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -7873,6 +7989,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -7965,6 +8082,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -8057,6 +8175,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -8165,6 +8284,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -8257,6 +8377,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -8349,6 +8470,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -8721,6 +8843,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -8813,6 +8936,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -9082,6 +9206,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -9295,6 +9420,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -9410,6 +9536,16 @@ const docTemplate = `{
                 "dataset_slug": {
                     "type": "string",
                     "example": "bevoelkerung"
+                },
+                "expected_region_count": {
+                    "description": "Number of Kreise the NUTS region should consist of (reference NUTS version).",
+                    "type": "integer",
+                    "example": 44
+                },
+                "is_complete": {
+                    "description": "true = every expected Kreis contributed a value. false: the value is a partial\naggregate (for 'sum' datasets too small); the value itself is not corrected.",
+                    "type": "boolean",
+                    "example": true
                 },
                 "is_computed": {
                     "description": "Always true (see SELECT true AS is_computed in GetNutsDatasetAggregateTimeseries):\nevery point is an aggregation over several Kreise, not a single\nobservation read from one source.",
@@ -9614,9 +9750,24 @@ const docTemplate = `{
                     "type": "number",
                     "example": 17423
                 },
+                "arbeitslose_is_complete": {
+                    "description": "Only NUTS-0/1/2, null for NUTS-3: false = the arbeitslose sum is incomplete.",
+                    "type": "boolean",
+                    "example": true
+                },
                 "bevoelkerung": {
                     "type": "number",
                     "example": 634830
+                },
+                "bevoelkerung_is_complete": {
+                    "description": "Only NUTS-0/1/2, null for NUTS-3: false = at least one Kreis has no (valid)\nbevoelkerung value this year, so the sum is incomplete (too small).",
+                    "type": "boolean",
+                    "example": true
+                },
+                "expected_region_count": {
+                    "description": "Only NUTS-0/1/2 (sums over Kreise), null for NUTS-3: number of Kreise the region\nshould consist of.",
+                    "type": "integer",
+                    "example": 44
                 },
                 "schuldnerquote_prozent": {
                     "type": "number",
@@ -9694,6 +9845,16 @@ const docTemplate = `{
                 "dataset_slug": {
                     "type": "string",
                     "example": "bevoelkerung"
+                },
+                "expected_region_count": {
+                    "description": "Only for NUTS-0/1/2 and Agentur aggregates: number of Kreise the region should consist of.",
+                    "type": "integer",
+                    "example": 44
+                },
+                "is_complete": {
+                    "description": "Only for NUTS-0/1/2 and Agentur aggregates: false = not every expected Kreis contributed (partial aggregate).",
+                    "type": "boolean",
+                    "example": true
                 },
                 "is_computed": {
                     "description": "true = computed from several source regions, false = the region's original value.",
@@ -9808,6 +9969,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -9900,6 +10062,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -10025,6 +10188,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -10117,6 +10281,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },
@@ -10209,6 +10374,7 @@ const docTemplate = `{
                     "example": "Flensburg"
                 },
                 "geodata_year": {
+                    "description": "GeodataYear is the boundary version (vintage) of the SOURCE row. With\nfill_gaps=true, rows without a source row (is_interpolated / is_estimated)\ncarry the target version instead. The reliable column for the target\nversion of a fill_gaps row is nuts_version (lau_version on LAU datasets).",
                     "type": "integer",
                     "example": 2024
                 },

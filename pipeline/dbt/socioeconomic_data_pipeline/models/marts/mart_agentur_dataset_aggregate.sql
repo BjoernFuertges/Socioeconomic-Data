@@ -69,6 +69,12 @@
       are split by area share.
   value_kind ('count' | 'rate' | 'mean' | 'median') and aggregation_method
   are passed unchanged to the API/frontend labelling.
+
+  Coverage: value is computed over the Kreise that have a value that year
+  and is NOT corrected for missing ones (a 'sum' over an incomplete set is
+  simply too small). expected_region_count = number of Kreise overlapping the
+  Agenturbezirk in mart_agentur_nuts3_crosswalk; is_complete = every one of
+  them contributed a value.
 */
 
 {% set source_datasets = [
@@ -130,9 +136,17 @@ crosswalk as (
     from {{ ref('mart_agentur_nuts3_crosswalk') }}
 ),
 
+-- Kreise per Agenturbezirk (coverage flag, see header)
+expected as (
+    select ba_schl, count(distinct nuts_id) as expected_region_count
+    from crosswalk
+    group by ba_schl
+),
+
 weighted as (
     select
         c.ba_schl,
+        h.nuts_id,
         h.dataset_slug,
         h.year,
         h.value,
@@ -166,6 +180,7 @@ grouped as (
         dataset_slug,
         year,
         count(*)                                        as source_region_count,
+        count(distinct nuts_id) filter (where value is not null) as contributing_region_count,
         sum(value * sum_weight)                         as sum_value,
         sum(value * avg_weight)                         as area_num,
         sum(avg_weight)                                 as area_den,
@@ -182,10 +197,10 @@ grouped as (
 )
 
 select
-    ba_schl,
-    dataset_slug,
-    year,
-    source_region_count,
+    g.ba_schl,
+    g.dataset_slug,
+    g.year,
+    g.source_region_count,
     case dataset_slug
     {% for ds in source_datasets %}
         when '{{ ds.slug }}' then
@@ -227,5 +242,9 @@ select
     {% for ds in source_datasets %}
         when '{{ ds.slug }}' then '{{ ds.kind }}'
     {% endfor %}
-    end as value_kind
-from grouped
+    end as value_kind,
+    x.expected_region_count,
+    (g.contributing_region_count = x.expected_region_count) as is_complete
+from grouped g
+join expected x
+    on x.ba_schl = g.ba_schl

@@ -37,7 +37,14 @@ snapshots:
     +strategy: check
     +check_cols: ['value']
     +unique_key: "geodata_id_nuts || '_' || year::text"
-    +invalidate_hard_deletes: false
+    # Deliberately false: a row that disappears from the dlt "replace" load
+    # stays current (dbt_valid_to null) instead of being closed, so a partial
+    # or failed reload never deletes history. Consequence: staging - and
+    # everything reading it, incl. mart_nuts3_sociodata_harmonized - keeps
+    # serving rows that are no longer in loaded_data (e.g. after a re-mapping
+    # to other geodata_id_nuts); tests/warn_snapshot_rows_missing_in_source.sql
+    # flags them.
+    +hard_deletes: ignore
 
 vars:
   # Minimum area share for an Agentur<->NUTS-3 pair in

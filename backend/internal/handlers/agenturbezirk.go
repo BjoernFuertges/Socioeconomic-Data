@@ -402,7 +402,7 @@ func (h *Handler) GetAgenturbezirkDatasetAggregateTimeseries(c *gin.Context) {
 	}
 
 	points := []models.AgenturDatasetAggregatePoint{}
-	query := `SELECT ba_schl, dataset_slug, year, value, source_region_count, true AS is_computed, aggregation_method, value_kind
+	query := `SELECT ba_schl, dataset_slug, year, value, source_region_count, expected_region_count, is_complete, true AS is_computed, aggregation_method, value_kind
 		FROM transformed_data.mart_agentur_dataset_aggregate
 		WHERE ba_schl = $1 AND dataset_slug = $2
 		ORDER BY year DESC`
@@ -471,7 +471,7 @@ func (h *Handler) GetAgenturbezirkeDatasetAggregateByYear(c *gin.Context) {
 	}
 
 	points := []models.AgenturDatasetAggregatePoint{}
-	query := `SELECT ba_schl, dataset_slug, year, value, source_region_count, true AS is_computed, aggregation_method, value_kind
+	query := `SELECT ba_schl, dataset_slug, year, value, source_region_count, expected_region_count, is_complete, true AS is_computed, aggregation_method, value_kind
 		FROM transformed_data.mart_agentur_dataset_aggregate
 		WHERE dataset_slug = $1 AND year = $2
 		ORDER BY ba_schl`

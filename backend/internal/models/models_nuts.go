@@ -14,6 +14,11 @@ type NutsRegionData struct {
 	// May be null: Arbeitsagenturbezirke do not map 1:1 to NUTS Kreise
 	Arbeitslose      *float64 `db:"arbeitslose"        json:"arbeitslose"        example:"17423"`
 	YoYChangePercent *float64 `db:"yoy_change_percent" json:"yoy_change_percent" example:"-2.3"`
+	// Coverage flags of the NUTS-0/1/2 sums (mart_nuts{0,1,2}_summary); null for NUTS-3
+	// (no aggregation there). Values are NOT corrected for missing Kreise.
+	ExpectedRegionCount  *int  `db:"expected_region_count"     json:"-"`
+	BevoelkerungComplete *bool `db:"bevoelkerung_is_complete"  json:"-"`
+	ArbeitsloseComplete  *bool `db:"arbeitslose_is_complete"   json:"-"`
 }
 
 // NutsRegionMetadata holds geographic metadata of a NUTS region.
@@ -35,6 +40,14 @@ type NutsSocioeconomicData struct {
 	SchuldnerquoteProzent *float64 `json:"schuldnerquote_prozent" example:"9.8"`
 	Arbeitslose           *float64 `json:"arbeitslose"            example:"17423"`
 	YoYChangePercent      *float64 `json:"yoy_change_percent"     example:"-2.3"`
+	// Only NUTS-0/1/2 (sums over Kreise), null for NUTS-3: number of Kreise the region
+	// should consist of.
+	ExpectedRegionCount *int `json:"expected_region_count" example:"44"`
+	// Only NUTS-0/1/2, null for NUTS-3: false = at least one Kreis has no (valid)
+	// bevoelkerung value this year, so the sum is incomplete (too small).
+	BevoelkerungIsComplete *bool `json:"bevoelkerung_is_complete" example:"true"`
+	// Only NUTS-0/1/2, null for NUTS-3: false = the arbeitslose sum is incomplete.
+	ArbeitsloseIsComplete *bool `json:"arbeitslose_is_complete" example:"true"`
 }
 
 // NutsRegionResponse separates metadata from socioeconomic data for a single year.
@@ -115,4 +128,9 @@ type NutsDatasetAggregatePoint struct {
 	IsComputed bool `db:"is_computed" json:"is_computed" example:"true"`
 	// Number of Kreise that actually contributed a value for this year.
 	SourceRegionCount int `db:"source_region_count" json:"source_region_count" example:"44"`
+	// Number of Kreise the NUTS region should consist of (reference NUTS version).
+	ExpectedRegionCount int `db:"expected_region_count" json:"expected_region_count" example:"44"`
+	// true = every expected Kreis contributed a value. false: the value is a partial
+	// aggregate (for 'sum' datasets too small); the value itself is not corrected.
+	IsComplete bool `db:"is_complete" json:"is_complete" example:"true"`
 }

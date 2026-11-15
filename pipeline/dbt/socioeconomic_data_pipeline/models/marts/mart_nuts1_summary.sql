@@ -23,6 +23,11 @@
   mart_nuts3_summary is harmonized onto a single NUTS-3 boundary version
   (2024, via mart_nuts3_sociodata_harmonized), so the left(nuts_id, n)
   roll-up never mixes Kreise of different NUTS vintages.
+
+  Coverage: the sums are NOT corrected for missing Kreise.
+  expected_region_count (Kreise of the region in the reference version,
+  int_nuts_expected_kreis_count) vs. the number of Kreise with a value gives
+  bevoelkerung_is_complete / arbeitslose_is_complete.
 */
 
 with nuts3 as (
@@ -75,7 +80,9 @@ aggregated as (
                      )
             else avg(schuldnerquote_prozent)
         end                 as schuldnerquote_prozent,
-        sum(arbeitslose_kreise)::numeric as arbeitslose_raw
+        sum(arbeitslose_kreise)::numeric as arbeitslose_raw,
+        count(bevoelkerung)       as bevoelkerung_region_count,
+        count(arbeitslose_kreise) as arbeitslose_region_count
     from nuts3
     left join nuts1_names
         on nuts1_names.nuts_id = left(nuts3.nuts_id, 3)
@@ -104,8 +111,19 @@ with_yoy as (
                 else null
             end,
             2
-        )                                                                as yoy_change_percent
-    from aggregated
+        )                                                                as yoy_change_percent,
+        coalesce(expected_region_count, 0)                               as expected_region_count,
+        coalesce(expected_region_count > 0
+                 and bevoelkerung_region_count = expected_region_count, false) as bevoelkerung_is_complete,
+        coalesce(expected_region_count > 0
+                 and arbeitslose_region_count = expected_region_count, false)  as arbeitslose_is_complete
+    from (
+        select a.*, x.expected_region_count
+        from aggregated a
+        left join {{ ref('int_nuts_expected_kreis_count') }} x
+            on  x.nuts_level = 1
+            and x.nuts_id    = a.nuts_id
+    ) aggregated
     window w as (partition by nuts_id order by year)
 )
 

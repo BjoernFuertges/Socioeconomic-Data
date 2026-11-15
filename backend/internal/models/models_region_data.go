@@ -21,4 +21,8 @@ type RegionDataRow struct {
 	ValueKind *string `db:"value_kind" json:"value_kind" example:"rate"`
 	// Number of source regions (Kreise/Gemeinden) behind an aggregated value.
 	SourceRegionCount *int `db:"source_region_count" json:"source_region_count" example:"3"`
+	// Only for NUTS-0/1/2 and Agentur aggregates: number of Kreise the region should consist of.
+	ExpectedRegionCount *int `db:"expected_region_count" json:"expected_region_count" example:"44"`
+	// Only for NUTS-0/1/2 and Agentur aggregates: false = not every expected Kreis contributed (partial aggregate).
+	IsComplete *bool `db:"is_complete" json:"is_complete" example:"true"`
 }

@@ -212,6 +212,8 @@ const valuesError = ref<string | null>(null);
 // source_region_count is only set for aggregated Agentur datasets.
 type MapValue = TimeseriesPoint & {
   source_region_count?: number;
+  expected_region_count?: number;
+  is_complete?: boolean;
   aggregation_method?: string;
   value_kind?: string;
 };
@@ -1351,9 +1353,13 @@ watch(selectedNutsLevel, async () => {
                 <dt>Status</dt>
                 <dd>
                   aggregiert aus {{ sidebarRegion.point.source_region_count }} Kreis(en)
+                  <template v-if="sidebarRegion.point.expected_region_count !== undefined">
+                    von {{ sidebarRegion.point.expected_region_count }} erwarteten
+                  </template>
                   <template v-if="sidebarRegion.point.aggregation_method === 'sum'">(Summe)</template>
                   <template v-else-if="sidebarRegion.point.value_kind === 'median'">(Näherung, nur Schätzung)</template>
                   <template v-else-if="selectedGeoType === 'agentur'">(Näherung: gewichteter Durchschnitt)</template>
+                  <template v-if="sidebarRegion.point.is_complete === false"> – unvollständig: nicht für alle Kreise liegen Werte vor</template>
                 </dd>
               </template>
               <template v-else-if="selectedGeoType !== 'agentur'">
