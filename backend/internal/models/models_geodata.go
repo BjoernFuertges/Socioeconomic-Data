@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 )
 
-// LAURegion repräsentiert eine LAU-Region mit Geometrie und Population
+// LAURegion represents a LAU region with geometry and population
 type LAURegion struct {
 	GiscoID          string          `json:"gisco_id" db:"gisco_id" example:"DE111"`
 	Year             int             `json:"year" db:"year" example:"2024"`
@@ -17,14 +17,14 @@ type LAURegion struct {
 	LAUNameNational  sql.NullString  `json:"lau_name_national,omitempty" db:"lau_name_national" swaggertype:"string"`
 	LAUNameLatin     sql.NullString  `json:"lau_name_latin,omitempty" db:"lau_name_latin" swaggertype:"string"`
 	NUTS3Code        sql.NullString  `json:"nuts_3_code,omitempty" db:"nuts_3_code" swaggertype:"string"`
-	// NUTS3ID ist die kanonische LAU->NUTS-3-Verlinkung: deklarierte
-	// Quellspalte (nuts_3_code/nuts_3), sonst räumlich ermittelter Fallback
-	// (siehe int_lau_nuts3_spatial_link.sql). Robuster als NUTS3Code, das
-	// oft NULL ist, wenn die Quelldaten keinen NUTS-3-Code führen.
+	// NUTS3ID is the canonical LAU->NUTS-3 link: declared source column
+	// (nuts_3_code/nuts_3), else spatially derived fallback (see
+	// int_lau_nuts3_spatial_link.sql). More robust than NUTS3Code, which is
+	// often NULL when the source data carries no NUTS-3 code.
 	NUTS3ID sql.NullString `json:"nuts3_id,omitempty" db:"nuts3_id" swaggertype:"string"`
-	// NUTS3LinkSource kennzeichnet, woher NUTS3ID stammt: 'declared' (aus
-	// Quelldaten) oder 'spatial_estimate' (räumlich ermittelt, keine
-	// amtliche Zuordnung) - siehe lau_integrated.sql.
+	// NUTS3LinkSource marks where NUTS3ID comes from: 'declared' (from source
+	// data) or 'spatial_estimate' (spatially derived, not an official mapping) -
+	// see lau_integrated.sql.
 	NUTS3LinkSource       sql.NullString  `json:"nuts3_link_source,omitempty" db:"nuts3_link_source" swaggertype:"string"`
 	LAUNatCode            sql.NullString  `json:"lau_nat_code,omitempty" db:"lau_nat_code" swaggertype:"string"`
 	PopulationCount       sql.NullInt64   `json:"population_count,omitempty" db:"population_count" swaggertype:"integer"`
@@ -35,7 +35,7 @@ type LAURegion struct {
 	Datasets              []RegionDataset `json:"datasets,omitempty" db:"-"`
 }
 
-// LAURegionFilter für Query-Parameter
+// LAURegionFilter holds the query parameters
 type LAURegionFilter struct {
 	CountryCode         string `form:"country_code" example:"DE"`
 	NutsParentID        string `form:"nuts_parent_id" example:"DE1"`
@@ -49,9 +49,9 @@ type LAURegionFilter struct {
 	Offset              int    `form:"offset" binding:"omitempty,min=0" example:"0"`
 }
 
-// GeoRegionSummary ist ein einheitlicher Listen-Eintrag für NUTS-, LAU- und
-// Agentur-Regionen (GeoType: "NUTS", "LAU" oder "Agentur"). NutsLevel/
-// NutsLevelCode/CountryCode sind nur für NUTS bzw. LAU gesetzt.
+// GeoRegionSummary is a unified list entry for NUTS, LAU and Agentur regions
+// (GeoType: "NUTS", "LAU" or "Agentur"). NutsLevel/NutsLevelCode/CountryCode
+// are set only for NUTS resp. LAU.
 type GeoRegionSummary struct {
 	GeoID            string          `json:"geo_id" example:"DE111"`
 	GeoType          string          `json:"geo_type" example:"NUTS"`
@@ -65,7 +65,7 @@ type GeoRegionSummary struct {
 	Datasets         []RegionDataset `json:"datasets,omitempty"`
 }
 
-// GeoRegionFilter für Query-Parameter am allgemeinen Geo-Listenendpunkt.
+// GeoRegionFilter holds the query parameters of the general geo list endpoint.
 type GeoRegionFilter struct {
 	GeoType             string `form:"geo_type"`
 	Level               *int   `form:"level" binding:"omitempty,min=0,max=3"`
@@ -83,15 +83,15 @@ type GeoRegionFilter struct {
 	Offset              int    `form:"offset" binding:"omitempty,min=0"`
 }
 
-// GeoPeriod repräsentiert einen Gültigkeitszeitraum einer Geometrie-Version.
-// ValidTo ist nil, wenn die Version noch aktuell ist.
+// GeoPeriod represents the validity period of a geometry version.
+// ValidTo is nil if the version is still current.
 type GeoPeriod struct {
 	ValidFrom int  `json:"valid_from" db:"valid_from" example:"2016"`
 	ValidTo   *int `json:"valid_to"   db:"valid_to"   example:"2023" swaggertype:"integer"`
 }
 
-// GeoRegionVersions enthält die Geometrie-Perioden einer Geo-Region (NUTS oder LAU).
-// Jede Periode repräsentiert eine Version der Geometrie; ValidTo=null bedeutet noch aktuell.
+// GeoRegionVersions holds the geometry periods of a geo region (NUTS or LAU).
+// Each period represents one geometry version; ValidTo=null means still current.
 type GeoRegionVersions struct {
 	GeoID         string      `json:"geo_id"                    example:"DE111"`
 	GeoType       string      `json:"geo_type"                  example:"NUTS"`
@@ -100,7 +100,7 @@ type GeoRegionVersions struct {
 	Periods       []GeoPeriod `json:"periods"`
 }
 
-// GeoSpatialQueryRequest beschreibt eine räumliche Abfrage mit GeoJSON-Geometrie.
+// GeoSpatialQueryRequest describes a spatial query with a GeoJSON geometry.
 type GeoSpatialQueryRequest struct {
 	GeoType          string          `json:"geo_type" example:"nuts"`
 	Operation        string          `json:"operation" example:"intersects"`

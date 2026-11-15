@@ -9,13 +9,13 @@
 }}
 
 /*
-  Eine Zeile je Agenturbezirk mit dem jeweils neuesten Berichtsmonat
-  (arbeitslose/unterbeschaeftigung) - für die Kartendarstellung, die (anders
-  als NUTS/LAU) noch keine Zeitreihen-/Interpolations-Mart hat (siehe
-  mart_agenturbezirk_sociodata.sql: Gap-Filling ist bewusst spätere
-  Erweiterung). Bezirke ohne jeden Wert (year is null nach dem Left Join in
-  mart_agenturbezirk_sociodata) fallen hier raus, statt mit leeren Werten
-  auf der Karte zu erscheinen.
+  One row per Agenturbezirk with its latest reporting month
+  (arbeitslose/unterbeschaeftigung) - for the map view, which (unlike
+  NUTS/LAU) has no time-series/interpolation mart yet (see
+  mart_agenturbezirk_sociodata.sql: gap filling is a deliberate later
+  extension). Districts without any value (year is null after the left join
+  in mart_agenturbezirk_sociodata) are dropped here instead of appearing on
+  the map with empty values.
 */
 
 with ranked as (

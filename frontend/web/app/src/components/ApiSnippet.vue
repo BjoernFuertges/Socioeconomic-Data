@@ -1,21 +1,20 @@
 <script setup lang="ts">
-// Zeigt zu einer API-Abfrage den fertigen curl-Befehl und die direkte URL
-// zum Kopieren - damit dieselben Daten, die die Seite anzeigt, ohne Umweg
-// über die UI skriptbar sind. Wird sowohl im Download-Dialog (Regionen) als
-// auch im Datenkatalog verwendet.
+// Shows the ready-made curl command and the direct URL for an API query, to copy,
+// so the data the page displays can be scripted without going through the UI.
+// Used in both the download dialog (regions) and the dataset catalog.
 import { ref } from "vue";
 import { copyToClipboard, curlCommand, type DownloadFormat } from "../api/download";
 
 const props = defineProps<{
-  // URL ohne format/download - das Format läuft im curl-Befehl über Accept.
+  // URL without format/download - the format goes via Accept in the curl command.
   apiUrl: string;
-  // URL für den Browser-Download (mit format=…&download=1).
+  // URL for the browser download (with format=…&download=1).
   downloadUrl?: string;
   format: DownloadFormat;
   filename: string;
 }>();
 
-// null = noch nichts kopiert, false = Zwischenablage nicht verfügbar
+// null = nothing copied yet, false = clipboard unavailable
 const copied = ref<Record<string, boolean | null>>({ curl: null, url: null });
 
 async function copy(kind: "curl" | "url", text: string) {

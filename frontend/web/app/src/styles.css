@@ -513,7 +513,7 @@ table.nuts3-share-table th {
   border-radius: 2px;
 }
 
-/* Status-Marker der kombinierten Ansicht: neutrale Farbe, nur die Form zählt. */
+/* Status marker of the combined view: neutral color, only the shape matters. */
 .chart-caption .marker-neutral.marker-observed {
   background: var(--text-muted);
 }
@@ -828,10 +828,9 @@ table.data-table tr.is-computed td {
   height: 70vh;
   min-height: 420px;
   width: 100%;
-  /* leaflet.css setzt .leaflet-container { background: #ddd } (Platzhalter
-     fürs Kachel-Laden) mit derselben Spezifität - ohne Kachel-Ebene würde das
-     sonst durchscheinen und je nach Ladereihenfolge var(--page-plane)
-     überschreiben. */
+  /* leaflet.css sets .leaflet-container { background: #ddd } (tile-loading
+     placeholder) with the same specificity - without a tile layer it would
+     show through and, depending on load order, override var(--page-plane). */
   background: var(--page-plane) !important;
 }
 
@@ -914,7 +913,7 @@ table.data-table tr.is-computed td {
   border-radius: 4px;
 }
 
-/* Download-Dialog (Regionen) und API-Snippets (Regionen + Datenkatalog) */
+/* Download dialog (regions) and API snippets (regions + dataset catalog) */
 
 .download-dialog {
   max-width: min(46rem, 92vw);

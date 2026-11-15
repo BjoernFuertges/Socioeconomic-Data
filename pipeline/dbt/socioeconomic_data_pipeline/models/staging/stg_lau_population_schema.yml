@@ -1,0 +1,63 @@
+version: 2
+
+models:
+  - name: stg_lau_population
+    description: "LAU (municipality) population per year, with the population count parsed to an integer."
+    # Grain: one row per (gisco_id, year): int_lau_population_geo joins population and geometry on it, a duplicate would double-count population in the crosswalk weights.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - gisco_id
+            - year
+    columns:
+      - name: gisco_id
+        description: "Unique LAU identifier from GISCO"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: nuts_3_code
+        description: "NUTS-3 code of the parent region"
+        data_type: text
+
+      - name: lau_nat_code
+        description: "National LAU identifier (AGS), normalized to 8 digits (no .0, leading zero restored)"
+        data_type: text
+
+      - name: lau_name_national
+        description: "LAU name in national language"
+        data_type: text
+
+      - name: lau_name_latin
+        description: "LAU name in Latin characters"
+        data_type: text
+
+      - name: population_count
+        description: "Population count; null if the source value is not a valid number"
+        data_type: bigint
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+
+      - name: country
+        description: "Country code"
+        data_type: text
+
+      - name: year
+        description: "Reference year of the population figure"
+        data_type: integer
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2000
+              max_value: 2030
+
+      - name: has_valid_population
+        description: "True if the population value is a valid number"
+        data_type: boolean
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "Timestamp of the staging run"

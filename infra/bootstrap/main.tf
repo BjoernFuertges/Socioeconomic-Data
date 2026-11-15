@@ -1,6 +1,6 @@
-# Einmaliger Bootstrap: legt den privaten Bucket für den Terraform-State von
-# infra/hetzner/ an (Hetzner Object Storage, S3-kompatibel). Läuft mit LOKALEM
-# State vom Laptop aus, siehe infra/README.md.
+# One-time bootstrap: creates the private bucket for the Terraform state of
+# infra/hetzner/ (Hetzner Object Storage, S3-compatible). Runs with LOCAL
+# state from a laptop, see infra/README.md.
 terraform {
   required_version = ">= 1.6"
 
@@ -30,7 +30,7 @@ variable "region" {
   default     = "fsn1"
 }
 
-# Credentials über AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY (S3-Key aus der Hetzner-Konsole)
+# Credentials via AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY (S3 key from the Hetzner console)
 provider "aws" {
   region = var.region
 
@@ -38,7 +38,7 @@ provider "aws" {
     s3 = "https://${var.region}.your-objectstorage.com"
   }
 
-  # Hetzner ist kein AWS: keine STS-/IAM-/Metadata-Aufrufe
+  # Hetzner is not AWS: no STS/IAM/metadata calls
   skip_credentials_validation = true
   skip_requesting_account_id  = true
   skip_metadata_api_check     = true
@@ -62,7 +62,7 @@ resource "aws_s3_bucket_versioning" "state" {
   }
 }
 
-# Aufbewahrung (30 Tage) erledigt backup_db.sh per rclone, keine Bucket-Lifecycle-Regel nötig
+# Retention (30 days) is handled by backup_db.sh via rclone; no bucket lifecycle rule needed
 resource "aws_s3_bucket" "backup" {
   bucket = var.backup_bucket
 

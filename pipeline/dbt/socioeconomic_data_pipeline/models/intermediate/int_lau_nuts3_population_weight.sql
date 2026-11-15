@@ -10,36 +10,35 @@
 }}
 
 /*
-  Populationsbasiertes Rohgewicht je NUTS-3-Versionspaar, ermittelt über die
-  tatsächliche Gemeinde(LAU)-Bevölkerung.
+  Population-based raw weight per NUTS-3 version pair, derived from the
+  actual Gemeinde (LAU) population. lau_population is always a number of
+  inhabitants.
 
-  Warum nicht die Gesamt-Bevölkerung der NUTS-3-Quellregion (wie zuvor in
-  einer früheren Version dieses Crosswalks)? Weil dieser Wert für alle
-  Zielregionen einer Quellregion identisch ist und sich daher bei der
-  Normierung (Division durch die Summe je Quellregion) vollständig
-  herauskürzt — das Ergebnis wäre rein flächenbasiert, obwohl es als
-  "populationsgewichtet" bezeichnet würde.
+  Why not the total population of the NUTS-3 source region? That value is
+  identical for all target regions of a source region and cancels out
+  completely in the normalization (division by the per-source-region sum),
+  so the result would be purely area-based despite being called
+  "population-weighted".
 
-  Stattdessen wird jede Gemeinde (LAU) einzeln sowohl der Quell- als auch
-  der Zielregion zugeordnet (int_lau_nuts3_membership) und ihre Bevölkerung
-  vollständig dem jeweiligen (Quell-, Ziel-)-Paar zugeschlagen. Dadurch
-  variiert das Gewicht tatsächlich je Zielregion, abhängig davon, wo
-  innerhalb der Quellregion die Bevölkerung wirklich lebt.
+  Instead, each Gemeinde's whole population goes to the (source, target)
+  region pair it lies in (majority assignment per version, see
+  int_lau_nuts3_membership):
 
-  Referenzjahr je Versionspaar: das jeweils jüngere der beiden beteiligten
-  NUTS-Versionsjahre minus 1 (Bevölkerungsstand kurz vor Inkrafttreten der
-  neueren Version) - ref_year = GREATEST(source_version, target_version) - 1.
-  Gilt unabhängig von der Richtung (vorwärts/rückwärts) und generalisiert
-  automatisch auf jedes Versionspaar, nicht nur benachbarte Vintages, z. B.:
-    2013 → 2016 : 2015        2016 → 2013 : 2015
-    2016 → 2021 : 2020        2021 → 2016 : 2020
-    2021 → 2024 : 2023        2024 → 2021 : 2023
-    2003 → 2024 : 2023        2024 → 2003 : 2023
+    lau_population(S, T) = sum of pop(g) over Gemeinden g in S (version A)
+                           and T (version B)
 
-  Tatsächlich verwendet wird davon ausgehend das nächstgelegene *verfügbare*
-  LAU-Bevölkerungsjahr (siehe resolved unten) - aktuell ist nur 2024 geladen,
-  sodass jedes Paar de facto mit der 2024er-Bevölkerungsverteilung gewichtet
-  wird, bis weitere historische LAU-Bevölkerungsjahre geladen werden.
+  Reference year per version pair: the younger of the two NUTS version
+  years minus 1 (population just before the newer version took effect),
+  i.e. ref_year = GREATEST(source_version, target_version) - 1. This holds
+  regardless of direction and generalizes to any version pair, e.g.:
+    2013 -> 2016 : 2015        2016 -> 2013 : 2015
+    2016 -> 2021 : 2020        2021 -> 2016 : 2020
+    2021 -> 2024 : 2023        2024 -> 2021 : 2023
+    2003 -> 2024 : 2023        2024 -> 2003 : 2023
+
+  The closest *available* LAU population year is used (see resolved below).
+  The Eurostat population snapshots for 2018-2025 are loaded, so pairs with
+  an earlier reference year fall back to the 2018 snapshot.
 */
 
 with available_years as (
@@ -50,8 +49,8 @@ nuts_version_years as (
     select distinct version_year from {{ ref('int_lau_nuts3_membership') }}
 ),
 
--- Alle gerichteten Versionspaare (jedes Jahr → jedes andere Jahr), nicht nur
--- benachbarte Vintages - analog zu int_nuts_spatial_crosswalk.
+-- All directed version pairs (every year -> every other year), not just
+-- adjacent vintages - analogous to int_nuts_spatial_crosswalk.
 version_pairs as (
     select
         a.version_year                                  as source_version,
@@ -62,7 +61,9 @@ version_pairs as (
     where a.version_year != b.version_year
 ),
 
--- Nächstgelegenes tatsächlich verfügbares LAU-Bevölkerungsjahr je Referenzjahr
+-- Closest actually available LAU population year per reference year.
+-- int_lau_nuts3_membership only computes these years (pop_years CTE there):
+-- change both together.
 resolved as (
     select
         vp.source_version,
@@ -83,23 +84,52 @@ membership as (
 population as (
     select gisco_id, year, population_count
     from {{ ref('int_lau_population_geo') }}
+),
+
+-- Every Gemeinde with its source and target region per version pair
+pairs as (
+    select
+        r.source_version,
+        r.target_version,
+        pop.gisco_id,
+        pop.year,
+        pop.population_count,
+        src.nuts_id                          as source_nuts_id,
+        tgt.nuts_id                          as target_nuts_id,
+        -- the Gemeinde lies (by area) not clearly inside its assigned region
+        -- in at least one of the two versions: its whole population is
+        -- allocated by majority assignment, so the pair weight is an estimate
+        least(src.area_share, tgt.area_share) < {{ var('crosswalk_uncertain_area_share', 0.9) }}
+                                             as is_uncertain
+    from resolved r
+    join population pop
+        on pop.year = r.pop_year
+    join membership src
+        on  src.gisco_id     = pop.gisco_id
+        and src.year         = pop.year
+        and src.version_year = r.source_version
+    join membership tgt
+        on  tgt.gisco_id     = pop.gisco_id
+        and tgt.year         = pop.year
+        and tgt.version_year = r.target_version
+),
+
+pieces as (
+    select source_version, target_version, source_nuts_id, target_nuts_id,
+           population_count as population_piece, is_uncertain
+    from pairs
 )
 
 select
-    r.source_version,
-    r.target_version,
-    src.nuts_id                as source_nuts_id,
-    tgt.nuts_id                as target_nuts_id,
-    sum(pop.population_count)  as lau_population
-from resolved r
-join population pop
-    on pop.year = r.pop_year
-join membership src
-    on  src.gisco_id     = pop.gisco_id
-    and src.year         = pop.year
-    and src.version_year = r.source_version
-join membership tgt
-    on  tgt.gisco_id     = pop.gisco_id
-    and tgt.year         = pop.year
-    and tgt.version_year = r.target_version
-group by r.source_version, r.target_version, src.nuts_id, tgt.nuts_id
+    source_version,
+    target_version,
+    source_nuts_id,
+    target_nuts_id,
+    sum(population_piece)  as lau_population,
+    -- inhabitants of Gemeinden assigned wholly although they straddle a
+    -- region boundary (area share of the assigned region below
+    -- var crosswalk_uncertain_area_share) in the source or target version
+    coalesce(sum(population_piece) filter (where is_uncertain), 0) as uncertain_population
+from pieces
+group by source_version, target_version, source_nuts_id, target_nuts_id
+having sum(population_piece) > 0

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 type negotiateTestRow struct {
@@ -111,8 +111,8 @@ type floatRow struct {
 	Ptr   *float64 `json:"ptr"`
 }
 
-// Große Werte dürfen nicht in Exponentialschreibweise landen - Tabellen-
-// kalkulationen lesen "3.664088E+06" sonst als Text statt als Zahl.
+// Large values must not end up in exponential notation - spreadsheets
+// otherwise read "3.664088E+06" as text instead of a number.
 func TestWriteCSVFormatsFloatsPlain(t *testing.T) {
 	big := 12876243.0
 	gin.SetMode(gin.TestMode)

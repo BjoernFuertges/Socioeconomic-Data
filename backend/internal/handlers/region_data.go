@@ -1,19 +1,20 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
 
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
-	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
-// Slugs der Agentur-Rohwerte (mart_agenturbezirk_sociodata) und der
-// LAU->NUTS-3-Aggregate (mart_nuts3_lau_aggregate) im kombinierten Export.
-// Sie sind keine Kreis-Datensätze; "ba_" trennt die BA-Rohwerte vom
-// gleichnamigen, auf Agenturbezirke aggregierten Kreis-Datensatz "arbeitslose".
+// Slugs of the raw Agentur values (mart_agenturbezirk_sociodata) and of the
+// LAU->NUTS-3 aggregates (mart_nuts3_lau_aggregate) in the combined export.
+// They are not Kreis datasets; "ba_" separates the BA raw values from the
+// same-named Kreis dataset "arbeitslose" aggregated to Agenturbezirke.
 const (
 	slugBAArbeitslose         = "ba_arbeitslose"
 	slugBAUnterbeschaeftigung = "ba_unterbeschaeftigung"
@@ -28,7 +29,7 @@ type regionDataFilter struct {
 	ToYear   *int   `form:"to_year"`
 }
 
-// regionScope beschreibt, welche Wertearten ausgeliefert werden.
+// regionScope describes which kinds of values are delivered.
 type regionScope struct {
 	Raw        bool
 	Aggregated bool
@@ -56,7 +57,7 @@ func parseRegionScope(raw string) (regionScope, error) {
 	return scope, nil
 }
 
-// parseDatasetList zerlegt ?datasets=a,b; leer = alle verfügbaren.
+// parseDatasetList splits ?datasets=a,b; empty = all available.
 func parseDatasetList(raw string) []string {
 	var slugs []string
 	seen := map[string]bool{}
@@ -71,8 +72,8 @@ func parseDatasetList(raw string) []string {
 	return slugs
 }
 
-// validateRegionDatasets lehnt Slugs ab, die weder ein bekannter Kreis-
-// Datensatz noch einer der region-spezifischen Sonder-Slugs sind.
+// validateRegionDatasets rejects slugs that are neither a known Kreis
+// dataset nor one of the region-specific special slugs.
 func validateRegionDatasets(slugs []string) error {
 	special := map[string]bool{
 		slugBAArbeitslose: true, slugBAUnterbeschaeftigung: true,
@@ -89,8 +90,8 @@ func validateRegionDatasets(slugs []string) error {
 	return nil
 }
 
-// pickSlugs liefert die aus slugs anwendbaren Slugs (Filter: allowed). Ohne
-// Auswahl (slugs leer) => nil und all=true, also "alle verfügbaren".
+// pickSlugs returns the applicable slugs from slugs (filter: allowed). Without
+// a selection (slugs empty) => nil and all=true, i.e. "all available".
 func pickSlugs(slugs []string, allowed func(string) bool) (picked []string, all bool) {
 	if len(slugs) == 0 {
 		return nil, true
@@ -113,8 +114,8 @@ func isLauHarmonizedSlug(slug string) bool {
 	return ok && cfg.IsHarmonizedLau
 }
 
-// addYearRange hängt from_year/to_year-Bedingungen an und gibt die neue
-// Query und nächste Argumentposition zurück.
+// addYearRange appends from_year/to_year conditions and returns the new
+// query and the next argument position.
 func addYearRange(query string, args []interface{}, yearCol string, filter regionDataFilter) (string, []interface{}) {
 	if filter.FromYear != nil {
 		args = append(args, *filter.FromYear)
@@ -127,10 +128,10 @@ func addYearRange(query string, args []interface{}, yearCol string, filter regio
 	return query, args
 }
 
-// GetRegionData liefert Rohwerte und/oder aggregierte Werte einer Region als
-// eine Long-Format-Tabelle
+// GetRegionData returns raw and/or aggregated values of a region as a
+// long-format table
 // @Summary Kombinierter Daten-Export einer Region (roh und/oder aggregiert)
-// @Description Stellt die gewünschten Datensätze einer Region (NUTS, LAU oder Agenturbezirk) aus den bestehenden Marts zusammen und liefert sie in einem einheitlichen Long-Format (region_type, region_id, dataset_slug, year, month, value, is_computed, is_interpolated, aggregation_method, value_kind, source_region_count). scope=raw liefert die Ursprungswerte der Region (NUTS-3: interpolierte Kreis-Zeitreihe; LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung), scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert). NUTS-0/1/2 haben keine Rohwerte, LAU keine aggregierten Werte. Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.
+// @Description Stellt die gewünschten Datensätze einer Region (NUTS, LAU oder Agenturbezirk) aus den bestehenden Marts zusammen und liefert sie in einem einheitlichen Long-Format (region_type, region_id, dataset_slug, year, month, value, is_computed, is_interpolated, aggregation_method, value_kind, source_region_count). scope=raw liefert die Ursprungswerte der Region (NUTS-3: interpolierte Kreis-Zeitreihe; LAU: interpolierte Gemeinde-Zeitreihe; Agentur: monatliche BA-Werte ba_arbeitslose/ba_unterbeschaeftigung), scope=aggregated die berechneten Werte (NUTS-0/1/2 und Agenturbezirke: aus Kreisen aggregiert; NUTS-3: aus Gemeinden aggregiert). NUTS-0/1/2 haben keine Rohwerte, LAU keine aggregierten Werte. Die NUTS-3-/LAU-Rohwerte stehen immer im neuesten verfügbaren NUTS-/LAU-Stand (default von GET /versions). Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.
 // @Tags Regionen
 // @Accept json
 // @Produce json,text/csv
@@ -175,11 +176,11 @@ func (h *Handler) GetRegionData(c *gin.Context) {
 	rows := []models.RegionDataRow{}
 	switch regionType {
 	case "nuts":
-		rows, err = h.regionDataNuts(regionID, scope, slugs, filter)
+		rows, err = h.regionDataNuts(c.Request.Context(), regionID, scope, slugs, filter)
 	case "lau":
-		rows, err = h.regionDataLau(regionID, scope, slugs, filter)
+		rows, err = h.regionDataLau(c.Request.Context(), regionID, scope, slugs, filter)
 	case "agentur":
-		rows, err = h.regionDataAgentur(regionID, scope, slugs, filter)
+		rows, err = h.regionDataAgentur(c.Request.Context(), regionID, scope, slugs, filter)
 	default:
 		respondBadRequest(c, "region_type muss nuts, lau oder agentur sein")
 		return
@@ -191,7 +192,7 @@ func (h *Handler) GetRegionData(c *gin.Context) {
 		case regionNotFoundError:
 			respondNotFound(c, e.Error())
 		default:
-			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+			respondDBError(c, "Datenbankfehler", err)
 		}
 		return
 	}
@@ -210,7 +211,7 @@ type regionNotFoundError struct{ msg string }
 
 func (e regionNotFoundError) Error() string { return e.msg }
 
-func (h *Handler) regionDataNuts(regionID string, scope regionScope, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
+func (h *Handler) regionDataNuts(ctx context.Context, regionID string, scope regionScope, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
 	details, err := nutsLevelDetailsFromID(regionID)
 	if err != nil {
 		return nil, regionInputError{err.Error()}
@@ -226,7 +227,7 @@ func (h *Handler) regionDataNuts(regionID string, scope regionScope, slugs []str
 					false AS is_computed, is_interpolated, NULL::text AS aggregation_method, NULL::text AS value_kind, NULL::int AS source_region_count
 					FROM transformed_data.mart_nuts3_timeseries_interpolated
 					WHERE nuts3_id = $1 AND target_version = $2`
-				args := []interface{}{id, defaultNutsVersion}
+				args := []interface{}{id, defaultNutsVersion()}
 				if !all {
 					args = append(args, pq.Array(picked))
 					query += fmt.Sprintf(" AND dataset_slug = ANY($%d)", len(args))
@@ -235,14 +236,14 @@ func (h *Handler) regionDataNuts(regionID string, scope regionScope, slugs []str
 				query += " ORDER BY dataset_slug, year"
 
 				var part []models.RegionDataRow
-				if err := h.DB.Select(&part, query, args...); err != nil {
+				if err := h.DB.SelectContext(ctx, &part, query, args...); err != nil {
 					return nil, err
 				}
 				rows = append(rows, part...)
 			}
 		}
 		if scope.Aggregated {
-			part, err := h.lauAggregateRows(id, slugs, filter)
+			part, err := h.lauAggregateRows(ctx, id, slugs, filter)
 			if err != nil {
 				return nil, err
 			}
@@ -251,7 +252,7 @@ func (h *Handler) regionDataNuts(regionID string, scope regionScope, slugs []str
 		return rows, nil
 	}
 
-	// NUTS-0/1/2: nur aggregierte Werte (aus Kreisen), keine Rohwerte.
+	// NUTS-0/1/2: aggregated values only (from Kreise), no raw values.
 	if !scope.Aggregated {
 		return rows, nil
 	}
@@ -260,7 +261,7 @@ func (h *Handler) regionDataNuts(regionID string, scope regionScope, slugs []str
 		return rows, nil
 	}
 	query := `SELECT 'nuts' AS region_type, nuts_id AS region_id, dataset_slug, year, NULL::int AS month, value,
-		true AS is_computed, false AS is_interpolated, NULL::text AS aggregation_method, NULL::text AS value_kind, source_region_count
+		true AS is_computed, false AS is_interpolated, NULL::text AS aggregation_method, NULL::text AS value_kind, source_region_count, expected_region_count, is_complete
 		FROM transformed_data.mart_nuts012_dataset_aggregate
 		WHERE nuts_id = $1`
 	args := []interface{}{id}
@@ -270,15 +271,15 @@ func (h *Handler) regionDataNuts(regionID string, scope regionScope, slugs []str
 	}
 	query, args = addYearRange(query, args, "year", filter)
 	query += " ORDER BY dataset_slug, year"
-	if err := h.DB.Select(&rows, query, args...); err != nil {
+	if err := h.DB.SelectContext(ctx, &rows, query, args...); err != nil {
 		return nil, err
 	}
 	return rows, nil
 }
 
-// lauAggregateRows bringt die beiden Spalten von mart_nuts3_lau_aggregate in
-// das Long-Format (je Jahr eine Zeile pro Kennzahl).
-func (h *Handler) lauAggregateRows(nuts3ID string, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
+// lauAggregateRows converts the two columns of mart_nuts3_lau_aggregate into
+// long format (one row per indicator per year).
+func (h *Handler) lauAggregateRows(ctx context.Context, nuts3ID string, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
 	wantPop, wantQuote := len(slugs) == 0, len(slugs) == 0
 	for _, slug := range slugs {
 		switch slug {
@@ -292,14 +293,14 @@ func (h *Handler) lauAggregateRows(nuts3ID string, slugs []string, filter region
 		return nil, nil
 	}
 
-	query := `SELECT year, lau_population_sum, lau_region_count, lau_region_count_with_population, lau_beschaeftigungsquote_weighted_avg
+	query := `SELECT year, lau_population_sum, lau_region_count, lau_region_count_with_population, lau_beschaeftigungsquote_weighted_avg, lau_beschaeftigungsquote_region_count
 		FROM transformed_data.mart_nuts3_lau_aggregate WHERE nuts3_id = $1`
 	args := []interface{}{nuts3ID}
 	query, args = addYearRange(query, args, "year", filter)
 	query += " ORDER BY year"
 
 	var series []models.NutsLauAggregatePoint
-	if err := h.DB.Select(&series, query, args...); err != nil {
+	if err := h.DB.SelectContext(ctx, &series, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -315,15 +316,15 @@ func (h *Handler) lauAggregateRows(nuts3ID string, slugs []string, filter region
 			rows = append(rows, newRow(slugLauPopulationSum, p, p.LauPopulationSum, "sum", p.LauRegionCountWithPopulation))
 		}
 		if wantQuote {
-			rows = append(rows, newRow(slugLauBeschQuoteAvg, p, p.LauBeschaeftigungsquoteWeightedAvg, "weighted_avg_population", p.LauRegionCountWithPopulation))
+			rows = append(rows, newRow(slugLauBeschQuoteAvg, p, p.LauBeschaeftigungsquoteWeightedAvg, "weighted_avg_population", p.LauBeschaeftigungsquoteRegionCount))
 		}
 	}
 	return rows, nil
 }
 
-func (h *Handler) regionDataLau(regionID string, scope regionScope, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
+func (h *Handler) regionDataLau(ctx context.Context, regionID string, scope regionScope, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
 	rows := []models.RegionDataRow{}
-	// LAU hat keine aggregierten Werte - nur Rohwerte.
+	// LAU has no aggregated values - raw values only.
 	if !scope.Raw {
 		return rows, nil
 	}
@@ -337,22 +338,22 @@ func (h *Handler) regionDataLau(regionID string, scope regionScope, slugs []stri
 		false AS is_computed, is_interpolated, NULL::text AS aggregation_method, NULL::text AS value_kind, NULL::int AS source_region_count
 		FROM transformed_data.mart_lau_timeseries_interpolated
 		WHERE gisco_id = $1 AND target_version = $2`
-	args := []interface{}{id, defaultLauVersion}
+	args := []interface{}{id, defaultLauVersion()}
 	if !all {
 		args = append(args, pq.Array(picked))
 		query += fmt.Sprintf(" AND dataset_slug = ANY($%d)", len(args))
 	}
 	query, args = addYearRange(query, args, "year", filter)
 	query += " ORDER BY dataset_slug, year"
-	if err := h.DB.Select(&rows, query, args...); err != nil {
+	if err := h.DB.SelectContext(ctx, &rows, query, args...); err != nil {
 		return nil, err
 	}
 	return rows, nil
 }
 
-func (h *Handler) regionDataAgentur(baSchl string, scope regionScope, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
+func (h *Handler) regionDataAgentur(ctx context.Context, baSchl string, scope regionScope, slugs []string, filter regionDataFilter) ([]models.RegionDataRow, error) {
 	var exists bool
-	if err := h.DB.Get(&exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_sociodata WHERE ba_schl = $1)`, baSchl); err != nil {
+	if err := h.DB.GetContext(ctx, &exists, `SELECT EXISTS(SELECT 1 FROM transformed_data.mart_agenturbezirk_sociodata WHERE ba_schl = $1)`, baSchl); err != nil {
 		return nil, err
 	}
 	if !exists {
@@ -380,7 +381,7 @@ func (h *Handler) regionDataAgentur(baSchl string, scope regionScope, slugs []st
 			query += " ORDER BY observation_date"
 
 			var points []models.AgenturbezirkArbeitslosigkeitPoint
-			if err := h.DB.Select(&points, query, args...); err != nil {
+			if err := h.DB.SelectContext(ctx, &points, query, args...); err != nil {
 				return nil, err
 			}
 			for _, p := range points {
@@ -407,7 +408,7 @@ func (h *Handler) regionDataAgentur(baSchl string, scope regionScope, slugs []st
 		picked, all := pickSlugs(slugs, isNutsHarmonizedSlug)
 		if all || len(picked) > 0 {
 			query := `SELECT 'agentur' AS region_type, ba_schl AS region_id, dataset_slug, year, NULL::int AS month, value,
-				true AS is_computed, false AS is_interpolated, aggregation_method, value_kind, source_region_count
+				true AS is_computed, false AS is_interpolated, aggregation_method, value_kind, source_region_count, expected_region_count, is_complete
 				FROM transformed_data.mart_agentur_dataset_aggregate
 				WHERE ba_schl = $1`
 			args := []interface{}{baSchl}
@@ -419,7 +420,7 @@ func (h *Handler) regionDataAgentur(baSchl string, scope regionScope, slugs []st
 			query += " ORDER BY dataset_slug, year"
 
 			var part []models.RegionDataRow
-			if err := h.DB.Select(&part, query, args...); err != nil {
+			if err := h.DB.SelectContext(ctx, &part, query, args...); err != nil {
 				return nil, err
 			}
 			rows = append(rows, part...)

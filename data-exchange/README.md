@@ -17,44 +17,50 @@ Datenaustausch von **Friedrich → Björn**.
 
 Dieser Ordner wird vom `pipeline`-Container als Datenquelle für die dlt-Pipelines gemountet (`DATA_EXCHANGE_PATH=/app/data-exchange/1_friedrich-bjoern`).
 
-### Erwartete Verzeichnisstruktur
+### Verzeichnisstruktur
 
 ```
 1_friedrich-bjoern/
 │
-├── arbeitslosenzahlen/
-│   ├── mapped_pairs.csv          # Arbeitslosenzahlen (gemappte Regionen)
-│   └── meta.json                 # Metadaten zum Arbeitslosenzahlen-Datensatz
+├── <dataset>/                              # z. B. bevoelkerung, schuldnerquote, arbeitslose, ...
+│   ├── <dataset>_kreise.csv                # Rohexport (Eingabe des geo-mapper, nicht von der Pipeline gelesen)
+│   ├── <dataset>_kreise_meta.yaml          # Mapper-Konfiguration (ebenfalls nicht von der Pipeline gelesen)
+│   └── results_<dataset>_kreise/           # Ausgabe des geo-mapper = Eingabe der Pipeline
+│       ├── mapped_pairs.csv                # gemappte Werte je Region und Jahr
+│       ├── meta.yaml                       # Metadaten des Datensatzes
+│       └── unmapped*.csv                   # nicht zuordenbare Regionen (nur zur Kontrolle)
 │
-├── geodata/
-│   └── lau/
-│       └── output/
-│           └── geojson/
-│               ├── LAU_RG_01M_2011_3035_cleaned.geojson.gz
-│               ├── LAU_RG_01M_2012_3035_cleaned.geojson.gz
-│               └── ...           # je Jahr eine Datei
+├── sv_beschaeftigte/results_sv_beschaeftigte_kreise/   # wird von fetch_ba_sv_beschaeftigte.py erzeugt
+├── beschaeftigungsquote/results_beschaeftigungsquote_gemeinden/  # Gemeinde-Ebene, von run_all_pipelines.sh nicht geladen
 │
-└── statistics/
-    └── lokale_verwaltungseinheiten_eu/
-        └── output/
-            ├── lau_population_2011.csv
-            ├── lau_population_2012.csv
-            └── ...               # je Jahr eine Datei
+├── erwerbsfaehig/, erwerbstaetige/         # nur Rohdateien ("Tabelle Abfrage1.csv"), von der Pipeline nicht gelesen
+│
+└── Geodaten/                               # bevorzugte Geodatenquelle für load_geodata_to_postgis.py
+    ├── geojson/LAU/<jahr>/lau_<jahr>_level_0.geojson
+    ├── geojson/NUTS_<0-3>/<jahr>/nuts_<jahr>_level_<0-3>.geojson
+    └── csv/...                             # Namens-/ID-Tabellen zu den Geometrien
 ```
+
+Die Pipeline liest nur `results_<dataset>_kreise/{mapped_pairs.csv,meta.yaml}`
+(über `pipeline/dlt/load_soziodata_generic.py <dataset>/results_<dataset>_kreise`, die Liste der
+geladenen Datensätze steht in `pipeline/dlt/run_all_pipelines.sh`) sowie den Ordner `Geodaten/`.
+Fehlt eine der beiden Dateien, bricht der Loader mit Fehler ab. Welche Datensätze tatsächlich vorhanden sind,
+hängt vom Nextcloud-Stand ab; im Git-Checkout sind alle Daten ausgeschlossen.
+
+Weitere Ordner neben `1_friedrich-bjoern/` (`eurostat_lau_population/`, `geodata/`, `geo-mapper-output/`) sind
+lokale Arbeits-/Download-Verzeichnisse. `eurostat_lau_population/` ist das Ziel von `fetch_lau_population.py`
+(`GEODATA_BASE_PATH`, Dateien `statistics/lokale_verwaltungseinheiten_eu/output/lau_population_<jahr>.csv`).
 
 ### Dateiformat-Details
 
-| Datei | Format | Trennzeichen | Beschreibung |
-|---|---|---|---|
-| `mapped_pairs.csv` | CSV | `,` | Arbeitslosenzahlen mit gemappten Geodata-IDs — liegt in `arbeitslosenzahlen/` |
-| `meta.json` | JSON | — | Metadaten (title, series, publisher, time_resolution, …) — liegt in `arbeitslosenzahlen/` |
-| `LAU_RG_01M_{YEAR}_3035_cleaned.geojson.gz` | GeoJSON (gzip) | — | LAU-Geometrien in EPSG:3035, bereinigt |
-| `lau_population_{YEAR}.csv` | CSV | `;` | LAU-Bevölkerungsdaten je Jahr |
+| Datei | Format | Beschreibung |
+|---|---|---|
+| `mapped_pairs.csv` | CSV (`,`) | Spalten `original_id_1`, `original_name`, `geodata_name`, `geodata_id_nuts`, `geodata_id_ars`, `mapper`, `parameter`, danach je Jahr eine Wertespalte |
+| `meta.yaml` | YAML | `geodata_level` (z. B. `NUTS_3`), `geodata_year`, `number_type` (`absolute`/`relative`), `name`, `description`, `description_long`, `unit`, `source`, `algorithm`; optional `license`/`license_url` (Override, sonst automatisch für BBSR-Quellen). Zusätzlich enthält die Datei die Mapper-Konfiguration (`id_columns`, `name_column`, `value_columns`, `value_rename`), die die Pipeline ignoriert |
+| `Geodaten/geojson/.../*.geojson` | GeoJSON | Geometrien je Ebene und Jahr; Dateiname muss dem Muster `lau_<jahr>_level_<n>.geojson` bzw. `nuts_<jahr>_level_<n>.geojson` folgen |
+| `lau_population_<jahr>.csv` | CSV (`;`) | LAU-Bevölkerung je Jahr, erzeugt von `fetch_lau_population.py` |
 
-### Namenskonvention
-
-- GeoJSON-Dateien: `LAU_RG_01M_{YYYY}_3035_cleaned.geojson.gz` — das Jahr muss an Position 4 (0-indexed) im `_`-getrennten Dateinamen stehen.
-- Bevölkerungs-CSVs: `lau_population_{YYYY}.csv` — das Jahr steht im Dateinamen-Stem nach dem letzten `_`.
+Details zu den Loadern: [docs/pipeline/dlt.md](../docs/pipeline/dlt.md).
 
 ---
 

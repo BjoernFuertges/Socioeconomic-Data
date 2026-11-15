@@ -23,11 +23,11 @@ Die Anwendung selbst deployt [`.github/workflows/main.yml`](../.github/workflows
    Der lokale State (`terraform.tfstate`) ist nicht im Repo (`.gitignore`); geht er verloren, lässt sich der Bucket
    per `terraform import aws_s3_bucket.state <bucket>` wieder aufnehmen.
 4. **Deploy-Key erzeugen**: `ssh-keygen -t ed25519 -f deploy_key -C soziodata-deploy` (ohne Passphrase; `deploy_key` → Secret `SSH_PRIVATE_KEY`, `deploy_key.pub` → Secret `DEPLOY_SSH_PUBLIC_KEY`).
-5. **GitHub Secrets/Variablen** setzen (siehe unten).
-6. **Environments** `infra` und `production` anlegen (empfohlen: Required reviewers).
+5. **GitHub Secrets/Variablen** setzen (siehe unten), darunter `API_DB_PASSWORD` und `PIPELINE_DB_PASSWORD` (je `openssl rand -hex 32`, zwei verschiedene Werte). Die Secrets müssen **vor dem Merge/Deploy** existieren, sonst schlägt der Deploy fehl; bei einem bestehenden Server legt der nächste Deploy die Rollen `api_ro` und `pipeline_rw` automatisch an. Bei einem bestehenden Server vorher prüfen, dass `pipeline/dbt/socioeconomic_data_pipeline/profiles.yml` (gitignored, liegt nur auf dem Server) `user`/`password` per `env_var('DB_USER')`/`env_var('DB_PASSWORD')` liest wie `profiles.example.yml` - sonst läuft dbt weiter als Superuser (`deploy_remote.sh apply` warnt dann).
+6. **Environments** `infra` und `production` anlegen (empfohlen: Required reviewers), dazu `production-ops` (siehe „Environments“ unten).
 7. **`infra.yml` ausführen** (Actions → „Infrastruktur (Terraform)“ → Run workflow, danach `apply` freigeben).
    Die Zusammenfassung des Laufs zeigt die IPv4/IPv6 des Servers.
-8. **DNS setzen**: A-Record (und optional AAAA) für `APP_HOST` auf die Server-IP.
+8. **DNS setzen**: A-Record (und optional AAAA) für `APP_HOST` auf die Server-IP. Den AAAA-Record erst setzen, wenn geprüft ist, dass Traefik über IPv6 die echte Client-Adresse sieht (sonst teilen sich alle IPv6-Clients ein Rate-Limit, siehe `docs/operations.md`, Abschnitt „Rate limits and memory limits“).
 9. **Repo-Variable `SSH_HOST`** auf die Server-IP setzen und Host-Key holen:
    ```bash
    ssh-keyscan -H <SSH_HOST>   # Ausgabe als Secret SSH_KNOWN_HOSTS speichern
@@ -36,7 +36,10 @@ Die Anwendung selbst deployt [`.github/workflows/main.yml`](../.github/workflows
    `ssh deploy@<SSH_HOST> 'cloud-init status --wait'` wartet darauf.
 10. **Erster Deploy**: `main.yml` per „Run workflow“ mit **initial_load = true** starten. Das startet nach dem Rollout
     im Hintergrund auf dem Server alle Daten neu zu laden (Nextcloud-Sync → dlt → dbt); der Workflow wartet nicht darauf.
-    Fortschritt: `ssh deploy@<SSH_HOST> 'bash /opt/soziooekonomische-daten/backend/scripts/deploy_remote.sh initial-load-status'`. Historie aus früheren dbt-Snapshots ist bei einem Neuaufbau verloren.
+    Fortschritt: `ssh deploy@<SSH_HOST> 'bash /opt/soziooekonomische-daten/backend/scripts/deploy_remote.sh initial-load-status'`. Ein reiner Neuaufbau aus den Quellen startet die dbt-Snapshot-Historie neu.
+    Bei einem **Server-Neuaufbau mit vorhandenem Backup** stattdessen zuerst *ohne* `initial_load` deployen, dann
+    `backend/scripts/restore_db.sh` ausführen und erst danach die Pipeline (siehe `docs/operations.md`, Abschnitt
+    „Database backup and restore“) - sonst legt dbt leere Snapshot-Tabellen an und der Restore verweigert sich.
 
 ## GitHub Secrets und Variablen
 
@@ -48,10 +51,14 @@ Die Anwendung selbst deployt [`.github/workflows/main.yml`](../.github/workflows
 | `SSH_PRIVATE_KEY` | Secret | privater Deploy-Key |
 | `SSH_KNOWN_HOSTS` | Secret | Ausgabe von `ssh-keyscan -H <SSH_HOST>` |
 | `DB_PASSWORD`, `LE_EMAIL` | Secret | Compose-`.env` auf dem Server |
+| `API_DB_PASSWORD` | Secret | Passwort der read-only DB-Rolle `api_ro` des Backends (nur `[A-Za-z0-9]`, z. B. `openssl rand -hex 32`; `$` würde Compose interpolieren). Der Deploy legt die Rolle an bzw. zieht das Passwort nach (`backend/scripts/ensure_api_role.sql`); ohne das Secret bricht `Prepare configuration files` ab. |
+| `PIPELINE_DB_PASSWORD` | Secret | Passwort der Nicht-Superuser-Rolle `pipeline_rw` von dlt/dbt im `pipeline`-Container (gleiche Regeln: nur `[A-Za-z0-9]`). Der Deploy legt die Rolle an, übereignet ihr die Pipeline-Schemas bzw. zieht das Passwort nach (`backend/scripts/ensure_pipeline_role.sql`); ohne das Secret bricht `Prepare configuration files` ab. |
 | `RCLONE_CONF` | Secret | Inhalt der `rclone.conf` für den Nextcloud-Sync (optional) |
 | `PAT_SEMANTIC_RELEASE` | Secret | Personal Access Token für Semantic Release (Push des Release-Commits) |
 | `TF_STATE_BUCKET`, `TF_STATE_REGION` | Variable | z. B. `soziodata-tfstate`, `fsn1` |
-| `BACKUP_S3_ACCESS_KEY`, `BACKUP_S3_SECRET_KEY` | Secret | S3-Key für das nächtliche DB-Backup (darf derselbe Key wie oben sein) |
+| `BACKUP_S3_ACCESS_KEY`, `BACKUP_S3_SECRET_KEY` | Secret | S3-Key für das nächtliche DB-Backup. Technisch funktioniert derselbe Key wie für den State-Bucket, empfohlen ist aber ein **eigener** Key (siehe „Datenbank-Backup“): der Key liegt auf dem Server, und wer ihn hat, könnte sonst auch State und Backups löschen. |
+| `BACKUP_HEALTHCHECK_URL` | Secret oder Variable | optional: Ping-URL (z. B. healthchecks.io), die `backup_db.sh` nach jedem erfolgreichen Backup aufruft; der Deploy schreibt sie als `HEALTHCHECK_URL` nach `~/.config/soziodata-backup.env` (die Datei wird bei jedem Deploy neu geschrieben, ein Eintrag von Hand ginge dort verloren) |
+| `STRICT_DBT_PROFILE` | Variable | optional: `1` bricht den Rollout ab, wenn `profiles.yml` auf dem Server `user`/`password` nicht aus `DB_USER`/`DB_PASSWORD` liest (Default: nur Warnung) |
 | `BACKUP_S3_BUCKET`, `BACKUP_S3_REGION` | Variable | z. B. `soziodata-backup`, `fsn1` (optional; ohne diese vier Werte wird kein Backup eingerichtet) |
 | `SSH_HOST`, `SSH_USER` | Variable | Server-IP, `deploy` |
 | `APP_HOST` | Variable | öffentlicher Hostname (DNS!) |
@@ -61,13 +68,63 @@ Die Anwendung selbst deployt [`.github/workflows/main.yml`](../.github/workflows
 
 Die GHCR-Images sind öffentlich zu stellen (Package-Einstellungen → Visibility), damit der Server sie ohne Login ziehen kann.
 
+## Environments
+
+| Environment | Jobs | Einstellung |
+|---|---|---|
+| `infra` | `apply` in `infra.yml` | Required reviewers empfohlen |
+| `production` | `deploy-hetzner` | Required reviewers empfohlen; Deployment branches: nur `main` |
+| `production-ops` | `mark-good`, `rollback` | **keine** Required reviewers (der automatische Rollback nach fehlgeschlagenem E2E darf nicht auf eine Freigabe warten); Deployment branches: nur `main` |
+
+`production-ops` legt GitHub beim ersten Lauf automatisch ohne Schutzregeln an, falls es fehlt; der Workflow bricht also nicht,
+Branch-Regel und Secrets müssen aber manuell gesetzt werden. Die Secrets `SSH_PRIVATE_KEY` und `SSH_KNOWN_HOSTS` sind zunächst
+Repo-Secrets und damit in allen Environments lesbar. Zum Eingrenzen: in `production` **und** `production-ops` jeweils als
+Environment-Secret anlegen und danach das Repo-Secret löschen (sonst bleibt der Zugriff über andere Workflows/PRs desselben Repos offen).
+Die Variablen `SSH_HOST`/`SSH_USER` können Repo-Variablen bleiben.
+
+## Hinweise zum Deploy-Ablauf
+
+- **Bind-Mount und Scheduler vor dem E2E**: Der Rollout tauscht Code und Pipeline-Bind-Mount schon im Deploy-Job, also vor
+  `e2e-production`. Der stündliche Scheduler kann neue dbt-/dlt-Stände gegen die Datenbank laufen lassen, bevor das E2E grün ist.
+  Ein Rollback setzt nur Code/Images zurück, nicht Datenbank oder Snapshots.
+- **Release-Tag vor dem Deploy**: `semantic-release-final` läuft vor `deploy-hetzner`. Ein fehlgeschlagener Deploy
+  (oder Rollback) hinterlässt trotzdem Release-Tag, Changelog-Commit und GitHub-Release.
+- **Abbruch**: `deploy-hetzner` hat eine eigene Concurrency-Gruppe ohne `cancel-in-progress`; ein neuer Push bricht einen
+  laufenden Deploy nicht ab. Bei manuellem Abbruch oder Timeout während des Rollouts löst der Rollback-Step im Deploy-Job
+  ebenfalls aus. Schlägt `e2e-production` fehl, läuft in den Timeout (20 min) oder wird abgebrochen (`failure`/`cancelled`),
+  setzt der Job `rollback` auf den letzten guten Stand zurück; `mark-good` läuft nur nach grünem E2E.
+- **Laufende Pipeline**: `deploy_remote.sh apply` und `rollback` stoppen zuerst den Scheduler und warten auf einen laufenden
+  `run_all_pipelines.sh` (max. 60 min, dann Abbruch); während eines initialen Loads bleibt der Scheduler gestoppt, bis dessen
+  Wrapper ihn wieder startet.
+- **Action-Pins**: Fremd-Actions (`cycjimmy/semantic-release-action`, `docker/*`, `hashicorp/setup-terraform`) sind per Commit-SHA
+  gepinnt, Dependabot (`github-actions`) hält sie aktuell. `actions/*` bleiben auf Major-Tags.
+
 ## Datenbank-Backup
 
 Der Deploy-Job richtet für den Deploy-User einen Cron-Job ein (täglich 02:17 Serverzeit, Log `~/backup.log`), sobald die vier
 `BACKUP_S3_*`-Werte gesetzt sind. `backend/scripts/backup_db.sh` sichert per `pg_dump` das Schema `snapshots`
 (dbt-Historie) und `loaded_data.dataset_metadata` in den Backup-Bucket und löscht Dumps, die älter als 30 Tage sind
 (`BACKUP_RETENTION_DAYS`). Alles andere baut die Pipeline aus den Quellen neu. Wiederherstellung: siehe
-`docs/operations.md` (Abschnitt „Database backup and restore“).
+`docs/operations.md` (Abschnitt „Database backup and restore“). `~/backup.log` wird per User-Cron mit `logrotate`
+wöchentlich rotiert (8 Generationen). Mit `BACKUP_HEALTHCHECK_URL` meldet ein externer Dienst ausbleibende Backups.
+
+**TODO (manuell, nicht per Terraform/Workflow umgesetzt):**
+
+- [ ] Backup-Bucket in der Hetzner-Konsole mit **Versionierung und Object Lock** (Retention z. B. 30 Tage, passend zu
+      `BACKUP_RETENTION_DAYS`) betreiben, damit ein kompromittierter Server-Key die Backups nicht löschen/überschreiben kann.
+      Object Lock lässt sich bei S3 in der Regel nur beim Anlegen eines Buckets aktivieren; ggf. neuen Bucket anlegen und
+      `BACKUP_S3_BUCKET` umstellen. Die Retention in `backup_db.sh` (`rclone delete`) erzeugt bei Versionierung nur
+      Delete-Marker; alte Versionen laufen mit der Object-Lock-Frist aus bzw. werden per Lifecycle-Regel entfernt.
+- [ ] **Eigenen S3-Key** für das Backup verwenden, getrennt vom Terraform-State-Key. Hetzner-S3-Keys gelten projektweit
+      (Zugriff auf alle Buckets des Projekts); echte Trennung daher über ein eigenes Hetzner-Projekt für den Backup-Bucket
+      oder Bucket-Policies - den eingeschränkten Key vorher testen.
+- [ ] Bei [healthchecks.io](https://healthchecks.io) (o. ä.) einen Check „täglich, Grace z. B. 2 h“ anlegen und die Ping-URL
+      als `BACKUP_HEALTHCHECK_URL` hinterlegen.
+- [ ] Ab und zu einen Restore in eine Wegwerf-Datenbank testen (auch mit `RESTORE_METADATA=1`).
+
+**Terraform-State-Locking:** `use_lockfile` (S3-natives Locking über bedingte Writes, `If-None-Match`) ist bewusst **nicht**
+gesetzt: Die Hetzner-Doku bestätigt bedingte PutObject-Requests nicht. Parallele Läufe verhindert die Concurrency-Gruppe
+`terraform-hetzner` in `infra.yml`; lokale `terraform apply` gegen denselben State vermeiden.
 
 ## Härtung
 
@@ -79,6 +136,8 @@ als root anmelden; Alternativen: Rescue-System oder Server neu aufbauen. `infra.
 `DEPLOY_SSH_PUBLIC_KEY` nicht zusammenpassen.
 Adminer ist nicht öffentlich, sondern nur per SSH-Tunnel erreichbar, siehe `docs/operations.md`
 (Abschnitt „Server hardening and Adminer“).
+Rate-Limits (Traefik) und `mem_limit` der Container stehen in `backend/deployments/docker-compose.yml`, Überblick in
+`docs/operations.md` (Abschnitt „Rate limits and memory limits“).
 
 ## Hinweise
 

@@ -10,17 +10,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 	"github.com/jszwec/csvutil"
-	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
 const mimeCSV = "text/csv"
 
-// csvRender ist ein gin-Renderer, der eine Struct-Slice als CSV schreibt.
-// Die Spaltennamen kommen aus den vorhandenen json-Tags der Modelle, sodass
-// JSON- und CSV-Antwort dieselben Feldnamen tragen.
+// csvRender is a gin renderer that writes a struct slice as CSV. Column names
+// come from the models' existing json tags, so the JSON and CSV responses
+// carry the same field names.
 type csvRender struct {
 	Rows interface{}
 }
@@ -39,13 +39,13 @@ func (r csvRender) Render(w http.ResponseWriter) error {
 	return writeCSV(w, r.Rows)
 }
 
-// csvMarshalers sind einmal gebaut (Marshalers sind laut Dokumentation
-// unveränderlich) statt bei jeder Anfrage neu über das inzwischen veraltete
-// Encoder.Register: MarshalFunc ist typsicher und schneller, da es ohne
-// Reflection pro Encode-Aufruf auskommt.
+// csvMarshalers are built once (marshalers are documented as immutable)
+// instead of per request via the now-deprecated Encoder.Register:
+// MarshalFunc is type-safe and faster since it needs no reflection per
+// Encode call.
 var csvMarshalers = csvutil.NewMarshalers(
-	// Ohne eigenen Marshaler schreibt csvutil große Werte in Exponential-
-	// schreibweise ("3.664088E+06"), was Tabellenkalkulationen als Text lesen.
+	// Without its own marshaler csvutil writes large values in exponential
+	// notation ("3.664088E+06"), which spreadsheets read as text.
 	csvutil.MarshalFunc(func(v float64) ([]byte, error) {
 		return []byte(strconv.FormatFloat(v, 'f', -1, 64)), nil
 	}),
@@ -75,17 +75,17 @@ var csvMarshalers = csvutil.NewMarshalers(
 	}),
 )
 
-// writeCSV kodiert rows (Slice von Structs) als CSV; ein leerer Slice ergibt
-// nur die Kopfzeile. database/sql.Null*-Typen werden als Wert bzw. leeres
-// Feld geschrieben statt als Struct.
+// writeCSV encodes rows (a slice of structs) as CSV; an empty slice yields
+// only the header row. database/sql.Null* types are written as their value or
+// an empty field rather than as a struct.
 func writeCSV(w http.ResponseWriter, rows interface{}) error {
 	cw := csv.NewWriter(w)
 	enc := csvutil.NewEncoder(cw)
 	enc.Tag = "json"
 	enc.WithMarshalers(csvMarshalers)
 
-	// Encode schreibt bei einem leeren Slice gar nichts - die Kopfzeile wird
-	// dann separat erzeugt, damit die Antwort ein gültiges CSV bleibt.
+	// Encode writes nothing for an empty slice - the header row is then produced
+	// separately so the response stays valid CSV.
 	if elem, empty := emptySliceElement(rows); empty {
 		if elem == nil {
 			return nil
@@ -101,9 +101,9 @@ func writeCSV(w http.ResponseWriter, rows interface{}) error {
 	return cw.Error()
 }
 
-// emptySliceElement meldet, ob rows ein leerer Slice/Array ist, und liefert
-// dazu einen Nullwert des Elementtyps für die Kopfzeile (nil, wenn sich
-// daraus keine Kopfzeile ableiten lässt).
+// emptySliceElement reports whether rows is an empty slice/array and returns
+// a zero value of the element type for the header row (nil if no header can
+// be derived from it).
 func emptySliceElement(rows interface{}) (elem interface{}, empty bool) {
 	v := reflect.ValueOf(rows)
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
@@ -129,11 +129,10 @@ func emptySliceElement(rows interface{}) (elem interface{}, empty bool) {
 	return reflect.New(elemType).Elem().Interface(), true
 }
 
-// negotiateFormat bestimmt das Antwortformat ("json" oder "csv"). Der
-// Accept-Header ist maßgeblich (fehlender Header oder */* = JSON);
-// ?format=csv|json überschreibt ihn für Browser-Links, die keinen Accept-
-// Header setzen können. ok=false: es wurde bereits eine Fehlerantwort
-// geschrieben.
+// negotiateFormat determines the response format ("json" or "csv"). The
+// Accept header is authoritative (missing header or */* = JSON);
+// ?format=csv|json overrides it for browser links that cannot set an Accept
+// header. ok=false: an error response has already been written.
 func negotiateFormat(c *gin.Context) (format string, ok bool) {
 	if override := strings.ToLower(strings.TrimSpace(c.Query("format"))); override != "" {
 		switch override {
@@ -159,16 +158,16 @@ func negotiateFormat(c *gin.Context) (format string, ok bool) {
 	}
 }
 
-// respondNegotiated antwortet mit jsonBody (als APIResponse.Data) oder, wenn
-// CSV angefragt ist, mit csvRows (Slice von Structs). ?download=1 setzt
-// Content-Disposition: attachment, damit Browser die Datei speichern.
+// respondNegotiated responds with jsonBody (as APIResponse.Data) or, if CSV
+// is requested, with csvRows (a slice of structs). ?download=1 sets
+// Content-Disposition: attachment so browsers save the file.
 func respondNegotiated(c *gin.Context, jsonBody interface{}, csvRows interface{}, meta *models.MetaInfo) {
 	format, ok := negotiateFormat(c)
 	if !ok {
 		return
 	}
 
-	// Antwort hängt vom Accept-Header ab -> Caches müssen danach unterscheiden.
+	// The response depends on the Accept header -> caches must vary on it.
 	c.Header("Vary", "Accept")
 
 	if format == "json" {
@@ -185,8 +184,8 @@ func respondNegotiated(c *gin.Context, jsonBody interface{}, csvRows interface{}
 	c.Render(http.StatusOK, csvRender{Rows: csvRows})
 }
 
-// respondList ist respondNegotiated für Endpoints, deren Data-Feld selbst
-// die CSV-Zeilen-Slice ist.
+// respondList is respondNegotiated for endpoints whose Data field is itself
+// the CSV row slice.
 func respondList(c *gin.Context, rows interface{}, meta *models.MetaInfo) {
 	respondNegotiated(c, rows, rows, meta)
 }
@@ -199,7 +198,7 @@ func isDownloadRequested(c *gin.Context) bool {
 	return false
 }
 
-// contentDisposition leitet den Dateinamen aus dem Request-Pfad ab
+// contentDisposition derives the file name from the request path
 // (/api/v1/bevoelkerung/timeseries -> bevoelkerung_timeseries.csv).
 func contentDisposition(c *gin.Context, ext string) string {
 	name := strings.Trim(strings.TrimPrefix(c.Request.URL.Path, "/api/v1"), "/")

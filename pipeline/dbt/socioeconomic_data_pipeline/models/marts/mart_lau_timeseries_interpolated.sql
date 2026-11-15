@@ -10,26 +10,25 @@
 }}
 
 /*
-  Analog zu mart_nuts3_timeseries_interpolated.sql, aber für die Gemeinde-
-  (LAU-)Ebene. Liest von mart_lau_sociodata_harmonized statt roher Staging-
-  Quellen, damit Gap-Filling je LAU-Zielversion (target_version) unabhängig
-  läuft - siehe dortigen Kommentar zur target_version-Strategie.
+  Analogous to mart_nuts3_timeseries_interpolated.sql, but at Gemeinde (LAU)
+  level. Reads from mart_lau_sociodata_harmonized instead of raw staging
+  sources so gap filling runs independently per LAU target version
+  (target_version) - see the comment there for the target_version strategy.
 
-  Regionsschlüssel: gisco_id (konsistent mit dem harmonisierten Mart).
-  Peer-Gruppe für Methode 3 (Fortschreibung): erste 5 Stellen des Amtlichen
-  Gemeindeschlüssels (Kreis-Präfix), ermittelt über
-  stg_lau_population.lau_nat_code - LAU-IDs haben (anders als NUTS-Codes)
-  keine hierarchische Präfix-Struktur, daher der Umweg über den AGS.
+  Region key: gisco_id (consistent with the harmonized mart).
+  Peer group for method 3 (carry-forward): the first 5 digits of the
+  official Gemeindeschlüssel (Kreis prefix), taken from
+  stg_lau_population.lau_nat_code - unlike NUTS codes, LAU IDs have no
+  hierarchical prefix structure, hence the detour via the AGS.
 
-  Siehe mart_nuts3_timeseries_interpolated.sql für die ausführliche
-  Dokumentation von Methode 1 (linear) / Methode 3 (peer_trend); die Logik
-  ist 1:1 übertragen, nur mit gisco_id/kreis_prefix statt nuts3_id/nuts2_prefix
-  und je target_version statt einer einzelnen Zielversion.
+  See mart_nuts3_timeseries_interpolated.sql for the detailed documentation
+  of method 1 (linear) / method 3 (peer_trend); the logic is carried over
+  1:1, only with gisco_id/kreis_prefix instead of nuts3_id/nuts2_prefix and
+  per target_version instead of a single target version.
 
-  Hinweis: Mit den aktuell lokal geladenen Testdaten bleibt
-  mart_lau_sociodata_harmonized leer (siehe dortigen Kommentar) - dieser
-  Mart baut zwar, bleibt hier aber ebenfalls leer. Mit korrekt gemappten
-  Produktionsdaten liefert er reguläre Zeilen.
+  Note: with the locally loaded test data mart_lau_sociodata_harmonized is
+  empty (see the comment there), so this mart builds but stays empty too.
+  With correctly mapped production data it yields regular rows.
 */
 
 with source as (
@@ -42,18 +41,20 @@ with source as (
     from {{ ref('mart_lau_sociodata_harmonized') }}
 ),
 
--- Kreisschlüssel je gisco_id (für Peer-Gruppierung) über den amtlichen
--- Gemeindeschlüssel aus der Populationsquelle.
+-- Kreis key per gisco_id (for peer grouping) via the official
+-- Gemeindeschlüssel from the population source.
 gisco_kreis as (
     select distinct on (gisco_id)
         gisco_id,
-        left(regexp_replace(cast(lau_nat_code as text), '\.0+$', ''), 5) as kreis_prefix
+        -- stg_lau_population.lau_nat_code is the normalized 8-digit AGS; its
+        -- first 5 digits are the Kreis key.
+        left(lau_nat_code, 5) as kreis_prefix
     from {{ ref('stg_lau_population') }}
     where gisco_id is not null and lau_nat_code is not null
     order by gisco_id, year desc
 ),
 
--- Jahresspanne je Region, Dataset und Zielversion
+-- Year span per region, dataset and target version
 year_ranges as (
     select
         dataset_slug,
@@ -65,7 +66,7 @@ year_ranges as (
     group by dataset_slug, gisco_id, target_version
 ),
 
--- Vollständige Jahresreihe ohne Lücken
+-- Complete year series without gaps
 all_years as (
     select
         r.gisco_id,
@@ -76,7 +77,7 @@ all_years as (
     cross join lateral generate_series(r.min_year, r.max_year) as g(year)
 ),
 
--- Originaldaten einjoinen (NULL für fehlende Jahre)
+-- Join the original data (NULL for missing years)
 with_values as (
     select
         a.gisco_id,
@@ -142,7 +143,7 @@ with_next as (
     from with_next_group
 ),
 
--- Methode 3: Peer-basierte Fortschreibung über den Kreis
+-- Method 3: peer-based carry-forward via the Kreis
 with_peer_base as (
     select
         v.gisco_id,

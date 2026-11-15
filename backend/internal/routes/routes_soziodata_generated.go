@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterSoziodataRoutes registriert alle generierten Soziodata-Routen.
-// Wird von SetupRoutes aufgerufen.
+// RegisterSoziodataRoutes registers all generated Soziodata routes.
+// Called by SetupRoutes.
 func RegisterSoziodataRoutes(v1 *gin.RouterGroup, h *handlers.Handler) {
 	v1.GET("/arbeitslose", h.GetArbeitsloseData)
 	v1.GET("/arbeitslose/timeseries", h.GetArbeitsloseTimeseriesData)
@@ -39,6 +39,8 @@ func RegisterSoziodataRoutes(v1 *gin.RouterGroup, h *handlers.Handler) {
 	v1.GET("/sgb_ii_quote/timeseries", h.GetSgbIiQuoteTimeseriesData)
 	v1.GET("/studierende", h.GetStudierendeData)
 	v1.GET("/studierende/timeseries", h.GetStudierendeTimeseriesData)
+	v1.GET("/sv_beschaeftigte", h.GetSvBeschaeftigteData)
+	v1.GET("/sv_beschaeftigte/timeseries", h.GetSvBeschaeftigteTimeseriesData)
 	v1.GET("/wohngeldhaushalte", h.GetWohngeldhaushalteData)
 	v1.GET("/wohngeldhaushalte/timeseries", h.GetWohngeldhaushalteTimeseriesData)
 }

@@ -31,7 +31,7 @@ cleaned as (
         year::integer as year,
         value as durchschnittsalter,
 
-        -- Derived date (Jahreswert → 1. Januar des Jahres)
+        -- Derived observation date: 1 January of the year
         make_date(year::integer, 1, 1) as observation_date,
 
         -- Data quality flag

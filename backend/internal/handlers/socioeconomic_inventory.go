@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 type socioeconomicInventoryFilter struct {
@@ -15,7 +15,7 @@ type socioeconomicInventoryFilter struct {
 	GeodataLevel string `form:"geodata_level"`
 }
 
-// GetSoziooekonomischesInventar gibt zurück, welche Soziodaten je Jahr und Geodatenebene verfügbar sind.
+// GetSoziooekonomischesInventar returns which Soziodata are available per year and geodata level.
 // @Summary Inventar verfügbarer Soziodaten
 // @Description Liefert pro Datensatz, Jahr und Geodatenebene die vorhandenen Datensätze inkl. Geodaten-Verweis-Abdeckung (NUTS/LAU/ARS).
 // @Tags Soziooekonomie
@@ -61,8 +61,8 @@ func (h *Handler) GetSoziooekonomischesInventar(c *gin.Context) {
 	query += ` ORDER BY dataset, year DESC, geodata_level`
 
 	inventory := make([]models.SoziooekonomischesInventarEintrag, 0)
-	if err := h.DB.Select(&inventory, query, args...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler beim Soziodaten-Inventar: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &inventory, query, args...); err != nil {
+		respondDBError(c, "Datenbankfehler beim Soziodaten-Inventar", err)
 		return
 	}
 

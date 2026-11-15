@@ -17,10 +17,11 @@ import TimeseriesChart from "./TimeseriesChart.vue";
 import DataTable from "./DataTable.vue";
 import DatasetInfo from "./DatasetInfo.vue";
 import AgenturAggregationNote from "./AgenturAggregationNote.vue";
+import CoverageNote from "./CoverageNote.vue";
 
-// Deckelt die Mehrfachauswahl auf die Anzahl validierter kategorialer
-// Farbslots (siehe SERIES_COLORS in TimeseriesChart.vue) - mehr Serien in
-// der kombinierten Ansicht würden nicht mehr sicher unterscheidbar bleiben.
+// Caps multi-select at the number of validated categorical color slots
+// (see SERIES_COLORS in TimeseriesChart.vue) - more series in the combined
+// view could no longer be told apart reliably.
 const MAX_SELECTED = 4;
 
 type LoadResult =
@@ -31,33 +32,31 @@ type LoadResult =
 
 const props = defineProps<{
   datasets: DatasetCatalogEntry[];
-  // Trotz des Namens bei kind="agentur" der ba_schl der Region, nicht ein
-  // NUTS-Code (siehe kind unten) - Prop-Name aus Kompatibilitätsgründen
-  // unverändert gelassen, um den Diff zu den bestehenden NUTS/LAU-Aufrufen
-  // klein zu halten.
+  // Despite the name, for kind="agentur" this is the region's ba_schl, not a NUTS
+  // code (see kind below) - prop name left unchanged for compatibility, to keep
+  // the diff to the existing NUTS/LAU callers small.
   nutsCode: string;
   selectedSlugs: string[];
-  // NUTS-Ebene der aktuellen Region (0-3). Default 3 (Kreis) - bisheriges
-  // Verhalten. Bei 0-2 (Land/Bundesland/Regierungsbezirk) gibt es keine
-  // Kreis-grain-Zeilen unter diesem Code, deshalb lädt loadSlug() dann über
-  // den auf diese Ebene hochaggregierten Endpoint statt /{slug}/timeseries
-  // (siehe RegionBrowser.vue, mart_nuts012_dataset_aggregate). Ignoriert,
-  // wenn kind="agentur".
+  // NUTS level of the current region (0-3). Default 3 (Kreis) - the previous
+  // behavior. For 0-2 (Land/Bundesland/Regierungsbezirk) there are no Kreis-grain
+  // rows under this code, so loadSlug() uses the endpoint aggregated up to that
+  // level instead of /{slug}/timeseries (see RegionBrowser.vue,
+  // mart_nuts012_dataset_aggregate). Ignored for kind="agentur".
   nutsLevel?: number;
-  // "nuts" (Standard) lädt wie bisher über /{slug}/timeseries bzw.
-  // /nuts/{code}/dataset-aggregate/{slug}. "agentur" lädt stattdessen immer
-  // über /agenturbezirke/{ba_schl}/dataset-aggregate/{slug} (flächenanteils-
-  // statt bevölkerungsgewichtet, siehe mart_agentur_dataset_aggregate) - es
-  // gibt für Agenturbezirke keine Kreis-grain-Rohdaten, nur die Aggregation.
+  // "nuts" (default) loads via /{slug}/timeseries or
+  // /nuts/{code}/dataset-aggregate/{slug}. "agentur" always loads via
+  // /agenturbezirke/{ba_schl}/dataset-aggregate/{slug} (area-share- instead of
+  // population-weighted, see mart_agentur_dataset_aggregate) - there is no
+  // Kreis-grain raw data for Agenturbezirke, only the aggregation.
   kind?: "nuts" | "agentur" | "custom";
-  // Nur kind="custom": die Region (GeoJSON-Polygon/MultiPolygon), über die per
-  // POST /custom-regions/dataset-aggregate aggregiert wird. route_slug ist dann
-  // der Datensatz-Slug bzw. "slug::indikator" bei Datensätzen mit mehreren
-  // Indikatoren (siehe CustomRegionView.vue). Monatsreihen tragen `month`.
+  // Only kind="custom": the region (GeoJSON Polygon/MultiPolygon) aggregated over via
+  // POST /custom-regions/dataset-aggregate. route_slug is then the dataset slug or
+  // "slug::indikator" for datasets with several indicators (see
+  // CustomRegionView.vue). Monthly series carry `month`.
   geometry?: RegionGeometry;
-  // Nur kind="agentur": BA-Monatsreihen der Region (z.B. Arbeitslose), die im
-  // kombinierten Diagramm neben den jährlichen Kreis-Aggregaten erscheinen
-  // können. Punkte tragen `month` (siehe IndexedSeries in TimeseriesChart.vue).
+  // Only kind="agentur": the region's BA monthly series (e.g. Arbeitslose) that may
+  // appear in the combined chart next to the yearly Kreis aggregates. Points carry
+  // `month` (see IndexedSeries in TimeseriesChart.vue).
   monthlySeries?: { key: string; label: string; points: (TimeseriesPoint & { month: number })[] }[];
 }>();
 
@@ -74,7 +73,7 @@ function labelOf(routeSlug: string): string {
   return indicator ? `${formatDatasetLabel(slug)} – ${indicator}` : formatDatasetLabel(slug);
 }
 
-// Monatsreihen (Agenturbezirke, nur kind="custom") haben Punkte mit `month`.
+// Monthly series (Agenturbezirke, kind="custom" only) have points with `month`.
 function isMonthly(points: (TimeseriesPoint & { month?: number })[]): boolean {
   return points.some((p) => p.month != null);
 }
@@ -86,24 +85,31 @@ function periodRowsOf(points: (TimeseriesPoint & { month?: number })[]) {
 }
 const VALUE_COLUMN = [{ key: "arbeitslose" as const, label: "Wert" }];
 
-// Reihenfolge der Checkboxen folgt der Reihenfolge in `datasets`, damit
-// selectedDatasets (unten) für Chart-Serien/Tabs eine stabile Reihenfolge hat.
-// BA-Monatsreihen (nur kind="agentur") laufen im kombinierten Diagramm mit und
-// belegen dort ebenfalls Farbslots - deshalb bleiben für Datensätze entsprechend weniger übrig.
+// Checkbox order follows the order in `datasets`, so selectedDatasets (below)
+// has a stable order for chart series/tabs.
+// BA monthly series (kind="agentur" only) are part of the combined chart and also
+// occupy color slots there - so correspondingly fewer remain for datasets.
 const monthlyCount = computed(() => props.monthlySeries?.length ?? 0);
 const maxSelected = computed(() => Math.max(1, MAX_SELECTED - monthlyCount.value));
-// Agentur: Standard ist "kein Datensatz" (Slot zeigt dann die reinen BA-Werte),
-// NUTS/LAU brauchen mindestens einen Datensatz.
+// Agentur: default is "no dataset" (slot then shows the plain BA values),
+// NUTS/LAU need at least one dataset.
 const minSelected = computed(() => (props.kind === "agentur" ? 0 : 1));
-// Keine manuelle Umschaltung: sobald mehr als eine Reihe im Spiel ist (zweiter
-// Datensatz, oder ein Datensatz neben den BA-Monatsreihen), zeigt die Ansicht
-// automatisch das kombinierte, indexierte Diagramm - sonst die Einzelansicht.
+// No manual toggle: as soon as more than one series is involved (second dataset,
+// or a dataset next to the BA monthly series), the view automatically shows the
+// combined, indexed chart - otherwise the single view.
 const isCombined = computed(() => props.selectedSlugs.length > 0 && props.selectedSlugs.length + monthlyCount.value > 1);
 
-// Punkte eines geladenen Datensatzes (für AgenturAggregationNote); leer, solange nicht geladen.
+// Points of a loaded dataset (for AgenturAggregationNote); empty until loaded.
 function pointsOf(slug: string): { aggregation_method?: string; value_kind?: string }[] {
   const result = results.value.get(slug);
   return result?.kind === "timeseries" ? (result.points as AgenturDatasetAggregatePoint[]) : [];
+}
+
+// Aggregated Kreis sums (NUTS-0/1/2, Agenturbezirke) carry is_complete (see CoverageNote).
+const hasCoverage = computed(() => props.kind === "agentur" || (props.kind !== "custom" && (props.nutsLevel ?? 3) !== 3));
+function coveragePointsOf(slug: string): { year: number; is_complete?: boolean }[] {
+  const result = results.value.get(slug);
+  return hasCoverage.value && result?.kind === "timeseries" ? (result.points as AgenturDatasetAggregatePoint[]) : [];
 }
 
 const selectedDatasets = computed(() => props.datasets.filter((ds) => props.selectedSlugs.includes(ds.route_slug)));
@@ -114,11 +120,10 @@ function toggleSlug(slug: string, checked: boolean) {
     if (atMax.value) return;
     emit("update:selectedSlugs", [...props.selectedSlugs, slug]);
   } else {
-    // Mindestens ein Datensatz muss gewählt bleiben - sonst bliebe die
-    // Auswahl "leer" während RegionBrowser.vue (nutsSelectedSlugs/
-    // lauSelectedSlugs) und die Route weiterhin den zuletzt gültigen Stand
-    // zeigen: ein widersprüchlicher Zustand (Checkbox unchecked, aber Chart/
-    // URL zeigen noch den alten Datensatz).
+    // At least one dataset must stay selected - otherwise the selection would be
+    // "empty" while RegionBrowser.vue (nutsSelectedSlugs/lauSelectedSlugs) and the
+    // route still show the last valid state: a contradictory state (checkbox
+    // unchecked, but chart/URL still show the old dataset).
     if (props.selectedSlugs.length <= minSelected.value) return;
     emit(
       "update:selectedSlugs",
@@ -131,7 +136,10 @@ const results = ref<Map<string, LoadResult>>(new Map());
 const metadataBySlug = ref<Map<string, DatasetMetadataEntry | null>>(new Map());
 
 async function loadSlug(slug: string) {
-  results.value.set(slug, { kind: "loading" });
+  // Bound to the Map of this region: a late response after a region switch
+  // must not land in the fresh Map.
+  const store = results.value;
+  store.set(slug, { kind: "loading" });
   try {
     const body = await apiGet<DatasetMetadataEntry>(`/datasets/${baseSlug(slug)}`);
     metadataBySlug.value.set(slug, body.data ?? null);
@@ -146,15 +154,15 @@ async function loadSlug(slug: string) {
         datasets: [base],
       });
       const rows = (body.data ?? []).filter((r) => !indicator || r.indicator === indicator);
-      results.value.set(slug, {
+      store.set(slug, {
         kind: "timeseries",
         points: rows.map((r) => ({
           year: r.year,
           month: r.month,
           value: r.value,
           is_interpolated: false,
-          // Exakt passende Region mit Direktwert: die Werte der Einheit selbst,
-          // nichts Berechnetes (Legende: "beobachtet").
+          // Exactly matching region with a direct value: the unit's own values,
+          // nothing computed (legend: "beobachtet").
           is_computed: !r.matched_unit || !!r.is_crosswalked,
           aggregation_method: r.aggregation_method,
           value_kind: r.value_kind,
@@ -163,56 +171,55 @@ async function loadSlug(slug: string) {
           source_region_count: r.source_region_count,
           matched_unit: r.matched_unit,
           is_crosswalked: r.is_crosswalked,
+          employee_slug: r.employee_slug,
         })),
       });
     } catch (err) {
-      results.value.set(slug, { kind: "error", message: err instanceof Error ? err.message : String(err) });
+      store.set(slug, { kind: "error", message: err instanceof Error ? err.message : String(err) });
     }
     return;
   }
   if (props.kind === "agentur") {
     try {
       const body = await apiGet<AgenturDatasetAggregatePoint[]>(`/agenturbezirke/${props.nutsCode}/dataset-aggregate/${slug}`);
-      results.value.set(slug, { kind: "timeseries", points: body.data ?? [] });
+      store.set(slug, { kind: "timeseries", points: body.data ?? [] });
     } catch (err) {
-      results.value.set(slug, { kind: "error", message: err instanceof Error ? err.message : String(err) });
+      store.set(slug, { kind: "error", message: err instanceof Error ? err.message : String(err) });
     }
     return;
   }
   if ((props.nutsLevel ?? 3) !== 3) {
-    // NUTS-0/1/2: /{slug}/timeseries kennt nur Kreis-grain-Codes (siehe
-    // Kommentar oben) - stattdessen die auf diese Ebene hochaggregierte
-    // Zeitreihe laden. Alle für diese Ebene gelisteten Datensätze sind
-    // Kreis-grain/harmonisiert (siehe mart_nuts012_dataset_aggregate), ein
-    // Rohdaten-Fallback ist hier also nicht nötig.
+    // NUTS-0/1/2: /{slug}/timeseries only knows Kreis-grain codes (see comment
+    // above) - load the time series aggregated up to this level instead. All
+    // datasets listed for this level are Kreis-grain/harmonized (see
+    // mart_nuts012_dataset_aggregate), so no raw-data fallback is needed here.
     try {
       const body = await apiGet<NutsDatasetAggregatePoint[]>(`/nuts/${props.nutsCode}/dataset-aggregate/${slug}`);
-      results.value.set(slug, { kind: "timeseries", points: body.data ?? [] });
+      store.set(slug, { kind: "timeseries", points: body.data ?? [] });
     } catch (err) {
-      results.value.set(slug, { kind: "error", message: err instanceof Error ? err.message : String(err) });
+      store.set(slug, { kind: "error", message: err instanceof Error ? err.message : String(err) });
     }
     return;
   }
 
-  // Probiert zuerst den lückenlosen /{slug}/timeseries-Endpoint (einheitliches
-  // Schema, Interpolationsmetadaten inklusive); fällt für die wenigen
-  // Datensätze ohne Timeseries-Unterstützung (z.B. beschaeftigungsquote-
-  // gemeinden) auf die rohe Datensatz-Route zurück.
+  // First try the gap-free /{slug}/timeseries endpoint (uniform schema, including
+  // interpolation metadata); falls back to the raw dataset route for the few
+  // datasets without timeseries support (e.g. beschaeftigungsquote-gemeinden).
   try {
     const body = await apiGet<TimeseriesPoint[]>(`/${slug}/timeseries`, {
       geodata_id_nuts: props.nutsCode,
       limit: "null",
     });
-    results.value.set(slug, { kind: "timeseries", points: body.data ?? [] });
+    store.set(slug, { kind: "timeseries", points: body.data ?? [] });
   } catch {
     try {
       const body = await apiGet<GenericDatasetRow[]>(`/${slug}`, {
         geodata_id_nuts: props.nutsCode,
         limit: "null",
       });
-      results.value.set(slug, { kind: "raw", rows: body.data ?? [] });
+      store.set(slug, { kind: "raw", rows: body.data ?? [] });
     } catch (err) {
-      results.value.set(slug, { kind: "error", message: err instanceof Error ? err.message : String(err) });
+      store.set(slug, { kind: "error", message: err instanceof Error ? err.message : String(err) });
     }
   }
 }
@@ -224,8 +231,8 @@ function ensureLoaded(slugs: string[]) {
 }
 
 watch(() => props.selectedSlugs, ensureLoaded, { immediate: true });
-// Region hat sich geändert (gleiche Auswahl, andere geodata_id_nuts) - alle
-// bereits geladenen Ergebnisse sind für die neue Region ungültig.
+// Region changed (same selection, different geodata_id_nuts) - all already
+// loaded results are invalid for the new region.
 watch(
   () => props.nutsCode,
   () => {
@@ -234,10 +241,9 @@ watch(
   },
 );
 
-// Nur Datensätze mit Zeitreihen-Unterstützung können in der kombinierten
-// Ansicht überlagert werden (siehe drawIndexedChart in TimeseriesChart.vue) -
-// die generische Rohdaten-Fallback-Tabelle hat kein einheitliches
-// Jahr/Wert-Schema.
+// Only datasets with timeseries support can be overlaid in the combined view
+// (see drawIndexedChart in TimeseriesChart.vue) - the generic raw-data fallback
+// table has no uniform year/value schema.
 const combinableSeries = computed(() =>
   selectedDatasets.value.flatMap((ds) => {
     const result = results.value.get(ds.route_slug);
@@ -245,7 +251,7 @@ const combinableSeries = computed(() =>
     return [{ key: ds.route_slug, label: labelOf(ds.route_slug), points: result.points }];
   }),
 );
-// Monatsreihen zuerst; auf die validierten Farbslots gekappt.
+// Monthly series first; capped to the validated color slots.
 const chartSeries = computed(() => [...(props.monthlySeries ?? []), ...combinableSeries.value].slice(0, MAX_SELECTED));
 const chartTruncated = computed(() => monthlyCount.value + combinableSeries.value.length > MAX_SELECTED);
 const nonCombinableSlugs = computed(() =>
@@ -257,9 +263,9 @@ const nonCombinableSlugs = computed(() =>
     }),
 );
 
-// Agentur: die BA-Monatswerte (Tabelle/Info kommen per Slot "ba-tab" vom
-// Aufrufer) sind ein regulärer Tab neben den Kreis-Datensätzen und
-// standardmäßig der erste/aktive.
+// Agentur: the BA monthly values (table/info come via the "ba-tab" slot from the
+// caller) are a regular tab next to the Kreis datasets and the first/active one
+// by default.
 const BA_TAB = "__ba";
 const hasBaTab = computed(() => props.kind === "agentur" && monthlyCount.value > 0);
 
@@ -293,7 +299,7 @@ watch(
     </fieldset>
   </div>
 
-  <!-- Agentur ohne Datensatz: reine BA-Ansicht (echte Werte) aus dem Slot des Aufrufers. -->
+  <!-- Agentur without dataset: plain BA view (actual values) from the caller's slot. -->
   <slot v-if="!selectedDatasets.length && kind === 'agentur'" />
   <p v-else-if="!selectedDatasets.length" class="hint">Mindestens einen Datensatz oben auswählen.</p>
 
@@ -337,8 +343,9 @@ watch(
     <template v-for="ds in selectedDatasets" :key="ds.route_slug">
       <div v-if="activeTabSlug === ds.route_slug">
         <DatasetInfo v-if="metadataBySlug.get(ds.route_slug)" :metadata="metadataBySlug.get(ds.route_slug)!" />
-        <AgenturAggregationNote v-if="kind === 'agentur'" :points="pointsOf(ds.route_slug)" />
+        <AgenturAggregationNote v-if="kind === 'agentur'" :points="pointsOf(ds.route_slug)" :dataset-slug="baseSlug(ds.route_slug)" />
         <CustomRegionNote v-else-if="kind === 'custom'" :points="pointsOf(ds.route_slug) as any" />
+        <CoverageNote v-if="hasCoverage" :points="coveragePointsOf(ds.route_slug)" />
         <p v-if="results.get(ds.route_slug)?.kind === 'loading'" class="hint">Lade Daten…</p>
         <p v-else-if="results.get(ds.route_slug)?.kind === 'error'" class="error-text">
           Fehler beim Laden: {{ (results.get(ds.route_slug) as { message: string }).message }}
@@ -368,8 +375,9 @@ watch(
     <section v-for="ds in selectedDatasets" :key="ds.route_slug" class="dataset-block">
       <h3 v-if="selectedDatasets.length > 1" class="dataset-block-title">{{ labelOf(ds.route_slug) }}</h3>
       <DatasetInfo v-if="metadataBySlug.get(ds.route_slug)" :metadata="metadataBySlug.get(ds.route_slug)!" />
-      <AgenturAggregationNote v-if="kind === 'agentur'" :points="pointsOf(ds.route_slug)" />
+      <AgenturAggregationNote v-if="kind === 'agentur'" :points="pointsOf(ds.route_slug)" :dataset-slug="baseSlug(ds.route_slug)" />
         <CustomRegionNote v-else-if="kind === 'custom'" :points="pointsOf(ds.route_slug) as any" />
+      <CoverageNote v-if="hasCoverage" :points="coveragePointsOf(ds.route_slug)" />
       <p v-if="results.get(ds.route_slug)?.kind === 'loading'" class="hint">Lade Daten…</p>
       <p v-else-if="results.get(ds.route_slug)?.kind === 'error'" class="error-text">
         Fehler beim Laden: {{ (results.get(ds.route_slug) as { message: string }).message }}

@@ -22,19 +22,28 @@ Postgres.
 go run cmd/soziodata/main.go
 
 go build ./...
-go test ./...   # currently covers internal/handlers (content negotiation, CSV encoding, export params)
+go test ./...   # internal/{handlers,config,routes,models} + cmd/*: negotiation/CSV, pagination limits, DB error responses, GeoJSON validation, metrics SQL, Cache-Control, guard tests; no DB needed (TestDB* are skipped)
+# Opt-in DB tests (TestDB*: synthetic fixtures in a fresh, auto-dropped database;
+# the user needs CREATE DATABASE, e.g. a throwaway postgis/postgis container):
+SOZ_TEST_PG_DSN="host=127.0.0.1 port=5432 user=... password=... dbname=postgres sslmode=disable" go test ./internal/handlers/ -run DB
+# (cmd/soziodata: SOZ_TEST_PG_HOST/PORT/USER/PASSWORD/DB for the DSN login test)
 
 # Release version: internal/version (Version/BuildTime, default "dev") is set via -ldflags
 # (Dockerfile build args VERSION/BUILD_TIME, filled by CI) and copied into
 # docs.SwaggerInfo.Version at startup (OpenAPI info.version) and GET /health.
 # The `@version dev` annotation in cmd/soziodata/main.go is only the placeholder.
 
-# Regenerate Swagger docs (writes into docs/)
-swag init -g cmd/soziodata/main.go -o docs
-# NOTE: the pre-commit hook adds --parseDependency --parseInternal, which
-# fails with swag <=1.16.4 on Go >= 1.27 (it cannot parse the generics in
-# the stdlib's math/rand/v2). Without the flags the output is equivalent;
-# with them, commits need --no-verify until swag is updated.
+# Regenerate Swagger docs (writes into docs/) - always with the same flags as
+# the pre-commit hook:
+swag init -g cmd/soziodata/main.go -o docs --parseDependency --parseInternal
+# NOTE: the flags keep the output identical to the committed docs (definitions
+# named github_com_..._internal_models.X). Without them swag v1.16.4 still
+# produces a valid spec, but renames every definition to models.X (~1,800
+# changed lines per file).
+# Verified with swag v1.16.4 on Go 1.26. Not verified: the earlier claim that
+# --parseDependency fails on Go >= 1.27 (stdlib generics). The hook has no
+# fallback: if the flagged run fails, the commit stops (fix swag, or
+# --no-verify and say so in the commit message).
 
 # Regenerate models/handlers/routes from dbt schema YAMLs
 go generate ./internal/models/...
@@ -42,11 +51,19 @@ go generate ./internal/models/...
 
 Enable the pre-commit hook (repo root: `git config core.hooksPath backend/githooks`) to run swag + go generate + go test automatically before each commit; see [githooks/README.md](githooks/README.md).
 
+## Database access
+
+In production the backend connects as the read-only role `api_ro`
+(`DB_USER` in `deployments/docker-compose.yml`, password `API_DB_PASSWORD`;
+created by `scripts/ensure_api_role.sql` in `deploy_remote.sh apply`): `SELECT`
+on `transformed_data` only, sessions read-only. Any new query must only touch
+`transformed_data` (or `public`/PostGIS and catalogs); no writes, no temp
+tables. Locally `DB_USER` may remain the owner.
+
 ## Architecture
 
 - `cmd/soziodata/main.go` is the actual API entrypoint (Gin router, loads
-  config, mounts routes). The `backend/soziodata` file in this directory is
-  a stray compiled binary, not source — ignore it.
+  config, mounts routes).
 - `cmd/gen-models/main.go` is a code generator, not a runtime service. It
   reads `pipeline/dbt/socioeconomic_data_pipeline/models/staging/*_schema.yml` and
   emits `internal/models/*_generated.go`,
@@ -61,7 +78,12 @@ Enable the pre-commit hook (repo root: `git config core.hooksPath backend/githoo
   `agenturbezirk.go`, `metrics.go`, `metrics_catalog.go`,
   `socioeconomic_inventory.go`, and `dataset_catalog.go` are hand-written
   cross-cutting endpoints (region metadata, geometry, dataset
-  inventory/catalog). `negotiate.go` holds the shared response layer:
+  inventory/catalog). `target_versions.go` holds the supported
+  `nuts_version`/`lau_version` values (read at startup from the distinct
+  `target_version` of the harmonized marts, default = newest, static
+  fallback without DB) and `GET /versions`; never hard-code a version
+  default or list elsewhere - use `defaultNutsVersion()` /
+  `supportedNutsVersions()` (LAU analogous). `negotiate.go` holds the shared response layer:
   `respondList`/`respondNegotiated` pick JSON or CSV per the `Accept`
   header (`?format=csv|json` overrides it for browser links, `?download=1`
   adds `Content-Disposition`), and a gin `render.Render` implementation
@@ -115,24 +137,68 @@ Enable the pre-commit hook (repo root: `git config core.hooksPath backend/githoo
   `mart_dataset_aggregation_meta`. If the polygon equals one unit of a level
   (area IoU ≥ 0.999, `customRegionExactMatchSQL`) only that unit counts and
   `matched_unit` is set on the rows. Goes through `respondList` (JSON/CSV).
-- `internal/routes/routes.go` wires the hand-written routes;
+  The whole handler runs under one time budget (`customRegionBudget()`, 90 s,
+  env `CUSTOM_REGION_TIMEOUT_SECONDS`; exceeded: 503) and is capped at
+  `customRegionMaxQueries` sub-queries (400). `customRegionUnitsSQL` returns an
+  error for unknown levels (a test checks it covers every level of
+  `mart_dataset_aggregation_meta`).
+  Body/vertex limits and the GeoJSON checks (`bindGeoJSONBody`,
+  `validateGeoJSONGeometry`, `checkGeoJSONInDB`) live in `geojson_input.go`
+  and are shared with `POST /geo/query` - reuse them for any new GeoJSON
+  input instead of duplicating limits. `geoJSONGeometrySQL`/`geoJSONInputCTE`
+  are the one definition of the input geometry (polygons repaired with
+  `ST_MakeValid`, points/lines unchanged); `/geo/query` runs the check and
+  its count in one statement (`geoJSONCheckSQL`). PostGIS errors become a
+  400 only via the whitelist in `geometryInputErrorMessage` (fixed text),
+  everything else goes through `respondDBError`.
+- Database errors go through `respondDBError(c, op, err)` (`common.go`): it
+  logs the real error and answers with a generic message (503 on
+  timeout/cancellation, else 500) - never put a raw `err` into a response.
+  DB calls use the `*Context(c.Request.Context(), ...)` variants, and the
+  connection sets `statement_timeout=60000` (`cmd/soziodata/main.go`).
+  Pagination limits (`chunk_size` ≤ 10000, `limit=null` ≤ the cap from `row_cap.go`, else
+  400) are enforced in `resolvePagination` (= `parsePagination` before any
+  DB access + `paginationRequest.resolve(total)` with the pre-counted
+  `total`; the cap only applies to unpaged `limit=null`, not with
+  `chunk_size`). The `limit=null` cap is sized at startup:
+  `max(300000, 1.25 × largest stg_*/snap_results_* table)` from
+  `pg_class.reltuples`.
+- `internal/routes/routes.go` wires the hand-written routes and the
+  `/api/v1` middleware: successful GETs get `Cache-Control` (5 min default,
+  1 h for `/versions` and `/datasets*`; errors and `/health` `no-store`),
+  see `cacheControlMiddleware`. `internal/models/models_soziodata_guard_test.go`
+  keeps `AllSoziodataConfigs()`, the generated configs and
+  `harmonizedRouteSlugs` consistent with each other and with the dbt marts.
   `routes_soziodata_generated.go` wires the generated per-dataset routes.
   Both are mounted together in `cmd/soziodata/main.go`.
-- `configs/metrics_catalog.yaml` is hand-maintained metadata (display
-  labels/units/descriptions per metric) served by
-  `internal/handlers/metrics_catalog.go` — independent of the
-  dbt-schema-driven codegen, so it does not get regenerated and must be
-  updated manually when a dataset is added or changes.
+- `configs/metrics_catalog.yaml` is hand-maintained metadata (formulas/
+  labels for the *derived* metrics, e.g. `bevoelkerungsdichte`) served by
+  `internal/handlers/metrics_catalog.go` — independent of the codegen, so
+  it is edited by hand when a derived metric is added or changes. Formula
+  types: `ratio` (numerator / denominator × scale) and `product` (numerator ×
+  factor × scale, e.g. `auszubildende-absolut` = rate per 1,000 × count /
+  1,000); an optional `note` is appended to `meta.note`.
+  `metrics.go`/`metrics_catalog.go` read harmonized datasets from
+  `mart_nuts3_sociodata_harmonized` for `?nuts_version=` (default: newest
+  version, see `target_versions.go`);
+  columns without a harmonized counterpart (`harmonizedMetricsColumns`)
+  fall back to the staging tables. Every `metricsSource` keeps invalid rows
+  but marks them (`excluded_reason`: `invalid`, `no_geometry`,
+  `no_denominator` for a ratio, `no_factor` for a product), so the
+  statistics use only valid values and the response counts the rest
+  (`excluded_invalid_count`, `excluded_regions`,
+  `regions_without_geometry`/`_denominator`/`_factor`); `meta.note` of
+  `GET /metrics/derived/{slug}` carries only the rule of its formula type. `GET /metrics` runs its
+  columns via `runIndexedLimited` (≤ 4 parallel, request order kept).
 - `api/bruno/` is a Bruno HTTP-request collection for manually exercising
   the API against a running instance.
 - `deployments/` holds the production `docker-compose.yml`
   (Traefik-fronted); see the root [README.md](../README.md) for the
   operational runbooks (image updates, pipeline container restarts).
-- `README.md`, `project-layout-master/`, and the per-directory
-  `cmd/README.md` / `pkg/README.md` / `api/README.md` / etc. are the
-  unmodified `golang-standards/project-layout` template boilerplate, not
-  project-specific documentation — for real docs see
-  [docs/backend/](../docs/backend/index.md).
-- `pkg/_your_public_lib_/` and `internal/pkg/_your_private_lib_/` are
-  unused template scaffolding (`.keep` files only); nothing in this
-  project currently lives there.
+- `README.md` plus the per-directory `cmd/README.md` / `api/README.md` /
+  `scripts/README.md` / `init/README.md` / `internal/README.md` are mostly
+  `golang-standards/project-layout` template boilerplate; the project-specific
+  docs are [docs/backend/](../docs/backend/index.md). `scripts/` holds the
+  deploy/backup scripts (`deploy_remote.sh`, `backup_db.sh`, `restore_db.sh`)
+  `sync_nextcloud_data_exchange.sh` (timer in `init/systemd/`), and
+  `check_swagger_router_annotations.sh` (run in CI after `go test`).

@@ -16,9 +16,9 @@ or Swagger; link to it instead. Skip doc updates for purely internal
 refactors that don't change behavior or structure visible to the docs.
 
 The same applies to the per-directory `AGENTS.md` files (`backend/`,
-`frontend/`, `pipeline/dbt/`, `pipeline/dlt/`, `analysis/data-analysis/`, `analysis/arbeitsagentur/`):
+`frontend/`, `pipeline/dbt/`, `pipeline/dlt/`, `infra/`, `data-exchange/`, `analysis/data-analysis/`, `analysis/arbeitsagentur/`):
 if a change alters commands, generated-file boundaries, model/mart
-layering, or another fact one of them states, update that `AGENTS.md` in
+layering, secrets rules, directory layout, or another fact one of them states, update that `AGENTS.md` in
 the same change rather than letting it drift out of date.
 
 ## Project overview
@@ -34,9 +34,17 @@ diagram across all modules.
 | `backend/` | Go | REST API, reads only from `transformed_data` (read-only) |
 | `pipeline/dlt/` | Python | Extract & Load raw data into `loaded_data` (unchanged) |
 | `pipeline/dbt/socioeconomic_data_pipeline/` | SQL (dbt) | Transform `loaded_data` → `transformed_data` (staging/intermediate/marts/snapshots) |
-| `geo-importer/`, `geo-mapper/` | Python | Prepare geodata and map raw datasets onto geodata IDs, upstream of `pipeline/dlt/` |
-| `data-exchange/` | data only | Exchange area for intermediate raw-data states |
+| `frontend/` | Vue 3 / TS | Vite SPA (`frontend/web/app/`) consuming the REST API |
+| `data-exchange/` | data only | Exchange area for intermediate raw-data states (geo-mapper output, datasets) |
+| `infra/` | Terraform | Hetzner server/buckets (`infra.yml`) |
+| `analysis/` | mixed | Exploratory analyses (own `AGENTS.md` files) |
 | `docs/`, `mkdocs.yml` | Markdown | This documentation site |
+
+`geo-importer` and `geo-mapper` (prepare geodata, map raw datasets onto
+geodata IDs, upstream of `pipeline/dlt/`) are **not part of this repo**:
+they are expected as sibling checkouts (`compose.local.yml` mounts
+`./geo-importer` / `./geo-mapper`; `load_geodata_to_postgis.py` only uses
+them as fallbacks).
 
 ## Build and test
 
@@ -44,7 +52,7 @@ diagram across all modules.
 # Backend (Go)
 cd backend && go run cmd/soziodata/main.go   # run locally (needs Postgres + .env)
 cd backend && go test ./...                  # tests
-cd backend && swag init -g cmd/soziodata/main.go -o docs  # regenerate Swagger
+cd backend && swag init -g cmd/soziodata/main.go -o docs --parseDependency --parseInternal  # regenerate Swagger (same flags as the pre-commit hook; without them the output is valid but names definitions differently)
 
 # dbt (needs a configured profiles.yml / DBT_PROFILES_DIR + reachable Postgres/PostGIS)
 cd pipeline/dbt/socioeconomic_data_pipeline && dbt deps && dbt snapshot && dbt run && dbt test
@@ -63,23 +71,18 @@ built/tested independently as shown above.
 
 - **The backend never transforms data.** It only reads finished
   views/tables from the `transformed_data` schema. Any data cleaning,
-  joining, or aggregation logic belongs in dbt, not in Go handlers.
+  joining, or aggregation logic belongs in dbt, not in Go handlers. The DB
+  enforces this: the backend logs in as the read-only role `api_ro` (SELECT on
+  `transformed_data` only, see [docs/operations.md](docs/operations.md#db-roles)),
+  so a relation the backend should read must live in `transformed_data`
+  (dbt `+schema`), not in `loaded_data`/`snapshots`.
 - **dlt never historizes.** History over time is exclusively built by dbt
   snapshots (`snapshots/snap_results_*.sql`). Do not add historization
-  logic to a dlt script. `write_disposition` is now uniformly `"replace"`
-  for every dataset-content resource across `pipeline/dlt/` (`load_soziodata_generic.py`
-  was the one exception - it used `"append"` with no primary key/dedup
-  until this was fixed; reruns had been silently accumulating duplicate
-  `loaded_data` rows, which inflated every "sum"-type indicator in
-  `mart_nuts3_sociodata_harmonized`/`mart_nuts3_timeseries_interpolated`
-  and downstream fill_gaps views by however many times the pipeline had
-  been rerun locally - "weighted_avg" indicators happened to cancel the
-  duplication out in their ratio and were unaffected). `load_arbeitslosenzahlen_afa.py`
-  still legitimately mixes `"merge"` (upserting `dataset_metadata` by
-  `dataset_slug`, same pattern as `load_soziodata_generic.py`'s own
-  metadata resource) and `"replace"` (the actual Agenturbezirk data) -
-  that split is intentional, not the same bug. Treat `"append"` as a red
-  flag, not a pattern to copy into a new loader.
+  logic to a dlt script. Every dataset-content resource in `pipeline/dlt/`
+  uses `write_disposition="replace"`; `"merge"` is only used for the
+  `dataset_metadata` upsert (by `dataset_slug`). Treat `"append"` as a red
+  flag (it once silently duplicated `loaded_data` rows on reruns and
+  inflated every "sum"-type indicator) — never copy it into a new loader.
 - **NUTS-3 region IDs are not stable over time** (2003/2006/2010/2013/
   2016/2021/2024 boundary versions exist). Any new model that aggregates
   or compares NUTS-3 data across years must go through
@@ -98,17 +101,33 @@ built/tested independently as shown above.
 ## Conventions
 
 - **Adding a new "Kreis"-level socioeconomic dataset** follows an existing,
-  repeated pattern — copy it rather than inventing a new one:
+  repeated pattern — copy it (e.g. `wohngeldhaushalte`) rather than inventing
+  a new one:
   1. Raw data as `mapped_pairs.csv` + `meta.yaml` under
      `data-exchange/.../<dataset>/results_<dataset>_kreise/`
-  2. `pipeline/dlt/load_soziodata_generic.py <dataset>/results_<dataset>_kreise` →
-     table `loaded_data.results_<dataset>_kreise`
-  3. `pipeline/dbt/.../models/staging/stg_<dataset>_kreise.sql` (+ matching
-     `*_schema.yml` with `not_null`/`accepted_range` tests)
-  4. Add an entry to the `source_datasets` list in
-     `mart_nuts3_sociodata_harmonized.sql`
-  5. `backend/cmd/gen-models` regenerates the Go models/handlers/routes for
-     the new dataset automatically — do not hand-write a handler for it.
+  2. Add a `load_soziodata_generic.py <dataset>/results_<dataset>_kreise`
+     line to `pipeline/dlt/run_all_pipelines.sh` → table
+     `loaded_data.results_<dataset>_kreise`
+  3. dbt: `models/staging/stg_<dataset>_kreise.sql` (+ `*_schema.yml` with
+     `not_null`/`accepted_range` tests) and
+     `snapshots/snap_results_<dataset>_kreise.sql`
+  4. dbt marts: register the dataset in the `source_datasets` lists of
+     `mart_nuts3_sociodata_harmonized` (incl. `valid_when`, mirroring the
+     staging `has_valid_value` rule, and the slug in
+     `tests/assert_harmonized_validity_matches_staging.sql`), `mart_dataset_source`,
+     `mart_nuts012_dataset_aggregate`, `mart_agentur_dataset_aggregate`, the
+     `nuts3_datasets` list of `mart_dataset_aggregation_meta`, plus
+     `mart_nuts3_summary` / `mart_region_datasets` / `mart_socioeconomic_inventory`
+     and a `marts/fill_gaps/api_<dataset>_fill_gaps.sql` view (see
+     [pipeline/dbt/AGENTS.md](pipeline/dbt/AGENTS.md))
+  5. `cd backend && go generate ./internal/models/...` regenerates the Go
+     models/handlers/routes from the staging schema YAML — do not hand-write
+     a handler. Exceptions, both extended by hand: the hard-coded
+     `harmonizedRouteSlugs` map in `backend/cmd/gen-models/main.go`, and
+     `AllSoziodataConfigs()` in `backend/internal/models/models_soziodata.go`
+     (add the new `<Dataset>Config`; without it the dataset is missing from
+     `GET /nuts/{id}/datasets` and unknown to `DatasetConfigBySlug`, i.e. to
+     `/metrics` and derived metrics).
 - **Go**: `internal/` packages are private to this module; only put code in
   `pkg/` if it is genuinely meant to be imported elsewhere. Files ending in
   `_generated.go` are produced by `cmd/gen-models` from dbt schema YAMLs —
@@ -118,14 +137,16 @@ built/tested independently as shown above.
   in the target database — the dlt load must run before `dbt snapshot`/`dbt run`.
 - **Commit hooks**: `git config core.hooksPath backend/githooks` enables a
   `pre-commit` hook that regenerates Swagger docs, regenerates Go models
-  (`go generate ./internal/models/...`), and runs `go test ./...`. Do not
+  (only when a `stg_*_kreise_schema.yml` or `cmd/gen-models/` is staged),
+  and runs `go test ./...`. Do not
   bypass it silently — if a change requires `--no-verify`, say so.
 - **CI is GitHub Actions** (`.github/workflows/`): `main.yml` (tests →
   semantic-release dry run → GHCR images → release → deploy to Hetzner →
-  Playwright E2E against the deployed instance, rollback on failure) and
-  `infra.yml` (Terraform for the Hetzner server, `infra/`). Deploys happen on
-  push to `main` only; the server-side steps live in
-  `backend/scripts/deploy_remote.sh`. Commit messages follow Conventional
+  Playwright E2E against the deployed instance → mark-good, rollback if E2E
+  fails) and `infra.yml` (Terraform for the Hetzner server, `infra/`). PRs
+  only run the tests; deploys happen on push to `main` (not for merged
+  Dependabot PRs) or manual dispatch from `main`; the server-side steps live
+  in `backend/scripts/deploy_remote.sh`. Commit messages follow Conventional
   Commits, because Semantic Release derives version and changelog from them
   (`.releaserc`). Setup steps and required secrets: `infra/README.md`.
 - **Adminer is not public** in production: Compose profile `tools`, bound to
@@ -136,6 +157,12 @@ built/tested independently as shown above.
   the `snapshots` schema and `loaded_data.dataset_metadata` — to Hetzner
   Object Storage, 30 days retention; `restore_db.sh` restores into a fresh DB.
   If you add a new non-reproducible schema/table, extend `backup_db.sh`.
+- **DB roles**: in production dlt/dbt run as the non-superuser `pipeline_rw`
+  (owns `loaded_data`, `loaded_data_staging`, `transformed_data`,
+  `snapshots`, but cannot create schemas or extensions), the backend as
+  `api_ro`; only postgis/Adminer/scripts use the superuser. A new schema or
+  extension the pipeline needs goes into `backend/scripts/ensure_pipeline_role.sql`
+  (see [docs/operations.md](docs/operations.md#db-roles)).
 
 ## Verifying non-trivial changes
 

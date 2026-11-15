@@ -2,28 +2,28 @@ version: 2
 
 models:
   - name: stg_dataset_license_history
-    description: "Volle Historie der license/license_url-Werte je dataset_slug aus snap_dataset_license (eine Zeile pro Gültigkeitsperiode, valid_to = null bedeutet noch aktuell)"
+    description: "Full history of license and license_url values per dataset_slug, one row per validity period. valid_to is null while the value is current."
     columns:
       - name: dataset_slug
-        description: "Dataset-Slug, identisch zu dataset_slug in stg_dataset_metadata"
+        description: "Dataset slug, same as dataset_slug in stg_dataset_metadata"
         data_type: text
         tests:
           - not_null
 
       - name: license
-        description: "Lizenzbezeichnung, wie sie zum Zeitpunkt [valid_from, valid_to) galt"
+        description: "License name as valid during [valid_from, valid_to)"
         data_type: text
 
       - name: license_url
-        description: "URL zum Lizenztext, wie sie zum Zeitpunkt [valid_from, valid_to) galt"
+        description: "License text URL as valid during [valid_from, valid_to)"
         data_type: text
 
       - name: valid_from
-        description: "Erstes Datum, an dem dieser Lizenzwert beobachtet wurde"
+        description: "First date on which this license value was observed"
         data_type: date
         tests:
           - not_null
 
       - name: valid_to
-        description: "Letztes Datum, an dem dieser Lizenzwert noch galt; null = aktuell gültig"
+        description: "Last date on which this license value was still valid; null = currently valid"
         data_type: date

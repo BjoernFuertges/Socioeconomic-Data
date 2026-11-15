@@ -10,7 +10,10 @@
 }}
 
 /*
-  Wrapper view over mart_beschaeftigungsquote_nuts3 for API exposure.
+  Wrapper over int_beschaeftigungsquote_nuts3 for API exposure: the
+  code generator (cmd/gen-models) only knows staging schema YAMLs, so the
+  dataset is registered here. It reads the intermediate model, not the mart,
+  to keep the layering staging -> intermediate -> marts.
   Selects the weighted average as the primary metric for REST API.
 */
 
@@ -24,7 +27,16 @@ select
     'aggregation_lau_to_nuts3'::text as mapper,
     'population_weighted_and_median'::text as parameter,
     'NUTS_3'::text as geodata_level,
-    2024::integer as geodata_year,
+    -- NUTS version of geodata_id_nuts: the codes come from nuts_3_code of the
+    -- newest Eurostat LAU vintage (stg_beschaeftigungsquote_gemeinden ->
+    -- latest_lau), which lists the NUTS version in force in that year, i.e.
+    -- the newest entry of var nuts_versions not after that vintage. Derived
+    -- instead of hard-coded so a new LAU/NUTS vintage moves it along.
+    (
+        select max(v)
+        from unnest(array[{{ var('nuts_versions') | join(', ') }}]::int[]) as v
+        where v <= (select max(year) from {{ ref('stg_lau_population') }})
+    ) as geodata_year,
     year,
     observation_date,
     case
@@ -35,4 +47,4 @@ select
     beschaeftigungsquote_median,
     beschaeftigungsquote_ungewichtet,
     gemeinden_count
-from {{ ref('mart_beschaeftigungsquote_nuts3') }}
+from {{ ref('int_beschaeftigungsquote_nuts3') }}

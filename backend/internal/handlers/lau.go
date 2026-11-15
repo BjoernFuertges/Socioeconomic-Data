@@ -1,15 +1,17 @@
 package handlers
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
-// GetLAURegions gibt alle LAU-Regionen zurück
+// GetLAURegions returns all LAU regions
 // @Summary Liste aller LAU-Regionen
 // @Description Gibt alle LAU-Regionen mit optionalen Filtern zurück
 // @Tags LAU
@@ -59,8 +61,8 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 	}
 
 	if filter.NutsParentID != "" {
-		// nuts3_id ist die kanonische LAU->NUTS-3-Verlinkung (deklariert oder
-		// räumlich ermittelt) - robuster als die oft NULLe nuts_3_code-Rohspalte.
+		// nuts3_id is the canonical LAU->NUTS-3 link (declared or spatially
+		// derived) - more robust than the often-NULL raw nuts_3_code column.
 		normalizedParent := strings.ToUpper(strings.TrimSpace(filter.NutsParentID))
 		query += fmt.Sprintf(" AND nuts3_id IS NOT NULL AND nuts3_id LIKE $%d", argPos)
 		args = append(args, normalizedParent+"%")
@@ -113,9 +115,9 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
 	var total int
-	err := h.DB.Get(&total, countQuery, args...)
+	err := h.DB.GetContext(c.Request.Context(), &total, countQuery, args...)
 	if err != nil {
-		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+		respondDBError(c, "Fehler beim Zählen der Datensätze", err)
 		return
 	}
 
@@ -129,6 +131,7 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 		filter.Limit,
 		filter.Offset,
 		limitNull,
+		total,
 	)
 	if err != nil {
 		respondBadRequest(c, err.Error())
@@ -138,9 +141,9 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 	args = pagedArgs
 
 	regions := []models.LAURegion{}
-	err = h.DB.Select(&regions, query, args...)
+	err = h.DB.SelectContext(c.Request.Context(), &regions, query, args...)
 	if err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -154,7 +157,7 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 	})
 }
 
-// GetLAURegionByID gibt eine spezifische LAU-Region zurück
+// GetLAURegionByID returns a specific LAU region
 // @Summary LAU-Region Details
 // @Description Gibt Details einer LAU-Region mit GeoJSON-Geometrie zurück
 // @Tags LAU
@@ -168,8 +171,12 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 // @Failure 500 {object} models.APIResponse
 // @Router /lau/{gisco_id} [get]
 func (h *Handler) GetLAURegionByID(c *gin.Context) {
-	giscoID := c.Param("gisco_id")
-	yearStr := c.Query("year")
+	giscoID := strings.ToUpper(strings.TrimSpace(c.Param("gisco_id")))
+	year, err := parseOptionalIntQuery(c, "year")
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
 	includeDatasets := c.Query("include_datasets") == "true"
 
 	query := `SELECT gisco_id, year, lau_name, country_code, lau_id,
@@ -181,29 +188,31 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 
 	args := []interface{}{giscoID}
 
-	if yearStr != "" {
+	if year != nil {
 		query += " AND year = $2"
-		args = append(args, yearStr)
+		args = append(args, *year)
 	} else {
 		query += " ORDER BY year DESC LIMIT 1"
 	}
 
 	var region models.LAURegion
-	err := h.DB.Get(&region, query, args...)
+	err = h.DB.GetContext(c.Request.Context(), &region, query, args...)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			respondNotFound(c, "LAU-Region nicht gefunden")
 			return
 		}
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
-	// nuts3_id ist die kanonische Verlinkung (deklariert oder räumlich
-	// ermittelt) - siehe Kommentar auf models.LAURegion.NUTS3ID.
+	// nuts3_id is the canonical link (declared or spatially derived) - see the
+	// comment on models.LAURegion.NUTS3ID.
 	if includeDatasets && region.NUTS3ID.Valid {
-		datasets, dsErr := h.regionNutsDatasets(region.NUTS3ID.String, 3)
-		if dsErr == nil {
+		datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), region.NUTS3ID.String, 3)
+		if dsErr != nil {
+			logDatasetsError(c, "lau", dsErr)
+		} else {
 			region.Datasets = datasets
 		}
 	}
@@ -214,7 +223,7 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 	})
 }
 
-// GetLAURegionVersions gibt alle Geometrie-Perioden einer LAU-Region zurück
+// GetLAURegionVersions returns all geometry periods of a LAU region
 // @Summary Geometrie-Perioden einer LAU-Region
 // @Description Gibt alle Geometrie-Perioden (valid_from/valid_to) einer LAU-Region aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null bedeutet noch aktuell.
 // @Tags LAU
@@ -239,8 +248,8 @@ func (h *Handler) GetLAURegionVersions(c *gin.Context) {
 		FROM transformed_data.mart_lau_geometry_historized
 		WHERE gisco_id = $1
 		ORDER BY valid_from DESC`
-	if err := h.DB.Select(&periods, query, normalizedID); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &periods, query, normalizedID); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 	if len(periods) == 0 {

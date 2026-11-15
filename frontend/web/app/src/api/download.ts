@@ -1,15 +1,14 @@
-// Baut die Download-/API-URLs für den kombinierten Regions-Export
-// (GET /regions/{region_type}/{region_id}/data) und die Katalog-Rohdaten.
-// Getrennt von client.ts, weil hier keine Antwort geholt, sondern nur eine
-// URL erzeugt wird: Downloads laufen direkt als <a href> gegen die API
-// (Streaming, kein Blob im Speicher), und dieselbe URL wird als curl-Befehl
-// zum Kopieren angezeigt.
+// Builds the download/API URLs for the combined region export
+// (GET /regions/{region_type}/{region_id}/data) and the catalog raw data.
+// Separate from client.ts because nothing is fetched here, only a URL is built:
+// downloads go straight to the API as <a href> (streaming, no blob in memory),
+// and the same URL is shown as a copyable curl command.
 import { API_BASE } from "./client";
 import type { QueryParams } from "./client";
 
 export type DownloadFormat = "csv" | "json";
 
-// raw = Ursprungswerte der Region, aggregated = aus anderen Regionen berechnet.
+// raw = the region's original values, aggregated = computed from other regions.
 export type DownloadScope = "raw" | "aggregated" | "both";
 
 export type RegionType = "nuts" | "lau" | "agentur";
@@ -19,10 +18,9 @@ export const FORMAT_MIME: Record<DownloadFormat, string> = {
   json: "application/json",
 };
 
-// API_BASE ist in Produktion relativ ("/api/v1"), weil Frontend und API
-// hinter demselben Origin liegen. Für Links zum Kopieren und curl-Befehle
-// muss daraus eine absolute URL werden, die auch außerhalb der Seite
-// funktioniert.
+// API_BASE is relative in production ("/api/v1") because frontend and API share
+// an origin. Links to copy and curl commands need an absolute URL that also
+// works outside the page.
 export function absoluteApiUrl(path: string, params?: QueryParams): string {
   const base = API_BASE.startsWith("http")
     ? API_BASE
@@ -38,7 +36,7 @@ export function absoluteApiUrl(path: string, params?: QueryParams): string {
 export interface RegionDataQuery {
   regionType: RegionType;
   regionId: string;
-  // Leer = alle für die Region verfügbaren Datensätze.
+  // Empty = all datasets available for the region.
   datasets?: string[];
   scope?: DownloadScope;
   fromYear?: number | null;
@@ -54,8 +52,8 @@ function regionDataParams(query: RegionDataQuery): QueryParams {
   };
 }
 
-// URL für den Browser-Download: `format` statt Accept-Header, weil ein
-// <a href>-Download keine Header setzen kann; `download=1` liefert
+// URL for the browser download: `format` instead of an Accept header because an
+// <a href> download can't set headers; `download=1` yields
 // Content-Disposition: attachment.
 export function regionDownloadUrl(query: RegionDataQuery, format: DownloadFormat): string {
   return absoluteApiUrl(`/regions/${query.regionType}/${encodeURIComponent(query.regionId)}/data`, {
@@ -65,8 +63,8 @@ export function regionDownloadUrl(query: RegionDataQuery, format: DownloadFormat
   });
 }
 
-// URL für curl/Skripte: ohne format/download, weil das Format dort über den
-// HTTP-konformen Accept-Header ausgehandelt wird
+// URL for curl/scripts: without format/download, since the format is negotiated
+// there via the standard Accept header.
 export function regionApiUrl(query: RegionDataQuery): string {
   return absoluteApiUrl(`/regions/${query.regionType}/${encodeURIComponent(query.regionId)}/data`, regionDataParams(query));
 }
@@ -75,15 +73,15 @@ export function curlCommand(url: string, format: DownloadFormat, filename: strin
   return `curl -H 'Accept: ${FORMAT_MIME[format]}' -o '${filename}.${format}' '${url}'`;
 }
 
-// Dateiname für die heruntergeladene Datei bzw. das curl-Ziel.
+// File name for the downloaded file or the curl target.
 export function regionFilename(query: RegionDataQuery): string {
   const scope = query.scope && query.scope !== "both" ? `_${query.scope}` : "";
   return `${query.regionType}_${query.regionId}${scope}`.toLowerCase().replace(/[^a-z0-9_-]+/g, "_");
 }
 
-// URL für den gleichzeitigen Metadaten-Export (Herkunft/Lizenz/Beschreibung
-// der im Daten-Export enthaltenen Datensätze) über GET /datasets bzw.
-// GET /datasets/{slug} bei genau einem Slug (spart dort den Array-Join).
+// URL for the simultaneous metadata export (origin/license/description of the
+// datasets in the data export) via GET /datasets, or GET /datasets/{slug} for
+// exactly one slug (saves the array join there).
 export function datasetMetadataUrl(slugs: string[], format: DownloadFormat): string {
   if (slugs.length === 1) {
     return absoluteApiUrl(`/datasets/${encodeURIComponent(slugs[0])}`, { format, download: 1 });
@@ -91,8 +89,8 @@ export function datasetMetadataUrl(slugs: string[], format: DownloadFormat): str
   return absoluteApiUrl("/datasets", { datasets: slugs.join(","), format, download: 1 });
 }
 
-// Pendant zu datasetMetadataUrl für curl/Skripte: ohne format/download, das
-// Format wird dort über den Accept-Header ausgehandelt.
+// Counterpart to datasetMetadataUrl for curl/scripts: without format/download,
+// the format is negotiated via the Accept header.
 export function datasetMetadataApiUrl(slugs: string[]): string {
   if (slugs.length === 1) {
     return absoluteApiUrl(`/datasets/${encodeURIComponent(slugs[0])}`);
@@ -100,8 +98,8 @@ export function datasetMetadataApiUrl(slugs: string[]): string {
   return absoluteApiUrl("/datasets", { datasets: slugs.join(",") });
 }
 
-// Quelldaten eines Datensatzes (GET /datasets/{slug}/source): die Werte
-// unverändert wie aus dem geo-mapper geliefert, ohne Harmonisierung.
+// Source data of a dataset (GET /datasets/{slug}/source): the values exactly as
+// delivered by the geo-mapper, without harmonization.
 export function datasetSourceUrl(slug: string, format: DownloadFormat): string {
   return absoluteApiUrl(`/datasets/${encodeURIComponent(slug)}/source`, { format, download: 1 });
 }
@@ -114,14 +112,12 @@ export function datasetMetadataFilename(baseFilename: string): string {
   return `${baseFilename}_metadata`;
 }
 
-// Löst für jede der übergebenen URLs einen Browser-Download aus (temporäres
-// <a download>, wie beim einzelnen Datei-Download) - damit ein Klick sowohl
-// die Daten- als auch (optional) die Metadaten-Datei anstößt, weiterhin ohne
-// Blob/Fetch, rein als Streaming-Downloads gegen die API. Chromium bricht
-// einen bereits laufenden <a download>-Klick ab, sobald im selben Tick ein
-// zweiter ausgelöst wird (beobachtet: von zwei gleichzeitig geklickten Links
-// kam nur der zweite tatsächlich als Datei an) - deshalb zwischen den Klicks
-// einen Tick warten statt sie in einer synchronen Schleife abzufeuern.
+// Triggers a browser download for each given URL (temporary <a download>, like a
+// single-file download), so one click fetches both the data and (optionally) the
+// metadata file, still as streaming downloads without blob/fetch. Chromium aborts
+// a running <a download> click when a second one fires in the same tick (observed:
+// of two links clicked together only the second arrived as a file), so wait a tick
+// between clicks instead of firing them in a synchronous loop.
 export function triggerDownloads(urls: string[]): void {
   urls.forEach((url, i) => {
     setTimeout(() => {
@@ -135,9 +131,9 @@ export function triggerDownloads(urls: string[]): void {
   });
 }
 
-// Kopiert Text in die Zwischenablage; meldet per Rückgabewert, ob es geklappt
-// hat (navigator.clipboard fehlt in unsicheren Kontexten, z.B. http:// mit
-// fremdem Host).
+// Copies text to the clipboard; the return value tells whether it worked
+// (navigator.clipboard is missing in insecure contexts, e.g. http:// on a
+// foreign host).
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);

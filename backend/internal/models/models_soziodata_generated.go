@@ -3,14 +3,14 @@
 
 package models
 
-// ArbeitsloseData repräsentiert Staging-Modell für Arbeitslosenzahlen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// ArbeitsloseData represents Cleaned unemployment counts per district (Kreis), with derived observation date and quality flag.
 type ArbeitsloseData struct {
 	SozioBaseData
 	Arbeitslose float64 `json:"arbeitslose" db:"arbeitslose" example:"0"`
 }
 
-// ArbeitsloseConfig ist die Dataset-Konfiguration für Arbeitslose-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_arbeitslose_kreise_schema.yml
+// ArbeitsloseConfig is the dataset configuration for Arbeitslose data,
+// generated from pipeline/dbt/.../models/staging/stg_arbeitslose_kreise_schema.yml
 var ArbeitsloseConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_arbeitslose_kreise",
@@ -23,14 +23,14 @@ var ArbeitsloseConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// ArbeitsvolumenData repräsentiert Staging-Modell für Arbeitsvolumen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// ArbeitsvolumenData represents Cleaned labour volume per district (Kreis), with derived observation date and quality flag.
 type ArbeitsvolumenData struct {
 	SozioBaseData
 	Arbeitsvolumen float64 `json:"arbeitsvolumen" db:"arbeitsvolumen" example:"0"`
 }
 
-// ArbeitsvolumenConfig ist die Dataset-Konfiguration für Arbeitsvolumen-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_arbeitsvolumen_kreise_schema.yml
+// ArbeitsvolumenConfig is the dataset configuration for Arbeitsvolumen data,
+// generated from pipeline/dbt/.../models/staging/stg_arbeitsvolumen_kreise_schema.yml
 var ArbeitsvolumenConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_arbeitsvolumen_kreise",
@@ -43,14 +43,14 @@ var ArbeitsvolumenConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// AuszubildendeData repräsentiert Staging-Modell für Auszubildende je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// AuszubildendeData represents Cleaned trainee rate per district (Kreis), i.e. trainees per 1,000 employees subject to social insurance contributions, with derived observation date and quality flag.
 type AuszubildendeData struct {
 	SozioBaseData
 	Auszubildende float64 `json:"auszubildende" db:"auszubildende" example:"0"`
 }
 
-// AuszubildendeConfig ist die Dataset-Konfiguration für Auszubildende-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_auszubildende_kreise_schema.yml
+// AuszubildendeConfig is the dataset configuration for Auszubildende data,
+// generated from pipeline/dbt/.../models/staging/stg_auszubildende_kreise_schema.yml
 var AuszubildendeConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_auszubildende_kreise",
@@ -63,19 +63,20 @@ var AuszubildendeConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// BeschaeftigungsquoteGemeindenData repräsentiert Staging-Modell für Beschäftigungsquote je Gemeinde (LAU) – bereinigt, mit Datumsableitung und Qualitätsflag
+// BeschaeftigungsquoteGemeindenData represents Staging model for the employment rate per municipality (LAU), cleaned, with derived observation date and quality flag.
 type BeschaeftigungsquoteGemeindenData struct {
 	SozioBaseData
-	BeschaeftigungsquoteProzent float64 `json:"beschaeftigungsquote_prozent" db:"beschaeftigungsquote_prozent" example:"50.00"`
+	BeschaeftigungsquoteProzent float64 `json:"beschaeftigungsquote_prozent" db:"beschaeftigungsquote_prozent" example:"500.00"`
+	IsLowConfidence             bool    `json:"is_low_confidence" db:"is_low_confidence" example:"true"`
 }
 
-// BeschaeftigungsquoteGemeindenConfig ist die Dataset-Konfiguration für BeschaeftigungsquoteGemeinden-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_beschaeftigungsquote_gemeinden_schema.yml
+// BeschaeftigungsquoteGemeindenConfig is the dataset configuration for BeschaeftigungsquoteGemeinden data,
+// generated from pipeline/dbt/.../models/staging/stg_beschaeftigungsquote_gemeinden_schema.yml
 var BeschaeftigungsquoteGemeindenConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_beschaeftigungsquote_gemeinden",
 	InterpolatedTable: "api_beschaeftigungsquote_gemeinden_fill_gaps",
-	ValueColumns:      []string{"beschaeftigungsquote_prozent"},
+	ValueColumns:      []string{"beschaeftigungsquote_prozent", "is_low_confidence"},
 	DefaultLimit:      1000,
 	OrderBy:           "geodata_id_nuts, year",
 	RouteSlug:         "beschaeftigungsquote-gemeinden",
@@ -83,17 +84,17 @@ var BeschaeftigungsquoteGemeindenConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   true,
 }
 
-// BeschaeftigungsquoteNuts3Data repräsentiert Staging-Modell für Beschäftigungsquote je NUTS-3-Region (aggregiert aus Gemeinden-Ebene) – gewichtet nach Bevölkerung
+// BeschaeftigungsquoteNuts3Data represents Staging model for the employment rate per NUTS-3 region, aggregated from municipality level and weighted by population.
 type BeschaeftigungsquoteNuts3Data struct {
 	SozioBaseData
-	BeschaeftigungsquoteProzent     float64 `json:"beschaeftigungsquote_prozent" db:"beschaeftigungsquote_prozent" example:"50.00"`
+	BeschaeftigungsquoteProzent     float64 `json:"beschaeftigungsquote_prozent" db:"beschaeftigungsquote_prozent" example:"500.00"`
 	BeschaeftigungsquoteMedian      float64 `json:"beschaeftigungsquote_median" db:"beschaeftigungsquote_median" example:"0"`
 	BeschaeftigungsquoteUngewichtet float64 `json:"beschaeftigungsquote_ungewichtet" db:"beschaeftigungsquote_ungewichtet" example:"0"`
 	GemeindenCount                  int     `json:"gemeinden_count" db:"gemeinden_count" example:"0"`
 }
 
-// BeschaeftigungsquoteNuts3Config ist die Dataset-Konfiguration für BeschaeftigungsquoteNuts3-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_beschaeftigungsquote_nuts3_schema.yml
+// BeschaeftigungsquoteNuts3Config is the dataset configuration for BeschaeftigungsquoteNuts3 data,
+// generated from pipeline/dbt/.../models/staging/stg_beschaeftigungsquote_nuts3_schema.yml
 var BeschaeftigungsquoteNuts3Config = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_beschaeftigungsquote_nuts3",
@@ -106,14 +107,14 @@ var BeschaeftigungsquoteNuts3Config = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// BevoelkerungData repräsentiert Staging-Modell für Bevölkerungsdaten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// BevoelkerungData represents Cleaned population per district (Kreis), with derived observation date and quality flag.
 type BevoelkerungData struct {
 	SozioBaseData
 	Bevoelkerung float64 `json:"bevoelkerung" db:"bevoelkerung" example:"0"`
 }
 
-// BevoelkerungConfig ist die Dataset-Konfiguration für Bevoelkerung-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_bevoelkerung_kreise_schema.yml
+// BevoelkerungConfig is the dataset configuration for Bevoelkerung data,
+// generated from pipeline/dbt/.../models/staging/stg_bevoelkerung_kreise_schema.yml
 var BevoelkerungConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_bevoelkerung_kreise",
@@ -126,14 +127,14 @@ var BevoelkerungConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// BruttoverdienstData repräsentiert Staging-Modell für Bruttoverdienst je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// BruttoverdienstData represents Cleaned gross earnings per district (Kreis), with derived observation date and quality flag.
 type BruttoverdienstData struct {
 	SozioBaseData
 	Bruttoverdienst float64 `json:"bruttoverdienst" db:"bruttoverdienst" example:"0"`
 }
 
-// BruttoverdienstConfig ist die Dataset-Konfiguration für Bruttoverdienst-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_bruttoverdienst_kreise_schema.yml
+// BruttoverdienstConfig is the dataset configuration for Bruttoverdienst data,
+// generated from pipeline/dbt/.../models/staging/stg_bruttoverdienst_kreise_schema.yml
 var BruttoverdienstConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_bruttoverdienst_kreise",
@@ -146,14 +147,14 @@ var BruttoverdienstConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// DurchschnittsalterData repräsentiert Staging-Modell für Durchschnittsalter je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// DurchschnittsalterData represents Cleaned average age per district (Kreis), with derived observation date and quality flag.
 type DurchschnittsalterData struct {
 	SozioBaseData
 	Durchschnittsalter float64 `json:"durchschnittsalter" db:"durchschnittsalter" example:"50.00"`
 }
 
-// DurchschnittsalterConfig ist die Dataset-Konfiguration für Durchschnittsalter-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_durchschnittsalter_kreise_schema.yml
+// DurchschnittsalterConfig is the dataset configuration for Durchschnittsalter data,
+// generated from pipeline/dbt/.../models/staging/stg_durchschnittsalter_kreise_schema.yml
 var DurchschnittsalterConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_durchschnittsalter_kreise",
@@ -166,14 +167,14 @@ var DurchschnittsalterConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// ErwerbstaetigePro1000EinwohnerData repräsentiert Staging-Modell für Erwerbstätige je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// ErwerbstaetigePro1000EinwohnerData represents Cleaned number of employed persons in thousands (absolute count, not a rate) per district (Kreis), with derived observation date and quality flag.
 type ErwerbstaetigePro1000EinwohnerData struct {
 	SozioBaseData
 	ErwerbstaetigePro1000Einwohner float64 `json:"erwerbstaetige_pro_1000_einwohner" db:"erwerbstaetige_pro_1000_einwohner" example:"0"`
 }
 
-// ErwerbstaetigePro1000EinwohnerConfig ist die Dataset-Konfiguration für ErwerbstaetigePro1000Einwohner-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_erwerbstaetige_pro_1000_einwohner_kreise_schema.yml
+// ErwerbstaetigePro1000EinwohnerConfig is the dataset configuration for ErwerbstaetigePro1000Einwohner data,
+// generated from pipeline/dbt/.../models/staging/stg_erwerbstaetige_pro_1000_einwohner_kreise_schema.yml
 var ErwerbstaetigePro1000EinwohnerConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_erwerbstaetige_pro_1000_einwohner_kreise",
@@ -186,14 +187,14 @@ var ErwerbstaetigePro1000EinwohnerConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// KinderarmutData repräsentiert Staging-Modell für Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – bereinigt, mit Datumsableitung und Qualitätsflag
+// KinderarmutData represents Cleaned child poverty per district (Kreis), with derived observation date and quality flag.
 type KinderarmutData struct {
 	SozioBaseData
 	Kinderarmut float64 `json:"kinderarmut" db:"kinderarmut" example:"50.00"`
 }
 
-// KinderarmutConfig ist die Dataset-Konfiguration für Kinderarmut-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_kinderarmut_kreise_schema.yml
+// KinderarmutConfig is the dataset configuration for Kinderarmut data,
+// generated from pipeline/dbt/.../models/staging/stg_kinderarmut_kreise_schema.yml
 var KinderarmutConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_kinderarmut_kreise",
@@ -206,14 +207,14 @@ var KinderarmutConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// MedianeinkommenData repräsentiert Staging-Modell für Medianeinkommen je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// MedianeinkommenData represents Cleaned median income per district (Kreis), with derived observation date and quality flag.
 type MedianeinkommenData struct {
 	SozioBaseData
 	Medianeinkommen float64 `json:"medianeinkommen" db:"medianeinkommen" example:"0"`
 }
 
-// MedianeinkommenConfig ist die Dataset-Konfiguration für Medianeinkommen-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_medianeinkommen_kreise_schema.yml
+// MedianeinkommenConfig is the dataset configuration for Medianeinkommen data,
+// generated from pipeline/dbt/.../models/staging/stg_medianeinkommen_kreise_schema.yml
 var MedianeinkommenConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_medianeinkommen_kreise",
@@ -226,14 +227,14 @@ var MedianeinkommenConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// SchuldnerquoteData repräsentiert Staging-Modell für Schuldnerquoten je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// SchuldnerquoteData represents Cleaned debtor quota per district (Kreis), with derived observation date and quality flag.
 type SchuldnerquoteData struct {
 	SozioBaseData
 	SchuldnerquoteProzent float64 `json:"schuldnerquote_prozent" db:"schuldnerquote_prozent" example:"50.00"`
 }
 
-// SchuldnerquoteConfig ist die Dataset-Konfiguration für Schuldnerquote-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_schuldnerquote_kreise_schema.yml
+// SchuldnerquoteConfig is the dataset configuration for Schuldnerquote data,
+// generated from pipeline/dbt/.../models/staging/stg_schuldnerquote_kreise_schema.yml
 var SchuldnerquoteConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_schuldnerquote_kreise",
@@ -246,14 +247,14 @@ var SchuldnerquoteConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// SgbIiQuoteData repräsentiert Staging-Modell für SGB-II-Quote je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// SgbIiQuoteData represents Cleaned SGB II quota per district (Kreis), with derived observation date and quality flag.
 type SgbIiQuoteData struct {
 	SozioBaseData
 	SgbIiQuoteProzent float64 `json:"sgb_ii_quote_prozent" db:"sgb_ii_quote_prozent" example:"50.00"`
 }
 
-// SgbIiQuoteConfig ist die Dataset-Konfiguration für SgbIiQuote-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_sgb_ii_quote_kreise_schema.yml
+// SgbIiQuoteConfig is the dataset configuration for SgbIiQuote data,
+// generated from pipeline/dbt/.../models/staging/stg_sgb_ii_quote_kreise_schema.yml
 var SgbIiQuoteConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_sgb_ii_quote_kreise",
@@ -266,14 +267,14 @@ var SgbIiQuoteConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// StudierendeData repräsentiert Staging-Modell für Studierende je 1.000 Einwohner je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// StudierendeData represents Cleaned students per district (Kreis), with derived observation date and quality flag.
 type StudierendeData struct {
 	SozioBaseData
 	Studierende float64 `json:"studierende" db:"studierende" example:"0"`
 }
 
-// StudierendeConfig ist die Dataset-Konfiguration für Studierende-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_studierende_kreise_schema.yml
+// StudierendeConfig is the dataset configuration for Studierende data,
+// generated from pipeline/dbt/.../models/staging/stg_studierende_kreise_schema.yml
 var StudierendeConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_studierende_kreise",
@@ -286,14 +287,34 @@ var StudierendeConfig = KreisDatasetConfig{
 	IsHarmonizedLau:   false,
 }
 
-// WohngeldhaushalteData repräsentiert Staging-Modell für Wohngeldhaushalte je Kreis – bereinigt, mit Datumsableitung und Qualitätsflag
+// SvBeschaeftigteData represents Cleaned counts of employees subject to social insurance contributions (at place of work, 30 June) per district (Kreis), with derived observation date and quality flag.
+type SvBeschaeftigteData struct {
+	SozioBaseData
+	SvBeschaeftigte float64 `json:"sv_beschaeftigte" db:"sv_beschaeftigte" example:"0"`
+}
+
+// SvBeschaeftigteConfig is the dataset configuration for SvBeschaeftigte data,
+// generated from pipeline/dbt/.../models/staging/stg_sv_beschaeftigte_kreise_schema.yml
+var SvBeschaeftigteConfig = KreisDatasetConfig{
+	Schema:            "transformed_data",
+	Table:             "stg_sv_beschaeftigte_kreise",
+	InterpolatedTable: "api_sv_beschaeftigte_fill_gaps",
+	ValueColumns:      []string{"sv_beschaeftigte"},
+	DefaultLimit:      1000,
+	OrderBy:           "geodata_id_nuts, year",
+	RouteSlug:         "sv_beschaeftigte",
+	IsHarmonized:      true,
+	IsHarmonizedLau:   false,
+}
+
+// WohngeldhaushalteData represents Cleaned housing benefit households per district (Kreis), with derived observation date and quality flag.
 type WohngeldhaushalteData struct {
 	SozioBaseData
 	WohngeldhaushalteJe1000 float64 `json:"wohngeldhaushalte_je_1000" db:"wohngeldhaushalte_je_1000" example:"0"`
 }
 
-// WohngeldhaushalteConfig ist die Dataset-Konfiguration für Wohngeldhaushalte-Daten,
-// generiert aus pipeline/dbt/.../models/staging/stg_wohngeldhaushalte_kreise_schema.yml
+// WohngeldhaushalteConfig is the dataset configuration for Wohngeldhaushalte data,
+// generated from pipeline/dbt/.../models/staging/stg_wohngeldhaushalte_kreise_schema.yml
 var WohngeldhaushalteConfig = KreisDatasetConfig{
 	Schema:            "transformed_data",
 	Table:             "stg_wohngeldhaushalte_kreise",

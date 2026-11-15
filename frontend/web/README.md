@@ -53,3 +53,8 @@ hinter Traefik ausgeliefert (siehe dortige Labels für das Routing). Dort läuft
 das Frontend auf derselben Domain wie die API, daher ist `VITE_API_BASE_URL`
 im Produktions-Build nicht gesetzt – der Client fällt dann auf den relativen
 Pfad `/api/v1` zurück.
+
+Die `app/nginx.conf` konfiguriert den nginx im Produktions-Image:
+SPA-Fallback auf `index.html` (Deep-Links überleben ein Reload), langes Caching für
+die gehashten Dateien unter `/assets/`, `no-cache` für `index.html` sowie Security-Header
+(`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`).

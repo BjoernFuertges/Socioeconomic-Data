@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 func TestDatasetCatalogQuery(t *testing.T) {
@@ -26,10 +26,10 @@ func TestDatasetCatalogQuery(t *testing.T) {
 	}
 }
 
-// TestDatasetCatalogEntryNegotiation prüft, dass GetDatasetCatalogEntry für
-// CSV genau eine Zeile liefert (respondNegotiated bekommt einen einzelnen
-// DatasetCatalogEintrag als jsonBody, aber einen 1-Element-Slice als csvRows -
-// siehe Kommentar in dataset_catalog.go).
+// TestDatasetCatalogEntryNegotiation checks that GetDatasetCatalogEntry yields
+// exactly one row for CSV (respondNegotiated gets a single
+// DatasetCatalogEintrag as jsonBody but a 1-element slice as csvRows - see
+// comment in dataset_catalog.go).
 func TestDatasetCatalogEntryNegotiation(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

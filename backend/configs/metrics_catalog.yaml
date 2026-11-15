@@ -1,6 +1,13 @@
 # Abgeleitete Metriken: per Formel aus mehreren Datensätzen berechnet.
-# Unterstützter Formeltyp: ratio (Zähler / Nenner × Scale).
-# Nenner-Quellen: dataset (RouteSlug + Spalte) oder builtin (nuts_geometry_area_sqkm).
+# Unterstützte Formeltypen:
+#   ratio   - Zähler / Nenner × Scale. Nenner-Quellen: dataset (RouteSlug +
+#             Spalte) oder builtin (nuts_geometry_area_sqkm).
+#   product - Zähler × Faktor × Scale. Faktor: nur dataset (kein builtin).
+# Bei ratio müssen Zähler und Nenner absolute Größen sein: Datensätze, die schon
+# Quoten sind (z.B. auszubildende = Auszubildende je 1.000 SV-Beschäftigte),
+# nicht nochmals durch die Bevölkerung teilen. Eine solche Quote lässt sich mit
+# product über ihre Bezugsgröße in eine absolute Zahl zurückrechnen.
+# note (optional) wird bei GET /metrics/derived/{slug} an meta.note angehängt.
 derived_metrics:
   - slug: bevoelkerungsdichte
     label: Bevölkerungsdichte
@@ -34,17 +41,30 @@ derived_metrics:
         column: bevoelkerung
       scale: 100.0
 
-  - slug: ausbildungsquote
-    label: Ausbildungsquote
+  - slug: auszubildende-absolut
+    label: Auszubildende (absolut, eigene Berechnung)
     description: >
-      Auszubildende je 1.000 Einwohner.
-    unit: "je 1.000 EW"
+      Eigene Berechnung aus BBSR auszubildende und BA sv_beschaeftigte:
+      Auszubildende je 1.000 SV-Beschäftigte × SV-Beschäftigte am Arbeitsort
+      (Stichtag 30. Juni) / 1.000. Rückrechnung, kein gemessener Wert;
+      nur Jahre, für die beide Quellen vorliegen (BA ab 2007).
+    unit: "Personen"
+    note: >-
+      Auszubildende absolut ist eine Rückrechnung (BBSR-Quote × BA-Beschäftigte / 1.000),
+      kein gemessener Wert: BBSR und BA können unterschiedliche Revisionsstände haben,
+      bei umgeschlüsselten NUTS-3-Regionen ist die harmonisierte Quote ein mit den
+      SV-Beschäftigten gewichteter Mittelwert; das Produkt ist dort exakt die Summe der
+      absoluten Werte, da Gewicht und Faktor dieselbe Größe sind. (Der Rückfall auf die
+      Bevölkerungsgewichtung vor 2007 betrifft diese Kennzahl nicht, weil dort der
+      BA-Faktor fehlt.) Zeitraum derzeit 2007–2023 (BA-Beschäftigte ab 2007, BBSR-Quote bis 2023).
+      Jahre davor sind ohne BA-Faktor ausgeschlossen: ohne Jahresfilter erscheinen daher
+      alle Regionen in excluded_regions/regions_without_factor (mit from_year=2007 nicht).
     formula:
-      type: ratio
+      type: product
       numerator:
         dataset: auszubildende
         column: auszubildende
-      denominator:
-        dataset: bevoelkerung
-        column: bevoelkerung
-      scale: 1000.0
+      factor:
+        dataset: sv_beschaeftigte
+        column: sv_beschaeftigte
+      scale: 0.001

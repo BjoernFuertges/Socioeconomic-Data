@@ -1,30 +1,52 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 const (
-	customRegionMaxBodyBytes = 5 << 20 // 5 MiB GeoJSON
-	customRegionMaxPoints    = 200000
+	// Body size and vertex limits: geoJSONMaxBodyBytes / geoJSONMaxPoints
+	// (geojson_input.go), shared with POST /geo/query.
 	customRegionMaxDatasets  = 30
 	customRegionDefaultShare = 0.01
-	// Ab dieser Flächenübereinstimmung (Schnitt / Vereinigung) gilt das Polygon
-	// als exakt eine bestehende Einheit. Nicht 1.0, weil Reprojektion (4326 →
-	// 3035) und Koordinatenrundung im GeoJSON minimale Abweichungen erzeugen.
+	// From this area match (intersection / union) the polygon counts as exactly
+	// one existing unit. Not 1.0, because reprojection (4326 -> 3035) and
+	// coordinate rounding in the GeoJSON introduce tiny deviations.
 	customRegionExactMatchIoU = 0.999
+	// Upper bound for the sub-queries of one request (datasets x indicators x
+	// levels of the fallback chain, each with an exact-match and an aggregation
+	// query in the worst case). The largest realistic request (all datasets) is
+	// far below this; it only guards against pathological inputs.
+	customRegionMaxQueries = 150
+	// Total time budget of the whole handler (all sub-queries together); the
+	// per-statement limit (statement_timeout) alone would allow 60 s per query.
+	// Override with CUSTOM_REGION_TIMEOUT_SECONDS.
+	customRegionDefaultBudget = 90 * time.Second
 )
 
-// CustomRegionAggregateRequest beschreibt die Abfrage von Datensätzen für eine
-// frei definierte Region (GeoJSON). Die Region wird nirgends gespeichert.
+// customRegionBudget returns the total time budget of a custom-region request.
+func customRegionBudget() time.Duration {
+	if v := strings.TrimSpace(os.Getenv("CUSTOM_REGION_TIMEOUT_SECONDS")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return time.Duration(n) * time.Second
+		}
+	}
+	return customRegionDefaultBudget
+}
+
+// CustomRegionAggregateRequest describes a dataset query for a freely defined
+// region (GeoJSON). The region is never stored.
 type CustomRegionAggregateRequest struct {
 	Geometry json.RawMessage `json:"geometry" swaggertype:"object"`
 	Datasets []string        `json:"datasets" example:"bevoelkerung,schuldnerquote"`
@@ -33,7 +55,7 @@ type CustomRegionAggregateRequest struct {
 	MinShare *float64        `json:"min_share,omitempty" example:"0.01"`
 }
 
-// CustomRegionAggregateRow ist eine Zeile der aggregierten Zeitreihe.
+// CustomRegionAggregateRow is one row of the aggregated time series.
 type CustomRegionAggregateRow struct {
 	DatasetSlug       string  `json:"dataset_slug" example:"schuldnerquote"`
 	Indicator         string  `json:"indicator" example:"schuldnerquote"`
@@ -45,13 +67,17 @@ type CustomRegionAggregateRow struct {
 	AggregationMethod string  `json:"aggregation_method" example:"weighted_avg_population"`
 	SourceRegionCount int     `json:"source_region_count" example:"3"`
 	Coverage          float64 `json:"coverage" example:"0.98"`
-	// MatchedUnit ist gesetzt, wenn das Polygon exakt einer bestehenden Einheit
-	// der genutzten Ebene entspricht (nuts_id, gisco_id bzw. ba_schl); die Werte
-	// sind dann die Werte dieser Einheit, ohne Beiträge benachbarter Einheiten.
+	// MatchedUnit is set when the polygon matches exactly one existing unit of
+	// the level used (nuts_id, gisco_id or ba_schl); the values are then that
+	// unit's values, without contributions from neighbouring units.
 	MatchedUnit *string `json:"matched_unit,omitempty" example:"DE300"`
-	// IsCrosswalked: mindestens ein beteiligter Einheitenwert wurde über eine
-	// Versionsgrenze umgerechnet (kein Direktwert).
+	// IsCrosswalked: at least one contributing unit value was converted across a
+	// version boundary (not a direct value).
 	IsCrosswalked bool `json:"is_crosswalked" example:"false"`
+	// EmployeeSlug names the employee-count dataset that is the preferred weight
+	// of this indicator (e.g. sv_beschaeftigte for auszubildende), also when the
+	// row fell back to the population weight; so clients can label the weighting.
+	EmployeeSlug *string `json:"employee_slug,omitempty" example:"sv_beschaeftigte"`
 }
 
 type customRegionMeta struct {
@@ -61,10 +87,24 @@ type customRegionMeta struct {
 	MeasureType string  `db:"measure_type" json:"measure_type" example:"weighted_avg"`
 	Kind        string  `db:"kind" json:"kind" example:"rate"`
 	FinerSlug   *string `db:"finer_slug" json:"finer_slug"`
+	// EmployeeSlug: weighting count of 'weighted_avg_employees' indicators.
+	EmployeeSlug *string `db:"employee_slug" json:"employee_slug,omitempty" example:"sv_beschaeftigte"`
 }
 
-// customRegionAggRow ist eine Zwischenzeile aus SQL (je Jahr/Monat), aus der
-// computeCustomRegionValue den Endwert bildet.
+// customRegionAggRow is an intermediate SQL row (per year/month) from which
+// customRegionPlannedQueries counts the aggregation candidates (datasets x
+// indicators x levels of the fallback chain) a request would run at most.
+func customRegionPlannedQueries(datasets []string, bySlug map[string][]customRegionMeta) int {
+	planned := 0
+	for _, slug := range datasets {
+		for _, requested := range bySlug[slug] {
+			planned += len(customRegionLevelChain(requested, bySlug))
+		}
+	}
+	return planned
+}
+
+// computeCustomRegionValue derives the final value.
 type customRegionAggRow struct {
 	Year              int             `db:"year"`
 	Month             sql.NullInt64   `db:"month"`
@@ -76,35 +116,48 @@ type customRegionAggRow struct {
 	PopNum            sql.NullFloat64 `db:"pop_num"`
 	PopDen            sql.NullFloat64 `db:"pop_den"`
 	PopComplete       bool            `db:"pop_complete"`
+	EmpNum            sql.NullFloat64 `db:"emp_num"`
+	EmpDen            sql.NullFloat64 `db:"emp_den"`
+	EmpComplete       bool            `db:"emp_complete"`
 	Coverage          float64         `db:"coverage"`
 	IsCrosswalked     bool            `db:"is_crosswalked"`
 }
 
-// customRegionUnitsSQL liefert je Ebene die Einheiten-Geometrien (EPSG:3035,
-// Referenzstand 2024, wie mart_agentur_nuts3_crosswalk). Nur feste Fragmente,
-// nie Nutzereingaben.
-var customRegionUnitsSQL = map[string]string{
-	"nuts3": `SELECT nuts_id AS unit_id, geometry_3035 AS g
+// customRegionUnitsSQL returns the unit geometries of a level (EPSG:3035,
+// reference vintage = defaultNutsVersion() / defaultLauVersion(), as in
+// mart_agentur_nuts3_crosswalk). Built per request because the default
+// versions are read from the DB at startup. Fixed fragments only (the versions
+// are ints), never user input. An unknown level is an error (never an empty
+// fragment, which would produce invalid SQL).
+func customRegionUnitsSQL(level string) (string, error) {
+	switch level {
+	case "nuts3":
+		return fmt.Sprintf(`SELECT nuts_id AS unit_id, geometry_3035 AS g
 		FROM transformed_data.mart_nuts_geometry_historized
 		WHERE levl_code = 3 AND country_code = 'DE' AND has_valid_geometry
-		  AND valid_from <= 2024 AND (valid_to IS NULL OR valid_to >= 2024)`,
-	"lau": `SELECT gisco_id AS unit_id, geometry_3035 AS g
+		  AND valid_from <= %[1]d AND (valid_to IS NULL OR valid_to >= %[1]d)`, defaultNutsVersion()), nil
+	case "lau":
+		return fmt.Sprintf(`SELECT gisco_id AS unit_id, geometry_3035 AS g
 		FROM transformed_data.mart_lau_geometry_historized
 		WHERE has_valid_geometry AND country_code = 'DE'
-		  AND valid_from <= 2024 AND max_vintage_year >= 2024`,
-	"agentur": `SELECT ba_schl AS unit_id, ST_Transform(geometry_wgs84, 3035) AS g
+		  AND valid_from <= %[1]d AND max_vintage_year >= %[1]d`, defaultLauVersion()), nil
+	case "agentur":
+		return `SELECT ba_schl AS unit_id, ST_Transform(geometry_wgs84, 3035) AS g
 		FROM transformed_data.stg_agenturbezirk_geometry
-		WHERE has_valid_geometry`,
+		WHERE has_valid_geometry`, nil
+	}
+	return "", fmt.Errorf("unbekannte Custom-Region-Ebene %q", level)
 }
 
-const customRegionPolyCTE = `poly AS (
-	SELECT ST_Multi(ST_CollectionExtract(
-		ST_UnaryUnion(ST_MakeValid(ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1), 4326), 3035))), 3)) AS g
+// customRegionPolyCTE prepares the polygon ($1) like every GeoJSON input
+// (geoJSONGeometrySQL: repaired with ST_MakeValid, areal part only).
+var customRegionPolyCTE = `poly AS (
+	SELECT ` + geoJSONGeometrySQL(geoJSONParsedSQL(1), "MultiPolygon") + ` AS g
 )`
 
-// customRegionExactMatchSQL sucht die Einheit einer Ebene, deren Fläche mit dem
-// Polygon (nahezu) identisch ist: Schnittfläche / Vereinigungsfläche >= $2.
-const customRegionExactMatchSQL = `
+// customRegionExactMatchSQL finds the unit of a level whose area is (nearly)
+// identical to the polygon: intersection area / union area >= $2.
+var customRegionExactMatchSQL = `
 WITH ` + customRegionPolyCTE + `,
 units AS (%s)
 SELECT u.unit_id::text
@@ -115,9 +168,9 @@ WHERE ST_Area(ST_Intersection(u.g, p.g))
 ORDER BY ST_Area(ST_Intersection(u.g, p.g)) DESC
 LIMIT 1`
 
-// $8 (optional): Einheit, auf die die Aggregation beschränkt wird, wenn das
-// Polygon exakt dieser Einheit entspricht (siehe customRegionExactMatchSQL).
-const customRegionAggregateSQL = `
+// $8 (optional): unit to which the aggregation is restricted when the polygon
+// exactly matches it (see customRegionExactMatchSQL).
+var customRegionAggregateSQL = `
 WITH ` + customRegionPolyCTE + `,
 units AS (%s),
 overlap AS (
@@ -133,7 +186,7 @@ kept AS (
 	   OR ($8::text IS NULL AND (share_of_unit >= $2::float8 OR share_of_poly >= $2::float8))
 ),
 vals AS (
-	SELECT k.share_of_unit, k.share_of_poly, v.year, v.month, v.value, v.population, v.is_crosswalked
+	SELECT k.share_of_unit, k.share_of_poly, v.year, v.month, v.value, v.population, v.employees, v.is_crosswalked
 	FROM kept k
 	JOIN transformed_data.mart_custom_region_unit_values v
 		ON  v.level = $3 AND v.unit_id = k.unit_id
@@ -152,28 +205,30 @@ SELECT
 	sum(population * share_of_unit)                        AS pop_den,
 	(count(population) = count(*)
 		AND coalesce(sum(population * share_of_unit), 0) > 0) AS pop_complete,
+	sum(value * employees * share_of_unit)                 AS emp_num,
+	sum(employees * share_of_unit)                         AS emp_den,
+	(count(employees) = count(*)
+		AND coalesce(sum(employees * share_of_unit), 0) > 0) AS emp_complete,
 	least(1.0, sum(share_of_poly))::float8                 AS coverage,
 	bool_or(is_crosswalked)                                AS is_crosswalked
 FROM vals
 GROUP BY year, month
 ORDER BY year, month`
 
-// normalizeCustomRegionRequest validiert die Anfrage und liefert das GeoJSON-
-// Geometry-Objekt, die Datensatz-Slugs (dedupliziert) und min_share.
+// normalizeCustomRegionRequest validates the request and returns the GeoJSON
+// geometry object, the (deduplicated) dataset slugs and min_share.
 func normalizeCustomRegionRequest(req *CustomRegionAggregateRequest) (geometryJSON string, datasets []string, minShare float64, err error) {
 	geometryJSON, err = extractGeoJSONGeometry(req.Geometry)
 	if err != nil {
 		return "", nil, 0, err
 	}
 
-	var geom struct {
-		Type string `json:"type"`
+	geomType, _, err := validateGeoJSONGeometry(geometryJSON)
+	if err != nil {
+		return "", nil, 0, err
 	}
-	if err := json.Unmarshal([]byte(geometryJSON), &geom); err != nil {
-		return "", nil, 0, fmt.Errorf("ungültiges GeoJSON: %v", err)
-	}
-	if geom.Type != "Polygon" && geom.Type != "MultiPolygon" {
-		return "", nil, 0, fmt.Errorf("geometry muss ein Polygon oder MultiPolygon sein, erhalten %q", geom.Type)
+	if geomType != "Polygon" && geomType != "MultiPolygon" {
+		return "", nil, 0, fmt.Errorf("geometry muss ein Polygon oder MultiPolygon sein, erhalten %q", geomType)
 	}
 
 	seen := map[string]bool{}
@@ -206,9 +261,9 @@ func normalizeCustomRegionRequest(req *CustomRegionAggregateRequest) (geometryJS
 	return geometryJSON, datasets, minShare, nil
 }
 
-// customRegionLevelChain ordnet die Kandidaten eines angefragten Indikators
-// vom feinsten zum gröbsten: feinere Variante (finer_slug) zuerst, dann der
-// Indikator selbst.
+// customRegionLevelChain orders the candidates of a requested indicator from
+// finest to coarsest: the finer variant (finer_slug) first, then the
+// indicator itself.
 func customRegionLevelChain(requested customRegionMeta, bySlug map[string][]customRegionMeta) []customRegionMeta {
 	chain := []customRegionMeta{}
 	if requested.FinerSlug != nil {
@@ -221,20 +276,26 @@ func customRegionLevelChain(requested customRegionMeta, bySlug map[string][]cust
 	return append(chain, requested)
 }
 
-// computeCustomRegionValue bildet den Endwert einer Zeile. Formeln wie in
-// mart_agentur_dataset_aggregate.sql: 'sum' verteilt den Einheitenwert
-// flächenanteilig; 'weighted_avg' gewichtet bevorzugt mit der Bevölkerung des
-// überlappenden Anteils, sonst mit dem Flächenanteil an der Region, sonst
-// ungewichtet. Mediane sind nur Näherungen (siehe value_kind).
+// computeCustomRegionValue derives the final value of a row. Formulas as in
+// mart_agentur_dataset_aggregate.sql: 'sum' distributes the unit value by area
+// share; 'weighted_avg' weights by the population of the overlapping part if
+// available, else by the area share of the region, else unweighted;
+// 'weighted_avg_employees' (values per employed person) weights by the number
+// of employed persons of the overlapping part; if that weight is incomplete
+// (e.g. auszubildende before 2007) it falls back to the population weight, then
+// area, then unweighted. Weights are never mixed within one row.
+// Medians are only approximations (see value_kind).
 func computeCustomRegionValue(measureType string, r customRegionAggRow) (value float64, method string, ok bool) {
-	if measureType != "weighted_avg" {
+	if measureType != "weighted_avg" && measureType != "weighted_avg_employees" {
 		if !r.SumValue.Valid {
 			return 0, "", false
 		}
 		return r.SumValue.Float64, "sum", true
 	}
 	switch {
-	case r.PopComplete && r.PopDen.Valid && r.PopDen.Float64 > 0 && r.PopNum.Valid:
+	case measureType == "weighted_avg_employees" && r.EmpComplete && r.EmpDen.Valid && r.EmpDen.Float64 > 0 && r.EmpNum.Valid:
+		return r.EmpNum.Float64 / r.EmpDen.Float64, "weighted_avg_employees", true
+	case (measureType == "weighted_avg" || measureType == "weighted_avg_employees") && r.PopComplete && r.PopDen.Valid && r.PopDen.Float64 > 0 && r.PopNum.Valid:
 		return r.PopNum.Float64 / r.PopDen.Float64, "weighted_avg_population", true
 	case r.AreaDen.Valid && r.AreaDen.Float64 > 0 && r.AreaNum.Valid:
 		return r.AreaNum.Float64 / r.AreaDen.Float64, "weighted_avg_area", true
@@ -264,6 +325,7 @@ func customRegionRows(m customRegionMeta, agg []customRegionAggRow, matchedUnit 
 			MatchedUnit:       matchedUnit,
 			IsCrosswalked:     r.IsCrosswalked,
 		}
+		row.EmployeeSlug = m.EmployeeSlug
 		if r.Month.Valid {
 			month := int(r.Month.Int64)
 			row.Month = &month
@@ -273,51 +335,54 @@ func customRegionRows(m customRegionMeta, agg []customRegionAggRow, matchedUnit 
 	return out
 }
 
-// ListCustomRegionDatasets listet die für Custom-Regionen abfragbaren Datensätze
+// ListCustomRegionDatasets lists the datasets that can be queried for custom regions
 // @Summary Für Custom-Regionen abfragbare Datensätze
-// @Description Gibt je Datensatz/Indikator die Quellebene (lau, nuts3, agentur), die Aggregationsart (sum, weighted_avg) und die Kennzeichnung der Näherung (kind) zurück. Namen und Lizenz: GET /datasets/{slug}.
+// @Description Gibt je Datensatz/Indikator die Quellebene (lau, nuts3, agentur), die Aggregationsart (sum, weighted_avg, weighted_avg_employees) und die Kennzeichnung der Näherung (kind) zurück. Namen und Lizenz: GET /datasets/{slug}.
 // @Tags Geo
 // @Produce json
 // @Success 200 {object} models.APIResponse{data=[]handlers.customRegionMeta}
 // @Failure 500 {object} models.APIResponse
 // @Router /custom-regions/datasets [get]
 func (h *Handler) ListCustomRegionDatasets(c *gin.Context) {
-	metas, err := h.loadCustomRegionMetas()
+	metas, err := h.loadCustomRegionMetas(c.Request.Context())
 	if err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 	respondList(c, metas, &models.MetaInfo{Total: len(metas)})
 }
 
-func (h *Handler) loadCustomRegionMetas() ([]customRegionMeta, error) {
+func (h *Handler) loadCustomRegionMetas(ctx context.Context) ([]customRegionMeta, error) {
 	metas := []customRegionMeta{}
-	err := h.DB.Select(&metas, `
-		SELECT dataset_slug, indicator, level, measure_type, kind, finer_slug
+	err := h.DB.SelectContext(ctx, &metas, `
+		SELECT dataset_slug, indicator, level, measure_type, kind, finer_slug, employee_slug
 		FROM transformed_data.mart_dataset_aggregation_meta
 		ORDER BY dataset_slug, indicator`)
 	return metas, err
 }
 
-// QueryCustomRegionDatasetAggregate aggregiert Datensätze über eine frei definierte Region
+// QueryCustomRegionDatasetAggregate aggregates datasets over a freely defined region
 // @Summary Datensätze für eine Custom-Region (GeoJSON)
-// @Description Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt. Näherungswerte (z. B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet. Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: Version 2024.
+// @Description Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt, Werte je Erwerbstätigen (weighted_avg_employees) erwerbstätigengewichtet. Näherungswerte (z. B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet. Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: jeweils neueste verfügbare Version (siehe GET /versions). Gesamtlaufzeit und Anzahl der Teilabfragen sind begrenzt (400 bei zu vielen Teilabfragen, 503 bei Zeitüberschreitung).
 // @Tags Geo
 // @Accept json
 // @Produce json
 // @Param request body handlers.CustomRegionAggregateRequest true "GeoJSON-Region und Datensätze"
 // @Success 200 {object} models.APIResponse{data=[]handlers.CustomRegionAggregateRow}
 // @Failure 400 {object} models.APIResponse
+// @Failure 413 {object} models.APIResponse
 // @Failure 500 {object} models.APIResponse
+// @Failure 503 {object} models.APIResponse
 // @Router /custom-regions/dataset-aggregate [post]
 func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, customRegionMaxBodyBytes)
-
 	var req CustomRegionAggregateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondBadRequest(c, fmt.Sprintf("Ungültiger Request-Body: %v", err))
+	if !bindGeoJSONBody(c, &req) {
 		return
 	}
+
+	// One total budget for the whole handler (see customRegionDefaultBudget).
+	ctx, cancel := context.WithTimeout(c.Request.Context(), customRegionBudget())
+	defer cancel()
 
 	geometryJSON, datasets, minShare, err := normalizeCustomRegionRequest(&req)
 	if err != nil {
@@ -325,34 +390,22 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 		return
 	}
 
-	// Polygon einmal prüfen (gültig, nicht leer, Größenlimit). Parse-/Transform-
-	// Fehler (z. B. Koordinaten außerhalb WGS84) sind Nutzerfehler.
-	var check struct {
-		Points int  `db:"points"`
-		Empty  bool `db:"is_empty"`
-	}
-	err = h.DB.Get(&check, `
-		WITH poly AS (
-			SELECT ST_CollectionExtract(
-				ST_MakeValid(ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON($1), 4326), 3035)), 3) AS g
-		)
-		SELECT ST_NPoints(g) AS points, ST_IsEmpty(g) AS is_empty FROM poly`, geometryJSON)
-	if err != nil {
-		respondBadRequest(c, fmt.Sprintf("Ungültige Geometrie (erwartet GeoJSON in WGS84/EPSG:4326, [lon, lat]): %v", err))
+	// Check the polygon once (parse errors, non-empty after repair, vertex
+	// limit) with the same preparation as the aggregation queries
+	// (geoJSONGeometrySQL). Self-intersections are repaired, not rejected.
+	_, inputErr, dbErr := h.checkGeoJSONInDB(ctx, "MultiPolygon", 1, "", []interface{}{geometryJSON})
+	if dbErr != nil {
+		respondDBError(c, "Geometrieprüfung", dbErr)
 		return
 	}
-	if check.Empty {
-		respondBadRequest(c, "Die Geometrie enthält keine Fläche")
-		return
-	}
-	if check.Points > customRegionMaxPoints {
-		respondBadRequest(c, fmt.Sprintf("Geometrie hat zu viele Stützpunkte (%d, maximal %d)", check.Points, customRegionMaxPoints))
+	if inputErr != nil {
+		respondBadRequest(c, inputErr.Error())
 		return
 	}
 
-	metas, err := h.loadCustomRegionMetas()
+	metas, err := h.loadCustomRegionMetas(ctx)
 	if err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 	bySlug := map[string][]customRegionMeta{}
@@ -366,16 +419,26 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 		}
 	}
 
-	// Entspricht das Polygon exakt einer Einheit einer Ebene (z. B. ein
-	// ganzer Kreis), zählen nur deren Werte - keine Randstücke der Nachbarn.
-	// Je Ebene höchstens einmal ermittelt.
+	// Bound the number of sub-queries before running any of them.
+	if customRegionPlannedQueries(datasets, bySlug) > customRegionMaxQueries {
+		respondBadRequest(c, "Die Anfrage umfasst zu viele Teilabfragen; bitte weniger Datensätze auswählen")
+		return
+	}
+
+	// If the polygon exactly matches a unit of a level (e.g. a whole Kreis), only
+	// that unit's values count, not edge slivers of its neighbours. Determined at
+	// most once per level.
 	matches := map[string]*string{}
 	matchFor := func(level string) (*string, error) {
 		if m, ok := matches[level]; ok {
 			return m, nil
 		}
+		units, err := customRegionUnitsSQL(level)
+		if err != nil {
+			return nil, err
+		}
 		var ids []string
-		err := h.DB.Select(&ids, fmt.Sprintf(customRegionExactMatchSQL, customRegionUnitsSQL[level]),
+		err = h.DB.SelectContext(ctx, &ids, fmt.Sprintf(customRegionExactMatchSQL, units),
 			geometryJSON, customRegionExactMatchIoU)
 		if err != nil {
 			return nil, err
@@ -392,17 +455,26 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 	for _, slug := range datasets {
 		for _, requested := range bySlug[slug] {
 			for _, candidate := range customRegionLevelChain(requested, bySlug) {
+				if err := ctx.Err(); err != nil { // total budget used up (-> 503)
+					respondDBError(c, "Zeitbudget Custom-Region", err)
+					return
+				}
 				matched, err := matchFor(candidate.Level)
 				if err != nil {
-					respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+					respondDBError(c, "Datenbankfehler", err)
+					return
+				}
+				units, err := customRegionUnitsSQL(candidate.Level)
+				if err != nil {
+					respondDBError(c, "Datenbankfehler", err)
 					return
 				}
 				var agg []customRegionAggRow
-				query := fmt.Sprintf(customRegionAggregateSQL, customRegionUnitsSQL[candidate.Level])
-				err = h.DB.Select(&agg, query, geometryJSON, minShare, candidate.Level,
+				query := fmt.Sprintf(customRegionAggregateSQL, units)
+				err = h.DB.SelectContext(ctx, &agg, query, geometryJSON, minShare, candidate.Level,
 					candidate.DatasetSlug, candidate.Indicator, req.FromYear, req.ToYear, matched)
 				if err != nil {
-					respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+					respondDBError(c, "Datenbankfehler", err)
 					return
 				}
 				rows := customRegionRows(candidate, agg, matched)

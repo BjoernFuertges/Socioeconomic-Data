@@ -8,43 +8,30 @@
     )
 }}
 
-{% set reference_nuts_version = 2024 %}
+{% set reference_nuts_version = var('reference_nuts_version') %}
 
 /*
-  Räumliche Zuordnung jeder deutschen LAU-Gemeinde zu ihrer NUTS-3-Region,
-  gegen eine feste Referenz-NUTS-Version (aktuell/neueste, {{ reference_nuts_version }}).
+  Spatial assignment of each German LAU Gemeinde to its NUTS-3 region
+  against a fixed reference NUTS version ({{ reference_nuts_version }}).
 
-  Dient als Fallback für die kanonische nuts3_id in lau_integrated.sql, wenn
-  die deklarierten Quellspalten (nuts_3_code aus der Populationsquelle,
-  nuts_3 aus der Geometriequelle) NULL sind - was mit den lokalen Testdaten
-  durchgehend der Fall ist, da die GISCO-GeoJSONs kein NUTS_3-Property
-  führen (siehe stg_lau_geometry.sql) und die Populationsquelle je nach
-  geladenem Datensatz ebenfalls leer sein kann.
+  Fallback for the canonical nuts3_id in lau_integrated.sql when the
+  declared source columns (nuts_3_code from the population source, nuts_3
+  from the geometry source) are NULL - always the case with local test data,
+  since the GISCO GeoJSONs carry no NUTS_3 property (see stg_lau_geometry.sql).
 
-  Zuordnung über die größte Schnittfläche (statt reinem ST_Contains), um
-  numerische Ungenauigkeiten und Randberührungen an Gemeindegrenzen
-  abzufangen - gleiche Logik wie int_lau_nuts3_membership.sql.
+  Assignment by largest intersection area (instead of plain ST_Contains),
+  same logic as int_lau_nuts3_membership.sql.
 
-  NUTS-3-Geometrien kommen bewusst aus mart_nuts_geometry_historized statt
-  direkt aus stg_nuts_geometry: stg_nuts_geometry ist eine View, die
-  geometry_3035 bei jeder Abfrage per ST_GeomFromText aus der rohen
-  loaded_data-Textspalte neu parst - ohne jede Möglichkeit eines
-  Geometrie-Index. Ein Join von ~12.500 LAU-Geometrien gegen ~400 solcher
-  Views-Zeilen lief mehrfach mehrere Minuten, ohne fertig zu werden
-  (Nested Loop ohne Index, ST_GeomFromText pro Kandidatenpaar neu
-  ausgeführt). mart_nuts_geometry_historized speichert dieselbe Geometrie
-  bereits als echte PostGIS-Spalte mit GiST-Index.
+  NUTS-3 geometries come from mart_nuts_geometry_historized, not
+  stg_nuts_geometry: the staging view re-parses the geometry on every query
+  and cannot be indexed; joining ~12,500 LAU geometries against it ran for
+  minutes without finishing. The mart has a GiST-indexed PostGIS column.
 
-  Grain: eine Zeile je gisco_id (nicht je Geometrie-Periode) - basiert auf
-  int_lau_geometry_canonical (genau eine repräsentative Geometrie je
-  Gemeinde), aus demselben Performance-Grund wie in
-  int_lau_spatial_crosswalk.sql dokumentiert: ein Join über alle ~150.000
-  deutschen LAU-Perioden (statt nur ~12.500 Gemeinden) gegen die NUTS-3-
-  Geometrien lief mehrere Minuten, ohne fertig zu werden. Da sich der
-  NUTS-3-Parent einer Gemeinde durch reine Neu-Generalisierung der
-  Grenzlinie zwischen zwei Vintages ohnehin praktisch nie ändert, ist eine
-  Zeile je gisco_id ausreichend; lau_integrated.sql joint entsprechend nur
-  über gisco_id, nicht zusätzlich über valid_from.
+  Grain: one row per gisco_id (not per geometry period), based on
+  int_lau_geometry_canonical, for the same performance reason as in
+  int_lau_spatial_crosswalk.sql. A Gemeinde's NUTS-3 parent practically
+  never changes through mere re-generalization of its boundary between
+  vintages, so lau_integrated.sql joins on gisco_id only (not valid_from).
 */
 
 with nuts_de as (

@@ -1,15 +1,21 @@
-Welcome to your new dbt project!
+# socioeconomic_data_pipeline (dbt)
 
-### Using the starter project
+dbt-Projekt, das `loaded_data` (dlt) in das Schema `transformed_data` transformiert
+(Staging, Intermediate, Marts, Snapshots). Hintergrund und Konventionen:
 
-Try running the following commands:
-- dbt run
-- dbt test
+- [pipeline/dbt/AGENTS.md](../AGENTS.md) – Kommandos, Modell-Schichten, Regeln
+- [docs/pipeline/dbt.md](../../../docs/pipeline/dbt.md) – ausführliche Beschreibung der Modelle
 
+## Kernbefehle
 
-### Resources:
-- Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction)
-- Check out [Discourse](https://discourse.getdbt.com/) for commonly asked questions and answers
-- Join the [chat](https://community.getdbt.com/) on Slack for live discussions and support
-- Find [dbt events](https://events.getdbt.com) near you
-- Check out [the blog](https://blog.getdbt.com/) for the latest news on dbt's development and best practices
+Voraussetzung: `profiles.yml` (Vorlage `profiles.example.yml`, bzw. `DBT_PROFILES_DIR`)
+und eine erreichbare Postgres/PostGIS-Instanz, in die dlt bereits geladen hat.
+
+```bash
+dbt deps       # Pakete installieren
+dbt snapshot   # Historisierung (snap_results_*)
+dbt run        # Modelle bauen
+dbt test       # Tests ausführen
+```
+
+Im Betrieb ruft `pipeline/dlt/run_all_pipelines.sh` diese Befehle nach den dlt-Ladeläufen auf.

@@ -27,6 +27,47 @@ curl -H 'Accept: text/csv' '<host>/api/v1/bevoelkerung/timeseries?geodata_id_nut
   cannot send headers); `?download=1` adds `Content-Disposition:
   attachment`. `?limit=null` lifts the row limit for a full export.
 
+### Pagination
+
+- `limit` / `offset`: default `limit` is 1000 on the generated dataset
+  routes and 100 on the region lists (`/lau`, `/nuts`, `/geo`). Maximum
+  `limit` is 10,000 on the dataset routes and `/nuts`, 1,000 on `/lau`,
+  `/geo` and `POST /geo/query`.
+- `limit=null` returns all rows, up to a cap of at least 300,000 rows
+  (set at startup to 1.25× the largest table, so the largest dataset,
+  `beschaeftigungsquote-gemeinden` with ~252,000 rows, stays downloadable). A larger
+  result is rejected with `400` and a hint to page with `chunk_size` —
+  never silently truncated.
+  Operators can override the cap with the env variable `UNLIMITED_ROWS_CAP`
+  (positive integer; replaces the automatic value, invalid values are ignored).
+- `chunk_size` (max. 10,000, otherwise `400`) + `chunk` (0-based) is an
+  alternative to `limit`/`offset` and takes precedence when set — also over
+  `limit=null`, whose cap then does not apply (the response is paged).
+- JSON responses carry pagination info in `meta` (`meta.total` is the full
+  row count, so a client can compute the number of chunks).
+
+### Caching
+
+Successful `GET` responses under `/api/v1` carry `Cache-Control: public,
+max-age=300, stale-while-revalidate=600` (the data only changes with a
+pipeline run); `/versions` and `/datasets*` use `max-age=3600,
+stale-while-revalidate=86400`. Error responses (status >= 400) and
+`/health` are `no-store`, `POST` requests are untouched. Responses vary by
+`Accept` (JSON/CSV), hence `Vary: Accept`. Implemented in
+[`internal/routes/routes.go`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/backend/internal/routes/routes.go)
+(`cacheControlMiddleware`); no CORS change needed (`Cache-Control` is a
+safelisted/allowed request header, nothing extra to expose).
+
+### Errors
+
+Errors use the same envelope with `success: false` and a German `error`
+text. Invalid parameters yield `400` with a specific message. Database
+failures yield `500` with only the generic text "Interner Fehler beim
+Datenbankzugriff" — the real error is logged server-side, never returned.
+Timeouts and cancelled requests yield `503`: every statement is capped by
+`statement_timeout` (60 s, set on the DB connection), and queries are
+cancelled when the client disconnects.
+
 Implemented once in
 [`internal/handlers/negotiate.go`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/backend/internal/handlers/negotiate.go)
 (`respondList`/`respondNegotiated`), so no endpoint carries its own CSV code.
@@ -51,9 +92,30 @@ aggregation itself still happens in dbt.
 - `scope=aggregated` returns computed values (NUTS-0/1/2 and Agenturbezirke
   aggregated from Kreise; NUTS-3 aggregated from Gemeinden, as
   `lau_population_sum` / `lau_beschaeftigungsquote_weighted_avg`).
+  Their `source_region_count` is the number of Gemeinden behind the value
+  (population: with a population value; quote: with a valid quote).
+  The Kreis aggregates (NUTS-0/1/2, Agenturbezirke) additionally carry
+  `expected_region_count` and `is_complete` (empty for other rows); see
+  [Coverage flags](#coverage-flags-of-aggregated-sums).
 - `scope=both` (the default) returns both in one file; `is_computed`
   separates them.
 - NUTS-0/1/2 have no raw rows, LAU has no aggregated ones.
+
+### Coverage flags of aggregated sums
+
+Aggregates over Kreise are **not corrected** for Kreise without a value.
+`GET /nuts/{nuts_id}/dataset-aggregate/{slug}`,
+`GET /agenturbezirke/.../dataset-aggregate...` and the aggregated rows of the
+region export carry `expected_region_count` (Kreise the region should consist
+of) and `is_complete` (`false` = fewer Kreise contributed than expected, so a
+sum is too small and an average only partial; `source_region_count` is the
+actual number). For NUTS-0/1/2, `GET /nuts/{nuts_id}` (`socioeconomic`)
+returns `expected_region_count`, `bevoelkerung_is_complete` and
+`arbeitslose_is_complete`; all three are `null` for NUTS-3. Semantics and
+tests live in the dbt marts (`mart_nuts012_dataset_aggregate`,
+`mart_agentur_dataset_aggregate`, `mart_nuts{0,1,2}_summary`). Custom regions
+(`/custom-regions/dataset-aggregate`) have no such flag; use `coverage`
+(area share) there.
 - `datasets=a,b` restricts the dataset slugs (empty = all available),
   `from_year`/`to_year` the period.
 
@@ -82,6 +144,46 @@ Swagger UI (`/api/docs/index.html`). It is injected at build time via
 `-ldflags` into `backend/internal/version`; the committed `docs/swagger.*`
 files only carry the placeholder `dev`.
 
+## Target versions (`nuts_version` / `lau_version`)
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/versions` | Supported `nuts_version` / `lau_version` values and their defaults |
+
+```json
+{"success": true, "data": {
+  "nuts": {"versions": [2003, 2006, 2010, 2013, 2016, 2021, 2024], "default": 2024},
+  "lau":  {"versions": [2011, 2012, "...", 2024], "default": 2024}}}
+```
+
+NUTS-3 and LAU region IDs are not stable over time (Kreis reforms, municipal
+mergers), so harmonized values exist per target version. **Without
+`nuts_version` / `lau_version`, the API always serves the newest available
+version** (`default` = maximum of `versions`). This applies to
+`/{slug}/timeseries`, `fill_gaps=true`, `/metrics`, `/metrics/derived/{slug}`,
+the NUTS-3/LAU raw values of `/regions/{type}/{id}/data` (no parameter there)
+and the custom-region unit geometries.
+
+- The list is read once at backend startup from the harmonized marts
+  (distinct `target_version` of `mart_nuts3_sociodata_harmonized` /
+  `mart_lau_sociodata_harmonized`). A new version therefore needs no code
+  change: rebuild the marts with the extended dbt vars
+  ([Reference versions](../pipeline/dbt.md#reference-versions-nuts-lau)) and
+  restart the backend. If the query fails or finds no rows, a static
+  fallback list (default 2024) is used and a warning is logged.
+- When a new version arrives, the default moves and region IDs in default
+  responses can change. Clients that store IDs or need reproducible results
+  should **pin the version explicitly** (`?nuts_version=2021`) and pick it
+  from `GET /versions`. An unsupported value returns `400` naming the
+  allowed list.
+- Responses state the resolved version: `nuts_version` / `lau_version` on
+  every `/timeseries` and `fill_gaps` row and on `/metrics` results
+  (`/regions/.../data` does not carry it).
+- Limitation: marts pinned to the dbt var `reference_nuts_version` /
+  `reference_lau_version` (NUTS-0/1/2 and Agentur aggregates, custom-region
+  unit values) only follow the new default if that var is raised as well;
+  the dbt test `assert_reference_versions_current` enforces that.
+
 ## LAU regions (municipalities)
 
 | Method | Path | Purpose |
@@ -97,8 +199,10 @@ files only carry the placeholder `dev`.
 |---|---|---|
 | GET | `/nuts` | List of all NUTS regions |
 | GET | `/nuts/{nuts_id}` | All indicators for a NUTS region |
-| GET | `/nuts/{nuts_id}/versions` | Available NUTS versions (2013/2016/2021/2024) of a region |
+| GET | `/nuts/{nuts_id}/versions` | Geometry periods of a region (NUTS vintages 2003/2006/2010/2013/2016/2021/2024) |
 | GET | `/nuts/{nuts_id}/datasets` | Datasets available for the region |
+| GET | `/nuts/{nuts_id}/lau-aggregate` | NUTS-3 only: values aggregated from its municipalities (LAU) |
+| GET | `/nuts/{nuts_id}/dataset-aggregate/{slug}` | NUTS-0/1/2 only: time series of a Kreis dataset aggregated from NUTS-3 (version 2024) |
 
 ## Geodata (generic, LAU + NUTS)
 
@@ -109,19 +213,42 @@ files only carry the placeholder `dev`.
 | GET | `/geo/{geo_id}/versions` | Available versions of a geo region |
 | POST | `/geo/query` | Spatial query by geometry (e.g. point/polygon) |
 
+`POST /geo/query` accepts any GeoJSON geometry (points and lines too, for
+`intersects`/`contains`). Same input limits and geometry preparation as
+custom regions below: 5 MiB body (`413` above), 200,000 vertices, WGS84
+`[lon, lat]`. Polygons/MultiPolygons (e.g. self-intersecting "bowties") and
+GeometryCollections are repaired with `ST_MakeValid` instead of rejected
+(`400` only if no area is left); points and lines are used unchanged and
+must be OGC-valid. Input PostGIS cannot parse or transform yields `400` with
+a fixed message ("Ungültiges GeoJSON" / "Geometrie nicht transformierbar"),
+never the raw PostGIS error; other database failures are `500`/`503`.
+
 ### Custom regions (GeoJSON)
 
 | Method | Path | Purpose |
 |---|---|---|
+| GET | `/custom-regions/datasets` | Datasets that can be queried for a custom region |
 | POST | `/custom-regions/dataset-aggregate` | Time series of the requested datasets for a user-defined Polygon/MultiPolygon (GeoJSON, WGS84) |
 
+Request body: `geometry` (GeoJSON), `datasets` (slugs, max. 30), optional
+`from_year`, `to_year`, `min_share`. Limits: 5 MiB body (`413` above),
+200,000 vertices. The whole request runs under a total time budget (90 s,
+`CUSTOM_REGION_TIMEOUT_SECONDS`; exceeded: `503`) and may expand to at most
+150 sub-queries (datasets x indicators x levels; more: `400`).
+
 The region is sent per request and never stored. The polygon is intersected
-with the source geometries (reference state 2024) and the values are
+with the source geometries (reference state: the newest NUTS/LAU version, see `GET /versions`) and the values are
 aggregated per dataset on the finest available level: LAU before NUTS-3;
 the monthly Agentur figures exist only per Agenturbezirk and are always
 aggregated on that level. Counts (`sum`) are distributed by area share,
 rates/means (`weighted_avg`) are population-weighted where every
-contributing unit has a population, otherwise area-weighted. Every row
+contributing unit has a population, otherwise area-weighted; values per
+employed person (`weighted_avg_employees`, e.g. `arbeitsvolumen`,
+`bruttoverdienst`) are weighted by the number of employed persons
+(`auszubildende`, per 1,000 SV-Beschäftigte: by `sv_beschaeftigte`, available
+from 2007 – earlier years fall back to the population weight, and only
+without population to the area weight; `aggregation_method` shows which).
+Every row
 carries `level_used`, `aggregation_method`, `value_kind` (approximation
 flag, e.g. medians) and `coverage` (share of the polygon area that has
 data). Supports JSON/CSV like the other endpoints. Details in Swagger.
@@ -136,8 +263,15 @@ the generic socioeconomic-data routes below.
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/agenturbezirke` | List of all Agenturbezirke, with geometry |
+| GET | `/agenturbezirke/latest` | All Agenturbezirke with their latest reporting month (map view) |
+| GET | `/agenturbezirke/periods` | Available reporting months |
+| GET | `/agenturbezirke/period?year=&month=` | All Agenturbezirke for one reporting month |
+| GET | `/agenturbezirke/dataset-aggregate` | Kreis datasets/years available aggregated to Agenturbezirke |
+| GET | `/agenturbezirke/dataset-aggregate/{slug}?year=` | One Kreis dataset aggregated to all Agenturbezirke for one year |
 | GET | `/agenturbezirke/{ba_schl}` | A single Agenturbezirk |
 | GET | `/agenturbezirke/{ba_schl}/arbeitslosigkeit` | Monthly unemployment/underemployment series (since Jan 2007) |
+| GET | `/agenturbezirke/{ba_schl}/nuts3` | Overlapping NUTS-3 regions with area shares |
+| GET | `/agenturbezirke/{ba_schl}/dataset-aggregate/{slug}` | Time series of a Kreis dataset aggregated to this Agenturbezirk |
 | GET | `/agenturbezirke/{ba_schl}/nuts-hierarchy` | Overlapping NUTS-1/2/3 regions; `is_parent` marks the smallest one that fully contains the Agenturbezirk (none if it spans several Bundesländer) |
 | GET | `/nuts/{nuts_id}/agenturbezirke` | Reverse direction (NUTS-1 to 3): Agenturbezirke in a region, `is_fully_contained` separates real children from partial overlaps |
 
@@ -194,7 +328,7 @@ persistent `dataset_uri` of the form `urn:soziodata:dataset:<slug>`).
 `license` is the literal string `"unbekannt"` rather than a bare `null`
 for any dataset whose usage terms couldn't be determined — see
 [`stg_dataset_metadata.sql`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dbt/socioeconomic_data_pipeline/models/staging/stg_dataset_metadata.sql).
-For BBSR-sourced datasets (currently all of them) the license is looked
+For BBSR-sourced datasets (currently all `meta.yaml`-driven ones) the license is looked
 up automatically and kept up to date by
 [`pipeline/dlt/bbsr_license.py`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/pipeline/dlt/bbsr_license.py)
 — no manual research needed, see [dlt.md](../pipeline/dlt.md).
@@ -221,6 +355,57 @@ row — the `meta.yaml`-driven Kreis/Gemeinden datasets as well as
 | GET | `/metrics` | Statistical aggregations over socioeconomic datasets |
 | GET | `/metrics/derived` | Catalog of derived metrics (from `configs/metrics_catalog.yaml`) |
 | GET | `/metrics/derived/{slug}` | A single entry from the derived-metrics catalog |
+
+Derived metrics are defined in `configs/metrics_catalog.yaml` with one of two
+formula types: `ratio` (numerator / denominator × scale; denominator a dataset
+or the NUTS-3 area) and `product` (numerator × factor × scale; factor a
+dataset). Current entries:
+
+| Slug | Formula | Unit |
+|---|---|---|
+| `bevoelkerungsdichte` | `bevoelkerung` / NUTS-3 area (km²) | EW/km² |
+| `eigenberechnete-arbeitslosenquote` | `arbeitslose` / `bevoelkerung` × 100 | % |
+| `auszubildende-absolut` | `auszubildende` (per 1,000 SV employees, BBSR) × `sv_beschaeftigte` (BA) / 1,000 | Personen |
+
+`auszubildende-absolut` is a back-calculation, not a measured count: the two
+sources may be at different revision states, the harmonized rate of a
+re-mapped NUTS-3 region is a weighted average (so the product is an
+approximation), and only years covered by both exist (currently 2007–2023:
+BA from 2007, BBSR rate up to 2023). Without a year filter, the earlier years
+show up as excluded (`excluded_regions`, `regions_without_factor`); use
+`from_year=2007` to avoid that. The
+catalog's optional `note` carries this caveat and is appended to `meta.note`
+of `GET /metrics/derived/{slug}`. For a `product`, a region without a factor
+value counts in `regions_without_factor` (`regions_without_denominator` is
+only used by `ratio`), and a factor of 0 is a valid value.
+
+Both statistics endpoints read harmonized datasets from
+`mart_nuts3_sociodata_harmonized` for one NUTS-3 version, selected with
+`?nuts_version=` (default: newest available version, see
+[Target versions](#target-versions-nuts_version-lau_version); like `/{slug}/timeseries`), so
+every region counts once per year and `geodata_id_nuts` refers to that
+version. Derived metrics with an area denominator use the area of the same
+NUTS version. The response states the version in `nuts_version`; it is
+absent where a column has no harmonized counterpart
+(`beschaeftigungsquote-gemeinden`, and the median/unweighted/count columns
+of `beschaeftigungsquote-nuts3`), which are still computed from the staging
+tables as before.
+
+Only valid values enter the statistics and the ranking: `has_valid_value`
+of the staging models, and for harmonized values only when every
+contributing source value was valid (`mart_nuts3_sociodata_harmonized.
+has_valid_value`). Each result reports what was left out instead of
+dropping it silently: `excluded_invalid_count` per year and in total,
+`excluded_regions` (distinct regions with at least one excluded value) and,
+for derived metrics, `regions_without_geometry` (area denominator without a
+matching NUTS-3 geometry) and `regions_without_denominator` for a `ratio`
+(numerator and denominator must both be valid, a zero denominator counts as
+invalid), resp. `regions_without_factor` for a `product` (numerator and
+factor must both be valid). `meta.note` states this rule (for
+`GET /metrics/derived/{slug}` only the sentence of its formula type);
+years with only invalid values are missing from `by_year` but counted in the
+totals. `GET /metrics` computes its dataset columns in parallel (at most 4
+at a time) and keeps the request order.
 
 ## Generic socioeconomic-data routes
 
@@ -271,10 +456,26 @@ missing, transparently flagged instead of a single, silently-chosen number:
 }
 ```
 
+- `geodata_year` (fill_gaps rows) is the boundary version of the **source
+  row**; for interpolated/estimated years without a source row it is the
+  target version. The reliable column for the target version is
+  `nuts_version` (`lau_version` on LAU datasets).
+- `point=lon,lat` (with `fill_gaps=true` and on `/timeseries`) is resolved
+  against the geometry of the target version (`nuts_version`, default newest)
+  and returns the whole series of that region; `year`/`from_year`/`to_year`
+  only restrict the years. On the raw route (no `fill_gaps`) `point` uses the
+  geometry of `year`, or the latest geometry without `year`; rows of older
+  boundary versions are then not returned (and `from_year`/`to_year` do not
+  change the geometry) - use `fill_gaps=true` for the complete series.
+
 - `value` is the value actually used downstream (original value, or the
   linear-interpolation estimate if the year was missing).
 - `is_interpolated` flags whether the row was estimated rather than an
   original observation.
+- `is_estimated` (NUTS datasets) flags values converted to another NUTS
+  version via a crosswalk pair that rests on an estimate (municipalities
+  straddling Kreis boundaries, e.g. Potsdam 2003, Sachsen-Anhalt 2007), see
+  [dbt: Interpolation methods](../pipeline/dbt.md#interpolation-methods-and-evaluation).
 - `value_linear` / `value_peer_trend` are only populated for interpolated
   rows and expose **both** estimation methods side by side (linear
   interpolation vs. peer-region trend carry-forward, see
@@ -292,11 +493,15 @@ exist in the interpolated mart).
 `beschaeftigungsquote-gemeinden` is the LAU-grain counterpart: it is fed by
 [`mart_lau_sociodata_harmonized`](../pipeline/dbt.md#lau-version-harmonization)
 instead and exposes the same `fill_gaps=true` / `/timeseries` mechanism, but
-with `lau_version` (2011–2024) instead of `nuts_version`, `geodata_id_lau`
+with `lau_version` (see [Target versions](#target-versions-nuts_version-lau_version)) instead of `nuts_version`, `geodata_id_lau`
 instead of `geodata_id_nuts` for a direct region filter (`nuts_parent_id`
 still works, filtering via the canonical LAU→NUTS-3 link in
 `lau_integrated.nuts3_id`), and `gisco_id`/Kreis-peer-group fields instead
 of `nuts_id`/NUTS-2-peer-group ones in the timeseries response.
+The rate is workplace-based, so values above 100 % occur (commuter hubs, very
+small municipalities) and are kept. Rows carry `is_low_confidence = true` for
+municipalities with fewer than 500 inhabitants, whose rate rests on very few
+people and is volatile.
 
 `beschaeftigungsquote-nuts3` remains a special case: its route still has a
 dedicated `/timeseries` endpoint, but `fill_gaps=true` is not supported on the

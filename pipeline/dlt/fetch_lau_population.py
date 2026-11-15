@@ -73,7 +73,9 @@ def _download(url: str, dest: Path, force: bool) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=180)
     resp.raise_for_status()
-    dest.write_bytes(resp.content)
+    tmp = dest.with_suffix(".xlsx.tmp")
+    tmp.write_bytes(resp.content)
+    tmp.replace(dest)
 
 
 def _column_map(header_row: tuple) -> dict[str, int]:
@@ -100,8 +102,11 @@ def extract_de_sheet(xlsx_path: Path, out_csv: Path) -> int:
         cols = _column_map(next(rows))
 
         out_csv.parent.mkdir(parents=True, exist_ok=True)
+        # Write to a temp file first: a half-written CSV would otherwise be
+        # treated as done by the "already exists" check on the next run.
+        tmp_csv = out_csv.with_suffix(".csv.tmp")
         count = 0
-        with open(out_csv, "w", newline="", encoding="utf-8") as f:
+        with open(tmp_csv, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f, delimiter=";")
             writer.writerow(
                 [
@@ -120,14 +125,15 @@ def extract_de_sheet(xlsx_path: Path, out_csv: Path) -> int:
                     continue
                 lau_code = str(lau_code).strip()
                 gisco_cell = row[cols["gisco_id"]] if "gisco_id" in cols else None
-                gisco_id = str(gisco_cell).strip() if gisco_cell is not None else f"DE_{lau_code}"
-                # stg_beschaeftigungsquote_gemeinden.sql's original_id_1 lost its
-                # leading zero in an earlier float round-trip (pandas inferred the
-                # AGS column as numeric; the model only strips a trailing ".0", see
-                # its cleaned CTE) - lau_nat_code must match that same lossy
-                # convention, or the LAU->NUTS-3 join there never hits for any
-                # AGS starting with 0 (state codes 01-09, i.e. most of Germany).
-                lau_nat_code = str(int(lau_code))
+                gisco_id = (
+                    str(gisco_cell).strip()
+                    if gisco_cell is not None
+                    else f"DE_{str(int(float(lau_code))).zfill(8)}"
+                )
+                # Official 8-digit AGS as text. Eurostat's AGS column can come
+                # back numeric, so strip the float artifacts and restore the
+                # leading zero of states 01-09.
+                lau_nat_code = str(int(float(lau_code))).zfill(8)
                 writer.writerow(
                     [
                         gisco_id,
@@ -140,6 +146,7 @@ def extract_de_sheet(xlsx_path: Path, out_csv: Path) -> int:
                     ]
                 )
                 count += 1
+        tmp_csv.replace(out_csv)
         return count
     finally:
         wb.close()

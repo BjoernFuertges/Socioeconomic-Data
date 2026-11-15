@@ -1,0 +1,61 @@
+version: 2
+
+models:
+  - name: stg_lau_geometry
+    description: "LAU (municipality) boundaries per year, with EPSG:3035 and WGS84 geometries."
+    # Grain: one row per (gisco_id, year): mart_lau_geometry_historized assumes one vintage row per gisco_id and year.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - gisco_id
+            - year
+    columns:
+      - name: gisco_id
+        description: "Unique LAU identifier from GISCO"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: country_code
+        description: "Country code (2-letter ISO)"
+        data_type: text
+
+      - name: lau_id
+        description: "National LAU identifier"
+        data_type: text
+
+      - name: lau_name
+        description: "Name of the LAU unit"
+        data_type: text
+
+      - name: nuts_3
+        description: "NUTS-3 code of the parent region, if declared in the source"
+        data_type: text
+
+      - name: year
+        description: "Boundary vintage year"
+        data_type: integer
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2000
+              max_value: 2030
+
+      - name: geometry_3035
+        description: "Geometry in EPSG:3035 (Lambert Azimuthal Equal-Area)"
+        tests:
+          - not_null
+
+      - name: geometry_wgs84
+        description: "Geometry in WGS84 (EPSG:4326)"
+        tests:
+          - not_null
+
+      - name: has_valid_geometry
+        description: "True if a non-empty geometry is present"
+        data_type: boolean
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "Timestamp of the staging run"

@@ -9,29 +9,59 @@
 }}
 
 /*
-  Einheitliche Werte-Sicht je Ebene (LAU / NUTS-3 / Agenturbezirk) für die
-  Custom-Region-Abfrage (POST /custom-regions/dataset-aggregate). Das
-  Backend verschneidet nur noch das Nutzer-Polygon mit den Geometrien und
-  gewichtet diese Werte - es transformiert selbst keine Daten.
+  Unified values view per level (LAU / NUTS-3 / Agenturbezirk) for the
+  custom-region query (POST /custom-regions/dataset-aggregate). The backend
+  only intersects the user polygon with the geometries and weights these
+  values - it does not transform any data itself.
 
-  Eine Zeile je (level, unit_id, dataset_slug, indicator, year, month):
-    - nuts3: mart_nuts3_sociodata_harmonized, fixiert auf target_version 2024
-             (wie mart_agentur_dataset_aggregate). population = 'bevoelkerung'
-             desselben Jahres.
-    - lau:   mart_lau_sociodata_harmonized, target_version 2024.
-             population = lau_integrated.population_count desselben Jahres.
-    - agentur: monatliche BA-Zahlen (mart_agenturbezirk_sociodata), ohne
-             population - Zählgrößen werden flächenanteilig verteilt.
-  month ist nur bei 'agentur' gesetzt. is_crosswalked: Wert wurde über eine
-  Versionsgrenze umgerechnet (sonst Direktwert) - Grundlage für die Kennzeichnung
-  "berechnet" bei exakt passenden Regionen.
+  One row per (level, unit_id, dataset_slug, indicator, year, month):
+    - nuts3: mart_nuts3_sociodata_harmonized, fixed to the reference NUTS version (var reference_nuts_version)
+             (like mart_agentur_dataset_aggregate). population = 'bevoelkerung'
+             of the same year; employees = employee count of the same year -
+             weight for 'weighted_avg_employees' indicators, taken from the
+             dataset named in mart_dataset_aggregation_meta.employee_slug
+             (erwerbstaetige_pro_1000_einwohner, absolute count in thousands,
+             or sv_beschaeftigte for auszubildende); only valid (> 0) counts,
+             NULL otherwise (the backend then falls back to the area weight).
+             NULL for all other indicators.
+    - lau:   mart_lau_sociodata_harmonized, the reference LAU version (var reference_lau_version).
+             population = lau_integrated.population_count of the reference LAU
+             vintage (constant over the observation years): lau_integrated.year
+             is the Eurostat vintage, and target_gisco_id is a reference-vintage
+             Gemeinde (matching the reference geometry the backend intersects).
+             The vintage equal to the observation year may describe another
+             territory under the same gisco_id (mergers) or be missing
+             (years before/between loaded vintages -> NULL weight);
+             employees is NULL (no employee figures on LAU level).
+    - agentur: monthly BA figures (mart_agenturbezirk_sociodata), without
+             population - counts are distributed by area share.
+  month is only set for 'agentur'. is_crosswalked: value was converted
+  across a version boundary (otherwise a direct value) - basis for the
+  "calculated" flag on exactly matching regions.
 */
 
 with nuts3_population as (
     select target_nuts_id as unit_id, year, harmonized_value as population
     from {{ ref('mart_nuts3_sociodata_harmonized') }}
-    where target_version = 2024
+    where target_version = {{ var('reference_nuts_version') }}
       and dataset_slug = 'bevoelkerung'
+),
+
+-- Employee-count dataset per weighted_avg_employees indicator
+nuts3_employee_base as (
+    select distinct dataset_slug, employee_slug
+    from {{ ref('mart_dataset_aggregation_meta') }}
+    where level = 'nuts3'
+      and employee_slug is not null
+),
+
+nuts3_employees as (
+    select dataset_slug as employee_slug, target_nuts_id as unit_id, year, harmonized_value as employees
+    from {{ ref('mart_nuts3_sociodata_harmonized') }}
+    where target_version = {{ var('reference_nuts_version') }}
+      and dataset_slug in (select employee_slug from nuts3_employee_base)
+      and has_valid_value
+      and harmonized_value > 0
 ),
 
 nuts3 as (
@@ -44,19 +74,27 @@ nuts3 as (
         null::int                    as month,
         h.harmonized_value::numeric  as value,
         p.population::numeric        as population,
+        e.employees::numeric         as employees,
         h.is_crosswalked
     from {{ ref('mart_nuts3_sociodata_harmonized') }} h
     left join nuts3_population p
         on  p.unit_id = h.target_nuts_id
         and p.year    = h.year
-    where h.target_version = 2024
+    left join nuts3_employee_base eb
+        on  eb.dataset_slug = h.dataset_slug
+    left join nuts3_employees e
+        on  e.employee_slug = eb.employee_slug
+        and e.unit_id       = h.target_nuts_id
+        and e.year          = h.year
+    where h.target_version = {{ var('reference_nuts_version') }}
 ),
 
 lau_population as (
-    select gisco_id, year, max(population_count) as population
+    select gisco_id, max(population_count) as population
     from {{ ref('lau_integrated') }}
     where population_count is not null
-    group by gisco_id, year
+      and year = {{ var('reference_lau_version') }}
+    group by gisco_id
 ),
 
 lau as (
@@ -69,12 +107,12 @@ lau as (
         null::int                    as month,
         h.harmonized_value::numeric  as value,
         p.population::numeric        as population,
+        null::numeric                as employees,
         h.is_crosswalked
     from {{ ref('mart_lau_sociodata_harmonized') }} h
     left join lau_population p
         on  p.gisco_id = h.target_gisco_id
-        and p.year     = h.year
-    where h.target_version = 2024
+    where h.target_version = {{ var('reference_lau_version') }}
 ),
 
 agentur as (
@@ -90,13 +128,14 @@ agentur as (
             when 'unterbeschaeftigung' then unterbeschaeftigung
         end::numeric                                       as value,
         null::numeric                                      as population,
+        null::numeric                                      as employees,
         false                                              as is_crosswalked
     from {{ ref('mart_agenturbezirk_sociodata') }}
     cross join (values ('arbeitslose'), ('unterbeschaeftigung')) as i(indicator)
     where year is not null
 )
 
--- Zeilen ohne Wert (z.B. Monate ohne Meldung) tragen nichts zur Aggregation bei.
+-- Rows without a value (e.g. months without a report) do not contribute to the aggregation.
 select *
 from (
     select * from nuts3

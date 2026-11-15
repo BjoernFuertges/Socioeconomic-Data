@@ -1,3 +1,4 @@
 /.dlt/
 .secrets.toml
 /geodata_raw/
+/eurostat_lau_population/

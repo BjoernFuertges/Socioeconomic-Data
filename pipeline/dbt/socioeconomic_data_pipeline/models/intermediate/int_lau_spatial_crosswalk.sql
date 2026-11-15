@@ -10,54 +10,39 @@
 }}
 
 /*
-  Räumliche Schnittmengen zwischen LAU-Gemeinden VERSCHIEDENER gisco_id (nur
-  Deutschland) - analog zu int_nuts_spatial_crosswalk.sql, deckt NUR echte
-  administrative Grenzänderungen ab (Gemeindefusion/-teilung).
+  Spatial intersections between LAU Gemeinden with DIFFERENT gisco_id
+  (Germany only) - analogous to int_nuts_spatial_crosswalk.sql, covers ONLY
+  real administrative boundary changes (Gemeinde mergers/splits).
 
-  WICHTIGE VEREINFACHUNG gegenüber dem NUTS-Vorbild, aus Performance-Gründen
-  zwingend nötig: der Self-Join läuft nicht über alle Geometrie-Perioden aus
-  mart_lau_geometry_historized, sondern über GENAU EINE repräsentative
-  Geometrie je gisco_id (die jeweils letzte bekannte Periode). Grund:
+  Simplification vs. the NUTS model, required for performance: the
+  self-join runs over EXACTLY ONE representative geometry per gisco_id (the
+  latest known period, int_lau_geometry_canonical), not over all geometry
+  periods of mart_lau_geometry_historized. Reasons:
 
-    - mart_lau_geometry_historized kollabiert über die 14 LAU-Vintage-Jahre
-      bei Weitem nicht so stark wie NUTS (im Schnitt ~12 statt 1-3 Perioden
-      je Gemeinde), weil GISCO die Grenzlinien jedes Jahr neu generalisiert
-      und dabei minimal andere Koordinaten erzeugt, auch ohne echte
-      Gebietsänderung.
-    - Ein Self-Join über alle ~150.000 deutschen LAU-Perioden (statt nur
-      ~12.500 Gemeinden) wurde mehrfach getestet (siehe Git-Historie dieser
-      Datei: direkter Tabellen-Join statt CTE, Ausschluss gleicher gisco_id,
-      Deaktivieren von Bitmap-Scan-Plänen) und lief zuletzt 108 Minuten,
-      ohne fertig zu werden (abgebrochen) - selbst mit GiST-Index-
-      Unterstützung dominiert die schiere Zahl der zu verschneidenden
-      Perioden-Paare (viele davon ohnehin nur Rausch-Duplikate derselben
-      Gemeinde) die Laufzeit vollständig.
-    - Genau eine Geometrie je gisco_id reduziert die Kandidatenmenge um
-      Faktor ~12 UND vermeidet, dieselbe (Fast-)Antwort zig Mal für
-      praktisch identische Perioden derselben Gemeinde neu zu berechnen.
+    - Over the 14 LAU vintage years, mart_lau_geometry_historized collapses
+      far less than NUTS (~12 instead of 1-3 periods per Gemeinde), because
+      GISCO re-generalizes boundaries every year and produces slightly
+      different coordinates even without a real change.
+    - A self-join over all ~150,000 German LAU periods (instead of ~12,500
+      Gemeinden) was tried repeatedly and still ran over 108 minutes
+      without finishing, even with GiST index support.
+    - One geometry per gisco_id cuts the candidate set by ~12x and avoids
+      recomputing near-identical results for noise-duplicate periods.
 
-  Trade-off: eine echte Gebietsreform wird anhand der jeweils LETZTEN
-  bekannten Geometrie beider beteiligten Gemeinden erkannt, nicht anhand
-  der historisch exakten Geometrie zum Zeitpunkt der Reform selbst. Für die
-  Zwecke dieses Crosswalks (grobe Gewichtung, wie viel Fläche einer
-  Quellregion in welche Zielregion(en) fällt) ist das eine akzeptable
-  Näherung - die betroffenen Gemeinden ändern sich zwischen Reform und
-  "aktuell" i. d. R. nicht noch einmal. Die zeitliche Zuordnung (WELCHE
-  Vintage-Jahre als source_version/target_version gelten) bleibt exakt,
-  da sie weiterhin aus dem tatsächlichen Lebenszyklus jeder gisco_id
-  (min/max Vintage-Jahr) kommt, nicht aus der für den räumlichen Vergleich
-  verwendeten Geometrie.
+  Trade-off: a boundary reform is detected from the LATEST known geometry
+  of both Gemeinden, not the historically exact one at reform time. That is
+  an acceptable approximation for a coarse area weighting. The temporal
+  assignment (which vintage years count as source_version/target_version)
+  stays exact, since it comes from each gisco_id's actual lifecycle
+  (min/max vintage year).
 
-  area_fraction = ST_Area(source ∩ target) / ST_Area(source), Schwellwert
-  > 1 % wie beim NUTS-Vorbild (schließt Randberührungen / numerisches
-  Rauschen an gemeinsamen Grenzen aus).
+  area_fraction = ST_Area(source ∩ target) / ST_Area(source); threshold
+  > 1 % as in the NUTS model (excludes boundary touches / numerical noise).
 
-  Performance-Hinweis: int_lau_geometry_canonical ist ein eigenständiges
-  Modell (nicht eine hier lokale CTE), damit beide Join-Seiten unten die
-  echte, indizierte Tabelle referenzieren - eine CTE, die zweimal
-  referenziert wird, materialisiert Postgres >= v12 als eigenständiges
-  Zwischenergebnis OHNE den GiST-Index auf geometry_3035, was den
-  Self-Join auf einen ungeindexten Nested-Loop zurückwirft.
+  int_lau_geometry_canonical is a standalone model (not a local CTE) so
+  both join sides reference the indexed table; a CTE referenced twice is
+  materialized by Postgres >= 12 without the GiST index, degrading the
+  self-join to an unindexed nested loop.
 */
 
 with lifespans as (
@@ -97,3 +82,13 @@ join lifespans tl on tl.gisco_id = pp.target_gisco_id
 cross join lateral generate_series(sl.min_valid_from, sl.max_valid_to) as sy(year)
 cross join lateral generate_series(tl.min_valid_from, tl.max_valid_to) as ty(year)
 where sy.year != ty.year
+  -- Only year pairs that span the change: if the source Gemeinde still
+  -- exists in the target year AND the target Gemeinde already existed in
+  -- the source year, nothing happened between them (e.g. a merger survivor
+  -- and its later-absorbed partner, both before the merger: the survivor's
+  -- canonical geometry is the enlarged one and would otherwise hand part
+  -- of its value to the partner).
+  and not (
+        ty.year between sl.min_valid_from and sl.max_valid_to
+    and sy.year between tl.min_valid_from and tl.max_valid_to
+  )

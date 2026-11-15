@@ -1,0 +1,70 @@
+version: 2
+
+models:
+
+  - name: stg_sv_beschaeftigte_kreise
+    description: Cleaned counts of employees subject to social insurance contributions (at place of work, 30 June) per district (Kreis), with derived observation date and quality flag.
+    columns:
+      - name: sv_beschaeftigte_pk
+        description: Surrogate key built from geodata_id_nuts and year
+        data_type: text
+        tests:
+          - unique
+          - not_null
+      - name: original_id_1
+        description: Official regional key from the source file
+        data_type: text
+        tests:
+          - not_null
+      - name: original_name
+        description: Region name from the source file
+        data_type: text
+        tests:
+          - not_null
+      - name: geodata_name
+        description: Mapped geodata name
+        data_type: text
+      - name: geodata_id_nuts
+        description: NUTS-3 code of the region
+        data_type: text
+        tests:
+          - not_null
+      - name: geodata_id_ars
+        description: Official regional key (ARS) after mapping
+        data_type: text
+      - name: mapper
+        description: Mapping method
+        data_type: text
+      - name: parameter
+        description: Mapping parameter
+        data_type: text
+      - name: geodata_level
+        description: Geodata level (NUTS_3)
+        data_type: text
+      - name: geodata_year
+        description: Reference year of the geodata
+        data_type: integer
+      - name: year
+        description: Year of observation
+        data_type: integer
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 2007
+              max_value: 2030
+      - name: sv_beschaeftigte
+        description: Number of employees subject to social insurance contributions at place of work (absolute, June value of the BA time series)
+        data_type: numeric
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      - name: observation_date
+        description: Observation date (1 January of the year)
+        data_type: date
+        tests:
+          - not_null
+      - name: has_valid_value
+        description: True if the employee count is plausible (> 0)
+        data_type: boolean

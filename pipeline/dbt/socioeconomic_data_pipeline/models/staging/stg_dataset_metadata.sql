@@ -11,11 +11,9 @@ cleaned as (
         description_long,
         unit,
         source,
-        -- Explicit "unbekannt" status instead of a bare NULL: license/
-        -- license_url are only populated once a dataset's actual usage
-        -- terms have been researched - most
-        -- datasets don't have that yet, and consumers should be able to
-        -- tell "not researched" apart from "genuinely no license".
+        -- 'unbekannt' (unknown) instead of NULL: most datasets have no
+        -- researched license yet, and consumers must be able to tell
+        -- "not researched" apart from "no license".
         coalesce(nullif(trim(license), ''), 'unbekannt') as license,
         nullif(trim(license_url), '') as license_url,
         algorithm,

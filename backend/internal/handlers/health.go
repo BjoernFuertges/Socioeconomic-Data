@@ -8,7 +8,7 @@ import (
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/version"
 )
 
-// HealthCheck gibt den Status der API zurück
+// HealthCheck returns the status of the API
 // @Summary Health Check
 // @Description Gibt den Status der API zurück
 // @Tags Health

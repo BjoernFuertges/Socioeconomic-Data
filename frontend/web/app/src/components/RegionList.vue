@@ -3,9 +3,9 @@ export interface RegionListItem {
   id: string;
   name: string;
   code: string;
-  // Optionales Typ-Badge (z.B. "NUTS-3", "LAU", "Agentur") - für die
-  // kombinierte Regionen-Liste in RegionBrowser.vue, die alle drei
-  // Gebietstypen gleichzeitig zeigt und per Filter unterscheidet.
+  // Optional type badge (e.g. "NUTS-3", "LAU", "Agentur") for the
+  // combined region list in RegionBrowser.vue, which shows all three
+  // area types at once and distinguishes them via a filter.
   badge?: string;
 }
 
@@ -16,9 +16,9 @@ const props = defineProps<{
   maxShown?: number;
 }>();
 
-// Gibt das komplette Item zurück (nicht nur die id) - die kombinierte Liste
-// braucht am Auswahlpunkt auch den Gebietstyp, um an die richtige
-// select*()-Funktion in RegionBrowser.vue zu dispatchen.
+// Returns the whole item (not just the id): the combined list also needs the
+// area type at the selection point to dispatch to the right
+// select*() function in RegionBrowser.vue.
 const emit = defineEmits<{ select: [item: RegionListItem] }>();
 
 const MAX_SHOWN_DEFAULT = 300;

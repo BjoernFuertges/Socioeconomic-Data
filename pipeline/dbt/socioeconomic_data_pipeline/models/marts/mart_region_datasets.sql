@@ -12,6 +12,7 @@
 -- depends_on: {{ ref('stg_schuldnerquote_kreise') }}
 -- depends_on: {{ ref('stg_sgb_ii_quote_kreise') }}
 -- depends_on: {{ ref('stg_studierende_kreise') }}
+-- depends_on: {{ ref('stg_sv_beschaeftigte_kreise') }}
 -- depends_on: {{ ref('stg_wohngeldhaushalte_kreise') }}
 {{
     config(

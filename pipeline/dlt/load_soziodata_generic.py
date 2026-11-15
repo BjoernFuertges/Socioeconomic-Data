@@ -34,6 +34,7 @@ future non-BBSR dataset.
 """
 
 import sys
+import re
 import dlt
 import pandas as pd
 import yaml
@@ -60,20 +61,62 @@ _META_COLS = {
 }
 
 
-def _parse_german_number(raw: Any) -> float | None:
-    """
-    Parse a German-formatted number string to float.
+# Official key width per geodata level (AGS for LAU, Kreisschlüssel for NUTS-3).
+_ID_WIDTH = {"LAU": 8, "NUTS_3": 5}
 
-    Examples:
-        "357.948,00"  →  357948.0   (thousands separator = '.', decimal = ',')
-        "13,15"       →  13.15
-        "87.276,00"   →  87276.0
+
+def _normalize_id(raw: Any, geodata_level: str) -> str | None:
     """
-    if pd.isna(raw) or str(raw).strip() == "":
+    Normalize an official region key read from mapped_pairs.csv.
+
+    pandas reads the key column as float ("10041.0", "1001000.0"), and the
+    leading zero of states 01-09 is lost. Strip the ".0" and pad to the
+    official width. Non-numeric keys are returned unchanged.
+    """
+    if pd.isna(raw):
         return None
     s = str(raw).strip()
-    # Remove thousands separator (dot), replace decimal separator (comma) with dot
-    s = s.replace(".", "").replace(",", ".")
+    if s.endswith(".0"):
+        s = s[:-2]
+    width = _ID_WIDTH.get(geodata_level)
+    if width and s.isdigit():
+        return s.zfill(width)
+    return s
+
+
+_GERMAN_THOUSANDS_RE = re.compile(r"^-?\d{1,3}(\.\d{3})+$")
+
+
+def _parse_german_number(raw: Any) -> float | None:
+    """
+    Parse a German-formatted number (or an already numeric value) to float.
+
+    Examples:
+        "357.948,00"  ->  357948.0   (thousands separator = '.', decimal = ',')
+        "13,15"       ->  13.15
+        "1.234"       ->  1234.0     (pure thousands grouping)
+        "46450.0"     ->  46450.0    (dot-decimal, e.g. a float stringified by pandas)
+        46450.0       ->  46450.0    (real float/int: used as is)
+
+    The CSV is read with ``dtype=str`` so cells normally arrive as text; the
+    numeric branch and the dot-decimal rule only guard against a column that
+    pandas turned into float (e.g. one with empty cells), where blindly
+    stripping the dot would multiply the value by ten.
+    """
+    if raw is None or (not isinstance(raw, str) and pd.isna(raw)):
+        return None
+    if isinstance(raw, (int, float)) and not isinstance(raw, bool):
+        return float(raw)
+    s = str(raw).strip()
+    if s == "":
+        return None
+    if "," in s:
+        # German format: '.' thousands separator, ',' decimal separator
+        s = s.replace(".", "").replace(",", ".")
+    elif "." in s and not _GERMAN_THOUSANDS_RE.match(s):
+        pass  # dot is the decimal separator ("46450.0", "13.5")
+    else:
+        s = s.replace(".", "")
     try:
         return float(s)
     except ValueError:
@@ -86,7 +129,7 @@ def _load_meta(dataset_dir: Path) -> Dict[str, Any]:
     if not meta_path.exists():
         raise FileNotFoundError(f"meta.yaml not found at {meta_path}")
     with open(meta_path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        return yaml.safe_load(f) or {}
 
 
 def _derive_slug(table_name: str) -> str:
@@ -202,7 +245,15 @@ def make_resource(dataset_dir: Path, dataset_name: str, meta: Dict[str, Any]):
             raise FileNotFoundError(f"mapped_pairs.csv not found at {csv_path}")
 
         logger.info(f"Loading CSV: {csv_path}")
-        df = pd.read_csv(csv_path)
+        # Read the key as text: as float it loses the leading zero of states 01-09.
+        # Year columns are read as text as well, so '46450' is not turned into
+        # the float 46450.0 (which a dot-stripping parser would multiply by ten).
+        header = pd.read_csv(csv_path, nrows=0)
+        str_cols = {"original_id_1": str, **{c: str for c in _year_columns(header)}}
+        df = pd.read_csv(csv_path, dtype=str_cols)
+        df["original_id_1"] = df["original_id_1"].map(
+            lambda v: _normalize_id(v, geodata_level)
+        )
         logger.info(f"Shape: {df.shape}")
 
         year_cols = _year_columns(df)
@@ -267,15 +318,11 @@ def main() -> None:
     meta_path = dataset_dir / "meta.yaml"
     csv_path = dataset_dir / "mapped_pairs.csv"
 
-    missing_inputs = False
-    if not meta_path.exists():
-        logger.warning(f"Skipping dataset '{dataset_name}': required metadata file is missing: {meta_path}")
-        missing_inputs = True
-    if not csv_path.exists():
-        logger.warning(f"Skipping dataset '{dataset_name}': required data file is missing: {csv_path}")
-        missing_inputs = True
-    if missing_inputs:
-        return
+    # Fail loudly: a silent skip would let dbt run on a stale or missing table.
+    missing = [p for p in (meta_path, csv_path) if not p.exists()]
+    if missing:
+        logger.error(f"Dataset '{dataset_name}': required file(s) missing: {', '.join(map(str, missing))}")
+        sys.exit(1)
 
     meta = _load_meta(dataset_dir)
     logger.info(f"Metadata: geodata_level={meta.get('geodata_level')}, geodata_year={meta.get('geodata_year')}")

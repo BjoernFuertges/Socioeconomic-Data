@@ -11,23 +11,44 @@
 }}
 
 /*
-  Historisierte LAU-Geometrien (Local Administrative Units).
+  Historized LAU (Local Administrative Unit) geometries.
 
-  Jede Zeile repräsentiert eine Periode, in der eine Geometrie-Version für eine
-  LAU-Einheit gültig war. Vintages mit identischer Geometrie werden zu einer Zeile
-  zusammengefasst.
+  Each row is a period in which a geometry version was valid for a LAU.
+  Vintages with identical geometry are merged into one row.
 
-  valid_from  = erstes Vintage-Jahr, in dem diese Geometrie-Version erscheint
-  valid_to    = letztes Jahr, in dem diese Version gültig war (NULL = noch aktuell)
+  valid_from  = first vintage year in which this geometry version appears
+  valid_to    = last year this version was valid (NULL = still current)
 
-  Datenquelle: stg_lau_geometry (enthält eine Zeile je gisco_id und Vintage-Jahr)
-  Verfügbare Vintage-Jahre: 2011–2024
+  has_gap     = true if the period's [valid_from, coalesce(valid_to,
+                max_vintage_year)] range contains vintage years in which this
+                gisco_id has no row in stg_lau_geometry
+  gap_years   = those vintage years (sorted, empty array = no gap)
+
+  Gaps are only FLAGGED, not split: the islands technique below compares
+  each row with the previous EXISTING row of the gisco_id, so a vintage
+  missing between two identical geometries is merged into one period, and a
+  vintage missing right before a geometry change is covered by the earlier
+  period's valid_to (= next valid_from - 1). Row set and valid_from/valid_to
+  are deliberately unchanged; consumers that must not bridge missing
+  vintages can filter on has_gap / gap_years. "Vintage year" means a year
+  present for at least one LAU in stg_lau_geometry (not every calendar
+  year), so a vintage that is missing globally is not reported as a gap.
+
+  Source: stg_lau_geometry (one row per gisco_id and vintage year)
+  Available vintage years: 2011-2024
 */
 
-with source_geoms as (
-    -- Geometrie als kompakten Hash kodieren, damit der Vergleich zwischen
-    -- Vintages günstig ist (Window-Funktionen puffern nur den Hash statt der
-    -- vollständigen WKT-Strings).
+with vintages as (
+    -- All vintage years present in the source (reference for gap_years).
+    -- Selected separately (year only) so source_geoms stays a single-use,
+    -- inlinable CTE instead of being materialized with all geometries.
+    select distinct year
+    from {{ ref('stg_lau_geometry') }}
+),
+
+source_geoms as (
+    -- Encode the geometry as a compact hash so the cross-vintage comparison
+    -- is cheap (window functions buffer only the hash, not the full WKT).
     select
         gisco_id,
         country_code,
@@ -43,9 +64,9 @@ with source_geoms as (
 ),
 
 flagged as (
-    -- Periodenwechsel markieren: 1, wenn sich die Geometrie gegenüber dem
-    -- vorherigen Vintage ändert (is distinct from deckt auch den ersten
-    -- Datensatz je Einheit ab, bei dem lag() NULL liefert).
+    -- Flag period changes: 1 if the geometry differs from the previous
+    -- vintage (is distinct from also covers a unit's first row, where
+    -- lag() is NULL).
     select
         *,
         case
@@ -59,8 +80,8 @@ flagged as (
 ),
 
 periods as (
-    -- Island-Technik: kumulierte Summe der Wechsel-Flags ergibt eine stabile
-    -- Perioden-ID je zusammenhängender Strecke mit identischer Geometrie.
+    -- Islands technique: the running sum of the change flags yields a stable
+    -- period ID per contiguous run of identical geometry.
     select
         *,
         sum(is_new_period) over (
@@ -72,51 +93,85 @@ periods as (
 ),
 
 period_bounds as (
-    -- Je LAU und Periode genau eine Zeile: die des ersten Vintages
-    -- (valid_from). Die Geometrie ist innerhalb der Periode identisch und wird
-    -- direkt mitgenommen – kein Rück-Join nötig.
+    -- One row per LAU and period: the first vintage (valid_from). The
+    -- geometry is identical within the period, so it is taken along directly.
+    -- lau_name comes from the period's newest vintage (a rename without a
+    -- boundary change keeps the period but shows the current name); lau_id
+    -- and nuts_3 stay those of the first vintage.
     select distinct on (gisco_id, period_id)
         gisco_id,
         country_code,
         lau_id,
-        lau_name,
+        last_value(lau_name) over (
+            partition by gisco_id, period_id
+            order by year
+            rows between unbounded preceding and unbounded following
+        ) as lau_name,
         nuts_3,
         year as valid_from,
         max(year) over (partition by gisco_id, period_id) as max_vintage_year,
-        -- Letztes insgesamt verfügbares Vintage-Jahr über alle LAUs -
-        -- Referenz, um "noch aktuell" von "stillgelegt" zu unterscheiden
-        -- (siehe valid_to unten).
+        -- Vintage years actually present in this period (input for gap_years).
+        array_agg(year) over (partition by gisco_id, period_id) as present_years,
+        -- Last vintage year across all LAUs - reference to tell "still
+        -- current" from "discontinued" (see valid_to below).
         max(year) over () as global_max_vintage_year,
         geometry_3035,
         geometry_wgs84,
         has_valid_geometry
     from periods
     order by gisco_id, period_id, year
+),
+
+historized as (
+    select
+        gisco_id,
+        country_code,
+        lau_id,
+        lau_name,
+        nuts_3,
+        valid_from,
+        -- valid_to = start of the next period - 1, if one exists. For a LAU's
+        -- last known period, NULL ("still current") is only correct if the LAU
+        -- was still present in the global last vintage year. Otherwise the code
+        -- was simply discontinued (e.g. retired by a Gemeinde merger, see
+        -- max_vintage_year); without this distinction such a code would
+        -- wrongly match EVERY later geometry_year, duplicating its successor.
+        coalesce(
+            lead(valid_from) over (partition by gisco_id order by valid_from) - 1,
+            case when max_vintage_year < global_max_vintage_year then max_vintage_year end
+        ) as valid_to,
+        max_vintage_year,
+        geometry_3035,
+        ST_AsGeoJSON(geometry_wgs84)::json as geometry_wgs84,
+        has_valid_geometry,
+        present_years
+    from period_bounds
 )
 
 select
-    gisco_id,
-    country_code,
-    lau_id,
-    lau_name,
-    nuts_3,
-    valid_from,
-    -- valid_to = Start der nächsten Periode - 1, falls eine existiert.
-    -- Gibt es keine nächste Periode (letzte bekannte Periode dieser LAU),
-    -- ist NULL nur dann korrekt "noch aktuell", wenn die LAU tatsächlich im
-    -- global letzten Vintage-Jahr noch erfasst wurde. Andernfalls wurde der
-    -- Code unter dieser gisco_id schlicht nicht mehr fortgeschrieben (z. B.
-    -- durch Gemeindefusion stillgelegt, siehe max_vintage_year) - ohne diese
-    -- Fallunterscheidung würde ein solcher Code für JEDES spätere
-    -- geometry_year (auch das aktuelle) fälschlich als gültig gematcht,
-    -- doppelt neben seinem Nachfolgecode.
-    coalesce(
-        lead(valid_from) over (partition by gisco_id order by valid_from) - 1,
-        case when max_vintage_year < global_max_vintage_year then max_vintage_year end
-    ) as valid_to,
-    max_vintage_year,
-    geometry_3035,
-    ST_AsGeoJSON(geometry_wgs84)::json as geometry_wgs84,
-    has_valid_geometry
-from period_bounds
-order by gisco_id, valid_from
+    h.gisco_id,
+    h.country_code,
+    h.lau_id,
+    h.lau_name,
+    h.nuts_3,
+    h.valid_from,
+    h.valid_to,
+    h.max_vintage_year,
+    h.geometry_3035,
+    h.geometry_wgs84,
+    h.has_valid_geometry,
+    cardinality(g.gap_years) > 0 as has_gap,
+    g.gap_years
+from historized h
+cross join lateral (
+    -- Vintage years inside the period's validity range for which the source
+    -- has no row of this gisco_id (see header comment).
+    select array(
+        select v.year::integer
+        from vintages v
+        where v.year between h.valid_from and coalesce(h.valid_to, h.max_vintage_year)
+          and v.year <> all (h.present_years)
+        order by v.year
+    ) as gap_years
+) g
+order by h.gisco_id, h.valid_from

@@ -2,7 +2,7 @@ export function formatDatasetLabel(routeSlug: string): string {
   return routeSlug.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// Erwartet ein ISO-Datum (z.B. "2026-09-11" oder "2026-09-11T00:00:00Z") -> "11.09.2026".
+// Expects an ISO date (e.g. "2026-09-11" or "2026-09-11T00:00:00Z") -> "11.09.2026".
 export function formatDateDE(value: string): string {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!match) return value;
@@ -10,8 +10,8 @@ export function formatDateDE(value: string): string {
   return `${day}.${month}.${year}`;
 }
 
-// "MM/YYYY" für Monatszeitreihen (z.B. Agenturbezirke), analog zur
-// Jahresdarstellung bei NUTS/LAU.
+// "MM/YYYY" for monthly series (e.g. Agenturbezirke), analogous to the
+// year display for NUTS/LAU.
 export function formatMonthLabel(year: number, month: number): string {
   return `${String(month).padStart(2, "0")}/${year}`;
 }
@@ -21,14 +21,14 @@ export function formatNumber(value: unknown): string {
   return value.toLocaleString("de-DE", { maximumFractionDigits: 2 });
 }
 
-// Erwartet einen Anteil als Bruch (0..1, z.B. aus mart_agentur_nuts3_crosswalk)
-// -> "42 %". null/undefined ergeben ein Fallback-Zeichen statt "NaN %".
+// Expects a share as a fraction (0..1, e.g. from mart_agentur_nuts3_crosswalk)
+// -> "42 %". null/undefined yield a fallback character instead of "NaN %".
 export function formatPercent(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "–";
   return `${(value * 100).toLocaleString("de-DE", { maximumFractionDigits: 0 })} %`;
 }
 
-// Spalten mit Kalenderjahren/IDs sollen keine Tausendertrennzeichen bekommen.
+// Columns with calendar years/IDs should not get thousands separators.
 const UNGROUPED_NUMBER_COLUMNS = new Set(["year", "geodata_year"]);
 
 export function formatCell(value: unknown, column: string): string {

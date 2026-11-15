@@ -25,18 +25,18 @@ import DataTable from "./DataTable.vue";
 import DatasetInfo from "./DatasetInfo.vue";
 import DownloadDialog, { type ExtraDownloadOption } from "./DownloadDialog.vue";
 
-// Slug des ergänzenden Kreis-Level-Datensatzes "Arbeitslose" (INKAR/BBSR),
-// den der "Siehe auch"-Link im Agenturbezirk-Panel im NUTS-3-Datensatz-
-// Picker vorauswählt.
+// Slug of the supplementary Kreis-level dataset "Arbeitslose" (INKAR/BBSR) that the
+// "Siehe auch" link in the Agenturbezirk panel preselects in the NUTS-3 dataset
+// picker.
 const INKAR_ARBEITSLOSE_SLUG = "arbeitslose";
 
 type RegionType = "nuts" | "lau" | "agentur";
 
-// NUTS-Hierarchie: 0=Land, 1=Bundesland, 2=Regierungsbezirk, 3=Kreis.
-// Innerhalb des "nuts"-Tabs zusätzlich zum regionType wählbar (siehe
-// nutsBrowseLevel unten) - der Code selbst ist präfixhierarchisch
-// (DE -> DE3 -> DE30 -> DE300), Breadcrumb/Kinderlisten kommen daher ohne
-// eigenen Backend-Endpunkt aus, siehe nutsBreadcrumb()/nutsChildren().
+// NUTS hierarchy: 0=Land, 1=Bundesland, 2=Regierungsbezirk, 3=Kreis.
+// Selectable within the "nuts" tab in addition to regionType (see nutsBrowseLevel
+// below) - the code itself is prefix-hierarchical (DE -> DE3 -> DE30 -> DE300), so
+// breadcrumb/child lists need no backend endpoint of their own, see
+// nutsBreadcrumb()/nutsChildren().
 type NutsLevel = 0 | 1 | 2 | 3;
 const NUTS_LEVEL_LABELS: Record<NutsLevel, string> = {
   0: "Land",
@@ -49,19 +49,18 @@ function parseNutsLevelParam(value: unknown): NutsLevel {
   return n === 0 || n === 1 || n === 2 || n === 3 ? (n as NutsLevel) : 3;
 }
 
-// "dataset=slug1,slug2" in der Route <-> string[] im Komponentenzustand.
+// "dataset=slug1,slug2" in the route <-> string[] in component state.
 function parseSlugsParam(value: unknown): string[] {
   if (typeof value !== "string" || !value) return [];
   return value.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
-// Agenturbezirke haben (anders als NUTS/LAU) keinen Datensatz-Katalog,
-// sondern immer genau zwei feste Metriken - bei nur zwei fest bekannten
-// Optionen sind drei Tabs (Arbeitslose / Unterbeschäftigung / beide) klarer
-// als Checkboxen (keine "leere Auswahl"-Sonderfälle, jede Kombination ist
-// ein einzelner Klick). Die Auswahl bleibt trotzdem als string[] im Zustand/
-// in der Route (?metrics=), damit sie mit demselben Muster wie
-// nutsSelectedSlugs/lauSelectedSlugs funktioniert (siehe currentQuery).
+// Unlike NUTS/LAU, Agenturbezirke have no dataset catalog but always exactly two
+// fixed metrics - with only two known options, three tabs (Arbeitslose /
+// Unterbeschäftigung / both) are clearer than checkboxes (no "empty selection"
+// special cases, every combination is a single click). The selection still lives
+// as string[] in state/in the route (?metrics=) so it works with the same pattern
+// as nutsSelectedSlugs/lauSelectedSlugs (see currentQuery).
 type AgenturMetric = "arbeitslose" | "unterbeschaeftigung";
 const AGENTUR_METRIC_LABELS: Record<AgenturMetric, string> = {
   arbeitslose: "Arbeitslose",
@@ -84,12 +83,11 @@ function parseMetricsParam(value: unknown): AgenturMetric[] {
 const route = useRoute();
 const router = useRouter();
 
-// Alle drei Gebietstypen leben jetzt in einer kombinierten Liste (siehe
-// combinedListItems unten), per activeTypes-Filter unterscheidbar statt
-// über Tabs. regionType ist trotzdem als eigener Ref nötig: er steuert,
-// welcher der drei Detail-Blöcke unten angezeigt wird - abgeleitet aus dem
-// Typ der zuletzt gewählten Region (gesetzt von selectNuts/selectLau/
-// selectAgentur), nicht mehr aus einem Routen-Pfadsegment.
+// All three area types live in one combined list (see combinedListItems below),
+// distinguishable via the activeTypes filter instead of tabs. regionType is still
+// needed as its own ref: it controls which of the three detail blocks below is
+// shown - derived from the type of the last selected region (set by selectNuts/
+// selectLau/selectAgentur), no longer from a route path segment.
 const regionType = ref<RegionType>("nuts");
 
 const REGION_TYPE_LABELS: Record<RegionType, string> = {
@@ -98,9 +96,9 @@ const REGION_TYPE_LABELS: Record<RegionType, string> = {
   agentur: "Agenturbezirke",
 };
 
-// Filter für die kombinierte Liste (siehe combinedListItems) - unabhängig
-// von regionType (der Detail-Ansicht): mehrere Typen können gleichzeitig
-// aktiv sein, mindestens einer muss es bleiben.
+// Filter for the combined list (see combinedListItems) - independent of regionType
+// (the detail view): several types can be active at once, at least one must
+// remain.
 const ALL_REGION_TYPES: RegionType[] = ["nuts", "lau", "agentur"];
 const activeTypes = ref<RegionType[]>([...ALL_REGION_TYPES]);
 function toggleTypeFilter(type: RegionType) {
@@ -120,53 +118,52 @@ function parseTypesParam(value: unknown): RegionType[] {
   return parsed.length ? parsed : [...ALL_REGION_TYPES];
 }
 
-// Grobe, rein clientseitige Typ-Erkennung für Deep-Links ohne ?type=
-// (z.B. von Hand eingetippte/alte URLs) - ba_schl ist rein numerisch,
-// NUTS-Codes sind 2-5 Zeichen mit 2-Buchstaben-Länderpräfix, LAU gisco_ids
-// enthalten immer einen Unterstrich ("DE_12345678") und fallen damit durch.
-// Interne Navigation (select*()) setzt ?type= immer explizit - das hier ist
-// nur ein Fallback für den Erstaufruf.
+// Rough, purely client-side type detection for deep links without ?type=
+// (e.g. hand-typed/old URLs) - ba_schl is purely numeric, NUTS codes are 2-5
+// characters with a 2-letter country prefix, LAU gisco_ids always contain an
+// underscore ("DE_12345678") and thus fall through.
+// Internal navigation (select*()) always sets ?type= explicitly - this is only a
+// fallback for the first load.
 function inferRegionType(id: string): RegionType {
   if (/^\d+$/.test(id)) return "agentur";
   if (/^[A-Za-z]{2}[0-9A-Za-z]{0,3}$/.test(id)) return "nuts";
   return "lau";
 }
 
-// Gemeinsame Suche über alle aktiven Gebietstypen (siehe combinedListItems) -
-// ersetzt die früher pro Typ getrennten nutsSearch/lauSearch/agenturSearch.
+// Shared search across all active area types (see combinedListItems) - replaces
+// the formerly per-type nutsSearch/lauSearch/agenturSearch.
 const combinedSearch = ref("");
 
 // --- NUTS (Land/Bundesland/Regierungsbezirk/Kreis) ---
 const nutsRegions = ref<NutsRegionSummary[]>([]);
 const nutsLoadError = ref<string | null>(null);
-// Ebene innerhalb der NUTS-Treffer der kombinierten Liste (siehe NutsLevel
-// oben); Default 3 (Kreise) entspricht dem bisherigen, alleinigen Verhalten
-// dieser Ansicht. Nur relevant/sichtbar, solange "nuts" in activeTypes ist.
+// Level within the NUTS hits of the combined list (see NutsLevel above); default 3
+// (Kreise) matches the previous, sole behavior of this view. Only relevant/visible
+// while "nuts" is in activeTypes.
 const nutsBrowseLevel = ref<NutsLevel>(3);
 const selectedNuts = ref<NutsRegionSummary | null>(null);
 const nutsDatasets = ref<DatasetCatalogEntry[] | null>(null);
 const nutsDatasetsError = ref<string | null>(null);
-// Gemeinden eines Kreises (nur Ebene 3) + auf Kreisebene hochaggregierte
-// LAU-Werte (Bevölkerungssumme etc., siehe mart_nuts3_lau_aggregate) - beide
-// unabhängig von der Datensatz-Auswahl unten.
+// Gemeinden of a Kreis (level 3 only) + LAU values aggregated up to Kreis level
+// (population sum etc., see mart_nuts3_lau_aggregate) - both independent of the
+// dataset selection below.
 const nutsChildLau = ref<LauRegion[] | null>(null);
 const nutsChildLauError = ref<string | null>(null);
 const nutsLauAggregate = ref<NutsLauAggregatePoint[] | null>(null);
-// Mehrfachauswahl an Datensätzen für die aktuelle Region + Anzeigemodus
-// (getrennt/kombiniert) - bleibt beim Regionswechsel innerhalb NUTS-3
-// bestehen (reconcileNutsSelection() kürzt sie ggf. auf das, was in der
-// neuen Region tatsächlich verfügbar ist) und wird per nutsQuery-Watcher
-// (siehe unten) immer in die Route gespiegelt (F12.1: Verlinkung muss den
-// tatsächlich angezeigten Zustand abbilden).
+// Multi-select of datasets for the current region + display mode (separate/
+// combined) - persists across region switches within NUTS-3 (reconcileNutsSelection()
+// trims it to what is actually available in the new region) and is always mirrored
+// into the route via the nutsQuery watcher (see below) (F12.1: a link must reflect
+// the state actually displayed).
 const nutsSelectedSlugs = ref<string[]>([]);
 
 onMounted(async () => {
   try {
-    // Ohne level-Filter liefert /nuts alle vier Ebenen in einer Antwort
-    // (siehe GetAllNutsRegions) - daraus lässt sich die komplette
-    // Eltern-/Kind-Beziehung rein clientseitig über den NUTS-Code-Präfix
-    // ableiten (siehe nutsById/nutsBreadcrumb/nutsChildren unten), ohne
-    // eigene Backend-Endpunkte für Breadcrumb/Kinderlisten.
+    // Without a level filter /nuts returns all four levels in one response (see
+    // GetAllNutsRegions) - the full parent/child relationship can be derived purely
+    // client-side from the NUTS code prefix (see nutsById/nutsBreadcrumb/
+    // nutsChildren below), without backend endpoints of their own for
+    // breadcrumb/child lists.
     const body = await apiGet<NutsRegionSummary[]>("/nuts", { limit: "null" });
     nutsRegions.value = body.data ?? [];
   } catch (err) {
@@ -180,9 +177,9 @@ const nutsById = computed(() => {
   return map;
 });
 
-// NUTS-Codes sind präfixhierarchisch (DE -> DE3 -> DE30 -> DE300): der
-// Parent-Code ist derselbe Code, um ein Zeichen gekürzt. NUTS-0 (2 Zeichen)
-// hat keinen Parent mehr.
+// NUTS codes are prefix-hierarchical (DE -> DE3 -> DE30 -> DE300): the parent code
+// is the same code shortened by one character. NUTS-0 (2 characters) has no
+// parent.
 function nutsParentId(id: string): string | null {
   return id.length > 2 ? id.slice(0, id.length - 1) : null;
 }
@@ -208,9 +205,9 @@ function switchNutsLevel(level: NutsLevel) {
   nutsBrowseLevel.value = level;
 }
 
-// formatPercent() aus format.ts erwartet einen Anteil (0..1) und multipliziert
-// mit 100 - schuldnerquote_prozent/beschaeftigungsquote sind aber bereits in
-// Prozent (z.B. 9.8 = 9.8%), deshalb hier ein eigener, einfacher Formatter.
+// formatPercent() from format.ts expects a share (0..1) and multiplies by 100 -
+// but schuldnerquote_prozent/beschaeftigungsquote are already in percent (e.g.
+// 9.8 = 9.8%), hence a simple formatter of its own here.
 function formatPercentValue(value: number | null): string {
   return value !== null ? `${formatNumber(value)} %` : "–";
 }
@@ -221,8 +218,8 @@ const nutsFiltered = computed(() => {
   if (!needle) return inLevel;
   return inLevel.filter((r) => {
     if (r.region_name.toLowerCase().includes(needle) || r.nuts_id.toLowerCase().includes(needle)) return true;
-    // Bundesland-Abkürzungen (z.B. "NRW") matchen zusätzlich gegen die
-    // Alias-Liste, da der amtliche region_name selbst keine Abkürzung ist.
+    // Bundesland abbreviations (e.g. "NRW") also match against the alias list,
+    // since the official region_name itself is not an abbreviation.
     return (BUNDESLAND_ALIASES[r.region_name] ?? []).some((alias) => alias.toLowerCase().includes(needle));
   });
 });
@@ -230,11 +227,10 @@ const nutsListItems = computed(() =>
   nutsFiltered.value.map((r) => ({ id: r.nuts_id, name: r.region_name, code: r.nuts_id })),
 );
 
-// Kürzt die gewünschte Auswahl auf das, was für die aktuelle Region
-// tatsächlich verfügbar ist, und wählt beim ersten Aufruf (keine
-// Vorauswahl/nichts mehr übrig) den ersten verfügbaren Datensatz - so ist
-// nach jeder Regionsauswahl immer mindestens ein Datensatz gewählt und damit
-// (über den nutsQuery-Watcher) auch immer ?dataset= in der Route gesetzt.
+// Trims the wanted selection to what is actually available for the current region
+// and on the first call (no preselection/nothing left) picks the first available
+// dataset - so at least one dataset is always selected after each region selection
+// and thus (via the nutsQuery watcher) ?dataset= is always set in the route.
 function reconcileNutsSelection(wanted: string[]) {
   const available = new Set((nutsDatasets.value ?? []).map((d) => d.route_slug));
   let next = wanted.filter((s) => available.has(s));
@@ -245,18 +241,18 @@ function reconcileNutsSelection(wanted: string[]) {
   nutsSelectedSlugs.value = next;
 }
 
-// navigate=false wird von applyRouteSelection() genutzt, wenn die Auswahl
-// bereits aus der Route kommt (Deep-Link/Zurück-Navigation) - sonst würde ein
-// erneuter router.push() hier die Route auf sich selbst schieben.
-// wantedSlugs: explizite Vorauswahl (z.B. Cross-Link aus dem Datenkatalog
-// oder Deep-Link); ohne Angabe bleibt die bisherige Auswahl bestehen
-// (Regionswechsel behält die zuvor gewählten Datensätze bei, sofern in der
-// neuen Region verfügbar - siehe reconcileNutsSelection).
-// Region-Push, dessen Abschluss der currentQuery-Watcher abwartet: select*()
-// ändert den Komponentenzustand synchron und der Watcher würde sein
-// router.replace() sonst noch während der ausstehenden Navigation absetzen -
-// das bricht den Push ab und ersetzt stattdessen den *vorherigen* Chronik-
-// Eintrag (Browser-Zurück landet dann eine Ansicht zu weit hinten).
+// navigate=false is used by applyRouteSelection() when the selection already comes
+// from the route (deep link/back navigation) - otherwise another router.push() here
+// would push the route onto itself.
+// wantedSlugs: explicit preselection (e.g. cross-link from the dataset catalog or
+// deep link); without it the previous selection stays (a region switch keeps the
+// previously chosen datasets if available in the new region - see
+// reconcileNutsSelection).
+// Region push whose completion the currentQuery watcher waits for: select*() changes
+// component state synchronously and the watcher would otherwise issue its
+// router.replace() while the navigation is still pending - that aborts the push and
+// replaces the *previous* history entry instead (browser back then lands one view
+// too far back).
 let pendingRegionPush: Promise<unknown> = Promise.resolve();
 function pushRegionRoute(to: Parameters<typeof router.push>[0]) {
   pendingRegionPush = router.push(to);
@@ -278,45 +274,48 @@ async function selectNuts(nutsId: string, wantedSlugs?: string[], navigate = tru
   if (navigate) {
     pushRegionRoute({ name: "regionen", params: { regionId: nutsId }, query: { type: "nuts" } });
   }
-  // Nicht awaiten: unabhängig von Datensatz-Katalog/Gemeinden unten.
+  // Don't await: independent of the dataset catalog/Gemeinden below.
   if (region.nuts_level >= 1) loadNutsAgenturbezirke(region.nuts_id);
 
-  // GET /nuts/{id}/datasets deckt inzwischen alle Ebenen ab: für Kreise
-  // (Ebene 3) aus mart_region_datasets (Kreis-grain), für Land/Bundesland/
-  // Regierungsbezirk (Ebene 0-2) aus mart_nuts012_dataset_aggregate, das
-  // dieselben Kreis-grain-Datensätze bereits auf diese Ebenen hochaggregiert
-  // (siehe DatasetPicker.vue nutsLevel-Prop für die dazu passende
-  // Zeitreihen-Abfrage).
+  // GET /nuts/{id}/datasets now covers all levels: for Kreise (level 3) from
+  // mart_region_datasets (Kreis-grain), for Land/Bundesland/Regierungsbezirk (levels
+  // 0-2) from mart_nuts012_dataset_aggregate, which already aggregates the same
+  // Kreis-grain datasets up to these levels (see DatasetPicker.vue nutsLevel prop for
+  // the matching time-series query).
   try {
     const body = await apiGet<DatasetCatalogResponse>(`/nuts/${region.nuts_id}/datasets`);
+    if (selectedNuts.value !== region) return;
     nutsDatasets.value = body.data?.datasets ?? [];
   } catch (err) {
-    nutsDatasetsError.value = err instanceof Error ? err.message : String(err);
+    if (selectedNuts.value === region) nutsDatasetsError.value = err instanceof Error ? err.message : String(err);
     return;
   }
   reconcileNutsSelection(wanted);
 
   if (region.nuts_level !== 3) return;
 
-  // Gemeinden dieses Kreises + auf Kreisebene aggregierte LAU-Werte - beide
-  // unabhängig von der Datensatz-Auswahl oben (nur Ebene 3, siehe früher
-  // Return oben).
+  // Gemeinden of this Kreis + LAU values aggregated at Kreis level - both
+  // independent of the dataset selection above (level 3 only, see the earlier
+  // return above).
   try {
-    // /lau?nuts_parent_id= liefert eine Zeile je (gisco_id, Jahr) - wie bei
-    // runLauSearch() unten auf den jeweils neuesten Jahrgang je Gemeinde
-    // dedupen (siehe dedupeByGiscoId).
+    // /lau?nuts_parent_id= returns one row per (gisco_id, year) - dedupe to the
+    // latest vintage per Gemeinde as in runLauSearch() below (see
+    // dedupeByGiscoId).
     const body = await apiGet<LauRegion[]>("/lau", { nuts_parent_id: region.nuts_id, limit: "null" });
+    if (selectedNuts.value !== region) return;
     nutsChildLau.value = dedupeByGiscoId(body.data ?? []);
   } catch (err) {
-    nutsChildLauError.value = err instanceof Error ? err.message : String(err);
+    if (selectedNuts.value === region) nutsChildLauError.value = err instanceof Error ? err.message : String(err);
   }
   try {
     const body = await apiGet<NutsLauAggregateResponse>(`/nuts/${region.nuts_id}/lau-aggregate`);
+    if (selectedNuts.value !== region) return;
     nutsLauAggregate.value = body.data?.series ?? [];
   } catch {
-    // 404 ist der Normalfall, solange lokal keine LAU-Populationsdaten mit
-    // gisco_id geladen sind (siehe mart_nuts3_lau_aggregate-Kommentar) -
-    // kein Fehlertext, der Abschnitt bleibt dann einfach leer.
+    if (selectedNuts.value !== region) return;
+    // 404 is the normal case as long as no LAU population data with gisco_id is
+    // loaded locally (see mart_nuts3_lau_aggregate comment) - no error text, the
+    // section then simply stays empty.
     nutsLauAggregate.value = [];
   }
 }
@@ -330,7 +329,7 @@ const selectedLau = ref<LauRegion | null>(null);
 const lauDetailError = ref<string | null>(null);
 const lauDatasets = ref<DatasetCatalogEntry[] | null>(null);
 const lauDatasetsError = ref<string | null>(null);
-// Analog zu nutsSelectedSlugs.
+// Analogous to nutsSelectedSlugs.
 const lauSelectedSlugs = ref<string[]>([]);
 
 function dedupeByGiscoId(rows: LauRegion[]): LauRegion[] {
@@ -354,10 +353,10 @@ watch(combinedSearch, (query) => {
   if (!activeTypes.value.includes("lau")) return;
   lauSearchTimer = setTimeout(() => runLauSearch(trimmed), 350);
 });
-// Suche über die kombinierte Liste kann LAU nachträglich per Filter dazuschalten,
-// während schon ein Suchbegriff steht (z.B. erst NUTS/Agentur, dann LAU
-// aktivieren) - ohne diesen zweiten Watcher bliebe lauResults dann leer, bis
-// der Suchbegriff erneut geändert wird.
+// The search over the combined list can enable LAU via the filter afterwards while a
+// search term is already set (e.g. first NUTS/Agentur, then activating LAU) -
+// without this second watcher lauResults would stay empty until the search term
+// changes again.
 watch(activeTypes, (types) => {
   const trimmed = combinedSearch.value.trim();
   if (types.includes("lau") && trimmed.length >= 2 && !lauResults.value.length && !lauSearching.value) {
@@ -405,9 +404,10 @@ async function selectLau(giscoId: string, wantedSlugs?: string[], navigate = tru
   }
   try {
     const body = await apiGet<LauRegion>(`/lau/${giscoId}`);
+    if (selectedGiscoId.value !== giscoId) return;
     selectedLau.value = body.data;
   } catch (err) {
-    lauDetailError.value = err instanceof Error ? err.message : String(err);
+    if (selectedGiscoId.value === giscoId) lauDetailError.value = err instanceof Error ? err.message : String(err);
     return;
   }
 
@@ -415,9 +415,10 @@ async function selectLau(giscoId: string, wantedSlugs?: string[], navigate = tru
   if (!nuts3) return;
   try {
     const body = await apiGet<DatasetCatalogResponse>(`/lau/${giscoId}/datasets`);
+    if (selectedGiscoId.value !== giscoId) return;
     lauDatasets.value = body.data?.datasets ?? [];
   } catch (err) {
-    lauDatasetsError.value = err instanceof Error ? err.message : String(err);
+    if (selectedGiscoId.value === giscoId) lauDatasetsError.value = err instanceof Error ? err.message : String(err);
     return;
   }
   reconcileLauSelection(wanted);
@@ -438,21 +439,21 @@ const agenturLoadError = ref<string | null>(null);
 const selectedAgentur = ref<AgenturbezirkSummary | null>(null);
 const agenturPoints = ref<AgenturbezirkArbeitslosigkeitPoint[] | null>(null);
 const agenturPointsError = ref<string | null>(null);
-// n:m-Zuordnung zu überlappenden NUTS-3-Regionen (Flächen-/Bevölkerungsanteile),
-// siehe mart_agentur_nuts3_crosswalk im dbt-Projekt - eine räumliche
-// Schätzung, keine amtliche Zuordnung.
+// n:m mapping to overlapping NUTS-3 regions (area/population shares), see
+// mart_agentur_nuts3_crosswalk in the dbt project - a spatial estimate, not an
+// official assignment.
 const agenturNuts3Shares = ref<AgenturNuts3Share[] | null>(null);
 const agenturNuts3SharesError = ref<string | null>(null);
 let agenturLoadPromise: Promise<void> | null = null;
-// Einordnung in die NUTS-Hierarchie (GET /agenturbezirke/{ba_schl}/nuts-hierarchy)
-// - Elternteil (kleinste vollständig enthaltende Ebene) samt Breadcrumb.
+// Placement in the NUTS hierarchy (GET /agenturbezirke/{ba_schl}/nuts-hierarchy)
+// - parent (smallest fully containing level) incl. breadcrumb.
 const agenturHierarchy = ref<AgenturNutsMembership[] | null>(null);
-// Agenturbezirke der gewählten NUTS-Region (GET /nuts/{nuts_id}/agenturbezirke).
+// Agenturbezirke of the chosen NUTS region (GET /nuts/{nuts_id}/agenturbezirke).
 const nutsAgenturbezirke = ref<NutsAgenturbezirk[] | null>(null);
 
-// Herkunft/Lizenz/Beschreibung des AfA-Datensatzes - wie bei NUTS/LAU über
-// DatasetPicker/DatasetInfo, hier einmalig geladen (ein Datensatz für alle
-// Agenturbezirke, kein Wechsel wie bei DatasetPicker).
+// Origin/license/description of the AfA dataset - as with NUTS/LAU via
+// DatasetPicker/DatasetInfo, loaded once here (one dataset for all Agenturbezirke,
+// no switching as with DatasetPicker).
 const agenturMetadata = ref<DatasetMetadataEntry | null>(null);
 let agenturMetadataLoaded = false;
 
@@ -463,20 +464,19 @@ async function loadAgenturMetadata() {
     const body = await apiGet<DatasetMetadataEntry>(`/datasets/${AGENTUR_DATASET_SLUG}`);
     agenturMetadata.value = body.data ?? null;
   } catch {
-    // Kein Katalogeintrag - Anzeige bleibt beim statischen Hinweistext.
+    // No catalog entry - display stays with the static hint text.
   }
 }
 
-// Tabs über dem Chart: beide Metriken standardmäßig sichtbar, die Tabelle
-// zeigt nur die Spalten der gewählten Metrik(en) (siehe agenturTableColumns).
-// Wie nutsSelectedSlugs/lauSelectedSlugs bleibt die Auswahl beim
-// Regionswechsel bestehen und wird per currentQuery-Watcher (unten)
-// immer in die Route gespiegelt.
+// Tabs above the chart: both metrics visible by default, the table shows only the
+// columns of the chosen metric(s) (see agenturTableColumns). As with
+// nutsSelectedSlugs/lauSelectedSlugs the selection persists across region switches
+// and is always mirrored into the route via the currentQuery watcher (below).
 const agenturSelectedMetrics = ref<AgenturMetric[]>(["arbeitslose", "unterbeschaeftigung"]);
 
-// Leitet aus der aktuellen Auswahl den aktiven Tab ab (für die
-// is-active-Markierung im Template) - der Regelfall (zwei Metriken) ist
-// "both", alles andere ist eindeutig eine der beiden Einzelauswahlen.
+// Derives the active tab from the current selection (for the is-active marker in
+// the template) - the normal case (two metrics) is "both", anything else is
+// clearly one of the two single selections.
 const agenturMetricsTab = computed<AgenturMetricsTab>(() => {
   if (agenturSelectedMetrics.value.length === 2) return "both";
   return agenturSelectedMetrics.value[0] === "unterbeschaeftigung" ? "unterbeschaeftigung" : "arbeitslose";
@@ -486,8 +486,8 @@ function selectAgenturMetricsTab(tab: AgenturMetricsTab) {
   agenturSelectedMetrics.value = AGENTUR_METRICS_TABS.find((t) => t.value === tab)!.metrics;
 }
 
-// Promise wird gemerkt, damit auch ein Klick aus dem NUTS-Panel
-// (openAgentur) auf das Ende eines bereits laufenden Ladevorgangs warten kann.
+// The promise is remembered so that a click from the NUTS panel (openAgentur) can
+// also wait for the end of an already running load.
 function loadAgenturbezirke(): Promise<void> {
   agenturLoadPromise ??= (async () => {
     try {
@@ -501,8 +501,8 @@ function loadAgenturbezirke(): Promise<void> {
   return agenturLoadPromise;
 }
 
-// Sprung aus dem NUTS-Panel zu einem Agenturbezirk: die Liste muss dafür
-// geladen sein, auch wenn der Listenfilter "Agenturbezirke" gerade aus ist.
+// Jump from the NUTS panel to an Agenturbezirk: the list must be loaded for this,
+// even if the "Agenturbezirke" list filter is currently off.
 async function openAgentur(baSchl: string) {
   await loadAgenturbezirke();
   selectAgentur(baSchl);
@@ -511,7 +511,7 @@ async function openAgentur(baSchl: string) {
 async function loadNutsAgenturbezirke(nutsId: string) {
   try {
     const body = await apiGet<NutsAgenturbezirk[]>(`/nuts/${nutsId}/agenturbezirke`);
-    // Nutzer könnte inzwischen eine andere Region gewählt haben.
+    // The user may have selected another region in the meantime.
     if (selectedNuts.value?.nuts_id === nutsId) nutsAgenturbezirke.value = body.data ?? [];
   } catch {
     if (selectedNuts.value?.nuts_id === nutsId) nutsAgenturbezirke.value = [];
@@ -521,9 +521,8 @@ async function loadNutsAgenturbezirke(nutsId: string) {
 const nutsAgenturContained = computed(() => (nutsAgenturbezirke.value ?? []).filter((a) => a.is_fully_contained));
 const nutsAgenturPartial = computed(() => (nutsAgenturbezirke.value ?? []).filter((a) => !a.is_fully_contained));
 
-// Elternteil des gewählten Agenturbezirks (kleinste vollständig enthaltende
-// NUTS-Ebene) und - falls keine Ebene ihn vollständig enthält - die
-// überlappenden Bundesländer.
+// Parent of the chosen Agenturbezirk (smallest fully containing NUTS level) and -
+// if no level contains it fully - the overlapping Bundesländer.
 const agenturParent = computed(() => agenturHierarchy.value?.find((m) => m.is_parent) ?? null);
 const agenturBreadcrumb = computed(() => {
   const parent = agenturParent.value;
@@ -536,9 +535,9 @@ const agenturSpanningBundeslaender = computed(() =>
   agenturParent.value ? [] : (agenturHierarchy.value ?? []).filter((m) => m.nuts_level === 1),
 );
 
-// Agentur wird (wie NUTS) eager geladen, sobald "agentur" zu den aktiven
-// Listen-Filtern gehört - standardmäßig sind alle drei Typen aktiv, die
-// kombinierte Liste braucht die Daten also i.d.R. sofort beim Mount.
+// Agentur is loaded eagerly (like NUTS) as soon as "agentur" is among the active
+// list filters - all three types are active by default, so the combined list
+// usually needs the data right at mount.
 watch(
   activeTypes,
   (types) => {
@@ -568,10 +567,9 @@ async function selectAgentur(baSchl: string, navigate = true, wantedMetrics?: Ag
   agenturNuts3Shares.value = null;
   agenturNuts3SharesError.value = null;
   agenturHierarchy.value = null;
-  // Anders als bei NUTS/LAU (siehe reconcileNutsSelection) gibt es hier keine
-  // von der Region abhängige Verfügbarkeit zu prüfen - beide Metriken
-  // existieren für jeden Agenturbezirk gleich, eine explizite Auswahl kann
-  // also direkt übernommen werden.
+  // Unlike NUTS/LAU (see reconcileNutsSelection) there is no region-dependent
+  // availability to check here - both metrics exist equally for every
+  // Agenturbezirk, so an explicit selection can be adopted directly.
   if (wantedMetrics?.length) agenturSelectedMetrics.value = wantedMetrics;
   if (navigate) {
     pushRegionRoute({ name: "regionen", params: { regionId: baSchl }, query: { type: "agentur" } });
@@ -579,15 +577,15 @@ async function selectAgentur(baSchl: string, navigate = true, wantedMetrics?: Ag
   loadAgenturHierarchy(baSchl);
   try {
     const body = await apiGet<AgenturbezirkArbeitslosigkeitPoint[]>(`/agenturbezirke/${baSchl}/arbeitslosigkeit`);
-    agenturPoints.value = body.data ?? [];
+    if (selectedAgentur.value === agentur) agenturPoints.value = body.data ?? [];
   } catch (err) {
-    agenturPointsError.value = err instanceof Error ? err.message : String(err);
+    if (selectedAgentur.value === agentur) agenturPointsError.value = err instanceof Error ? err.message : String(err);
   }
   try {
     const body = await apiGet<AgenturNuts3Share[]>(`/agenturbezirke/${baSchl}/nuts3`);
-    agenturNuts3Shares.value = body.data ?? [];
+    if (selectedAgentur.value === agentur) agenturNuts3Shares.value = body.data ?? [];
   } catch (err) {
-    agenturNuts3SharesError.value = err instanceof Error ? err.message : String(err);
+    if (selectedAgentur.value === agentur) agenturNuts3SharesError.value = err instanceof Error ? err.message : String(err);
   }
 }
 
@@ -600,15 +598,14 @@ async function loadAgenturHierarchy(baSchl: string) {
   }
 }
 
-// Aggregierte Kreis-Daten für diesen Agenturbezirk (siehe
-// GET /agenturbezirke/{ba_schl}/dataset-aggregate/{slug}, flächenanteils-
-// gewichtet über mart_agentur_nuts3_crosswalk) - "Jeweils aggregierte
-// Daten anbieten" für Agentur, analog zum NUTS-0/1/2-dataset-aggregate und
-// zum LAU-Kreis-Datensatzkatalog. Die Kandidaten-Slugs kommen vom größten
-// überlappenden Kreis (agenturNuts3Shares ist bereits nach area_share_of_
-// agentur absteigend sortiert, siehe Backend) - eigener Katalog-Endpunkt
-// für Agentur existiert nicht, Kreis-grain-Datensätze sind aber praktisch
-// deckungsgleich mit dem, was pro Kreis unter /nuts/{id}/datasets steht.
+// Aggregated Kreis data for this Agenturbezirk (see
+// GET /agenturbezirke/{ba_schl}/dataset-aggregate/{slug}, area-share-weighted via
+// mart_agentur_nuts3_crosswalk) - "offer aggregated data in each case" for Agentur,
+// analogous to the NUTS-0/1/2 dataset-aggregate and the LAU Kreis dataset catalog.
+// The candidate slugs come from the largest overlapping Kreis (agenturNuts3Shares is
+// already sorted by area_share_of_agentur descending, see backend) - there is no
+// catalog endpoint of its own for Agentur, but Kreis-grain datasets practically
+// match what is listed per Kreis under /nuts/{id}/datasets.
 const agenturAggregateDatasets = ref<DatasetCatalogEntry[] | null>(null);
 const agenturAggregateDatasetsError = ref<string | null>(null);
 const agenturAggregateSelectedSlugs = ref<string[]>([]);
@@ -628,9 +625,9 @@ watch(agenturNuts3Shares, async (shares) => {
   if (!primaryNuts3) return;
   try {
     const body = await apiGet<DatasetCatalogResponse>(`/nuts/${primaryNuts3}/datasets`);
-    // /nuts/{id}/datasets listet auch Datensätze, die nicht auf Agenturbezirke
-    // aggregierbar sind (z.B. beschaeftigungsquote-gemeinden, Gemeinde-grain) -
-    // nur was in mart_agentur_dataset_aggregate vorkommt, ist wählbar.
+    // /nuts/{id}/datasets also lists datasets that can't be aggregated to
+    // Agenturbezirke (e.g. beschaeftigungsquote-gemeinden, Gemeinde-grain) - only
+    // what appears in mart_agentur_dataset_aggregate is selectable.
     const aggregatable = await loadAgenturAggregatableSlugs();
     agenturAggregateDatasets.value = (body.data?.datasets ?? []).filter((d) => aggregatable.has(d.route_slug));
     reconcileAgenturAggregateSelection(agenturAggregateSelectedSlugs.value);
@@ -641,18 +638,17 @@ watch(agenturNuts3Shares, async (shares) => {
 
 function reconcileAgenturAggregateSelection(wanted: string[]) {
   const available = new Set((agenturAggregateDatasets.value ?? []).map((d) => d.route_slug));
-  // Kein Fallback auf einen ersten Datensatz: Standard ist "keine Auswahl" =
-  // reine BA-Ansicht mit echten Werten (siehe DatasetPicker, kind="agentur").
+  // No fallback to a first dataset: the default is "no selection" = plain BA view
+  // with actual values (see DatasetPicker, kind="agentur").
   agenturAggregateSelectedSlugs.value = wanted.filter((s) => available.has(s));
 }
 
-// "Unterbeschäftigung" wird von der BA erst seit 2009 erhoben, "Arbeitslose"
-// schon länger - Perioden, in denen KEINE der gerade gewählten Metriken
-// einen Wert hat, würden sonst als leere Zeilen/eine leere Chart-Strecke am
-// Anfang auftauchen. Gefiltert wird auf Basis der aktuellen Auswahl (nicht
-// stur auf "irgendein Wert vorhanden"), damit z.B. der reine
-// "Unterbeschäftigung"-Tab bei 2007-2009 direkt einsetzt, statt mit Jahren
-// leerer "–"-Zeilen zu beginnen.
+// "Unterbeschäftigung" has only been collected by the BA since 2009, "Arbeitslose"
+// for longer - periods in which NONE of the currently chosen metrics has a value
+// would otherwise show up as empty rows/an empty chart stretch at the start.
+// Filtering is based on the current selection (not blindly on "any value present"),
+// so that e.g. the pure "Unterbeschäftigung" tab starts right at 2009 instead of
+// beginning with years of empty "–" rows.
 const agenturVisiblePoints = computed(() => {
   if (!agenturPoints.value) return [];
   return agenturPoints.value.filter(
@@ -662,9 +658,8 @@ const agenturVisiblePoints = computed(() => {
   );
 });
 
-// Chart zeigt beide Metriken als eigene Serie, je nach Tab ein-/ausblendbar;
-// die Tabelle zeigt nur die Spalten der gewählten Metrik(en) (siehe
-// agenturTableColumns).
+// The chart shows both metrics as separate series, toggleable per tab; the table
+// shows only the columns of the chosen metric(s) (see agenturTableColumns).
 const agenturChartSeries = computed(() => {
   const series: { key: string; label: string; points: { label: string; value: number | null }[] }[] = [];
   if (agenturSelectedMetrics.value.includes("arbeitslose")) {
@@ -689,8 +684,8 @@ const agenturChartSeries = computed(() => {
   }
   return series;
 });
-// Monatsreihen für das kombinierte Diagramm im DatasetPicker (neben den
-// jährlichen Kreis-Aggregaten) - dieselbe Auswahl wie im Chart oben.
+// Monthly series for the combined chart in the DatasetPicker (next to the yearly
+// Kreis aggregates) - same selection as in the chart above.
 const agenturMonthlySeries = computed(() =>
   (["arbeitslose", "unterbeschaeftigung"] as AgenturMetric[])
     .filter((m) => agenturSelectedMetrics.value.includes(m))
@@ -719,9 +714,9 @@ const agenturTableRows = computed(() =>
     unterbeschaeftigung: unwrapNull(p.unterbeschaeftigung),
   })),
 );
-// Tabelle zeigt jetzt (wie der Chart) nur die ausgewählten Metriken als
-// Spalten, statt immer beide - konsistent mit den NUTS/LAU-Datensatzblöcken,
-// wo abgewählte Datensätze ebenfalls nirgends mehr auftauchen.
+// The table now shows (like the chart) only the selected metrics as columns instead
+// of always both - consistent with the NUTS/LAU dataset blocks, where deselected
+// datasets no longer appear anywhere either.
 const agenturTableColumns = computed(() =>
   (["arbeitslose", "unterbeschaeftigung"] as AgenturMetric[])
     .filter((m) => agenturSelectedMetrics.value.includes(m))
@@ -736,22 +731,22 @@ function jumpToInkarArbeitslose(nuts3Id: string) {
   selectNuts(nuts3Id, [INKAR_ARBEITSLOSE_SLUG]);
 }
 
-// Springt von der Karte oder anderen Ansichten aus direkt zu einer Region
-// (Cross-Link "Regionen -> Karte" ist die Umkehrung, siehe MapView.vue).
-// nutsLevel wird nur für geoType="nuts" ausgewertet (MapView.vue hat seit dem
-// Ebenen-Umschalter dort einen eigenen Default von 3/Kreise - ohne diesen
-// Parameter würde ein Sprung auf z.B. ein Bundesland dort ins Leere laufen,
-// weil die interaktive Kartenebene dann noch die falsche NUTS-Ebene zeigt).
+// Jumps from the map or other views directly to a region (the cross-link
+// "Regionen -> Karte" is the reverse, see MapView.vue). nutsLevel is only evaluated
+// for geoType="nuts" (since the level switcher, MapView.vue has its own default of
+// 3/Kreise there - without this parameter a jump to e.g. a Bundesland would come to
+// nothing there, because the interactive map layer would still show the wrong NUTS
+// level).
 function viewOnMap(geoType: RegionType, geoId: string, nutsLevel?: number) {
   const query: Record<string, string> = { geo: geoType, region: geoId };
   if (geoType === "nuts" && nutsLevel !== undefined) query.nutsLevel = String(nutsLevel);
   router.push({ name: "karte", query });
 }
 
-// Kombinierte Liste über alle aktiven Gebietstypen (siehe activeTypes) -
-// ersetzt die früher pro Typ getrennten Listen-Panels. NUTS-Treffer folgen
-// der aktuellen nutsBrowseLevel-Ebene, Agentur ist immer vollständig
-// geladen, LAU nur ab 2 Zeichen Suchbegriff (siehe combinedSearch-Watcher).
+// Combined list across all active area types (see activeTypes) - replaces the
+// formerly per-type list panels. NUTS hits follow the current nutsBrowseLevel,
+// Agentur is always fully loaded, LAU only from a 2-character search term (see
+// combinedSearch watcher).
 type CombinedRegionItem = { id: string; name: string; code: string; type: RegionType; badge: string };
 const combinedListItems = computed<CombinedRegionItem[]>(() => {
   const items: CombinedRegionItem[] = [];
@@ -783,12 +778,11 @@ function selectCombinedItem(item: CombinedRegionItem) {
   else selectAgentur(item.id);
 }
 
-// Spiegelt Typ-Filter + die aktuell gewählte Region samt ihrer
-// Datensatz-/Ansichts-/Metrik-Auswahl in die Route zurück (router.replace,
-// damit reine Auswahländerungen keine Chronik-Einträge erzeugen) - ersetzt
-// die früher pro Typ getrennten nutsDatasetQuery-/lauDatasetQuery-/
-// agenturMetricsQuery-Watcher durch einen einzigen, analog zu MapView.vue's
-// currentQuery-Muster.
+// Mirrors type filter + the currently chosen region incl. its dataset/view/metric
+// selection back into the route (router.replace, so pure selection changes create
+// no history entries) - replaces the formerly per-type nutsDatasetQuery-/
+// lauDatasetQuery-/agenturMetricsQuery watchers with a single one, analogous to
+// MapView.vue's currentQuery pattern.
 const currentQuery = computed<Record<string, string>>(() => {
   const q: Record<string, string> = {};
   if (activeTypes.value.length !== ALL_REGION_TYPES.length) q.types = activeTypes.value.join(",");
@@ -813,26 +807,24 @@ const currentRegionId = computed<string | undefined>(() => {
 });
 watch([currentQuery, currentRegionId], async () => {
   await pendingRegionPush;
-  // route.name-Check siehe Kommentar in applyRouteSelection() - wegen
-  // <KeepAlive> läuft dieser Watcher auch außerhalb der "regionen"-Route
-  // weiter, darf dann aber nicht dorthin zurücknavigieren.
+  // For the route.name check see the comment in applyRouteSelection() - because of
+  // <KeepAlive> this watcher keeps running outside the "regionen" route too, but
+  // must not navigate back there then.
   if (route.name !== "regionen") return;
   router.replace({ name: "regionen", params: { regionId: currentRegionId.value }, query: currentQuery.value });
 });
 
-// Übernimmt Typ-Filter/regionId/Typ/Datensatz aus der aktuellen Route in den
-// Komponentenzustand - für Deep-Links, Browser-Zurück/Vor und externe
-// Cross-Links (z.B. aus dem Datenkatalog). navigate=false verhindert, dass
-// die select*()-Funktionen die Route (auf sich selbst) erneut pushen.
+// Copies type filter/regionId/type/dataset from the current route into component
+// state - for deep links, browser back/forward and external cross-links (e.g. from
+// the dataset catalog). navigate=false prevents the select*() functions from
+// pushing the route (onto itself) again.
 function applyRouteSelection() {
-  // RegionBrowser bleibt über <KeepAlive> in App.vue auch außerhalb der
-  // "regionen"-Route aktiv, seine Watcher laufen also z.B. auch beim
-  // Navigieren zur Karte weiter. route ist (via useRoute()) das global
-  // aktuelle Route-Objekt, nicht "die Route, mit der diese Komponente
-  // zuletzt aktiv war" - ohne diese Prüfung würde z.B. Kartes eigenes
-  // ?dataset= (gleicher Query-Key!) hier als NUTS-3-Datensatzauswahl
-  // fehlinterpretiert und über den currentQuery-Watcher oben sogar zurück
-  // auf /regionen navigiert werden.
+  // RegionBrowser stays active via <KeepAlive> in App.vue even outside the
+  // "regionen" route, so its watchers keep running e.g. while navigating to the
+  // map. route is (via useRoute()) the globally current route object, not "the
+  // route this component was last active with" - without this check the map's own
+  // ?dataset= (same query key!) would be misread here as NUTS-3 dataset selection
+  // and even navigated back to /regionen via the currentQuery watcher above.
   if (route.name !== "regionen") return;
   activeTypes.value = parseTypesParam(route.query.types);
 
@@ -845,9 +837,9 @@ function applyRouteSelection() {
   }
 
   if (!id) {
-    // Kein Regionswechsel, aber Datensatz-Slugs ohne Region: aus dem
-    // Datenkatalog "vorausgewählt", bis eine Region gewählt wird (siehe
-    // Hinweistext/DatasetPicker unten im Template).
+    // No region switch, but dataset slugs without a region: "preselected" from the
+    // dataset catalog until a region is chosen (see hint text/DatasetPicker below
+    // in the template).
     if (slugsFromRoute.length && type === "nuts") {
       nutsSelectedSlugs.value = slugsFromRoute;
     }
@@ -861,11 +853,11 @@ function applyRouteSelection() {
     regionType.value = "nuts";
     if (!nutsRegions.value.length) return;
     if (selectedNuts.value?.nuts_id === id) {
-      // Region ist schon aktiv (z.B. ein Link, der nur die Datensatz-Auswahl
-      // für dieselbe Region ändert) - kein erneuter Fetch nötig, aber die
-      // explizite Auswahl aus der Route trotzdem übernehmen. Ohne diesen
-      // Zweig würde selectNuts() unten gar nicht aufgerufen (early return),
-      // und ein Link mit anderem ?dataset= auf dieselbe Region bliebe wirkungslos.
+      // Region is already active (e.g. a link that only changes the dataset
+      // selection for the same region) - no new fetch needed, but still adopt the
+      // explicit selection from the route. Without this branch selectNuts() below
+      // would not be called at all (early return), and a link with a different
+      // ?dataset= to the same region would have no effect.
       if (slugsFromRoute.length) reconcileNutsSelection(slugsFromRoute);
       return;
     }
@@ -882,8 +874,8 @@ function applyRouteSelection() {
     if (!agenturbezirke.value.length) return;
     const metricsFromRoute = parseMetricsParam(route.query.metrics);
     if (selectedAgentur.value?.ba_schl === id) {
-      // Analog zu oben - z.B. der Karten-Sidebar-Link auf denselben
-      // Agenturbezirk, aber mit einer anderen Metrik.
+      // Analogous to above - e.g. the map sidebar link to the same Agenturbezirk,
+      // but with a different metric.
       if (metricsFromRoute.length) agenturSelectedMetrics.value = metricsFromRoute;
       return;
     }
@@ -906,14 +898,14 @@ watch(
   { immediate: true },
 );
 
-// --- Download-Dialog -------------------------------------------------------
-// Ein Dialog für alle drei Regionstypen; welche Region/Datensätze er anbietet,
-// leitet sich aus dem gerade offenen Detail-Panel ab. Die Auswahl der Region
-// ist dabei vorausgewählt (siehe preselected-slugs im Template).
+// --- Download dialog -------------------------------------------------------
+// One dialog for all three region types; which region/datasets it offers is derived
+// from the currently open detail panel. The region's selection is preselected
+// (see preselected-slugs in the template).
 const downloadOpen = ref(false);
 
-// BA-Monatswerte (Agentur) bzw. Gemeinde-Rollups (Kreis) sind keine
-// Katalog-Datensätze, tragen im Export aber eigene Slugs (siehe region_data.go).
+// BA monthly values (Agentur) and Gemeinde rollups (Kreis) are not catalog
+// datasets, but carry slugs of their own in the export (see region_data.go).
 const AGENTUR_RAW_OPTIONS: ExtraDownloadOption[] = [
   { slug: "ba_arbeitslose", label: "Arbeitslose (BA, monatlich)", scope: "raw" },
   { slug: "ba_unterbeschaeftigung", label: "Unterbeschäftigung (BA, monatlich)", scope: "raw" },
@@ -927,8 +919,8 @@ const NUTS3_LAU_AGGREGATE_OPTIONS: ExtraDownloadOption[] = [
   },
 ];
 
-// NUTS-0/1/2 haben keine eigenen Kreis-Zeilen (nur Aggregate), LAU umgekehrt
-// keine aggregierten Werte - siehe GET /regions/{type}/{id}/data.
+// NUTS-0/1/2 have no Kreis rows of their own (only aggregates), LAU conversely no
+// aggregated values - see GET /regions/{type}/{id}/data.
 const downloadTarget = computed(() => {
   if (regionType.value === "nuts" && selectedNuts.value) {
     const isKreis = selectedNuts.value.nuts_level === 3;
@@ -959,7 +951,7 @@ const downloadTarget = computed(() => {
       regionId: selectedAgentur.value.ba_schl,
       regionLabel: selectedAgentur.value.name ?? selectedAgentur.value.ba_schl,
       datasets: agenturAggregateDatasets.value ?? [],
-      // Die im Panel sichtbaren BA-Metriken plus die gewählten Kreis-Aggregate.
+      // The BA metrics visible in the panel plus the chosen Kreis aggregates.
       preselectedSlugs: [
         ...agenturSelectedMetrics.value.map((m) => (m === "arbeitslose" ? "ba_arbeitslose" : "ba_unterbeschaeftigung")),
         ...agenturAggregateSelectedSlugs.value,
@@ -1364,11 +1356,11 @@ const downloadTarget = computed(() => {
             :monthly-series="agenturMonthlySeries"
             @update:selected-slugs="(s) => (agenturAggregateSelectedSlugs = s)"
           >
-            <!-- Kein Kreis-Datensatz gewählt: reine BA-Ansicht (echte Werte) -->
+            <!-- No Kreis dataset selected: plain BA view (actual values) -->
             <DatasetInfo v-if="agenturMetadata" :metadata="agenturMetadata" />
             <TimeseriesChart v-if="agenturChartReady" :period-series="agenturChartSeries" />
             <DataTable v-if="agenturChartReady" :period-rows="agenturTableRows" :period-columns="agenturTableColumns" />
-            <!-- Kombinierte Ansicht: BA-Monatswerte als erster Tab neben den Kreis-Datensätzen -->
+            <!-- Combined view: BA monthly values as first tab next to the Kreis datasets -->
             <template #ba-tab>
               <DatasetInfo v-if="agenturMetadata" :metadata="agenturMetadata" />
               <DataTable v-if="agenturChartReady" :period-rows="agenturTableRows" :period-columns="agenturTableColumns" />

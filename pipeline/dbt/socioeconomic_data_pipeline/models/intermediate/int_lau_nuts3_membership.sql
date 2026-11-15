@@ -9,30 +9,39 @@
 }}
 
 /*
-  Räumliche Zuordnung jeder Gemeinde (LAU) zu ihrer NUTS-3-Region je
-  NUTS-Version (2003, 2006, 2010, 2013, 2016, 2021, 2024).
+  Majority assignment of each Gemeinde (LAU) to one NUTS-3 region per NUTS
+  version (2003, 2006, 2010, 2013, 2016, 2021, 2024): the whole Gemeinde
+  goes to the region holding the largest share of its area. One row per
+  (gisco_id, year, version_year).
 
-  Zuordnung über die größte Schnittfläche (statt reinem ST_Contains), um
-  numerische Ungenauigkeiten und Randberührungen an Gemeindegrenzen
-  abzufangen.
+  Why whole Gemeinden and not area-proportional pieces: a Gemeinde belongs
+  to exactly one Kreis; where LAU and NUTS geometries (generalized
+  independently) show it in two regions, that is boundary noise. The
+  proportional variant was evaluated against 648 Kreis versions with known
+  truth (analysis/data-analysis/nuts3_crosswalk_evaluation.ipynb): MAPE
+  0.19 % for majority assignment vs 0.35-2 % for proportional splitting
+  (e.g. Suhl -24 %, Bremerhaven 2003 20 % shifted to Cuxhaven).
 
-  Nur für die LAU-Bevölkerungsjahre berechnet, die in
-  int_lau_population_geo tatsächlich vorhanden sind (nicht für alle
-  verfügbaren LAU-Geometriejahre), um die räumliche Verschneidung nicht
-  unnötig aufzublähen.
+  Known limitation: today's Gemeinden formed by incorporations (Potsdam
+  2003, Sachsen-Anhalt 2007) lay in several older Kreise; they are assigned
+  wholly to one, so back-calculations to 2003/2006 are estimates there
+  (no ground truth exists for them).
 
-  NUTS-3-Geometrien kommen bewusst aus mart_nuts_geometry_historized statt
-  direkt aus stg_nuts_geometry - gleicher Grund wie in
-  int_lau_nuts3_spatial_link.sql dokumentiert: stg_nuts_geometry ist eine
-  View, die geometry_3035 bei jeder Abfrage per ST_GeomFromText aus der
-  rohen loaded_data-Textspalte neu parst, ohne jede Möglichkeit eines
-  Geometrie-Index. Der Join der LAU-Bevölkerungsjahre (mehrere zehntausend
-  Zeilen) dagegen blieb dadurch zuletzt in der Praxis hängen (EXPLAIN-
-  Kosten im Milliarden-Bereich, dbt run kam über diesen Knoten nicht
-  hinaus). mart_nuts_geometry_historized speichert dieselbe Geometrie
-  bereits als echte, GiST-indizierte PostGIS-Spalte je Gültigkeitsperiode
-  (valid_from/valid_to) statt je Einzeljahr - version_year wird daher
-  gegen diesen Zeitraum gefiltert statt gegen ein einzelnes year-Feld.
+  Columns:
+    area_share = ST_Area(gemeinde ∩ region) / ST_Area(gemeinde) of the
+                 chosen region (informational).
+
+  Only computed for the LAU population years that
+  int_lau_nuts3_population_weight actually resolves (closest available year
+  to GREATEST(source_version, target_version) - 1 per version pair, see
+  pop_years below), to keep the spatial join small. Keep that rule in sync
+  with the resolved CTE of int_lau_nuts3_population_weight.
+
+  NUTS-3 geometries come from mart_nuts_geometry_historized, not
+  stg_nuts_geometry: the staging view re-parses geometry_3035 via
+  ST_GeomFromText on every query and cannot be indexed, which made this
+  join hang. The mart stores a GiST-indexed geometry per validity period
+  (valid_from/valid_to), so version_year is filtered against that range.
 */
 
 with version_years as (
@@ -57,30 +66,60 @@ nuts_de as (
         and (g.valid_to is null or g.valid_to >= vy.version_year)
 ),
 
-lau_years as (
-    select distinct gisco_id, year, geometry_3035
-    from {{ ref('int_lau_population_geo') }}
+available_years as (
+    select distinct year from {{ ref('int_lau_population_geo') }}
 ),
 
-ranked as (
+-- Reference year of a version pair = GREATEST(source, target) - 1, so every
+-- version except the oldest is the GREATEST of some pair; each maps to the
+-- closest available population year (same tie-break as
+-- int_lau_nuts3_population_weight). Other population years are never read.
+pop_years as (
+    select distinct (
+        select ay.year
+        from available_years ay
+        order by abs(ay.year - (vy.version_year - 1)), ay.year
+        limit 1
+    ) as year
+    from version_years vy
+    where vy.version_year > (select min(version_year) from version_years)
+),
+
+lau_years as (
+    select distinct p.gisco_id, p.year, p.geometry_3035
+    from {{ ref('int_lau_population_geo') }} p
+    join pop_years py on py.year = p.year
+),
+
+pieces as (
     select
         l.gisco_id,
         l.year,
         n.version_year,
         n.nuts_id,
-        row_number() over (
-            partition by l.gisco_id, l.year, n.version_year
-            order by ST_Area(ST_Intersection(l.geometry_3035, n.geometry_3035)) desc
-        ) as rn
+        ST_Area(ST_Intersection(l.geometry_3035, n.geometry_3035))
+            / nullif(ST_Area(l.geometry_3035), 0) as area_share
     from lau_years l
     join nuts_de n
         on ST_Intersects(l.geometry_3035, n.geometry_3035)
+),
+
+ranked as (
+    select
+        *,
+        row_number() over (
+            partition by gisco_id, year, version_year
+            order by area_share desc, nuts_id
+        ) as rn
+    from pieces
+    where area_share > 0
 )
 
 select
     gisco_id,
     year,
     version_year,
-    nuts_id
+    nuts_id,
+    area_share
 from ranked
 where rn = 1

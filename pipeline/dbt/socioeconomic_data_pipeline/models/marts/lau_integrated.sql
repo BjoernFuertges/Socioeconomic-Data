@@ -1,3 +1,5 @@
+{# "create extension if not exists pg_trgm": needed locally (superuser); in prod pre-created by
+   backend/scripts/ensure_pipeline_role.sql, so it is a no-op for the non-superuser pipeline_rw. #}
 {{
   config(
     materialized='table',
@@ -16,13 +18,12 @@
 -- Main integrated model combining LAU geometry and population data
 -- Joins on GISCO_ID (LAU code) and includes all years
 --
--- Die Geometrie stammt aus dem historisierten Mart (mart_lau_geometry_historized),
--- der pro Region nur noch eine Zeile je Geometrie-Periode hält. Für die
--- jahresbezogene API-Granularität werden die Perioden hier per generate_series
--- wieder auf die einzelnen Vintage-Jahre (valid_from .. max_vintage_year)
--- expandiert. Da die LAU-Vintages lückenlos jährlich vorliegen, entspricht das
--- exakt den ursprünglichen Geometrie-Jahren – nur mit dem historisierten Mart
--- als einziger Geometrie-Quelle.
+--
+-- The geometry comes from the historized mart (mart_lau_geometry_historized),
+-- which holds one row per geometry period. For the per-year API granularity
+-- the periods are expanded back to single vintage years
+-- (valid_from .. max_vintage_year) via generate_series. LAU vintages exist
+-- for every year without gaps, so this equals the original geometry years.
 WITH geometry_data AS (
   SELECT
     g.gisco_id,
@@ -34,12 +35,11 @@ WITH geometry_data AS (
     g.geometry_3035,
     g.geometry_wgs84,
     g.has_valid_geometry,
-    -- Räumlich ermittelter NUTS-3-Parent dieser Gemeinde (Fallback, falls
-    -- weder Populations- noch Geometriequelle einen NUTS-3-Code
-    -- deklarieren - siehe int_lau_nuts3_spatial_link.sql). Join nur über
-    -- gisco_id (nicht zusätzlich valid_from): int_lau_nuts3_spatial_link
-    -- führt aus Performance-Gründen nur eine Zeile je Gemeinde
-    -- (repräsentative Geometrie), nicht je Geometrie-Periode.
+    -- Spatially derived NUTS-3 parent of this Gemeinde (fallback if neither
+    -- the population nor the geometry source declares a NUTS-3 code - see
+    -- int_lau_nuts3_spatial_link.sql). Joined on gisco_id only (not
+    -- valid_from): for performance, int_lau_nuts3_spatial_link has one row
+    -- per Gemeinde (representative geometry), not per geometry period.
     link.nuts_id as spatial_nuts3_id
   FROM {{ ref('mart_lau_geometry_historized') }} g
   LEFT JOIN {{ ref('int_lau_nuts3_spatial_link') }} link
@@ -59,7 +59,7 @@ integrated_data AS (
     g.country_code,
     g.lau_id,
     g.geometry_3035,
-    -- geometry_wgs84 liegt im historisierten Mart bereits als GeoJSON vor
+    -- geometry_wgs84 is already GeoJSON in the historized mart
     g.geometry_wgs84,
     g.has_valid_geometry,
 
@@ -72,11 +72,11 @@ integrated_data AS (
     p.country,
     p.has_valid_population,
 
-    -- Kanonischer NUTS-3-Parent: deklarierte Quellspalten (Populations-
-    -- bzw. Geometriequelle) haben Vorrang, sonst räumlich ermittelter
-    -- Fallback aus int_lau_nuts3_spatial_link. nuts3_link_source macht
-    -- transparent, woher der Wert stammt (wichtig für die GUI - eine
-    -- 'spatial_estimate'-Zuordnung ist keine amtliche Angabe).
+    -- Canonical NUTS-3 parent: the declared source columns (population or
+    -- geometry source) take precedence, otherwise the spatial fallback from
+    -- int_lau_nuts3_spatial_link. nuts3_link_source shows where the value
+    -- comes from (matters for the GUI - a 'spatial_estimate' assignment is
+    -- not an official statement).
     coalesce(nullif(p.nuts_3_code, ''), nullif(g.nuts_3, ''), g.spatial_nuts3_id) as nuts3_id,
     case
       when nullif(p.nuts_3_code, '') is not null then 'declared'

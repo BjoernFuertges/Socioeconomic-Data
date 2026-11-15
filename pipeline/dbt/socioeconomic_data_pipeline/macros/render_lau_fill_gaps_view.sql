@@ -1,4 +1,6 @@
-{% macro render_lau_fill_gaps_view(stage_model, dataset_slug, value_column) %}
+{#- flag_columns: extra boolean columns of the stage model passed through to the
+    API (false where a row has no source row, e.g. interpolated years). -#}
+{% macro render_lau_fill_gaps_view(stage_model, dataset_slug, value_column, flag_columns=[]) %}
 
 with timeseries as (
     select
@@ -28,22 +30,23 @@ source_rows as (
         src.geodata_level,
         src.geodata_year,
         src.observation_date,
-        src.has_valid_value
+        src.has_valid_value{% for f in flag_columns %},
+        src.{{ f }}{% endfor %}
     from {{ ref(stage_model) }} src
 ),
 
--- gisco_id -> amtlicher Gemeindeschlüssel, um Quellzeilen (die keine
--- gisco_id führen) auf die Zeitreihe zurückjoinen zu können.
+-- gisco_id -> official Gemeindeschlüssel, to join source rows (which carry
+-- no gisco_id) back to the time series.
 gisco_lookup as (
     select distinct on (lau_nat_code)
-        regexp_replace(cast(lau_nat_code as text), '\.0+$', '') as ars_code,
+        lau_nat_code as ars_code,
         gisco_id
     from {{ ref('stg_lau_population') }}
     where lau_nat_code is not null and gisco_id is not null
     order by lau_nat_code, year desc
 ),
 
--- Regionsnamen je LAU-Zielversion.
+-- Region names per LAU target version.
 target_regions as (
     select
         gisco_id,
@@ -64,14 +67,18 @@ select
     coalesce(src.parameter, 'gisco_id') as parameter,
     coalesce(src.geodata_level, 'LAU') as geodata_level,
     coalesce(src.geodata_year, ts.target_version) as geodata_year,
-    -- LAU-Zielversion dieser Zeile - macht die View konsistent mit dem
-    -- lau_version-Parameter von /{slug}/timeseries (analog nuts_version bei
-    -- den Kreis-Datensätzen).
+    -- LAU target version of this row - keeps the view consistent with the
+    -- lau_version parameter of /{slug}/timeseries (like nuts_version for
+    -- the Kreis datasets).
     ts.target_version as lau_version,
     ts.year,
     coalesce(src.observation_date, make_date(ts.year, 1, 1)) as observation_date,
-    coalesce(src.has_valid_value, true) as has_valid_value,
-    ts.value as {{ value_column }},
+    -- Invalid source rows are excluded from the time series (see
+    -- mart_lau_sociodata_harmonized); a value shown here is then interpolated
+    -- and valid.
+    (coalesce(ts.is_interpolated, false) or coalesce(src.has_valid_value, true)) as has_valid_value,
+{% for f in flag_columns %}    coalesce(src.{{ f }}, false) as {{ f }},
+{% endfor %}    ts.value as {{ value_column }},
     ts.is_interpolated,
     ts.value_linear,
     ts.value_peer_trend,
@@ -80,7 +87,7 @@ from timeseries ts
 left join gisco_lookup gl
     on gl.gisco_id = ts.gisco_id
 left join source_rows src
-    on  coalesce(src.geodata_id_ars, src.geodata_id_lau) = gl.ars_code
+    on  lpad(coalesce(src.geodata_id_ars, src.geodata_id_lau), 8, '0') = gl.ars_code
     and src.year = ts.year
 left join target_regions geo
     on  geo.gisco_id = ts.gisco_id

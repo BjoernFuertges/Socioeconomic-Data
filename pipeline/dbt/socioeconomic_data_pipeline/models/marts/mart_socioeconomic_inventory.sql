@@ -12,6 +12,7 @@
 -- depends_on: {{ ref('stg_schuldnerquote_kreise') }}
 -- depends_on: {{ ref('stg_sgb_ii_quote_kreise') }}
 -- depends_on: {{ ref('stg_studierende_kreise') }}
+-- depends_on: {{ ref('stg_sv_beschaeftigte_kreise') }}
 -- depends_on: {{ ref('stg_wohngeldhaushalte_kreise') }}
 -- depends_on: {{ ref('stg_arbeitslosenzahlen_afa_agenturbezirke') }}
 {{
@@ -46,12 +47,12 @@
 {% endfor %}
 
 {#
-  stg_arbeitslosenzahlen_afa_agenturbezirke ist Agenturbezirk-Grain (eigene
-  geodata_id_agentur-Spalte, kein geodata_level, kein geodata_id_nuts/lau/ars)
-  und passt deshalb auf keines der obigen Namens-Suffixe. Ohne diesen Eintrag
-  bleibt der Datensatz in mart_dataset_catalog ohne min_year/max_year/
-  total_records (siehe Kommentar dort). geodata_level wird hier als Literal
-  gesetzt, weil die Quelle keine solche Spalte führt.
+  stg_arbeitslosenzahlen_afa_agenturbezirke is Agenturbezirk grain (own
+  geodata_id_agentur column, no geodata_level, no geodata_id_nuts/lau/ars)
+  and so matches none of the naming suffixes above. Without this entry the
+  dataset would have no min_year/max_year/total_records in
+  mart_dataset_catalog (see the comment there). geodata_level is set as a
+  literal here because the source has no such column.
 #}
 {% do datasets.append({
     "slug": "arbeitslosenzahlen-afa-agenturbezirke",

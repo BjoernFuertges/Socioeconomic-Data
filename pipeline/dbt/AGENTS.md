@@ -5,9 +5,9 @@ This file provides guidance to AI coding agents and contributors working in this
 Scope: this file covers `pipeline/dbt/` (the actual dbt project is nested one
 level down at `pipeline/dbt/socioeconomic_data_pipeline/` — all commands below
 assume you `cd` there first). See the repository root
-[AGENTS.md](../AGENTS.md) for cross-component architecture and the
+[AGENTS.md](../../AGENTS.md) for cross-component architecture and the
 NUTS-3-versioning / historization rules that govern this project, and
-[docs/pipeline/dbt.md](../docs/pipeline/dbt.md) for the full model-layer
+[docs/pipeline/dbt.md](../../docs/pipeline/dbt.md) for the full model-layer
 writeup.
 
 ## Commands
@@ -17,7 +17,7 @@ instead of setting each up by hand, use `compose.local.yml` at the repo
 root (`docker compose -f compose.local.yml up --build`, then
 `docker compose -f compose.local.yml exec pipeline bash /app/dlt/run_all_pipelines.sh`
 — that runs the dlt loads before dbt, per the ordering rule below) — see
-the root [README.md](../README.md#lokal-testen-docker-compose). The
+the root [README.md](../../README.md#lokal-testen-docker-compose). The
 commands below are for running dbt standalone against an
 already-running/external Postgres.
 
@@ -40,14 +40,41 @@ dbt test --select stg_arbeitslose_kreise
 env vars; copy it to wherever `DBT_PROFILES_DIR` points and set those, or
 point `DBT_PROFILES_DIR` at the deployment's existing `profiles.yml`.
 
+In production dbt runs as the non-superuser role `pipeline_rw` (`DB_USER` of
+the `pipeline` service; the server's gitignored `profiles.yml` must read
+`DB_USER`/`DB_PASSWORD` like `profiles.example.yml`). It owns `transformed_data`
+and `snapshots` but has no `CREATE` on the database: a model/snapshot in a new
+schema, or a hook needing a new extension, needs that schema/extension added to
+`backend/scripts/ensure_pipeline_role.sql` first (`lau_integrated`'s
+`create extension if not exists pg_trgm` stays as a no-op because the script
+pre-creates it). Do not run dbt against production as the superuser - its
+objects would block later `pipeline_rw` runs (see
+[docs/operations.md](../../docs/operations.md#db-roles)).
+
 `README.md` in the project directory is the unmodified dbt-init
 boilerplate, not project documentation.
+
+## Reference versions
+
+Target NUTS/LAU versions are vars in `dbt_project.yml`
+(`reference_nuts_version`, `reference_lau_version`, `nuts_versions`,
+`lau_versions`) - never hard-code `2024` in models/macros, use
+`{{ var('...') }}`. `tests/assert_reference_versions_current.sql` fails when
+the vars lag behind the loaded geometry vintages (it fails on the tiny
+synthetic fixture, which has fewer vintages: override with `--vars`). The
+backend reads its supported/default versions from the distinct
+`target_version` of `mart_nuts3_sociodata_harmonized` /
+`mart_lau_sociodata_harmonized` at startup (default = newest), so a new
+version only needs the dbt vars + data (+ backend restart); keep
+`target_version` as the column name of both marts.
 
 ## Architecture
 
 Standard staging → intermediate → marts layering
 (`dbt_project.yml` pins materializations per layer: staging/intermediate =
-views, marts = tables, `marts/fill_gaps/*` = views):
+views, marts = tables by default, `marts/fill_gaps/*` = views; individual
+marts override this in their own `config()`, e.g. `mart_agentur_dataset_aggregate`
+and `mart_nuts0_summary` are views):
 
 - **snapshots/** — the only place historization happens. Two shapes:
   - `snap_results_<dataset>_kreise.sql` — one per Kreis-level dataset,
@@ -66,17 +93,22 @@ views, marts = tables, `marts/fill_gaps/*` = views):
   renaming/typing plus the schema tests. Adding a new Kreis dataset means
   adding a `stg_<dataset>_kreise.sql`/`_schema.yml` pair here first — see
   the "Adding a new Kreis-level dataset" recipe in
-  [AGENTS.md](../AGENTS.md).
+  [AGENTS.md](../../AGENTS.md).
 - **models/intermediate/** — crosswalk building blocks, not dataset
   content: LAU↔NUTS3 membership and population weights
   (`int_lau_nuts3_membership`, `int_lau_nuts3_population_weight`), the
-  NUTS boundary-version crosswalk (`int_nuts_spatial_crosswalk`) that
+  NUTS boundary-version crosswalk (`int_nuts_spatial_crosswalk`, reading
+  the GiST-indexed `int_nuts3_de_geometry` instead of the unindexable
+  `stg_nuts_geometry` view) that
   `mart_nuts_version_crosswalk` / `mart_nuts3_sociodata_harmonized` build
   on to reconcile 2003/2006/2010/2013/2016/2021/2024 NUTS-3 boundary
   changes, its LAU-version counterpart (`int_lau_spatial_crosswalk`, feeds
   `mart_lau_version_crosswalk` / `mart_lau_sociodata_harmonized`), and the
   LAU→NUTS-3 spatial fallback link (`int_lau_nuts3_spatial_link`, feeds the
-  canonical `nuts3_id` in `lau_integrated`). `int_lau_spatial_crosswalk`
+  canonical `nuts3_id` in `lau_integrated`), and the LAU→NUTS-3
+  aggregation of the Beschäftigungsquote (`int_beschaeftigungsquote_nuts3`;
+  `stg_beschaeftigungsquote_nuts3` only wraps it for the API generator,
+  `mart_beschaeftigungsquote_nuts3` only exposes it). `int_lau_spatial_crosswalk`
   deliberately excludes same-`gisco_id` period pairs (handled cheaply as a
   trivial identity mapping directly in `mart_lau_version_crosswalk`
   instead) — LAU geometry vintages are re-generalized yearly by GISCO, so
@@ -89,10 +121,34 @@ views, marts = tables, `marts/fill_gaps/*` = views):
     Kreis- resp. LAU-grain datasets harmonized onto every available target
     boundary version simultaneously (`target_version` column) via
     `mart_nuts_version_crosswalk` / `mart_lau_version_crosswalk`; these are
-    the dataset lists every new Kreis/LAU dataset must be registered in.
+    the main dataset lists a new Kreis/LAU dataset must be registered in (further
+    marts that also need an entry: see the recipe in the root
+    [AGENTS.md](../../AGENTS.md)).
     Each entry carries a `measure_type` ('sum' for counts, 'weighted_avg'
     for rates/averages) that decides how values are combined when several
-    source regions map onto one target region.
+    source regions map onto one target region. The NUTS-3 mart reads the
+    `stg_<slug>_kreise` models (entry: `staging` + `value_col`), not
+    `loaded_data`, and takes their `has_valid_value` over unchanged - the
+    validity rule exists only in staging. Raw-row collisions on
+    `(geodata_id_nuts, year)` (which the snapshot would silently collapse) fail
+    the `unique_combination_of_columns` test on each `results_*_kreise` source
+    in `models/sources.yml`; current snapshot rows no longer in `loaded_data`
+    (kept because `hard_deletes: ignore`) are flagged by
+    `tests/warn_snapshot_rows_missing_in_source.sql`. The Kreis roll-ups
+    (`mart_nuts012_dataset_aggregate`, `mart_agentur_dataset_aggregate`,
+    `mart_nuts0/1/2_summary`) leave the value as is but expose
+    `expected_region_count` + `is_complete` (resp. `bevoelkerung_/
+    arbeitslose_is_complete`): Kreise expected in the reference version
+    (`int_nuts_expected_kreis_count` / the Agentur crosswalk) vs. Kreise that
+    contributed. The aggregation marts
+    (`mart_nuts012_dataset_aggregate`, `mart_agentur_dataset_aggregate`,
+    custom regions) add 'weighted_avg_employees' for values per employed
+    person (`arbeitsvolumen`, `bruttoverdienst`; `auszubildende` with
+    `employee_slug: sv_beschaeftigte`, which also drives its NUTS-3 version
+    crosswalk weight; fallback if the count is missing, e.g. before 2007:
+    population weight, then area), weighted by the
+    `erwerbstaetige_pro_1000_einwohner` count (absolute, in thousands - the
+    slug is a misnomer kept for the public API route).
   - `mart_nuts3_timeseries_interpolated` / `mart_lau_timeseries_interpolated`
     — gap-filled time series built on top of the harmonized marts, one row
     per (region, dataset, target_version, year).
@@ -110,7 +166,11 @@ views, marts = tables, `marts/fill_gaps/*` = views):
     ('declared'/'spatial_estimate') tells consumers which one it is.
   - `mart_nuts_geometry_historized` / `mart_lau_geometry_historized` —
     versioned geometry, joined by NUTS/LAU id + boundary version rather
-    than a foreign key to a single "current" geometry table.
+    than a foreign key to a single "current" geometry table. The name
+    column comes from a period's newest vintage. The NUTS mart also starts a
+    new period when a code is missing from an intermediate vintage (gap),
+    so it never matches a vintage it is absent from; the LAU mart does not
+    (yet) - there a period spans such gaps.
   - `mart_dataset_source` — source values of all `meta.yaml`-based
     Kreis/Gemeinde datasets in one long format (read from `loaded_data`,
     unharmonized, uninterpolated; only region names mapped to geodata IDs
@@ -189,6 +249,10 @@ views, marts = tables, `marts/fill_gaps/*` = views):
   exist via `adapter.get_columns_in_relation` — dlt must have loaded
   before `dbt snapshot` runs), `render_nuts3_fill_gaps_view.sql` /
   `render_lau_fill_gaps_view.sql` (shared gap-filling logic behind
-  `marts/fill_gaps/*`), `missing_data_summary.sql`,
+  `marts/fill_gaps/*`),
   `generate_schema_name.sql` (schemas are taken verbatim from
-  `+schema:` config, not prefixed with the target schema).
+  `+schema:` config, not prefixed with the target schema),
+  `grant_api_read.sql` (`on-run-end` hook in `dbt_project.yml`: re-grants
+  `SELECT` on `transformed_data` to the backend's read-only role `api_ro`;
+  no-op if the role does not exist. New relations the backend reads must be in
+  `transformed_data`).

@@ -13,7 +13,7 @@ common regions (LAU/NUTS), historized, and served via a REST API.
 
 ```mermaid
 flowchart LR
-    sources["Raw data\n(data-exchange/, geo-importer/, geo-mapper/)"]
+    sources["Raw data\n(data-exchange/, prepared with the external geo-mapper)"]
     dlt["dlt pipelines\n(Extract & Load)"]
     pg_loaded[("PostgreSQL\nSchema: loaded_data")]
     dbt["dbt\n(Staging → Intermediate → Marts)"]
@@ -30,7 +30,7 @@ flowchart LR
 | [`backend/`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/backend/README.md) | Go API (Gin), reads from `transformed_data` | [Backend overview](backend/index.md) |
 | [`pipeline/dlt/`](https://github.com/BjoernFuertges/Socioeconomic-Data/tree/main/pipeline/dlt) | Python pipelines that load raw/geodata into `loaded_data` | [dlt](pipeline/dlt.md) |
 | [`pipeline/dbt/socioeconomic_data_pipeline/`](https://github.com/BjoernFuertges/Socioeconomic-Data/tree/main/pipeline/dbt/socioeconomic_data_pipeline) | Transformation, snapshots, NUTS/LAU harmonization | [dbt](pipeline/dbt.md) |
-| `geo-importer/`, `geo-mapper/` | Prepares geodata (NUTS/LAU) and maps the socioeconomic raw data onto geodata IDs before it is loaded via dlt | [Architecture](architecture.md#other-modules) |
+| [`geo-mapper`](https://pypi.org/project/geo-mapper/) (external, not in this repo) | Maps the socioeconomic raw data onto geodata IDs (NUTS/LAU) before it is loaded via dlt | [Architecture](architecture.md#other-modules) |
 | `data-exchange/` | Storage for exchanged intermediate raw-data states between project contributors | [Architecture](architecture.md#other-modules) |
 
 !!! note "Source of truth"

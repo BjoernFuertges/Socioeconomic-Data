@@ -1,6 +1,10 @@
 """
 DLT pipeline for loading LAU and NUTS geodata plus LAU population data into PostGIS.
 Loads all years into single tables in the loaded_data schema.
+
+Geometry source: the "Geodaten" folder of the data exchange if present
+(see find_geodaten_dir), otherwise the legacy GISCO files (GEODATA_BASE_PATH /
+geo-mapper fallbacks).
 """
 
 import dlt
@@ -9,8 +13,11 @@ import gzip
 import ijson
 import os
 import pandas as pd
+import re
 from pathlib import Path
+from pyproj import Transformer
 from shapely.geometry import shape
+from shapely.ops import transform as shapely_transform
 from typing import Iterator, Dict, Any
 import logging
 
@@ -18,10 +25,10 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Base paths — GEODATA_BASE_PATH zeigt auf den Output des socioeconomic-data-parser
-BASE_PATH = Path(os.environ.get("GEODATA_BASE_PATH", str(Path(__file__).resolve().parents[2] / "socioeconomic-data-parser")))
+# Same default as fetch_lau_population.py, so a fresh checkout finds the CSVs it downloads.
+BASE_PATH = Path(os.environ.get("GEODATA_BASE_PATH", str(Path(__file__).resolve().parent / "eurostat_lau_population")))
 GEODATA_PATH = BASE_PATH / "geodata" / "lau" / "output" / "geojson"
-# Fallback: unkomprimierte GeoJSON-Dateien aus geo-mapper (lokal verfügbar)
+# Fallback: uncompressed GeoJSON from geo-mapper
 LAU_GEOJSON_FALLBACK_PATH = Path(
     os.environ.get(
         "LAU_GEODATA_PATH",
@@ -29,7 +36,7 @@ LAU_GEOJSON_FALLBACK_PATH = Path(
     )
 )
 POPULATION_PATH = BASE_PATH / "statistics" / "lokale_verwaltungseinheiten_eu" / "output"
-# Fallback: LAU-Bevölkerungsdaten aus geo-importer
+# Fallback: LAU names (no population) from geo-importer
 POPULATION_FALLBACK_PATH = Path(
     os.environ.get(
         "LAU_POPULATION_PATH",
@@ -43,6 +50,99 @@ NUTS_GEODATA_PATH = Path(
     )
 )
 
+# Preferred geodata source: the "Geodaten" folder of the data exchange
+# (geojson/LAU/<year>/lau_<year>_level_0.geojson,
+#  geojson/NUTS_<level>/<year>/nuts_<year>_level_<level>.geojson).
+# Files are WGS84 (EPSG:4326) and carry only id/name (LAU) or
+# id_nuts/name/id_ars (NUTS); they are reprojected to EPSG:3035 and mapped to
+# the column layout of the legacy GISCO files (see _lau_record/_nuts_record).
+# In production backend/scripts/sync_nextcloud_data_exchange.sh mirrors the
+# folder to data-exchange/geodata; locally it may still sit in
+# <DATA_EXCHANGE_PATH>/Geodaten. GEODATEN_PATH overrides both.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_DATA_EXCHANGE = Path(os.environ.get("DATA_EXCHANGE_PATH", str(_REPO_ROOT / "data-exchange" / "1_friedrich-bjoern")))
+
+
+def _geodaten_candidates() -> list[Path]:
+    env = os.environ.get("GEODATEN_PATH")
+    if env:
+        return [Path(env)]
+    return [_DATA_EXCHANGE.parent / "geodata", _DATA_EXCHANGE / "Geodaten"]
+
+
+def find_geodaten_dir() -> Path | None:
+    """First candidate that actually contains LAU or NUTS GeoJSON files."""
+    for cand in _geodaten_candidates():
+        gj = cand / "geojson"
+        if gj.is_dir() and (any(gj.glob("LAU/*/lau_*_level_*.geojson")) or any(gj.glob("NUTS_*/*/nuts_*_level_*.geojson"))):
+            return cand
+    return None
+
+
+def _geodaten_lau_files(base: Path) -> list[Path]:
+    return sorted(base.glob("geojson/LAU/*/lau_*_level_*.geojson"))
+
+
+def _geodaten_nuts_files(base: Path) -> list[Path]:
+    return sorted(base.glob("geojson/NUTS_*/*/nuts_*_level_*.geojson"))
+
+
+_WGS84_TO_3035 = Transformer.from_crs(4326, 3035, always_xy=True).transform
+_NUTS_FILE_RE = re.compile(r"nuts_(\d{4})_level_(\d)\.geojson$")
+
+
+# Features whose geometry could not be converted end up with a NULL geometry.
+# Do not abort the load (one bad feature should not block the table), but make
+# them visible: warn per feature and print a summary at the end of main().
+_geometry_failures: Dict[str, int] = {}
+
+
+def _record_geometry_failure(source: str, feature_id: Any, err: Exception) -> None:
+    _geometry_failures[source] = _geometry_failures.get(source, 0) + 1
+    logger.warning(
+        f"{source}: geometry of feature {feature_id!r} could not be converted "
+        f"({type(err).__name__}: {err}) - loading it with NULL geometry"
+    )
+
+
+def _to_wkt_3035(geom: Any, source: str = "geodata", feature_id: Any = None) -> str | None:
+    if geom is None:
+        return None
+    try:
+        return shapely_transform(_WGS84_TO_3035, shape(geom)).wkt
+    except Exception as e:
+        _record_geometry_failure(source, feature_id, e)
+        return None
+
+
+def _lau_record(props: Dict[str, Any], geom: Any, year: int) -> Dict[str, Any]:
+    ags = str(props.get("id") or "").strip()
+    # GISCO id = country code + official municipality key (AGS), as in lau_population.
+    return {
+        "gisco_id": f"DE_{ags}" if ags else None,
+        "cntr_code": "DE",
+        "lau_id": ags or None,
+        "lau_name": props.get("name"),
+        "year": year,
+        "geometry": _to_wkt_3035(geom, f"lau_geometry {year}", ags),
+    }
+
+
+def _nuts_record(props: Dict[str, Any], geom: Any, year: int, level: int) -> Dict[str, Any]:
+    nuts_id = str(props.get("id_nuts") or "").strip()
+    name = props.get("name")
+    return {
+        "nuts_id": nuts_id or None,
+        "levl_code": level,
+        "cntr_code": nuts_id[:2] or None,
+        "nuts_name": name,
+        "name_latn": name,
+        "id_ars": props.get("id_ars"),
+        "year": year,
+        "geometry": _to_wkt_3035(geom, f"nuts_geometry {year} level {level}", nuts_id),
+    }
+
+
 def extract_year_from_filename(filename: str) -> int:
     """Extract year from filename like 'LAU_RG_01M_2011_3035_cleaned.geojson.gz'"""
     parts = filename.split('_')
@@ -55,11 +155,34 @@ def extract_year_from_filename(filename: str) -> int:
 def load_geodata() -> Iterator[Dict[str, Any]]:
     """Load all LAU geometry data from GeoJSON files.
 
-    Sucht zuerst nach komprimierten Dateien (*_cleaned.geojson.gz) im
-    GEODATA_BASE_PATH-Output; fällt zurück auf unkomprimierte .geojson-Dateien
-    im geo-mapper-Verzeichnis (lokal verfügbar).
+    Prefers compressed *_cleaned.geojson.gz under GEODATA_BASE_PATH, falls back
+    to uncompressed .geojson files from geo-mapper.
     """
     logger.info("Starting geodata extraction...")
+
+    geodaten = find_geodaten_dir()
+    if geodaten is not None and _geodaten_lau_files(geodaten):
+        for file_path in _geodaten_lau_files(geodaten):
+            year = extract_year_from_filename(file_path.name)
+            logger.info(f"Processing LAU geodata (Geodaten) for year {year}: {file_path.name}")
+            try:
+                skipped = 0
+                with open(file_path, "rb") as f:
+                    for feature in ijson.items(f, "features.item"):
+                        props = feature.get("properties") or {}
+                        # A feature without id cannot be joined to anything (gisco_id would be NULL).
+                        if not str(props.get("id") or "").strip():
+                            skipped += 1
+                            continue
+                        yield _lau_record(props, feature.get("geometry"), year)
+                if skipped:
+                    logger.warning(f"{file_path.name}: skipped {skipped} feature(s) without id")
+                gc.collect()
+            except Exception as e:
+                # Re-raise: with "replace" a partial extract would wipe the good table.
+                logger.error(f"Error processing {file_path.name}: {e}")
+                raise
+        return
 
     geojson_files = sorted(GEODATA_PATH.glob("LAU_RG_01M_*_3035_cleaned.geojson.gz"))
     use_gz = True
@@ -85,25 +208,25 @@ def load_geodata() -> Iterator[Dict[str, Any]]:
                     if geom is not None:
                         try:
                             record['geometry'] = shape(geom).wkt
-                        except Exception:
+                        except Exception as e:
+                            _record_geometry_failure(file_path.name, record.get('id') or record.get('gisco_id'), e)
                             record['geometry'] = None
                     else:
                         record['geometry'] = None
                     yield record
             gc.collect()
-                
+
         except Exception as e:
+            # Re-raise: with "replace" a partial extract would wipe the good table.
             logger.error(f"Error processing {file_path.name}: {e}")
-            continue
+            raise
 
 @dlt.resource(
     name="lau_population",
     write_disposition="replace",
-    # gisco_id/nuts_3_code/lau_name_latin/population/country kommen nur aus dem
-    # primären GEODATA_BASE_PATH-Pfad; im Fallback (geo-importer LAU.csv) sind
-    # sie durchgehend NULL. Ohne expliziten Typ-Hint lässt dlt eine Spalte, die
-    # in allen Zeilen NULL ist, komplett weg (Typinferenz schlägt fehl), was
-    # stg_lau_population.sql mit "column does not exist" abbrechen lässt.
+    # These columns only exist in the primary path; in the fallback they are all
+    # NULL, and dlt drops all-NULL columns without a type hint, which would make
+    # stg_lau_population.sql fail with "column does not exist".
     columns={
         "gisco_id": {"data_type": "text", "nullable": True},
         "nuts_3_code": {"data_type": "text", "nullable": True},
@@ -115,8 +238,8 @@ def load_geodata() -> Iterator[Dict[str, Any]]:
 def load_population_data() -> Iterator[Dict[str, Any]]:
     """Load all LAU population data from CSV files.
 
-    Sucht zuerst nach lau_population_*.csv im GEODATA_BASE_PATH-Output;
-    fällt zurück auf die LAU-CSVs aus geo-importer (LAU<year>/LAU.csv).
+    Prefers lau_population_*.csv under GEODATA_BASE_PATH, falls back to
+    geo-importer's LAU<year>/LAU.csv.
     """
     logger.info("Starting population data extraction...")
 
@@ -133,7 +256,7 @@ def load_population_data() -> Iterator[Dict[str, Any]]:
                     yield {str(k): v for k, v in row.to_dict().items()}
             except Exception as e:
                 logger.error(f"Error processing {file_path.name}: {e}")
-                continue
+                raise
     else:
         # Fallback: geo-importer LAU<year>/LAU.csv  (Format: ID,Name)
         lau_dirs = sorted(POPULATION_FALLBACK_PATH.glob("LAU[0-9][0-9][0-9][0-9]"))
@@ -150,11 +273,9 @@ def load_population_data() -> Iterator[Dict[str, Any]]:
                 df['year'] = year
                 # Rename columns to match expected schema
                 df = df.rename(columns={'id': 'lau_nat_code', 'name': 'lau_name_national'})
-                # Fallback hat keine Bevölkerungszahlen/gisco_id (nur im primären
-                # GEODATA_BASE_PATH-Output vorhanden) — Spalten als NULL ergänzen,
-                # damit stg_lau_population.sql (erwartet diese Spalten) nicht mit
-                # "column does not exist" abbricht; nachgelagerte, populationsbasierte
-                # Marts bleiben dadurch leer statt den ganzen dbt-Lauf zu blockieren.
+                # Add the missing columns as NULL so stg_lau_population.sql still
+                # compiles; population-based marts end up empty instead of
+                # blocking the whole dbt run.
                 for col in ("gisco_id", "nuts_3_code", "lau_name_latin", "population", "country"):
                     if col not in df.columns:
                         df[col] = None
@@ -162,12 +283,31 @@ def load_population_data() -> Iterator[Dict[str, Any]]:
                     yield {str(k): v for k, v in row.to_dict().items()}
             except Exception as e:
                 logger.error(f"Error processing {lau_dir}: {e}")
-                continue
+                raise
 
 @dlt.resource(name="nuts_geometry", write_disposition="replace")
 def load_nuts_geodata() -> Iterator[Dict[str, Any]]:
     """Load all NUTS geometry data from GeoJSON files."""
     logger.info("Starting NUTS geodata extraction...")
+
+    geodaten = find_geodaten_dir()
+    if geodaten is not None and _geodaten_nuts_files(geodaten):
+        for file_path in _geodaten_nuts_files(geodaten):
+            m = _NUTS_FILE_RE.search(file_path.name)
+            if not m:
+                logger.warning(f"Skipping unexpected NUTS file name: {file_path.name}")
+                continue
+            year, level = int(m.group(1)), int(m.group(2))
+            logger.info(f"Processing NUTS geodata (Geodaten) for year {year}, level {level}: {file_path.name}")
+            try:
+                with open(file_path, "rb") as f:
+                    for feature in ijson.items(f, "features.item"):
+                        yield _nuts_record(feature.get("properties") or {}, feature.get("geometry"), year, level)
+                gc.collect()
+            except Exception as e:
+                logger.error(f"Error processing {file_path.name}: {e}")
+                raise
+        return
 
     geojson_files = list(NUTS_GEODATA_PATH.glob("NUTS_RG_01M_*_3035.geojson"))
     logger.info(f"Found {len(geojson_files)} NUTS geodata files")
@@ -186,7 +326,8 @@ def load_nuts_geodata() -> Iterator[Dict[str, Any]]:
                     if geom is not None:
                         try:
                             record["geometry"] = shape(geom).wkt
-                        except Exception:
+                        except Exception as e:
+                            _record_geometry_failure(file_path.name, record.get("nuts_id") or record.get("id"), e)
                             record["geometry"] = None
                     else:
                         record["geometry"] = None
@@ -194,8 +335,9 @@ def load_nuts_geodata() -> Iterator[Dict[str, Any]]:
             gc.collect()
 
         except Exception as e:
+            # Re-raise: with "replace" a partial extract would wipe the good table.
             logger.error(f"Error processing {file_path.name}: {e}")
-            continue
+            raise
 
 def create_pipeline():
     """Create and configure the DLT pipeline for geodata."""
@@ -221,13 +363,15 @@ def main():
         f"GEODATA_BASE_PATH={BASE_PATH}, GEODATA_PATH={GEODATA_PATH}, POPULATION_PATH={POPULATION_PATH}, NUTS_GEODATA_PATH={NUTS_GEODATA_PATH}"
     )
 
-    # Separate pipelines to avoid stale state cross-contamination
     pipeline = create_pipeline()
     pop_pipeline = create_population_pipeline()
 
     try:
         # Load geodata
-        geojson_files = list(GEODATA_PATH.glob("LAU_RG_01M_*_3035_cleaned.geojson.gz")) or \
+        geodaten = find_geodaten_dir()
+        logger.info(f"Geodaten folder: {geodaten if geodaten else 'not found, using legacy GISCO paths'}")
+        geojson_files = (_geodaten_lau_files(geodaten) if geodaten else []) or \
+                        list(GEODATA_PATH.glob("LAU_RG_01M_*_3035_cleaned.geojson.gz")) or \
                         list(LAU_GEOJSON_FALLBACK_PATH.glob("LAU_RG_01M_*_3035.geojson"))
         if not geojson_files:
             logger.warning(f"No LAU geodata files found in {GEODATA_PATH} or {LAU_GEOJSON_FALLBACK_PATH}, skipping geodata load")
@@ -240,7 +384,8 @@ def main():
             )
             logger.info(f"Geodata load completed: {geodata_info}")
 
-        nuts_geojson_files = list(NUTS_GEODATA_PATH.glob("NUTS_RG_01M_*_3035.geojson"))
+        nuts_geojson_files = (_geodaten_nuts_files(geodaten) if geodaten else []) or \
+                             list(NUTS_GEODATA_PATH.glob("NUTS_RG_01M_*_3035.geojson"))
         if not nuts_geojson_files:
             logger.warning(f"No NUTS geodata files found in {NUTS_GEODATA_PATH}, skipping NUTS geodata load")
             nuts_geodata_info = None
@@ -251,7 +396,7 @@ def main():
                 table_name="nuts_geometry"
             )
             logger.info(f"NUTS geodata load completed: {nuts_geodata_info}")
-        
+
         # Load population data (primary path or fallback)
         csv_files = list(POPULATION_PATH.glob("lau_population_*.csv"))
         fallback_dirs = list(POPULATION_FALLBACK_PATH.glob("LAU[0-9][0-9][0-9][0-9]"))
@@ -265,9 +410,9 @@ def main():
                 table_name="lau_population"
             )
             logger.info(f"Population data load completed: {population_info}")
-        
+
         logger.info("Pipeline completed successfully!")
-        
+
         # Print summary
         print("\n" + "="*50)
         print("PIPELINE SUMMARY")
@@ -275,8 +420,14 @@ def main():
         print(f"Geodata: {geodata_info}")
         print(f"NUTS Geodata: {nuts_geodata_info}")
         print(f"Population: {population_info}")
+        if _geometry_failures:
+            print(f"WARNING: {sum(_geometry_failures.values())} feature(s) loaded with NULL geometry:")
+            for src, n in sorted(_geometry_failures.items()):
+                print(f"  {src}: {n}")
+        else:
+            print("Geometry conversion failures: 0")
         print("="*50)
-        
+
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")
         raise

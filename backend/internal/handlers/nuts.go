@@ -1,14 +1,17 @@
 package handlers
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 type nutsLevelDetails struct {
@@ -17,6 +20,10 @@ type nutsLevelDetails struct {
 	Code         string
 	Table        string
 }
+
+// nutsMaxLimit caps ?limit= on GET /nuts, in line with the 10000 of the
+// Kreis dataset endpoints (limit=null fetches everything).
+const nutsMaxLimit = 10000
 
 func nutsLevelDetailsFromLevel(level int) (nutsLevelDetails, error) {
 	switch level {
@@ -33,7 +40,7 @@ func nutsLevelDetailsFromLevel(level int) (nutsLevelDetails, error) {
 	}
 }
 
-// nutsLevelDetailsFromID normalisiert eine NUTS-ID und liefert explizite Level-Informationen.
+// nutsLevelDetailsFromID normalizes a NUTS ID and returns explicit level information.
 func nutsLevelDetailsFromID(nutsID string) (nutsLevelDetails, error) {
 	normalizedID := strings.ToUpper(strings.TrimSpace(nutsID))
 
@@ -60,7 +67,7 @@ func nutsMetadata(details nutsLevelDetails, regionName string, ars *string) *mod
 	}
 }
 
-func (h *Handler) lookupNutsGeometry(nutsID string, geometryYear *int) (json.RawMessage, bool, error) {
+func (h *Handler) lookupNutsGeometry(ctx context.Context, nutsID string, geometryYear *int) (json.RawMessage, bool, error) {
 	var row struct {
 		GeometryWGS84    json.RawMessage `db:"geometry_wgs84"`
 		HasValidGeometry bool            `db:"has_valid_geometry"`
@@ -71,8 +78,8 @@ func (h *Handler) lookupNutsGeometry(nutsID string, geometryYear *int) (json.Raw
 		WHERE nuts_id = $1`
 	args := []interface{}{nutsID}
 
-	// In der historisierten Tabelle ist die Geometrie eines Jahres eindeutig:
-	// "exact" und "latest-before" fallen zusammen auf die Periode, die das Jahr abdeckt.
+	// In the historized table a year's geometry is unambiguous: "exact" and
+	// "latest-before" coincide on the period covering that year.
 	if geometryYear != nil {
 		query += ` AND valid_from <= $2 AND (valid_to IS NULL OR valid_to >= $2)`
 		args = append(args, *geometryYear)
@@ -82,8 +89,8 @@ func (h *Handler) lookupNutsGeometry(nutsID string, geometryYear *int) (json.Raw
 		ORDER BY valid_from DESC
 		LIMIT 1`
 
-	if err := h.DB.Get(&row, query, args...); err != nil {
-		if err.Error() == "sql: no rows in result set" {
+	if err := h.DB.GetContext(ctx, &row, query, args...); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, false, nil
 		}
 		return nil, false, err
@@ -105,14 +112,14 @@ func normalizeNutsResponsePart(part string) (string, error) {
 	}
 }
 
-// GetAllNutsRegions gibt alle NUTS-Regionen zurück (optional gefiltert nach Level)
+// GetAllNutsRegions returns all NUTS regions (optionally filtered by level)
 // @Summary Liste aller NUTS-Regionen
 // @Description Gibt alle NUTS-Regionen zurück. Mit ?level=0..3 auf ein bestimmtes Level einschränken. Ohne ?level werden alle Levels zusammengefasst.
 // @Tags NUTS
 // @Accept json
 // @Produce json
 // @Param level query int false "NUTS-Level (0–3)" Enums(0,1,2,3) example(3)
-// @Param limit query int false "Anzahl der Ergebnisse" default(100) example(100)
+// @Param limit query int false "Anzahl der Ergebnisse je Level (1-10000, oder null für alle)" default(100) example(100)
 // @Param offset query int false "Offset für Pagination" default(0) example(0)
 // @Success 200 {object} models.APIResponse{data=[]models.NutsRegionSummary}
 // @Failure 400 {object} models.APIResponse
@@ -121,7 +128,30 @@ func normalizeNutsResponsePart(part string) (string, error) {
 func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 	levelStr := c.Query("level")
 	limitNull := normalizeNullableLimitQuery(c)
-	limit, offset, err := resolvePagination(c, 100, 0, 0, limitNull)
+	// gin caches the query string on first access (c.Query("level") above), so
+	// c.Query("limit") still sees "null" after normalizeNullableLimitQuery
+	// removed it from the URL - only parse it as a number without limit=null.
+	var requestedLimit *int
+	var err error
+	if !limitNull {
+		requestedLimit, err = parseOptionalIntQuery(c, "limit")
+		if err != nil {
+			respondBadRequest(c, err.Error())
+			return
+		}
+	}
+	requestedOffset, err := parseOptionalIntQuery(c, "offset")
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+	if requestedLimit != nil && *requestedLimit > nutsMaxLimit {
+		respondBadRequest(c, fmt.Sprintf("limit darf höchstens %d sein (für alle Zeilen limit=null)", nutsMaxLimit))
+		return
+	}
+	// Validated here, before any DB access; the limit=null cap is applied by
+	// pagination.resolve once total is counted below.
+	pagination, err := parsePagination(c, 100, derefInt(requestedLimit), derefInt(requestedOffset), limitNull)
 	if err != nil {
 		respondBadRequest(c, err.Error())
 		return
@@ -160,6 +190,7 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 
 	result := make([]models.NutsRegionSummary, 0)
 	total := 0
+	levelDetailsList := make([]nutsLevelDetails, 0, len(levels))
 
 	for _, lvl := range levels {
 		levelDetails, err := nutsLevelDetailsFromLevel(lvl)
@@ -170,19 +201,32 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 			})
 			return
 		}
+		levelDetailsList = append(levelDetailsList, levelDetails)
 
 		var cnt int
-		if err := h.DB.QueryRow(buildQuery(levelDetails.Table, true)).Scan(&cnt); err != nil {
-			respondInternalError(c, fmt.Sprintf("Datenbankfehler (Level %d): %v", lvl, err))
+		if err := h.DB.QueryRowContext(c.Request.Context(), buildQuery(levelDetails.Table, true)).Scan(&cnt); err != nil {
+			respondDBError(c, fmt.Sprintf("Datenbankfehler (Level %d)", lvl), err)
 			return
 		}
 		total += cnt
+	}
 
+	// Pagination applies per level, so total-offset is an upper bound of the
+	// rows a limit=null request returns. With chunk_size the response is paged
+	// and the cap does not apply (resolve).
+	limit, offset, err := pagination.resolve(total)
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
+
+	for _, levelDetails := range levelDetailsList {
+		lvl := levelDetails.Number
 		rows := []dbRow{}
 		query := buildQuery(levelDetails.Table, false)
 		paginationQuery, paginationArgs := applyPaginationClause(query, 1, limit, offset)
-		if err := h.DB.Select(&rows, paginationQuery, paginationArgs...); err != nil {
-			respondInternalError(c, fmt.Sprintf("Datenbankfehler (Level %d): %v", lvl, err))
+		if err := h.DB.SelectContext(c.Request.Context(), &rows, paginationQuery, paginationArgs...); err != nil {
+			respondDBError(c, fmt.Sprintf("Datenbankfehler (Level %d)", lvl), err)
 			return
 		}
 
@@ -207,7 +251,7 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 	})
 }
 
-// GetNutsRegionData gibt alle Indikatoren für eine NUTS-Region zurück (Level 0–3)
+// GetNutsRegionData returns all indicators for a NUTS region (levels 0-3)
 // @Summary Alle Indikatoren für eine NUTS-Region (Level 0–3)
 // @Description Gibt Bevölkerung, Schuldnerquote und Arbeitslosenzahlen für eine NUTS-Region zurück. Das NUTS-Level wird automatisch anhand der Code-Länge erkannt: 2 Zeichen = NUTS-0 (Land), 3 = NUTS-1 (Bundesland), 4 = NUTS-2 (Regierungsbezirk), 5 = NUTS-3 (Kreis). Standard: neuestes verfügbares Jahr. Mit ?all=true: Zeitreihe aller Jahre. Mit ?year=YYYY: bestimmtes Jahr. Mit ?part=metadata werden nur Geo-Metadaten zurückgegeben, mit ?part=socioeconomic nur die sozioökonomischen Daten.
 // @Tags NUTS
@@ -228,7 +272,11 @@ func (h *Handler) GetAllNutsRegions(c *gin.Context) {
 // @Router /nuts/{nuts_id} [get]
 func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	nutsID := c.Param("nuts_id")
-	yearStr := c.Query("year")
+	year, err := parseOptionalIntQuery(c, "year")
+	if err != nil {
+		respondBadRequest(c, err.Error())
+		return
+	}
 	allStr := c.Query("all")
 	partStr := c.Query("part")
 	includeDatasets := c.Query("include_datasets") == "true"
@@ -279,17 +327,18 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		return
 	}
 
-	const selectCols = `nuts_id, region_name, year, CAST(geodata_id_ars AS text) AS geodata_id_ars, bevoelkerung, schuldnerquote_prozent, arbeitslose, yoy_change_percent`
+	selectCols := `nuts_id, region_name, year, CAST(geodata_id_ars AS text) AS geodata_id_ars, bevoelkerung, schuldnerquote_prozent, arbeitslose, yoy_change_percent`
+	if levelDetails.Number < 3 {
+		// Coverage flags exist only on the NUTS-0/1/2 roll-ups (NUTS-3 is not aggregated).
+		selectCols += `, expected_region_count, bevoelkerung_is_complete, arbeitslose_is_complete`
+	}
 	fromClause := ` FROM ` + levelDetails.Table + ` WHERE nuts_id = $1`
 
 	if allStr == "true" {
 		query := `SELECT ` + selectCols + fromClause + ` ORDER BY year DESC`
 		rows := []models.NutsRegionData{}
-		if err := h.DB.Select(&rows, query, levelDetails.NormalizedID); err != nil {
-			c.JSON(http.StatusInternalServerError, models.APIResponse{
-				Success: false,
-				Error:   fmt.Sprintf("Datenbankfehler: %v", err),
-			})
+		if err := h.DB.SelectContext(c.Request.Context(), &rows, query, levelDetails.NormalizedID); err != nil {
+			respondDBError(c, "Datenbankfehler", err)
 			return
 		}
 		if len(rows) == 0 {
@@ -308,13 +357,17 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 				SchuldnerquoteProzent: record.SchuldnerquoteProzent,
 				Arbeitslose:           record.Arbeitslose,
 				YoYChangePercent:      record.YoYChangePercent,
+
+				ExpectedRegionCount:    record.ExpectedRegionCount,
+				BevoelkerungIsComplete: record.BevoelkerungComplete,
+				ArbeitsloseIsComplete:  record.ArbeitsloseComplete,
 			})
 		}
 
 		metadata := nutsMetadata(levelDetails, rows[0].RegionName, rows[0].GeodataIDArs)
-		geometryWGS84, hasValidGeometry, err := h.lookupNutsGeometry(levelDetails.NormalizedID, geometryYear)
+		geometryWGS84, hasValidGeometry, err := h.lookupNutsGeometry(c.Request.Context(), levelDetails.NormalizedID, geometryYear)
 		if err != nil {
-			respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+			respondDBError(c, "Datenbankfehler", err)
 			return
 		}
 		metadata.GeometryWGS84 = geometryWGS84
@@ -325,7 +378,9 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		}
 
 		if includeDatasets {
-			if datasets, dsErr := h.regionNutsDatasets(levelDetails.NormalizedID, levelDetails.Number); dsErr == nil {
+			if datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), levelDetails.NormalizedID, levelDetails.Number); dsErr != nil {
+				logDatasetsError(c, "nuts", dsErr)
+			} else {
 				response.Datasets = datasets
 			}
 		}
@@ -343,33 +398,30 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 
 	query := `SELECT ` + selectCols + fromClause
 	args := []interface{}{levelDetails.NormalizedID}
-	if yearStr != "" {
+	if year != nil {
 		query += ` AND year = $2`
-		args = append(args, yearStr)
+		args = append(args, *year)
 	} else {
 		query += ` ORDER BY year DESC LIMIT 1`
 	}
 
 	var row models.NutsRegionData
-	if err := h.DB.Get(&row, query, args...); err != nil {
-		if err.Error() == "sql: no rows in result set" {
+	if err := h.DB.GetContext(c.Request.Context(), &row, query, args...); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
 			c.JSON(http.StatusNotFound, models.APIResponse{
 				Success: false,
 				Error:   "Keine Daten für diese NUTS-Region gefunden",
 			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, models.APIResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Datenbankfehler: %v", err),
-		})
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
 	metadata := nutsMetadata(levelDetails, row.RegionName, row.GeodataIDArs)
-	geometryWGS84, hasValidGeometry, err := h.lookupNutsGeometry(levelDetails.NormalizedID, geometryYear)
+	geometryWGS84, hasValidGeometry, err := h.lookupNutsGeometry(c.Request.Context(), levelDetails.NormalizedID, geometryYear)
 	if err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 	metadata.GeometryWGS84 = geometryWGS84
@@ -380,6 +432,10 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		SchuldnerquoteProzent: row.SchuldnerquoteProzent,
 		Arbeitslose:           row.Arbeitslose,
 		YoYChangePercent:      row.YoYChangePercent,
+
+		ExpectedRegionCount:    row.ExpectedRegionCount,
+		BevoelkerungIsComplete: row.BevoelkerungComplete,
+		ArbeitsloseIsComplete:  row.ArbeitsloseComplete,
 	}
 	response := models.NutsRegionResponse{
 		Metadata:      metadata,
@@ -387,7 +443,9 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	}
 
 	if includeDatasets {
-		if datasets, dsErr := h.regionNutsDatasets(levelDetails.NormalizedID, levelDetails.Number); dsErr == nil {
+		if datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), levelDetails.NormalizedID, levelDetails.Number); dsErr != nil {
+			logDatasetsError(c, "nuts", dsErr)
+		} else {
 			response.Datasets = datasets
 		}
 	}
@@ -402,7 +460,7 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	c.JSON(http.StatusOK, models.APIResponse{Success: true, Data: response})
 }
 
-// GetNutsRegionVersions gibt alle Geometrie-Perioden einer NUTS-Region zurück
+// GetNutsRegionVersions returns all geometry periods of a NUTS region
 // @Summary Geometrie-Perioden einer NUTS-Region
 // @Description Gibt alle Geometrie-Perioden (valid_from/valid_to) einer NUTS-Region aus der historisierten Geometrietabelle zurück (neueste zuerst). valid_to=null bedeutet noch aktuell.
 // @Tags NUTS
@@ -438,11 +496,8 @@ func (h *Handler) GetNutsRegionVersions(c *gin.Context) {
 		FROM transformed_data.mart_nuts_geometry_historized
 		WHERE nuts_id = $1
 		ORDER BY valid_from DESC`
-	if err := h.DB.Select(&periods, query, levelDetails.NormalizedID); err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponse{
-			Success: false,
-			Error:   fmt.Sprintf("Datenbankfehler: %v", err),
-		})
+	if err := h.DB.SelectContext(c.Request.Context(), &periods, query, levelDetails.NormalizedID); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -465,7 +520,7 @@ func (h *Handler) GetNutsRegionVersions(c *gin.Context) {
 	})
 }
 
-// GetNutsLauAggregate gibt die auf NUTS-3-Ebene hochaggregierten LAU-Werte (Gemeinden) einer Kreis-Region zurück
+// GetNutsLauAggregate returns the LAU values (Gemeinden) of a Kreis region aggregated to NUTS-3 level
 // @Summary Auf NUTS-3-Ebene aggregierte LAU-Werte (Gemeinden)
 // @Description Gibt eine Zeitreihe der auf diesen Kreis hochaggregierten Gemeinde-Werte zurück (Bevölkerungssumme, Anzahl zugeordneter Gemeinden, bevölkerungsgewichtete Beschäftigungsquote) - als Ergänzung/Cross-Check zu den nativen Kreis-Werten aus GET /nuts/{nuts_id}. Nur für NUTS-3-IDs (5 Zeichen) gültig.
 // @Tags NUTS
@@ -498,12 +553,12 @@ func (h *Handler) GetNutsLauAggregate(c *gin.Context) {
 	}
 
 	series := []models.NutsLauAggregatePoint{}
-	query := `SELECT year, lau_population_sum, lau_region_count, lau_region_count_with_population, lau_beschaeftigungsquote_weighted_avg
+	query := `SELECT year, lau_population_sum, lau_region_count, lau_region_count_with_population, lau_beschaeftigungsquote_weighted_avg, lau_beschaeftigungsquote_region_count
 		FROM transformed_data.mart_nuts3_lau_aggregate
 		WHERE nuts3_id = $1
 		ORDER BY year DESC`
-	if err := h.DB.Select(&series, query, levelDetails.NormalizedID); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &series, query, levelDetails.NormalizedID); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -518,9 +573,9 @@ func (h *Handler) GetNutsLauAggregate(c *gin.Context) {
 	}, series, nil)
 }
 
-// GetNutsDatasetAggregateTimeseries gibt eine auf NUTS-0/1/2-Ebene hochaggregierte Zeitreihe eines Kreis-grain-Datensatzes zurück
+// GetNutsDatasetAggregateTimeseries returns a Kreis-grain dataset's time series aggregated to NUTS-0/1/2 level
 // @Summary Auf NUTS-0/1/2-Ebene aggregierte Datensatz-Zeitreihe
-// @Description Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) auf Land-/Bundesland-/Regierungsbezirksebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, siehe mart_nuts012_dataset_aggregate). Pendant zu GET /{slug}/timeseries für NUTS-3, das für Level 0-2 keine Kreis-Zeilen findet. Nur für NUTS-0/1/2-IDs (2-4 Zeichen) gültig; für Kreise (NUTS-3) GET /{slug}/timeseries verwenden.
+// @Description Aggregiert einen Kreis-grain-Soziodata-Datensatz (siehe GET /nuts/{nuts_id}/datasets) auf Land-/Bundesland-/Regierungsbezirksebene hoch (Summe bzw. bevölkerungsgewichteter Durchschnitt je nach Datensatz, bei Werten je Erwerbstätigen erwerbstätigengewichtet, siehe mart_nuts012_dataset_aggregate). Pendant zu GET /{slug}/timeseries für NUTS-3, das für Level 0-2 keine Kreis-Zeilen findet. Nur für NUTS-0/1/2-IDs (2-4 Zeichen) gültig; für Kreise (NUTS-3) GET /{slug}/timeseries verwenden.
 // @Tags NUTS
 // @Accept json
 // @Produce json,text/csv
@@ -558,12 +613,12 @@ func (h *Handler) GetNutsDatasetAggregateTimeseries(c *gin.Context) {
 	}
 
 	points := []models.NutsDatasetAggregatePoint{}
-	query := `SELECT nuts_id, dataset_slug, year, value, source_region_count, true AS is_computed
+	query := `SELECT nuts_id, dataset_slug, year, value, source_region_count, expected_region_count, is_complete, true AS is_computed
 		FROM transformed_data.mart_nuts012_dataset_aggregate
 		WHERE nuts_id = $1 AND dataset_slug = $2
 		ORDER BY year DESC`
-	if err := h.DB.Select(&points, query, levelDetails.NormalizedID, cfg.RouteSlug); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &points, query, levelDetails.NormalizedID, cfg.RouteSlug); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 

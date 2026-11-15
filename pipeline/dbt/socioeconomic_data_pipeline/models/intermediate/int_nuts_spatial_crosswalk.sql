@@ -10,44 +10,42 @@
 }}
 
 /*
-  Räumliche Schnittmengen zwischen NUTS-3-Versionen (nur Deutschland).
+  Spatial intersections between NUTS-3 versions (Germany only).
 
-  Für JEDES Paar unterschiedlicher Vintage-Jahre, die in stg_nuts_geometry
-  vorkommen (aktuell 2003, 2006, 2010, 2013, 2016, 2021, 2024), wird direkt
-  berechnet, welcher Flächenanteil einer Quell-Region in jede Ziel-Region
-  fällt - nicht nur für benachbarte Versionen. Das macht mart_nuts_version_
-  crosswalk unabhängig von einer Hop-Verkettung über Zwischenversionen:
-  jedes Versionspaar hat hier bereits eine direkte, einstufige Schnittmenge,
-  auch z. B. 2003→2024. Eine direkte Schnittmenge ist zudem genauer als eine
-  Verkettung mehrerer Zwischenschritte, da sich dort Rundungs-/Gewichtungs-
-  fehler pro Hop aufsummieren würden.
+  For EVERY pair of different vintage years in stg_nuts_geometry (currently
+  2003, 2006, 2010, 2013, 2016, 2021, 2024), the area share of a source
+  region falling into each target region is computed directly - not just
+  for adjacent versions. This makes mart_nuts_version_crosswalk independent
+  of hop chaining over intermediate versions (e.g. 2003 -> 2024 is a direct
+  intersection) and more accurate, since chaining would accumulate
+  rounding/weighting errors per hop.
 
     area_fraction = ST_Area(source ∩ target) / ST_Area(source)
 
-  Schwellwert > 1 %: schließt reine Randberührungen aus und
-  filtert numerische Ungenauigkeiten bei identischen Grenzen heraus.
+  Threshold > 1 %: excludes pure boundary touches and numerical noise at
+  identical borders.
 
-  Diese Tabelle ist die rein geometrische Grundlage; die Bevölkerungsgewichtung
-  erfolgt im nächsten Schritt (mart_nuts_version_crosswalk).
+  Purely the geometric basis; population weighting happens in
+  mart_nuts_version_crosswalk.
+
+  Reads int_nuts3_de_geometry (materialized, GiST-indexed) instead of the
+  stg_nuts_geometry view, so the spatial self-join can use the index.
 */
 
 with nuts_de as (
     select
         nuts_id,
-        year            as version_year,
+        version_year,
         geometry_3035
-    from {{ ref('stg_nuts_geometry') }}
-    where levl_code        = 3
-      and country_code     = 'DE'
-      and has_valid_geometry
+    from {{ ref('int_nuts3_de_geometry') }}
 ),
 
 version_years as (
     select distinct version_year from nuts_de
 ),
 
--- Alle gerichteten Versionspaare (jedes Jahr → jedes andere Jahr), nicht nur
--- benachbarte Vintages.
+-- All directed version pairs (every year -> every other year), not just
+-- adjacent vintages.
 version_pairs as (
     select
         a.version_year as source_version,

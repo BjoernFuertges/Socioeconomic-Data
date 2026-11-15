@@ -9,25 +9,23 @@
 }}
 
 /*
-  Quelldaten aller meta.yaml-basierten Datensätze (Kreis- und Gemeinde-
-  Ebene) in einem einheitlichen Long-Format, für den Download über
-  GET /datasets/{slug}/source.
+  Source data of all meta.yaml-based datasets (Kreis and Gemeinde level) in
+  one uniform long format, for the download via GET /datasets/{slug}/source.
 
-  Es sind die Werte, wie sie aus dem geo-mapper-Teilprojekt kommen
-  (mapped_pairs.csv -> loaded_data), unverändert: keine NUTS-Harmonisierung,
-  keine Interpolation, keine Aggregation. Das Mapping beschränkt sich auf
-  die Zuordnung der Regionsnamen zu den Geodaten-IDs (geodata_id_*, mapper,
-  parameter). Damit lässt sich jeder Wert der harmonisierten Marts auf
-  seine Eingabe zurückführen.
+  These are the values exactly as they come from the geo-mapper subproject
+  (mapped_pairs.csv -> loaded_data): no NUTS harmonization, no
+  interpolation, no aggregation. The mapping is limited to assigning region
+  names to geodata IDs (geodata_id_*, mapper, parameter). This lets every
+  value of the harmonized marts be traced back to its input.
 
-  Liest bewusst aus loaded_data (aktueller Stand, wie ihn dlt zuletzt
-  geladen hat), nicht aus den Snapshots - die Historie bleibt Sache der
-  Snapshots. Nicht enthalten: arbeitslosenzahlen-afa-agenturbezirke (eigene
-  Struktur mit Monatswerten, über /agenturbezirke abrufbar) sowie die
-  abgeleiteten Slugs (beschaeftigungsquote-nuts3, lau_*, ba_*).
+  Deliberately reads from loaded_data (the state dlt last loaded), not from
+  the snapshots - history is the snapshots' job. Not included:
+  arbeitslosenzahlen-afa-agenturbezirke (own structure with monthly values,
+  available via /agenturbezirke) and the derived slugs
+  (beschaeftigungsquote-nuts3, lau_*, ba_*).
 
-  Neuer Kreis-/Gemeinden-Datensatz -> hier einen Eintrag in source_datasets
-  ergänzen (analog mart_nuts3_sociodata_harmonized.sql).
+  New Kreis/Gemeinde dataset -> add an entry to source_datasets here
+  (analogous to mart_nuts3_sociodata_harmonized.sql).
 */
 
 {% set source_datasets = [
@@ -44,6 +42,7 @@
     {'slug': 'schuldnerquote',                     'table': 'results_schuldnerquote_kreise'},
     {'slug': 'sgb_ii_quote',                       'table': 'results_sgb_ii_quote_kreise'},
     {'slug': 'studierende',                        'table': 'results_studierende_kreise'},
+    {'slug': 'sv_beschaeftigte',                   'table': 'results_sv_beschaeftigte_kreise'},
     {'slug': 'wohngeldhaushalte',                  'table': 'results_wohngeldhaushalte_kreise'},
 ] %}
 
@@ -52,7 +51,7 @@
 {% set cols = adapter.get_columns_in_relation(rel) | map(attribute='name') | map('lower') | list %}
 select
     '{{ ds.slug }}'::text as dataset_slug,
-    regexp_replace(cast(original_id_1 as text), '\\.0+$', '') as original_id_1,
+    regexp_replace(cast(original_id_1 as text), '\.0+$', '') as original_id_1,
     original_name,
     geodata_name,
     {% if 'geodata_id_nuts' in cols %}nullif(cast(geodata_id_nuts as text), ''){% else %}null::text{% endif %} as geodata_id_nuts,

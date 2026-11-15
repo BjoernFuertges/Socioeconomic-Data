@@ -9,17 +9,14 @@
 }}
 
 /*
-  Genau eine repräsentative Geometrie je deutscher gisco_id (die jeweils
-  letzte bekannte Periode aus mart_lau_geometry_historized).
+  Exactly one representative geometry per German gisco_id (the latest known
+  period from mart_lau_geometry_historized).
 
-  Eigenständiges Modell (statt CTE), damit int_lau_spatial_crosswalk.sql
-  diese Tabelle zweimal referenzieren kann, ohne dass Postgres sie
-  materialisiert und dabei den GiST-Index verliert (eine CTE, die zweimal
-  referenziert wird, materialisiert Postgres >= v12 als eigenständiges,
-  unindiziertes Zwischenergebnis - eine echte Tabelle mit eigenem Index ist
-  davon nicht betroffen). Siehe Kommentar in int_lau_spatial_crosswalk.sql
-  für die Begründung, warum nur eine Geometrie je gisco_id (statt aller
-  Perioden) verwendet wird.
+  A standalone model rather than a CTE so int_lau_spatial_crosswalk.sql can
+  reference this table twice while keeping its GiST index (Postgres >= 12
+  materializes a CTE referenced twice as an unindexed intermediate result).
+  See int_lau_spatial_crosswalk.sql for why only one geometry per gisco_id
+  is used.
 */
 
 select distinct on (gisco_id)

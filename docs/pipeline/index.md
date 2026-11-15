@@ -28,8 +28,11 @@ See [`pipeline/dlt/run_all_pipelines.sh`](https://github.com/BjoernFuertges/Soci
 1. All dlt scripts run (unemployment figures, geodata, generic
    socioeconomic datasets) → populate `loaded_data`.
 2. `dbt deps` – install packages (`dbt_utils`).
-3. `dbt snapshot` – advance historized snapshots from `loaded_data`.
-4. `dbt run` – rebuild staging/intermediate/marts.
+3. `dbt test --select source:loaded_data --indirect-selection=cautious` – source tests (e.g. unique
+   `(geodata_id_nuts, year)`); a failure aborts the run before the snapshot,
+   which would otherwise hide key collisions.
+4. `dbt snapshot` – advance historized snapshots from `loaded_data`.
+5. `dbt run` – rebuild staging/intermediate/marts.
 
 In production this happens inside the `pipeline` container (see
 [Backend deployment](../backend/deployment.md#manually-running-a-changed-pipeline-on-the-server)).

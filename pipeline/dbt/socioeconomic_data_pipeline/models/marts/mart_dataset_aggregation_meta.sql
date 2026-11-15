@@ -6,45 +6,53 @@
 }}
 
 /*
-  Aggregationsmetadaten je Indikator für die Custom-Region-Abfrage
-  (POST /custom-regions/dataset-aggregate). Eine Zeile je (dataset_slug,
+  Aggregation metadata per indicator for the custom-region query
+  (POST /custom-regions/dataset-aggregate). One row per (dataset_slug,
   indicator):
 
-    level        - Ebene der Quelldaten: 'lau' | 'nuts3' | 'agentur'
-    measure_type - 'sum' (Zählgröße) | 'weighted_avg' (Quote/Durchschnitt)
-    kind         - 'count' | 'rate' | 'mean' | 'median' (Kennzeichnung der
-                   Näherung, gleiche Bedeutung wie in
+    level        - level of the source data: 'lau' | 'nuts3' | 'agentur'
+    measure_type - 'sum' (count) | 'weighted_avg' (ratio/average) |
+                   'weighted_avg_employees' (value per employed person,
+                   weighted by employees; see custom_region.go)
+    employee_slug - only for 'weighted_avg_employees': the employee-count
+                   dataset used as weight (default
+                   erwerbstaetige_pro_1000_einwohner; auszubildende, per
+                   1,000 SV-Beschaeftigte: sv_beschaeftigte). Read by
+                   mart_custom_region_unit_values to fill its employees
+                   column per dataset.
+    kind         - 'count' | 'rate' | 'mean' | 'median' (labels the
+                   approximation, same meaning as in
                    mart_agentur_dataset_aggregate)
-    finer_slug   - Slug desselben Indikators auf feinerer Ebene, falls es
-                   einen gibt (nuts3 -> lau). Das Backend nimmt die feinere
-                   Variante, sofern sie für die Region Daten hat, sonst diese.
+    finer_slug   - slug of the same indicator at a finer level, if there is
+                   one (nuts3 -> lau). The backend uses the finer variant if
+                   it has data for the region, otherwise this one.
 
-  Die NUTS-3-Liste muss inhaltlich mit den source_datasets in
+  The NUTS-3 list must match the source_datasets in
   mart_nuts3_sociodata_harmonized.sql / mart_agentur_dataset_aggregate.sql
-  übereinstimmen (dort autoritativ, hier dupliziert - gleiches Muster wie
-  in den anderen Aggregat-Marts). Die LAU-Zeile mit
-  mart_lau_sociodata_harmonized.sql.
+  (authoritative there, duplicated here - same pattern as in the other
+  aggregate marts). The LAU row mirrors mart_lau_sociodata_harmonized.sql.
 
-  Agenturbezirke sind nur in Berlin feiner als NUTS-3. Die monatlichen
-  BA-Zahlen existieren aber ausschließlich auf Agenturbezirks-Ebene (keine
-  NUTS-3-Entsprechung), deshalb ist 'agentur' hier deren einzige Quelle -
-  unabhängig vom Bundesland.
+  Agenturbezirke are only finer than NUTS-3 in Berlin. The monthly BA
+  figures, however, exist only at Agenturbezirk level (no NUTS-3
+  counterpart), so 'agentur' is their only source here - regardless of
+  Bundesland.
 */
 
 {% set nuts3_datasets = [
     {'slug': 'arbeitslose', 'measure_type': 'sum', 'kind': 'count'},
-    {'slug': 'arbeitsvolumen', 'measure_type': 'sum', 'kind': 'count'},
-    {'slug': 'auszubildende', 'measure_type': 'sum', 'kind': 'count'},
+    {'slug': 'arbeitsvolumen', 'measure_type': 'weighted_avg_employees', 'kind': 'mean'},
+    {'slug': 'auszubildende', 'measure_type': 'weighted_avg_employees', 'employee_slug': 'sv_beschaeftigte', 'kind': 'rate'},
     {'slug': 'bevoelkerung', 'measure_type': 'sum', 'kind': 'count'},
-    {'slug': 'bruttoverdienst', 'measure_type': 'weighted_avg', 'kind': 'mean'},
+    {'slug': 'bruttoverdienst', 'measure_type': 'weighted_avg_employees', 'kind': 'mean'},
     {'slug': 'durchschnittsalter', 'measure_type': 'weighted_avg', 'kind': 'mean'},
-    {'slug': 'erwerbstaetige_pro_1000_einwohner', 'measure_type': 'weighted_avg', 'kind': 'rate'},
+    {'slug': 'erwerbstaetige_pro_1000_einwohner', 'measure_type': 'sum', 'kind': 'count'},
     {'slug': 'kinderarmut', 'measure_type': 'weighted_avg', 'kind': 'rate'},
     {'slug': 'medianeinkommen', 'measure_type': 'weighted_avg', 'kind': 'median'},
     {'slug': 'schuldnerquote', 'measure_type': 'weighted_avg', 'kind': 'rate'},
     {'slug': 'sgb_ii_quote', 'measure_type': 'weighted_avg', 'kind': 'rate'},
-    {'slug': 'studierende', 'measure_type': 'sum', 'kind': 'count'},
-    {'slug': 'wohngeldhaushalte', 'measure_type': 'sum', 'kind': 'count'},
+    {'slug': 'studierende', 'measure_type': 'weighted_avg', 'kind': 'rate'},
+    {'slug': 'sv_beschaeftigte', 'measure_type': 'sum', 'kind': 'count'},
+    {'slug': 'wohngeldhaushalte', 'measure_type': 'weighted_avg', 'kind': 'rate'},
     {'slug': 'beschaeftigungsquote-nuts3', 'measure_type': 'weighted_avg', 'kind': 'rate', 'finer_slug': 'beschaeftigungsquote-gemeinden'},
 ] %}
 
@@ -57,16 +65,19 @@
     {'slug': 'arbeitslosenzahlen-afa-agenturbezirke', 'indicator': 'unterbeschaeftigung', 'measure_type': 'sum', 'kind': 'count'},
 ] %}
 
+{% set default_employee_slug = 'erwerbstaetige_pro_1000_einwohner' %}
+
 select * from (
     values
     {% for ds in nuts3_datasets %}
         ('{{ ds.slug }}', '{{ ds.slug }}', 'nuts3', '{{ ds.measure_type }}', '{{ ds.kind }}',
-         {% if ds.finer_slug %}'{{ ds.finer_slug }}'{% else %}null{% endif %}),
+         {% if ds.finer_slug %}'{{ ds.finer_slug }}'{% else %}null{% endif %},
+         {% if ds.measure_type == 'weighted_avg_employees' %}'{{ ds.employee_slug or default_employee_slug }}'{% else %}null{% endif %}),
     {% endfor %}
     {% for ds in lau_datasets %}
-        ('{{ ds.slug }}', '{{ ds.slug }}', 'lau', '{{ ds.measure_type }}', '{{ ds.kind }}', null),
+        ('{{ ds.slug }}', '{{ ds.slug }}', 'lau', '{{ ds.measure_type }}', '{{ ds.kind }}', null, null),
     {% endfor %}
     {% for ds in agentur_datasets %}
-        ('{{ ds.slug }}', '{{ ds.indicator }}', 'agentur', '{{ ds.measure_type }}', '{{ ds.kind }}', null){% if not loop.last %},{% endif %}
+        ('{{ ds.slug }}', '{{ ds.indicator }}', 'agentur', '{{ ds.measure_type }}', '{{ ds.kind }}', null, null){% if not loop.last %},{% endif %}
     {% endfor %}
-) as t (dataset_slug, indicator, level, measure_type, kind, finer_slug)
+) as t (dataset_slug, indicator, level, measure_type, kind, finer_slug, employee_slug)

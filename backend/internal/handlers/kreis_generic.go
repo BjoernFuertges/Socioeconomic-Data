@@ -4,31 +4,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
-// supportedNutsVersions sind die NUTS-3-Zielversionen, für die
-// mart_nuts3_sociodata_harmonized / mart_nuts3_timeseries_interpolated
-// Zeilen führen (siehe target_versions dort). Muss manuell synchron
-// gehalten werden - analog zu harmonizedRouteSlugs in cmd/gen-models/main.go.
-var supportedNutsVersions = []int{2003, 2006, 2010, 2013, 2016, 2021, 2024}
+// Supported nuts_version values and the default (newest) come from the
+// harmonized marts at startup - see target_versions.go.
 
-// defaultNutsVersion ist die Zielversion, wenn nuts_version nicht gesetzt
-// ist - entspricht dem bisherigen (Vor-Multi-Version-)Verhalten.
-const defaultNutsVersion = 2024
-
-func isSupportedNutsVersion(v int) bool {
-	for _, sv := range supportedNutsVersions {
-		if sv == v {
-			return true
-		}
-	}
-	return false
-}
-
-// sozioKreisBaseColumns ist die SELECT-Spaltenliste gemeinsam für alle Kreis-Datensätze.
-// observation_date wird explizit als text gecastet, damit sqlx es in ein string-Feld scannen kann.
+// sozioKreisBaseColumns is the SELECT column list shared by all Kreis datasets.
+// observation_date is explicitly cast to text so sqlx can scan it into a string field.
 const sozioKreisBaseColumns = `d.original_id_1, d.original_name, d.geodata_name, d.geodata_id_nuts, ` +
 	`coalesce(` +
 	`nullif(to_jsonb(d)->>'geodata_id_lau', ''), ` +
@@ -38,8 +22,26 @@ const sozioKreisBaseColumns = `d.original_id_1, d.original_name, d.geodata_name,
 	`cast(d.geodata_id_ars as text) as geodata_id_ars, d.mapper, d.parameter, d.geodata_level, d.geodata_year, ` +
 	`d.year, d.observation_date::text, d.has_valid_value`
 
-// getKreisData ist der generische Handler-Kern für alle Kreis-Datensätze.
-// T muss SozioBaseData einbetten und alle cfg.ValueColumns via db-Tags mappen.
+// pointInTargetVersionClause returns an SQL condition restricting idColumn to
+// the NUTS-3 region whose geometry in target version `version` contains the
+// WGS84 point (lon,lat). Geometry periods in mart_nuts_geometry_historized are
+// matched like in the year-based branch (valid_from <= version <= valid_to).
+// Used with the harmonized series (fill_gaps / timeseries), whose IDs are
+// already expressed in the target version, so the whole series of that region
+// is returned irrespective of which boundary version each source row had.
+func pointInTargetVersionClause(idColumn string, argPos int) string {
+	return fmt.Sprintf(
+		` AND %s = (SELECT nuts_id FROM transformed_data.mart_nuts_geometry_historized `+
+			`WHERE levl_code = 3 AND has_valid_geometry `+
+			`AND valid_from <= $%d AND (valid_to IS NULL OR valid_to >= $%d) `+
+			`AND ST_Contains(geometry_3035, ST_Transform(ST_SetSRID(ST_Point($%d, $%d), 4326), 3035)) `+
+			`ORDER BY valid_from DESC LIMIT 1)`,
+		idColumn, argPos, argPos, argPos+1, argPos+2,
+	)
+}
+
+// getKreisData is the generic handler core for all Kreis datasets.
+// T must embed SozioBaseData and map all cfg.ValueColumns via db tags.
 func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConfig) {
 	limitNull := normalizeNullableLimitQuery(c)
 
@@ -66,26 +68,26 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 	schema := cfg.Schema
 	table := cfg.Table
 	extraColumns := ""
-	// nutsVersion/lauVersion != nil nur bei fill_gaps=true - der Filter unten
-	// greift dann gegen die api_*_fill_gaps-View, die (wie
+	// nutsVersion/lauVersion != nil only with fill_gaps=true - the filter below
+	// then applies to the api_*_fill_gaps view, which (like
 	// mart_nuts3_timeseries_interpolated / mart_lau_timeseries_interpolated)
-	// mehrere Zielversionen parallel führt. Ohne diesen Filter würde
-	// fill_gaps=true stillschweigend Zeilen aus allen Versionen mischen und
-	// unabhängig vom nuts_version/lau_version-Parameter des /timeseries-
-	// Endpoints laufen. Ein Datensatz ist immer nur entweder IsHarmonized
-	// (NUTS) oder IsHarmonizedLau, nie beides - siehe KreisDatasetConfig.
+	// carries several target versions in parallel. Without this filter,
+	// fill_gaps=true would silently mix rows from all versions and ignore the
+	// nuts_version/lau_version parameter of the /timeseries endpoint. A dataset
+	// is always either IsHarmonized (NUTS) or IsHarmonizedLau, never both - see
+	// KreisDatasetConfig.
 	var nutsVersion *int
 	var lauVersion *int
 	if filter.FillGaps {
 		table = cfg.InterpolatedTable
 		if cfg.IsHarmonizedLau {
 			extraColumns = ", d.is_interpolated, d.value_linear, d.value_peer_trend, d.n_peer_regions, d.lau_version"
-			v := defaultLauVersion
+			v := defaultLauVersion()
 			if filter.LauVersion != nil {
 				if !isSupportedLauVersion(*filter.LauVersion) {
 					respondBadRequest(c, fmt.Sprintf(
 						"lau_version %d wird nicht unterstützt (erlaubt: %v)",
-						*filter.LauVersion, supportedLauVersions,
+						*filter.LauVersion, supportedLauVersions(),
 					))
 					return
 				}
@@ -93,13 +95,13 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 			}
 			lauVersion = &v
 		} else {
-			extraColumns = ", d.is_interpolated, d.value_linear, d.value_peer_trend, d.n_peer_regions, d.nuts_version"
-			v := defaultNutsVersion
+			extraColumns = ", d.is_interpolated, d.is_estimated, d.value_linear, d.value_peer_trend, d.n_peer_regions, d.nuts_version"
+			v := defaultNutsVersion()
 			if filter.NutsVersion != nil {
 				if !isSupportedNutsVersion(*filter.NutsVersion) {
 					respondBadRequest(c, fmt.Sprintf(
 						"nuts_version %d wird nicht unterstützt (erlaubt: %v)",
-						*filter.NutsVersion, supportedNutsVersions,
+						*filter.NutsVersion, supportedNutsVersions(),
 					))
 					return
 				}
@@ -177,13 +179,18 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 			respondBadRequest(c, err.Error())
 			return
 		}
-		// Wenn ein konkretes Datenjahr angefragt wird, wird die Kreisgrenze
-		// verwendet, die in diesem Jahr gültig war (valid_from <= year <=
-		// valid_to). Ohne Jahresfilter gilt die jeweils neueste Geometrie
-		// (valid_to IS NULL). Damit ist sichergestellt, dass der Punkt-Filter
-		// dieselbe Geometrie-Version wie die Soziodaten selbst verwendet
-		// (vergleiche geodata_year in SozioBaseData).
-		if filter.Year != nil {
+		// fill_gaps=true (harmonized series): the point is resolved against the
+		// geometry of the target version (nuts_version, default newest); year,
+		// from_year and to_year then only restrict the years of that region's
+		// series. A concrete year does not switch the geometry here.
+		if nutsVersion != nil {
+			query += pointInTargetVersionClause("d.geodata_id_nuts", argPos)
+			args = append(args, *nutsVersion, lon, lat)
+			argPos += 3
+		} else if filter.Year != nil {
+			// Raw route with a concrete data year: the Kreis boundary valid in that
+			// year is used (valid_from <= year <= valid_to), matching the source
+			// rows of that year (geodata_year in SozioBaseData).
 			query += fmt.Sprintf(
 				` AND d.geodata_id_nuts = (`+
 					`SELECT nuts_id FROM transformed_data.mart_nuts_geometry_historized `+
@@ -196,6 +203,10 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 			args = append(args, *filter.Year, lon, lat)
 			argPos += 3
 		} else {
+			// Raw route without a year: the latest geometry applies (valid_to IS
+			// NULL) and from_year/to_year do not influence it, so rows of older
+			// boundary versions (other geodata_id_nuts) are NOT returned. Use
+			// fill_gaps=true (or /timeseries) for the complete series of the region.
 			query += fmt.Sprintf(
 				` AND d.geodata_id_nuts = (`+
 					`SELECT nuts_id FROM transformed_data.mart_nuts_geometry_historized `+
@@ -211,8 +222,8 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
 	var total int
-	if err := h.DB.QueryRow(countQuery, args...).Scan(&total); err != nil {
-		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+	if err := h.DB.QueryRowContext(c.Request.Context(), countQuery, args...).Scan(&total); err != nil {
+		respondDBError(c, "Fehler beim Zählen der Datensätze", err)
 		return
 	}
 
@@ -226,6 +237,7 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 		filter.Limit,
 		filter.Offset,
 		limitNull,
+		total,
 	)
 	if err != nil {
 		respondBadRequest(c, err.Error())
@@ -235,8 +247,8 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 	args = pagedArgs
 
 	data := make([]T, 0)
-	if err := h.DB.Select(&data, query, args...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &data, query, args...); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 
@@ -246,10 +258,9 @@ func getKreisData[T any](h *Handler, c *gin.Context, cfg models.KreisDatasetConf
 	})
 }
 
-// getKreisTimeseriesEndpoint liefert die typstabile Timeseries-Antwort für
-// harmonisierte Kreis-Datensätze. Der dedizierte Endpoint vermeidet, dass
-// dieselbe Route je nach Query-Parameter unterschiedliche Response-Schemata
-// zurückliefert.
+// getKreisTimeseriesEndpoint returns the type-stable time-series response for
+// harmonized Kreis datasets. The dedicated endpoint avoids the same route
+// returning different response schemas depending on query parameters.
 func getKreisTimeseriesEndpoint(h *Handler, c *gin.Context, cfg models.KreisDatasetConfig) {
 	limitNull := normalizeNullableLimitQuery(c)
 
@@ -262,14 +273,15 @@ func getKreisTimeseriesEndpoint(h *Handler, c *gin.Context, cfg models.KreisData
 	getKreisTimeseriesData(h, c, cfg, filter, limitNull)
 }
 
-// getKreisTimeseriesData liefert die lückenlose, interpolierte Zeitreihe aus
-// transformed_data.mart_nuts3_timeseries_interpolated statt der rohen
-// Kreis-Tabelle (fill_gaps=true). Fehlende Jahre werden dabei mit
-// is_interpolated + value_linear + value_peer_trend transparent gekennzeichnet
-// statt einfach zu fehlen. Unterstützt nur die Filter, die auf
-// mart_nuts3_timeseries_interpolated sinnvoll anwendbar sind
-// (geodata_id_nuts, nuts_parent_id, year, from_year, to_year); geodata_name-
-// und point-Filter erfordern die Originaldaten und werden abgelehnt.
+// getKreisTimeseriesData returns the gap-free, interpolated time series from
+// transformed_data.mart_nuts3_timeseries_interpolated instead of the raw
+// Kreis table (fill_gaps=true). Missing years are transparently flagged with
+// is_interpolated + value_linear + value_peer_trend instead of simply being
+// absent. Supports only the filters that are meaningful on
+// mart_nuts3_timeseries_interpolated (geodata_id_nuts, nuts_parent_id, year,
+// from_year, to_year, point); the geodata_name filter needs the original data
+// and is rejected. point is resolved against the geometry of the target
+// version (nuts_version) and returns that region's whole series.
 func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetConfig, filter models.SozioKreisFilter, limitNull bool) {
 	if !cfg.IsHarmonized {
 		respondBadRequest(c, fmt.Sprintf(
@@ -282,21 +294,17 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 		respondBadRequest(c, "geodata_name_contains wird in Kombination mit fill_gaps nicht unterstützt")
 		return
 	}
-	if strings.TrimSpace(filter.Point) != "" {
-		respondBadRequest(c, "point wird in Kombination mit fill_gaps nicht unterstützt")
-		return
-	}
-	if filter.GeodataIDNUTS == "" && filter.Year == nil && filter.FromYear == nil && filter.ToYear == nil {
-		respondBadRequest(c, "ohne geodata_id_nuts muss year, from_year oder to_year gesetzt sein, um die Anfrage einzugrenzen")
+	if filter.GeodataIDNUTS == "" && strings.TrimSpace(filter.Point) == "" && filter.Year == nil && filter.FromYear == nil && filter.ToYear == nil {
+		respondBadRequest(c, "ohne geodata_id_nuts oder point muss year, from_year oder to_year gesetzt sein, um die Anfrage einzugrenzen")
 		return
 	}
 
-	nutsVersion := defaultNutsVersion
+	nutsVersion := defaultNutsVersion()
 	if filter.NutsVersion != nil {
 		if !isSupportedNutsVersion(*filter.NutsVersion) {
 			respondBadRequest(c, fmt.Sprintf(
 				"nuts_version %d wird nicht unterstützt (erlaubt: %v)",
-				*filter.NutsVersion, supportedNutsVersions,
+				*filter.NutsVersion, supportedNutsVersions(),
 			))
 			return
 		}
@@ -307,7 +315,7 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 		filter.Limit = cfg.DefaultLimit
 	}
 
-	query := `SELECT nuts3_id, dataset_slug, target_version, year, value, is_interpolated, value_linear, value_peer_trend, n_peer_regions ` +
+	query := `SELECT nuts3_id, dataset_slug, target_version, year, value, is_interpolated, is_estimated, value_linear, value_peer_trend, n_peer_regions ` +
 		`FROM transformed_data.mart_nuts3_timeseries_interpolated WHERE dataset_slug = $1 AND target_version = $2`
 	args := []interface{}{cfg.RouteSlug, nutsVersion}
 	argPos := 3
@@ -323,6 +331,17 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 		query += fmt.Sprintf(" AND nuts3_id LIKE $%d", argPos)
 		args = append(args, normalizedParent+"%")
 		argPos++
+	}
+
+	if strings.TrimSpace(filter.Point) != "" {
+		lon, lat, err := parseLonLatPoint(filter.Point)
+		if err != nil {
+			respondBadRequest(c, err.Error())
+			return
+		}
+		query += pointInTargetVersionClause("nuts3_id", argPos)
+		args = append(args, nutsVersion, lon, lat)
+		argPos += 3
 	}
 
 	if filter.Year != nil {
@@ -345,8 +364,8 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 
 	countQuery := "SELECT COUNT(*) FROM (" + query + ") as cnt"
 	var total int
-	if err := h.DB.QueryRow(countQuery, args...).Scan(&total); err != nil {
-		respondInternalError(c, fmt.Sprintf("Fehler beim Zählen der Datensätze: %v", err))
+	if err := h.DB.QueryRowContext(c.Request.Context(), countQuery, args...).Scan(&total); err != nil {
+		respondDBError(c, "Fehler beim Zählen der Datensätze", err)
 		return
 	}
 
@@ -360,6 +379,7 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 		filter.Limit,
 		filter.Offset,
 		limitNull,
+		total,
 	)
 	if err != nil {
 		respondBadRequest(c, err.Error())
@@ -367,8 +387,8 @@ func getKreisTimeseriesData(h *Handler, c *gin.Context, cfg models.KreisDatasetC
 	}
 
 	points := make([]models.NutsTimeseriesPoint, 0)
-	if err := h.DB.Select(&points, pagedQuery, pagedArgs...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &points, pagedQuery, pagedArgs...); err != nil {
+		respondDBError(c, "Datenbankfehler", err)
 		return
 	}
 

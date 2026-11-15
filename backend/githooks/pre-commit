@@ -25,13 +25,17 @@ elif [ -f "$(go env GOPATH)/bin/swag" ]; then
 fi
 
 if [ -n "$SWAG_CMD" ]; then
-    $SWAG_CMD init -g cmd/soziodata/main.go -o ./docs --parseDependency --parseInternal
-    if [ $? -eq 0 ]; then
+    # Always use the flags: without them swag renames every definition
+    # (models.X instead of github_com_..._internal_models.X) and the diff of
+    # docs/ explodes. A failure here must stop the commit, not silently
+    # produce a differently named spec.
+    if $SWAG_CMD init -g cmd/soziodata/main.go -o ./docs --parseDependency --parseInternal; then
         echo -e "${GREEN} Swagger documentation generated successfully${NC}"
         # Stage the generated files
         git add docs/docs.go docs/swagger.json docs/swagger.yaml
     else
         echo -e "${RED} Failed to generate Swagger documentation${NC}"
+        echo -e "${RED} Fix swag (see backend/AGENTS.md) or commit with --no-verify and say so in the message.${NC}"
         exit 1
     fi
 else
@@ -41,11 +45,10 @@ fi
 
 # 2. Regenerate Go models if dbt schema YAMLs changed
 echo -e "\n${YELLOW} Checking for dbt schema changes...${NC}"
-if git diff --cached --name-only | grep -qE "pipeline/dbt/socioeconomic_data_pipeline/models/staging/stg_.*_kreise_schema\.yml"; then
+if git diff --cached --name-only | grep -qE "pipeline/dbt/socioeconomic_data_pipeline/models/staging/stg_.*_kreise_schema\.yml|backend/cmd/gen-models/"; then
     echo -e "${YELLOW} dbt schema changes detected – regenerating Go models...${NC}"
     cd "$(git rev-parse --show-toplevel)/backend/internal/models" || exit 1
-    go generate .
-    if [ $? -ne 0 ]; then
+    if ! go generate .; then
         echo -e "${RED} go generate failed${NC}"
         exit 1
     fi
@@ -62,8 +65,7 @@ fi
 
 # 3. Run Go tests (after potential regeneration)
 echo -e "\n${YELLOW} Running Go tests...${NC}"
-go test ./... -v
-if [ $? -eq 0 ]; then
+if go test ./...; then
     echo -e "${GREEN} All tests passed${NC}"
 else
     echo -e "${RED} Tests failed${NC}"

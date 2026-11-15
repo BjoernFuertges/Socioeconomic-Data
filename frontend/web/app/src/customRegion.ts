@@ -1,10 +1,10 @@
-// Clientseitige Vorprüfung einer eingefügten/hochgeladenen GeoJSON-Region,
-// bevor sie an POST /custom-regions/dataset-aggregate geht. Das Backend
-// validiert erneut (ST_MakeValid, Größenlimits) - hier geht es nur um
-// verständliche Fehlermeldungen bei den typischen Fehlern (falscher
-// Geometrietyp, vertauschte Koordinaten, projizierte statt WGS84-Koordinaten).
+// Client-side pre-check of a pasted/uploaded GeoJSON region before it goes to
+// POST /custom-regions/dataset-aggregate. The backend validates again
+// (ST_MakeValid, size limits); this only provides understandable error messages for
+// the typical mistakes (wrong geometry type, swapped coordinates, projected
+// instead of WGS84 coordinates).
 
-export const MAX_GEOJSON_BYTES = 5 * 1024 * 1024; // wie customRegionMaxBodyBytes im Backend
+export const MAX_GEOJSON_BYTES = 5 * 1024 * 1024; // matches customRegionMaxBodyBytes in the backend
 
 export type RegionGeometry = { type: "Polygon" | "MultiPolygon"; coordinates: unknown };
 
@@ -23,9 +23,9 @@ function extractGeometry(payload: any): any {
   return payload;
 }
 
-// Läuft über alle Koordinatenpaare und prüft den WGS84-Wertebereich.
-// Deutschland liegt bei lon ≈ 5–16, lat ≈ 47–55: ein Paar mit |x| > 90 in der
-// zweiten Position deutet auf vertauschte Achsen oder projizierte Koordinaten hin.
+// Walks all coordinate pairs and checks the WGS84 value range.
+// Germany is at lon ≈ 5–16, lat ≈ 47–55: a pair with |x| > 90 in the
+// second position indicates swapped axes or projected coordinates.
 function checkCoordinates(coords: unknown): string | null {
   if (!Array.isArray(coords)) return "coordinates ist ungültig.";
   if (typeof coords[0] === "number") {

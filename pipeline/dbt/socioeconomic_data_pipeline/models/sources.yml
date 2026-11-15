@@ -2,29 +2,29 @@ version: 2
 
 sources:
   - name: loaded_data
-    description: "Raw data loaded by DLT pipeline"
+    description: "Raw data loaded by the ingestion pipeline"
     schema: loaded_data
     tables:
       - name: lau_geometry
-        description: "LAU geometry data from GeoJSON files"
+        description: "LAU (municipality) boundaries from GISCO GeoJSON files"
         columns:
           - name: gisco_id
             description: "Unique LAU identifier from GISCO"
             tests:
               - not_null
           - name: year
-            description: "Year of the data"
+            description: "Boundary vintage year"
             tests:
               - not_null
           - name: geometry
-            description: "PostGIS geometry as WKT"
+            description: "Geometry as WKT"
           - name: lau_name
-            description: "Name of the LAU"
+            description: "Name of the LAU unit"
           - name: cntr_code
             description: "Country code"
           - name: nuts_3
-            description: "NUTS 3 region code"
-            
+            description: "NUTS-3 region code"
+
       - name: lau_population
         description: "LAU population data from CSV files"
         columns:
@@ -33,18 +33,18 @@ sources:
             tests:
               - not_null
           - name: year
-            description: "Year of the data"
+            description: "Reference year of the data"
             tests:
               - not_null
           - name: population
             description: "Total population"
           - name: lau_name
-            description: "Name of the LAU"
+            description: "Name of the LAU unit"
           - name: cntr_code
             description: "Country code"
 
       - name: nuts_geometry
-        description: "NUTS geometry data from GeoJSON files"
+        description: "NUTS region boundaries from GISCO GeoJSON files"
         columns:
           - name: nuts_id
             description: "Unique NUTS identifier from GISCO"
@@ -55,61 +55,70 @@ sources:
           - name: cntr_code
             description: "Country code"
           - name: nuts_name
-            description: "Region name from source"
+            description: "Region name from the source"
           - name: name_latn
-            description: "Latinized region name"
+            description: "Latinised region name"
           - name: year
             description: "Year of the geometry dataset"
             tests:
               - not_null
           - name: geometry
-            description: "PostGIS geometry as WKT"
-            
+            description: "Geometry as WKT"
+
       - name: agenturbezirk_geometry
-        description: "Grenzen aller ~146 Agenturbezirke der Bundesagentur für Arbeit (BA-Gebietsstruktur-Shapefile). Eigenständige Gebietsgliederung, nicht deckungsgleich mit NUTS/LAU/ARS."
+        description: "Boundaries of all approx. 146 employment agency districts (Agenturbezirke) of the Federal Employment Agency. Own district structure, not congruent with NUTS, LAU or ARS."
         columns:
           - name: ba_schl
-            description: "Amtlicher BA-Schlüssel des Agenturbezirks (z.B. '962' für AA Berlin Mitte)"
+            description: "Official BA key of the employment agency district (e.g. '962' for AA Berlin Mitte)"
             tests:
               - unique
               - not_null
           - name: name
-            description: "Name des Agenturbezirks"
+            description: "Name of the employment agency district"
             tests:
               - not_null
           - name: id_dwh
-            description: "Data-Warehouse-ID der Quelle"
+            description: "Source ID in the data warehouse"
           - name: valid_from
-            description: "Gültig-ab-Datum laut Shapefile"
+            description: "Valid-from date from the shapefile"
           - name: valid_to
-            description: "Gültig-bis-Datum laut Shapefile"
+            description: "Valid-to date from the shapefile"
           - name: geometry
-            description: "PostGIS-Geometrie als WKT (bereits nach WGS84/EPSG:4326 reprojiziert)"
+            description: "Geometry as WKT (already reprojected to WGS84 / EPSG:4326)"
 
       - name: results_arbeitslosenzahlen_afa_agenturbezirke
-        description: "Monatliche Arbeitslosen-/Unterbeschäftigungszahlen je Agenturbezirk, direkt von der Statistik der Bundesagentur für Arbeit (EckwerteZeitreiheALO-API)"
+        description: "Monthly unemployment and underemployment counts per employment agency district, published by the Federal Employment Agency statistics"
         columns:
           - name: geodata_id_agentur
-            description: "Amtlicher BA-Schlüssel des Agenturbezirks, verlinkt agenturbezirk_geometry.ba_schl"
+            description: "Official BA key of the employment agency district, links to agenturbezirk_geometry.ba_schl"
             tests:
               - not_null
           - name: geodata_name
-            description: "Name des Agenturbezirks"
+            description: "Name of the employment agency district"
           - name: year
-            description: "Jahr des Berichtsmonats"
+            description: "Year of the reporting month"
             tests:
               - not_null
           - name: month
-            description: "Monat des Berichtsmonats (1-12)"
+            description: "Month of the reporting period (1-12)"
             tests:
               - not_null
           - name: arbeitslose
-            description: "Anzahl Arbeitsloser im Berichtsmonat, null wenn statistisch gesperrt ('x' in der Quelle)"
+            description: "Number of unemployed persons in the reporting month; null if suppressed by the source ('x')"
           - name: unterbeschaeftigung
-            description: "Unterbeschäftigung (ohne Kurzarbeit) im Berichtsmonat, null wenn statistisch gesperrt"
+            description: "Underemployment (excluding short-time work) in the reporting month; null if statistically suppressed"
 
       - name: results_arbeitslose_kreise
-        description: "Arbeitslosenzahlen je Kreis – long format, ein Record pro Region und Jahr"
+        description: "Unemployment counts per district (Kreis), long format, one record per region and year"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -121,18 +130,18 @@ sources:
             tests:
               - not_null
           - name: value
-            description: "Anzahl Arbeitsloser"
+            description: "Number of unemployed persons"
 
       - name: dataset_metadata
-        description: "Provenance/license/description metadata for the generic (meta.yaml-driven) Kreis/Gemeinden datasets, one row per dataset_slug, upserted by load_soziodata_generic.py on every run"
+        description: "Provenance, license and description metadata for the generic Kreis/Gemeinden datasets, one row per dataset_slug, upserted on every load"
         columns:
           - name: dataset_slug
-            description: "Stable slug identifying the dataset, matches the dataset_slug used in mart_*_sociodata_harmonized/mart_socioeconomic_inventory"
+            description: "Stable slug identifying the dataset"
             tests:
               - unique
               - not_null
           - name: table_name
-            description: "loaded_data table this metadata belongs to (results_<dataset>_kreise/_gemeinden)"
+            description: "Source table this metadata belongs to (results_<dataset>_kreise / _gemeinden)"
           - name: name
             description: "Short display name"
           - name: description
@@ -144,11 +153,11 @@ sources:
           - name: source
             description: "Publisher / source series (provenance)"
           - name: license
-            description: "Data usage license, null if not yet researched"
+            description: "Data usage license; null if not yet researched"
           - name: license_url
-            description: "URL to the license text, null if not yet researched"
+            description: "URL to the license text; null if not yet researched"
           - name: algorithm
-            description: "Free-text note on how the value is computed/derived, if applicable"
+            description: "Free-text note on how the value is computed or derived, if applicable"
           - name: number_type
             description: "absolute or relative"
           - name: geodata_level
@@ -156,123 +165,151 @@ sources:
           - name: geodata_year
             description: "Reference year of the geodata used for mapping"
           - name: updated_at
-            description: "Timestamp of the last upsert"
+            description: "Timestamp of the last update"
 
       - name: results_bevoelkerung_kreise
-        description: "Bevölkerungsdaten je Kreis (Destatis) – long format, ein Record pro Region und Jahr"
+        description: "Population per district (Kreis), Destatis, long format, one record per region and year"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
-            description: "Amtlicher Regionalschlüssel (ARS) aus der Quelldatei"
+            description: "Official regional key (ARS) from the source file"
             tests:
               - not_null
           - name: original_name
-            description: "Regionsname aus der Quelldatei"
+            description: "Region name from the source file"
             tests:
               - not_null
           - name: geodata_name
-            description: "Gemappter Geodata-Name"
+            description: "Mapped geodata name"
           - name: geodata_id_nuts
-            description: "NUTS-3-Code der Region"
+            description: "NUTS-3 code of the region"
             tests:
               - not_null
           - name: geodata_id_ars
-            description: "Amtlicher Regionalschlüssel (ARS) nach Mapping"
+            description: "Official regional key (ARS) after mapping"
           - name: mapper
-            description: "Mapping-Methode"
+            description: "Mapping method"
           - name: parameter
-            description: "Mapping-Parameter"
+            description: "Mapping parameter"
           - name: year
-            description: "Jahr der Beobachtung"
+            description: "Year of observation"
             tests:
               - not_null
           - name: value
-            description: "Bevölkerungszahl (Einwohner gesamt)"
+            description: "Population count (total inhabitants)"
             tests:
               - not_null
           - name: geodata_level
-            description: "Geodata-Ebene (NUTS_3)"
+            description: "Geodata level (NUTS_3)"
           - name: geodata_year
-            description: "Referenzjahr der Geodaten"
+            description: "Reference year of the geodata"
           - name: dataset_name
-            description: "Name des Datensatzes (results_bevoelkerung_kreise)"
+            description: "Dataset name (results_bevoelkerung_kreise)"
 
       - name: results_beschaeftigungsquote_gemeinden
-        description: "Beschäftigungsquote je Gemeinde (LAU) – long format, ein Record pro Gemeinde und Jahr (%)"
+        description: "Employment rate per municipality (LAU), long format, one record per municipality and year (%)"
         columns:
           - name: original_id_1
-            description: "Gemeinde-ID (LAU-Identifikation)"
+            description: "Municipality ID (LAU identifier)"
             tests:
               - not_null
           - name: original_name
-            description: "Gemeindename aus der Quelldatei"
+            description: "Municipality name from the source file"
             tests:
               - not_null
           - name: geodata_name
-            description: "Gemappter Geodata-Name"
+            description: "Mapped geodata name"
           - name: geodata_id_nuts
-            description: "NUTS-3-Code der Region (kann null sein für Gemeinden ohne NUTS-3-Mapping)"
+            description: "NUTS-3 code of the region (may be null for municipalities without a NUTS-3 mapping)"
           - name: geodata_id_lau
-            description: "Gemappte LAU-ID der Gemeinde"
+            description: "Mapped LAU ID of the municipality"
           - name: geodata_id_ars
-            description: "Amtlicher Regionalschlüssel nach Mapping"
+            description: "Official regional key after mapping"
           - name: mapper
-            description: "Mapping-Methode"
+            description: "Mapping method"
           - name: parameter
-            description: "Mapping-Parameter"
+            description: "Mapping parameter"
           - name: year
-            description: "Jahr der Beobachtung"
+            description: "Year of observation"
             tests:
               - not_null
           - name: value
-            description: "Beschäftigungsquote in Prozent (0–100)"
+            description: "Employment rate in percent (0-100)"
             tests:
               - not_null
           - name: geodata_level
-            description: "Geodata-Ebene (LAU für Gemeinden)"
+            description: "Geodata level (LAU for municipalities)"
           - name: geodata_year
-            description: "Referenzjahr der Geodaten"
+            description: "Reference year of the geodata"
           - name: dataset_name
-            description: "Name des Datensatzes (results_beschaeftigungsquote_gemeinden)"
+            description: "Dataset name (results_beschaeftigungsquote_gemeinden)"
+
       - name: results_schuldnerquote_kreise
-        description: "Schuldnerquote je Kreis (Creditreform) – long format, ein Record pro Region und Jahr"
+        description: "Debtor quota per district (Kreis), Creditreform, long format, one record per region and year"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
-            description: "Amtlicher Regionalschlüssel aus der Quelldatei"
+            description: "Official regional key from the source file"
             tests:
               - not_null
           - name: original_name
-            description: "Regionsname aus der Quelldatei"
+            description: "Region name from the source file"
             tests:
               - not_null
           - name: geodata_name
-            description: "Gemappter Geodata-Name"
+            description: "Mapped geodata name"
           - name: geodata_id_nuts
-            description: "NUTS-3-Code der Region"
+            description: "NUTS-3 code of the region"
             tests:
               - not_null
           - name: geodata_id_ars
-            description: "Amtlicher Regionalschlüssel nach Mapping"
+            description: "Official regional key after mapping"
           - name: mapper
-            description: "Mapping-Methode"
+            description: "Mapping method"
           - name: parameter
-            description: "Mapping-Parameter"
+            description: "Mapping parameter"
           - name: year
-            description: "Jahr der Beobachtung"
+            description: "Year of observation"
             tests:
               - not_null
           - name: value
-            description: "Schuldnerquote in Prozent"
+            description: "Debtor quota in percent"
             tests:
               - not_null
           - name: geodata_level
-            description: "Geodata-Ebene (NUTS_3)"
+            description: "Geodata level (NUTS_3)"
           - name: geodata_year
-            description: "Referenzjahr der Geodaten"
+            description: "Reference year of the geodata"
           - name: dataset_name
-            description: "Name des Datensatzes (results_schuldnerquote_kreise)"
+            description: "Dataset name (results_schuldnerquote_kreise)"
 
       - name: results_arbeitsvolumen_kreise
-        description: "Arbeitsvolumen je Kreis – long format, ein Record pro Region und Jahr (Stunden)"
+        description: "Labour volume per district (Kreis), long format, one record per region and year (hours)"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -284,10 +321,19 @@ sources:
             tests:
               - not_null
           - name: value
-            description: "Arbeitsvolumen in Stunden"
+            description: "Labour volume in hours"
 
       - name: results_bruttoverdienst_kreise
-        description: "Bruttoverdienst je Kreis – long format, ein Record pro Region und Jahr (Euro)"
+        description: "Gross earnings per district (Kreis), long format, one record per region and year (euro)"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -299,10 +345,19 @@ sources:
             tests:
               - not_null
           - name: value
-            description: "Bruttoverdienst in Euro"
+            description: "Gross earnings in euros"
 
       - name: results_durchschnittsalter_kreise
-        description: "Durchschnittsalter je Kreis – long format, ein Record pro Region und Jahr (Jahre)"
+        description: "Average age per district (Kreis), long format, one record per region and year (years)"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -314,10 +369,19 @@ sources:
             tests:
               - not_null
           - name: value
-            description: "Durchschnittsalter in Jahren"
+            description: "Average age in years"
 
       - name: results_sgb_ii_quote_kreise
-        description: "SGB-II-Quote je Kreis – long format, ein Record pro Region und Jahr (%)"
+        description: "SGB II quota per district (Kreis), long format, one record per region and year (%)"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -329,10 +393,19 @@ sources:
             tests:
               - not_null
           - name: value
-            description: "SGB-II-Quote in Prozent"
+            description: "SGB II quota in percent"
 
       - name: results_wohngeldhaushalte_kreise
-        description: "Wohngeldhaushalte je Kreis – long format, ein Record pro Region und Jahr (je 1000 EW)"
+        description: "Housing benefit households per district (Kreis), long format, one record per region and year (per 1,000 inhabitants)"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -344,12 +417,21 @@ sources:
             tests:
               - not_null
           - name: value
-            description: "Wohngeldhaushalte je 1000 Einwohner"
+            description: "Housing benefit households per 1,000 inhabitants"
           - name: dataset_name
-            description: "Name des Datensatzes (results_wohngeldhaushalte_kreise)"
+            description: "Dataset name (results_wohngeldhaushalte_kreise)"
 
       - name: results_auszubildende_kreise
-        description: "Auszubildende je Kreis – long format, ein Record pro Region und Jahr (je 1.000 SV-Beschäftigte)"
+        description: "Trainee rate per district (Kreis): trainees per 1,000 employees subject to social insurance contributions, long format, one record per region and year"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -361,10 +443,19 @@ sources:
             tests:
               - not_null
           - name: value
-            description: "Auszubildende je 1.000 sozialversicherungspflichtig Beschäftigte"
+            description: "Trainees per 1,000 employees subject to social insurance contributions"
 
       - name: results_erwerbstaetige_pro_1000_einwohner_kreise
-        description: "Erwerbstätige je 1.000 Einwohner je Kreis – long format, ein Record pro Region und Jahr"
+        description: "Employed persons per 1,000 inhabitants per district (Kreis), long format, one record per region and year"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -376,10 +467,19 @@ sources:
             tests:
               - not_null
           - name: value
-            description: "Erwerbstätige je 1.000 Einwohner"
+            description: "Employed persons per 1,000 inhabitants"
 
       - name: results_kinderarmut_kreise
-        description: "Kinderarmut je Kreis – nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner – long format"
+        description: "Child poverty per district (Kreis): non-working SGB II recipients under 15 years per 100 inhabitants, long format"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -391,10 +491,19 @@ sources:
             tests:
               - not_null
           - name: value
-            description: "Nicht erwerbsfähige SGB-II-Leistungsberechtigte unter 15 Jahren je 100 Einwohner"
+            description: "Non-working SGB II recipients under 15 years per 100 inhabitants"
 
       - name: results_medianeinkommen_kreise
-        description: "Medianeinkommen je Kreis – long format, ein Record pro Region und Jahr (Euro)"
+        description: "Median income per district (Kreis), long format, one record per region and year (euro)"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -406,10 +515,19 @@ sources:
             tests:
               - not_null
           - name: value
-            description: "Medianeinkommen in Euro"
+            description: "Median income in euros"
 
       - name: results_studierende_kreise
-        description: "Studierende je 1.000 Einwohner je Kreis – long format, ein Record pro Region und Jahr"
+        description: "Students per 1,000 inhabitants per district (Kreis), long format, one record per region and year"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
         columns:
           - name: original_id_1
             tests:
@@ -421,4 +539,28 @@ sources:
             tests:
               - not_null
           - name: value
-            description: "Studierende je 1.000 Einwohner"
+            description: "Students per 1,000 inhabitants"
+
+      - name: results_sv_beschaeftigte_kreise
+        description: "Employees subject to social insurance contributions at place of work per district (Kreis), Statistik der Bundesagentur für Arbeit (June value, fetch_ba_sv_beschaeftigte.py), long format, one record per region and year"
+        # Fails on collisions: two raw rows on one (geodata_id_nuts, year) would
+        # be collapsed to ONE by the snapshot (soziodata_snapshot_query, DISTINCT
+        # ON), so the other value would silently vanish from staging and every
+        # mart (mart_nuts3_sociodata_harmonized reads staging).
+        tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [geodata_id_nuts, year]
+              config:
+                where: "geodata_id_nuts is not null and geodata_id_nuts != ''"
+        columns:
+          - name: original_id_1
+            tests:
+              - not_null
+          - name: geodata_id_nuts
+            tests:
+              - not_null
+          - name: year
+            tests:
+              - not_null
+          - name: value
+            description: "Number of employees subject to social insurance contributions (absolute)"

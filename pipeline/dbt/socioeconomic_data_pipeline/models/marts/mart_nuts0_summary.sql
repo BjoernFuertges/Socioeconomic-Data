@@ -6,18 +6,28 @@
 }}
 
 /*
-  Aggregiert NUTS-3-Daten auf NUTS-0-Ebene (2-stelliger Ländercode, z. B. DE).
+  Aggregates NUTS-3 data to NUTS-0 level (2-digit country code, e.g. DE).
 
-  Bevölkerung und Arbeitslose werden summiert.
-  Die Schuldnerquote wird bevölkerungsgewichtet gemittelt (nur Zeilen, bei denen
-  beide Werte vorhanden sind; andernfalls einfaches Mittel).
-  Die YoY-Veränderung wird aus den aggregierten Arbeitslosenzahlen neu berechnet.
-  region_name kommt aus mart_nuts_geometry_historized (Eurostat NUTS_NAME/
-  NAME_LATN, siehe stg_nuts_geometry) - Fallback auf den Code selbst, falls dort
-  kein Name vorliegt.
+  Population and Arbeitslose are summed.
+  The Schuldnerquote is population-weighted averaged (only rows where both
+  values exist; otherwise a simple mean).
+  The YoY change is recomputed from the aggregated Arbeitslose figures.
+  region_name comes from mart_nuts_geometry_historized (Eurostat NUTS_NAME/
+  NAME_LATN, see stg_nuts_geometry), falling back to the code itself if no
+  name exists.
 
-  Hinweis: Arbeitslosenzahlen (arbeitslose_kreise) können unvollständig sein, da
-  stg_arbeitslose_kreise nicht jedes Jahr für jeden Kreis abdeckt (vgl. mart_nuts3_summary).
+  Note: Arbeitslose figures (arbeitslose_kreise) may be incomplete, since
+  stg_arbeitslose_kreise does not cover every Kreis in every year (cf.
+  mart_nuts3_summary).
+
+  mart_nuts3_summary is harmonized onto a single NUTS-3 boundary version
+  (2024, via mart_nuts3_sociodata_harmonized), so the left(nuts_id, n)
+  roll-up never mixes Kreise of different NUTS vintages.
+
+  Coverage: the sums are NOT corrected for missing Kreise.
+  expected_region_count (Kreise of the region in the reference version,
+  int_nuts_expected_kreis_count) vs. the number of Kreise with a value gives
+  bevoelkerung_is_complete / arbeitslose_is_complete.
 */
 
 with nuts3 as (
@@ -34,10 +44,9 @@ nuts0_names as (
 aggregated as (
     select
         left(nuts3.nuts_id, 2) as nuts_id,
-        -- min() statt group by: der Name ist pro nuts0-Code konstant (dank
-        -- distinct on in nuts0_names), min() ist hier nur ein zulässiger
-        -- Weg, ihn trotz des Joins innerhalb der group by-Aggregation
-        -- durchzureichen.
+        -- min() instead of group by: the name is constant per nuts0 code
+        -- (distinct on in nuts0_names); min() merely passes it through the
+        -- group by aggregation despite the join.
         coalesce(min(nuts0_names.region_name), left(nuts3.nuts_id, 2)) as region_name,
         year,
         sum(bevoelkerung)   as bevoelkerung,
@@ -71,7 +80,9 @@ aggregated as (
                      )
             else avg(schuldnerquote_prozent)
         end                 as schuldnerquote_prozent,
-        sum(arbeitslose_kreise)::numeric as arbeitslose_raw
+        sum(arbeitslose_kreise)::numeric as arbeitslose_raw,
+        count(bevoelkerung)       as bevoelkerung_region_count,
+        count(arbeitslose_kreise) as arbeitslose_region_count
     from nuts3
     left join nuts0_names
         on nuts0_names.nuts_id = left(nuts3.nuts_id, 2)
@@ -83,10 +94,10 @@ with_yoy as (
         nuts_id,
         region_name,
         year,
-        -- geodata_id_ars gibt es nur auf Kreisebene (mart_nuts3_summary) -
-        -- als NULL mitgeführt, damit GetNutsRegionData (backend/internal/
-        -- handlers/nuts.go) dieselbe selectCols-Spaltenliste über alle vier
-        -- NUTS-Ebenen hinweg verwenden kann.
+        -- geodata_id_ars exists only at Kreis level (mart_nuts3_summary) -
+        -- carried as NULL so GetNutsRegionData (backend/internal/handlers/
+        -- nuts.go) can use the same selectCols list across all four NUTS
+        -- levels.
         null::text as geodata_id_ars,
         bevoelkerung,
         schuldnerquote_prozent,
@@ -100,8 +111,19 @@ with_yoy as (
                 else null
             end,
             2
-        )                                                                as yoy_change_percent
-    from aggregated
+        )                                                                as yoy_change_percent,
+        coalesce(expected_region_count, 0)                               as expected_region_count,
+        coalesce(expected_region_count > 0
+                 and bevoelkerung_region_count = expected_region_count, false) as bevoelkerung_is_complete,
+        coalesce(expected_region_count > 0
+                 and arbeitslose_region_count = expected_region_count, false)  as arbeitslose_is_complete
+    from (
+        select a.*, x.expected_region_count
+        from aggregated a
+        left join {{ ref('int_nuts_expected_kreis_count') }} x
+            on  x.nuts_level = 0
+            and x.nuts_id    = a.nuts_id
+    ) aggregated
     window w as (partition by nuts_id order by year)
 )
 

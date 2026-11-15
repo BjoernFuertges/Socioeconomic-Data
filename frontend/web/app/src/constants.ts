@@ -1,16 +1,16 @@
-// Slug des Agenturbezirk-Datensatzes im Datenkatalog (GET /datasets/:slug).
-// Anders als die übrigen, meta.yaml-basierten Kreis-/Gemeinden-Datensätze hat
-// er keine generische /{slug}-Rohdatenroute (siehe DatasetCatalog.vue) und
-// keinen eigenen DatasetPicker-Eintrag (RegionBrowser.vue zeigt ihn direkt im
-// Agenturbezirk-Panel) - der Slug wird trotzdem an mehreren Stellen für
-// Katalog-Verlinkung gebraucht, deshalb hier zentral statt mehrfach hart codiert.
+// Slug of the Agenturbezirk dataset in the dataset catalog (GET /datasets/:slug).
+// Unlike the other meta.yaml-based Kreis/Gemeinden datasets it has no generic
+// /{slug} raw-data route (see DatasetCatalog.vue) and no DatasetPicker entry of its
+// own (RegionBrowser.vue shows it directly in the Agenturbezirk panel). The slug is
+// still needed in several places for catalog linking, so it lives here instead of
+// being hard-coded repeatedly.
 export const AGENTUR_DATASET_SLUG = "arbeitslosenzahlen-afa-agenturbezirke";
 
-// Katalog-Slugs ohne Quelldaten-Download (GET /datasets/:slug/source liefert
-// dort 404): abgeleitete Slugs, die nur als dbt-Aggregation existieren
-// (beschaeftigungsquote-nuts3, lau_*, ba_*), und der Agenturbezirk-Datensatz
-// mit eigener Monatsstruktur. Alle übrigen meta.yaml-basierten Datensätze
-// haben Quelldaten (siehe mart_dataset_source.sql).
+// Catalog slugs without a source-data download (GET /datasets/:slug/source returns
+// 404 for them): derived slugs that only exist as dbt aggregation
+// (beschaeftigungsquote-nuts3, lau_*, ba_*), and the Agenturbezirk dataset with
+// its own monthly structure. All other meta.yaml-based datasets have source data
+// (see mart_dataset_source.sql).
 export function hasSourceData(slug: string): boolean {
   return (
     slug !== AGENTUR_DATASET_SLUG &&
@@ -20,11 +20,11 @@ export function hasSourceData(slug: string): boolean {
   );
 }
 
-// Gängige Abkürzungen der 16 Bundesländer (NUTS-1), keyed nach dem echten
-// region_name aus mart_nuts1_summary (Eurostat NUTS_NAME, z.B.
-// "Nordrhein-Westfalen") - die Bundesland-Suche in RegionBrowser.vue matcht
-// zusätzlich gegen diese Aliase, damit z.B. "NRW" tatsächlich einen Treffer
-// findet (der amtliche Name selbst ist keine Abkürzung).
+// Common abbreviations of the 16 Bundesländer (NUTS-1), keyed by the real
+// region_name from mart_nuts1_summary (Eurostat NUTS_NAME, e.g.
+// "Nordrhein-Westfalen"). The Bundesland search in RegionBrowser.vue also matches
+// against these aliases so that e.g. "NRW" actually finds a hit (the official
+// name itself is not an abbreviation).
 export const BUNDESLAND_ALIASES: Record<string, string[]> = {
   "Baden-Württemberg": ["BW", "BaWü"],
   "Bayern": ["BY"],

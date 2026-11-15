@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
-	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
 const datasetCatalogColumns = `dataset_slug, dataset_uri, name, description, description_long, unit,
@@ -14,7 +16,7 @@ const datasetCatalogColumns = `dataset_slug, dataset_uri, name, description, des
 	min_year, max_year, total_records, updated_at, license_tracked_since::text as license_tracked_since,
 	license_backfilled`
 
-// GetDatasetCatalog gibt den Metadaten-Katalog aller Datensätze zurück.
+// GetDatasetCatalog returns the metadata catalog of all datasets.
 // @Summary Datensatz-Katalog (Herkunft, Lizenz, Beschreibung)
 // @Description Liefert pro Datensatz Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum
 // @Description sowie eine persistente URI. Lizenz ist "unbekannt", solange die tatsächlichen Nutzungsbedingungen der Quelle noch nicht recherchiert wurden.
@@ -36,16 +38,16 @@ func (h *Handler) GetDatasetCatalog(c *gin.Context) {
 	query, args := datasetCatalogQuery(slugs)
 
 	catalog := make([]models.DatasetCatalogEintrag, 0)
-	if err := h.DB.Select(&catalog, query, args...); err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler beim Datensatz-Katalog: %v", err))
+	if err := h.DB.SelectContext(c.Request.Context(), &catalog, query, args...); err != nil {
+		respondDBError(c, "Datenbankfehler beim Datensatz-Katalog", err)
 		return
 	}
 
 	respondList(c, catalog, &models.MetaInfo{Total: len(catalog)})
 }
 
-// datasetCatalogQuery baut die Katalog-Abfrage; ohne slugs (leer) kein
-// WHERE-Filter, sonst dataset_slug = ANY(...).
+// datasetCatalogQuery builds the catalog query; with empty slugs there is no
+// WHERE filter, otherwise dataset_slug = ANY(...).
 func datasetCatalogQuery(slugs []string) (string, []interface{}) {
 	query := fmt.Sprintf(`SELECT %s FROM transformed_data.mart_dataset_catalog`, datasetCatalogColumns)
 	args := []interface{}{}
@@ -57,7 +59,7 @@ func datasetCatalogQuery(slugs []string) (string, []interface{}) {
 	return query, args
 }
 
-// GetDatasetCatalogEntry gibt den Metadaten-Katalogeintrag eines einzelnen Datensatzes zurück.
+// GetDatasetCatalogEntry returns the metadata catalog entry of a single dataset.
 // @Summary Katalogeintrag eines einzelnen Datensatzes
 // @Description Liefert Herkunft, Lizenz, Beschreibung, Einheit und Abdeckungszeitraum für einen Datensatz-Slug.
 // @Description Format per Accept-Header (application/json oder text/csv) oder ?format=csv|json; ?download=1 setzt Content-Disposition.
@@ -81,16 +83,20 @@ func (h *Handler) GetDatasetCatalogEntry(c *gin.Context) {
 	)
 
 	var entry models.DatasetCatalogEintrag
-	if err := h.DB.Get(&entry, query, slug); err != nil {
-		respondNotFound(c, fmt.Sprintf("Datensatz %q nicht im Katalog gefunden", slug))
+	if err := h.DB.GetContext(c.Request.Context(), &entry, query, slug); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			respondNotFound(c, fmt.Sprintf("Datensatz %q nicht im Katalog gefunden", slug))
+			return
+		}
+		respondDBError(c, "Datenbankfehler beim Datensatz-Katalog", err)
 		return
 	}
 
-	// CSV erwartet eine Slice von Structs (eine Zeile pro Element) - hier immer genau eine.
+	// CSV expects a slice of structs (one row per element) - here always exactly one.
 	respondNegotiated(c, entry, []models.DatasetCatalogEintrag{entry}, nil)
 }
 
-// GetDatasetSource gibt die Quelldaten eines Datensatzes zurück.
+// GetDatasetSource returns the source data of a dataset.
 // @Summary Quelldaten eines Datensatzes (gemappt, unverändert)
 // @Description Liefert die Werte des Datensatzes so, wie sie aus dem geo-mapper-Teilprojekt kommen: unverändert, nur die
 // @Description Regionsnamen sind auf Geodaten-IDs gemappt (original_*, geodata_id_*, mapper, parameter). Keine NUTS-Harmonisierung,
@@ -112,9 +118,9 @@ func (h *Handler) GetDatasetSource(c *gin.Context) {
 	slug := strings.ToLower(c.Param("slug"))
 
 	rows := make([]models.DatasetQuellwert, 0)
-	err := h.DB.Select(&rows, datasetSourceQuery, slug)
+	err := h.DB.SelectContext(c.Request.Context(), &rows, datasetSourceQuery, slug)
 	if err != nil {
-		respondInternalError(c, fmt.Sprintf("Datenbankfehler bei den Quelldaten: %v", err))
+		respondDBError(c, "Datenbankfehler bei den Quelldaten", err)
 		return
 	}
 	if len(rows) == 0 {

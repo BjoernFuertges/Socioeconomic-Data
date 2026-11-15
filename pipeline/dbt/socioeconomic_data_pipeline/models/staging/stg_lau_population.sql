@@ -1,12 +1,20 @@
 {{ config(materialized='view') }}
 
 -- Staging model for LAU population data
--- Standardizes column names and data types for population statistics from DLT
 
-SELECT 
-    gisco_id,
+SELECT
+    -- Eurostat delivers German GISCO IDs for states 01-09 without the leading
+    -- zero (DE_3251041 instead of DE_03251041). Pad them so they join to the
+    -- LAU geometry; otherwise the population weighting only works for states 10-16.
+    CASE
+        WHEN gisco_id ~ '^DE_[0-9]{7}$' THEN 'DE_0' || substr(gisco_id, 4)
+        ELSE gisco_id
+    END as gisco_id,
     nuts_3_code,
-    lau_nat_code,
+    -- Official Gemeindeschluessel (AGS), normalized to 8 digits: Eurostat omits
+    -- the leading zero for states 01-09 (7 digits) and sometimes appends '.0'.
+    -- Consumers can use it as-is (no regexp_replace/lpad needed).
+    lpad(regexp_replace(cast(lau_nat_code as text), '\.0+$', ''), 8, '0') as lau_nat_code,
     lau_name_national,
     lau_name_latin,
     -- Convert population to bigint, handling potential float-string values like "13351.0"

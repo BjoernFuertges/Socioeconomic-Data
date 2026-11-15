@@ -2,34 +2,36 @@ version: 2
 
 models:
   - name: stg_agenturbezirk_geometry
-    description: "Grenzen aller Agenturbezirke, bereits nach WGS84 reprojiziert (siehe load_agenturbezirke_geodata.py). Aktuell eine einzelne Grenzen-Vintage, keine Mehr-Versions-Historisierung (siehe Phase 2 in der Planung)."
+    description: "Boundaries of all employment agency districts (Agenturbezirke), reprojected to WGS84. Single boundary vintage; no multi-version history yet."
     columns:
       - name: ba_schl
-        description: "Amtlicher BA-Schlüssel des Agenturbezirks"
+        description: "Official BA key of the employment agency district"
         data_type: text
         tests:
           - unique
           - not_null
       - name: name
-        description: "Name des Agenturbezirks"
+        description: "Name of the employment agency district"
         data_type: text
         tests:
           - not_null
       - name: id_dwh
-        description: "Data-Warehouse-ID der Quelle"
+        description: "Source ID in the data warehouse"
         data_type: text
       - name: valid_from
-        description: "Gültig-ab-Datum laut Shapefile"
+        description: "Valid-from date from the shapefile"
         data_type: date
       - name: valid_to
-        description: "Gültig-bis-Datum laut Shapefile"
+        description: "Valid-to date from the shapefile"
         data_type: date
       - name: geometry_wgs84
-        description: "PostGIS-Geometrie in WGS84 (EPSG:4326)"
+        description: "Geometry in WGS84 (EPSG:4326)"
+        tests:
+          - not_null
       - name: has_valid_geometry
-        description: "true, wenn eine nicht-leere Geometrie vorhanden ist"
+        description: "True if a non-empty geometry is present"
         data_type: boolean
         tests:
           - not_null
       - name: loaded_at
-        description: "Zeitpunkt der Staging-Auswertung"
+        description: "Timestamp of the staging run"

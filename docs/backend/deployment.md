@@ -5,8 +5,14 @@ In production, the stack runs via Docker Compose on a Hetzner Cloud server
 a backend container, and a `pipeline` container for dlt/dbt.
 
 The Postgres password is not stored in the compose file: `docker compose`
-reads `DB_PASSWORD`, `APP_HOST`, `LE_EMAIL`, `GHCR_OWNER` and `IMAGE_TAG` from an untracked `backend/deployments/.env` on the server (written by the deploy job)
+reads `DB_PASSWORD`, `API_DB_PASSWORD` (password of the backend's read-only role `api_ro`), `PIPELINE_DB_PASSWORD` (password of the pipeline's non-superuser role `pipeline_rw`; both roles see [Operations](../operations.md#db-roles)), `APP_HOST`, `LE_EMAIL`, `GHCR_OWNER` and `IMAGE_TAG` from an untracked `backend/deployments/.env` on the server (written by the deploy job)
 (template: `backend/deployments/.env.example`) and refuses to start without it.
+`IMAGE_TAG` is mandatory (`${IMAGE_TAG:?}`): there is no `latest` fallback, so a manual
+`docker compose` call without it fails instead of starting an unintended image.
+
+Traefik and the ofelia scheduler do not get the Docker socket itself but each a
+filtering `docker-socket-proxy` on an internal network (details in
+[Operations](../operations.md)). Do not mount `/var/run/docker.sock` into further containers.
 
 ## CI/CD (GitHub Actions)
 
@@ -27,7 +33,9 @@ build and deploy stages only run on push to `main` (or manually via
 5. **Deploy to Hetzner** – over SSH: check out the built commit on the
    server, write `.env`/`.env.nextcloud-sync` from GitHub secrets,
    `docker compose pull` (first, so a registry failure changes nothing),
-   run the Nextcloud sync, then `docker compose up -d --wait` (all in
+   run the Nextcloud sync, start `postgis` and create/update the DB roles
+   `api_ro` and `pipeline_rw` (the scheduler is stopped and a running pipeline
+   run is awaited first, max. 60 min), then `docker compose up -d --wait` (all in
    `backend/scripts/deploy_remote.sh`). `--wait` uses the healthchecks of
    `postgis`, `backend` and `pipeline`; if the rollout or the subsequent
    health request fails, the job rolls the server back to the last state
@@ -89,6 +97,12 @@ Manually run all dlt pipelines + dbt inside the running container:
 docker exec pipeline bash /app/dlt/run_all_pipelines.sh
 docker compose logs --tail=80 pipeline
 ```
+
+`run_all_pipelines.sh` takes a `flock`: if the hourly ofelia job, the initial load or another
+manual run is active, a second call exits immediately with code 75 (the ofelia job sets it to 0,
+so a skipped run is not counted as failed). Wait for the running one, then start again.
+The script runs `dbt test --select source:loaded_data --indirect-selection=cautious` before `dbt snapshot`; a failing source test
+(e.g. duplicate `(geodata_id_nuts, year)`) aborts the run before the snapshot is advanced.
 
 ## Traefik & TLS (initial setup)
 

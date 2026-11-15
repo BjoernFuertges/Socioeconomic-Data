@@ -8,8 +8,8 @@ resource "hcloud_ssh_key" "deploy" {
   public_key = var.ssh_public_key
 }
 
-# Nur SSH, HTTP (Let's-Encrypt-Challenge + Redirect) und HTTPS. PostgreSQL (5432)
-# bleibt zu; im Compose-File ist der Port zusätzlich nur an 127.0.0.1 gebunden.
+# Only SSH, HTTP (Let's Encrypt challenge + redirect) and HTTPS. PostgreSQL (5432)
+# stays closed; the compose file additionally binds the port to 127.0.0.1 only.
 resource "hcloud_firewall" "main" {
   name = "${var.name}-fw"
 
@@ -64,12 +64,12 @@ resource "hcloud_server" "main" {
   })
 
   lifecycle {
-    # cloud-init läuft nur beim ersten Boot; spätere Änderungen sollen den Server nicht ersetzen
+    # cloud-init only runs on first boot; later changes should not replace the server
     ignore_changes = [user_data, image, ssh_keys]
   }
 }
 
-# PostgreSQL-Daten liegen auf einem eigenen Volume und überleben einen Server-Neuaufbau.
+# PostgreSQL data lives on its own volume and survives a server rebuild.
 resource "hcloud_volume" "pgdata" {
   name     = "${var.name}-pgdata"
   size     = var.volume_size_gb

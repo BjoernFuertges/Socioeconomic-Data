@@ -6,14 +6,13 @@
         strategy='check',
         check_cols=['value'],
         target_schema='snapshots',
-        invalidate_hard_deletes=false
+        hard_deletes='ignore'
     )
 }}
 
 /*
-  Beschäftigungsquote ist ein LAU/Gemeinden-Datensatz.
-  Die Quelltabelle hat kein geodata_id_nuts, daher eigener unique_key
-  auf Basis von original_id_1 (Gemeinde-ID).
+  LAU (municipality) dataset: the source has no geodata_id_nuts, so the
+  unique key is built from original_id_1 instead of the Kreis-level key.
 */
 select distinct on (original_id_1, year)
     original_id_1,

@@ -1,9 +1,8 @@
 <script setup lang="ts">
-// Download-Dialog für eine Region: stellt Datensätze, Wertearten (roh/
-// aggregiert), Format und Jahresbereich zusammen und lädt sie über den
-// kombinierten Endpoint GET /regions/{type}/{id}/data. Derselbe Request wird
-// darunter als curl-Befehl/Link angezeigt (ApiSnippet), damit der Download
-// auch außerhalb der UI reproduzierbar ist.
+// Download dialog for a region: assembles datasets, value kinds (raw/aggregated),
+// format and year range and fetches them via the combined endpoint
+// GET /regions/{type}/{id}/data. The same request is shown below as a
+// curl command/link (ApiSnippet), so the download is reproducible outside the UI.
 import { computed, ref, watch } from "vue";
 import type { DatasetCatalogEntry } from "../types/api";
 import {
@@ -22,9 +21,9 @@ import { formatDatasetLabel } from "../format";
 import { hasSourceData } from "../constants";
 import ApiSnippet from "./ApiSnippet.vue";
 
-// Zusätzliche, nicht katalogbasierte Wertereihen einer Region (BA-Monatswerte
-// eines Agenturbezirks, Gemeinde-Rollups eines Kreises) - im Long-Format des
-// Exports tragen sie eigene dataset_slugs, siehe region_data.go.
+// Additional, non-catalog series of a region (BA monthly values of an Agenturbezirk,
+// Gemeinde rollups of a Kreis) - in the export's long format they carry their own
+// dataset_slugs, see region_data.go.
 export interface ExtraDownloadOption {
   slug: string;
   label: string;
@@ -37,11 +36,11 @@ const props = defineProps<{
   regionId: string;
   regionLabel: string;
   datasets: DatasetCatalogEntry[];
-  // Im Dialog vorausgewählt: was die Region gerade anzeigt.
+  // Preselected in the dialog: what the region currently displays.
   preselectedSlugs: string[];
   extraOptions?: ExtraDownloadOption[];
-  // Welche Wertearten es für diese Region überhaupt gibt (NUTS 0-2 haben
-  // keine Rohwerte, LAU keine aggregierten).
+  // Which value kinds exist for this region at all (NUTS 0-2 have no raw
+  // values, LAU no aggregated ones).
   availableScopes: Exclude<DownloadScope, "both">[];
 }>();
 
@@ -55,8 +54,8 @@ const fromYear = ref<string>("");
 const toYear = ref<string>("");
 const includeMetadata = ref(true);
 
-// Alle wählbaren Einträge: Katalog-Datensätze plus die region-spezifischen
-// Sonderreihen (jeweils mit der Werteart, unter der sie geliefert werden).
+// All selectable entries: catalog datasets plus the region-specific special
+// series (each with the value kind under which they are delivered).
 const options = computed(() => [
   ...(props.extraOptions ?? []).map((o) => ({ slug: o.slug, label: o.label, scope: o.scope })),
   ...props.datasets.map((d) => ({
@@ -76,7 +75,7 @@ const scopeOptions = computed(() =>
   ].filter((o) => (o.value === "both" ? props.availableScopes.length > 1 : props.availableScopes.includes(o.value))),
 );
 
-// Beim Öffnen: Auswahl der Region übernehmen, Scope auf das Sinnvollste setzen.
+// On open: adopt the region's selection, set scope to the most sensible value.
 watch(
   () => props.open,
   (open) => {
@@ -98,8 +97,8 @@ function toggleSlug(slug: string) {
 
 const allSelected = computed(() => selectedSlugs.value.length === 0);
 
-// Leere Auswahl heißt serverseitig "alle verfügbaren" - genau das ist hier
-// die Bedeutung von "Alle Datensätze".
+// An empty selection means "all available" server-side - which is exactly what
+// "Alle Datensätze" means here.
 function selectAll() {
   selectedSlugs.value = [];
 }
@@ -122,29 +121,29 @@ const filename = computed(() => regionFilename(query.value));
 const downloadUrl = computed(() => regionDownloadUrl(query.value, format.value));
 const apiUrl = computed(() => regionApiUrl(query.value));
 
-// Datensätze, die zur gewählten Werteart nichts beitragen - ohne Hinweis
-// bekäme man sonst kommentarlos eine leere Datei.
+// Datasets that contribute nothing to the chosen value kind - without a hint
+// the user would silently get an empty file.
 const ignoredSelection = computed(() => {
   if (scope.value === "both" || !selectedSlugs.value.length) return [];
   return options.value.filter((o) => selectedSlugs.value.includes(o.slug) && o.scope !== scope.value);
 });
 
-// "Alle verfügbaren Datensätze" heißt serverseitig für /regions/.../data
-// "leere Auswahl", aber GET /datasets kennt diese Bedeutung nicht - deshalb
-// hier auf die konkrete Slug-Liste auflösen, bevor die Metadaten-URL gebaut wird.
+// "All available datasets" means "empty selection" server-side for /regions/.../data,
+// but GET /datasets doesn't know that meaning - so resolve it to the concrete
+// slug list here before building the metadata URL.
 const metadataSlugs = computed(() => (allSelected.value ? options.value.map((o) => o.slug) : selectedSlugs.value));
 const metadataApiUrl = computed(() => datasetMetadataApiUrl(metadataSlugs.value));
 const metadataDownloadUrl = computed(() => datasetMetadataUrl(metadataSlugs.value, format.value));
 const metadataFilename = computed(() => datasetMetadataFilename(filename.value));
 
-// Katalog-Karten mit den unveränderten Quelldaten zur aktuellen Auswahl
-// (/katalog/:slug scrollt zur Karte und hebt sie hervor). Bei "alle" wären das
-// zu viele Links - dann reicht der Sprung in den Katalog insgesamt.
+// Catalog cards with the unchanged source data for the current selection
+// (/katalog/:slug scrolls to the card and highlights it). For "all" that would be
+// too many links - jumping to the catalog as a whole is enough.
 const sourceLinkOptions = computed(() =>
   options.value.filter((o) => selectedSlugs.value.includes(o.slug) && hasSourceData(o.slug)),
 );
 
-// Ein Klick löst Daten- und (falls gewählt) Metadaten-Download gleichzeitig aus.
+// One click triggers the data and (if selected) metadata download at the same time.
 function startDownload() {
   const urls = [downloadUrl.value];
   if (includeMetadata.value && metadataSlugs.value.length) urls.push(metadataDownloadUrl.value);

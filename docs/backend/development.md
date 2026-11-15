@@ -24,9 +24,18 @@ From [`backend/.env.example`](https://github.com/BjoernFuertges/Socioeconomic-Da
 | `PORT` | `8081` | Port of the API server |
 | `DB_HOST` | `localhost` | Postgres host |
 | `DB_PORT` | `5432` | Postgres port |
-| `DB_USER` | `sozio_data_compose_user` | Postgres user |
+| `DB_USER` | `sozio_data_compose_user` | Postgres user (in production the read-only role `api_ro`; locally the owner may stay) |
 | `DB_PASSWORD` | – | Postgres password |
 | `DB_NAME` | `soziooekonomische-daten` | Database name |
+
+Optional variables, commented out in `.env.example` and not required at startup:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DB_SSLMODE` | `disable` | Postgres `sslmode`; the DB is normally only reachable on the private compose network, set `require`/`verify-full` for a remote database |
+| `CUSTOM_REGION_TIMEOUT_SECONDS` | `90` | Total time budget of `POST /custom-regions/dataset-aggregate` (all sub-queries together; exceeded: `503`) |
+| `UNLIMITED_ROWS_CAP` | 1.25 × largest table, at least 300000 | Row cap for `limit=null` (see [API](api.md)) |
+| `TRUSTED_PROXIES` | loopback, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` | Comma-separated IPs/CIDRs whose `X-Forwarded-For` header is trusted for the client IP (Traefik reaches the backend over the private compose network); an invalid value stops the server at startup |
 
 `internal/config.Load()` checks at startup that every variable listed in
 `.env.example` is actually set (from `.env` or the environment) and fails
@@ -89,8 +98,12 @@ go test ./...
 
 ```bash
 cd backend
-swag init -g cmd/soziodata/main.go -o docs
+swag init -g cmd/soziodata/main.go -o docs --parseDependency --parseInternal
 ```
+
+Use the same flags as the pre-commit hook: the committed spec is generated
+with them, and swag v1.16.4 without them renames every model definition
+(large, meaningless diff). Verified with swag v1.16.4 on Go 1.26.
 
 CI additionally checks via `backend/scripts/check_swagger_router_annotations.sh`
 whether all routes carry matching Swagger annotations.
@@ -116,7 +129,7 @@ pkgsite -http=:8080   # then open http://localhost:8080/github.com/BjoernFuertge
     A dedicated, CI-published godoc/pkgsite site was considered but is not
     set up, since it would add limited value here: almost all backend code
     lives under `internal/` (not importable outside this module anyway),
-    the module isn't published to `pkg.go.dev` (private GitLab instance),
+    the module isn't published to `pkg.go.dev`,
     and the actual API contract that matters to consumers is already fully
     documented via Swagger. If doc comments on exported Go symbols become
     more extensive, `pkgsite` can always be run locally as shown above

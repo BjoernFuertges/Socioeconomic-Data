@@ -10,17 +10,16 @@
 }}
 
 /*
-  Gemeinde(LAU)-Bevölkerung mit zugehöriger Geometrie (nur Deutschland).
+  Gemeinde (LAU) population with its geometry (Germany only).
 
-  Grundlage für den populationsgewichteten NUTS-3-Versions-Crosswalk
-  (siehe int_lau_nuts3_membership / int_lau_nuts3_population_weight):
+  Basis for the population-weighted NUTS-3 version crosswalk (see
+  int_lau_nuts3_membership / int_lau_nuts3_population_weight).
 
-  Auf NUTS-3-Ebene selbst lässt sich keine echte Populationsgewichtung
-  berechnen, da die Gesamt-Bevölkerung einer Quellregion bei der Normierung
-  über alle Zielregionen immer herausgekürzt wird (konstanter Faktor).
-  Erst über die feinere Gemeinde-Ebene (LAU) lässt sich ermitteln, wie sich
-  die Bevölkerung *innerhalb* einer Quellregion auf mehrere Zielregionen
-  verteilt.
+  At NUTS-3 level a real population weighting is impossible: the total
+  population of a source region always cancels out in the normalization
+  across target regions (constant factor). Only the finer LAU level shows
+  how the population *within* a source region is split across several
+  target regions.
 */
 
 select

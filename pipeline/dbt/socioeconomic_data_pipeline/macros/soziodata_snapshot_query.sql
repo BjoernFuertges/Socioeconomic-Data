@@ -1,14 +1,16 @@
 {% macro soziodata_snapshot_query(source_table) %}
     /*
-      Liefert den aktuell gültigen Wert je (geodata_id_nuts, year)-Kombination.
-      Mit DISTINCT ON wird bei mehreren Ladeläufen (append) immer nur die
-      neueste Version berücksichtigt.
+      Returns the currently valid value per (geodata_id_nuts, year).
+      DISTINCT ON is defensive only: dlt loads these tables with
+      write_disposition="replace", so a key should appear once per load; if
+      two source regions map onto the same (geodata_id_nuts, year), one row
+      is silently dropped here (ties on loaded_at are arbitrary).
 
-      Wird in allen snap_results_*.sql-Snapshots verwendet.
+      Used by all snap_results_*.sql snapshots.
 
-      Zwei DLT-Schema-Varianten werden unterstützt:
-        - Alte Tabellen: haben `loaded_at` als timestamptz (direkt verwenden)
-        - Neue Tabellen: haben nur `_dlt_load_id` (als numeric casten, als loaded_at aliassen)
+      Two dlt schema variants are supported:
+        - Old tables: have `loaded_at` as timestamptz (used directly)
+        - New tables: only have `_dlt_load_id` (cast to numeric, aliased as loaded_at)
     */
     {% set source_relation = source('loaded_data', source_table) %}
     {% set cols = adapter.get_columns_in_relation(source_relation) | map(attribute='name') | map('lower') | list %}
