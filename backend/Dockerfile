@@ -26,7 +26,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /app/bin/server -ldflags "\
 # =============================================================================
 # Stage 2: Minimal runtime image
 # =============================================================================
-FROM alpine:3.21
+FROM alpine:3.24
 
 # CA certificates and timezone data
 RUN apk add --no-cache ca-certificates tzdata
