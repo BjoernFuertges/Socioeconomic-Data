@@ -97,7 +97,9 @@ and `mart_nuts0_summary` are views):
 - **models/intermediate/** — crosswalk building blocks, not dataset
   content: LAU↔NUTS3 membership and population weights
   (`int_lau_nuts3_membership`, `int_lau_nuts3_population_weight`), the
-  NUTS boundary-version crosswalk (`int_nuts_spatial_crosswalk`) that
+  NUTS boundary-version crosswalk (`int_nuts_spatial_crosswalk`, reading
+  the GiST-indexed `int_nuts3_de_geometry` instead of the unindexable
+  `stg_nuts_geometry` view) that
   `mart_nuts_version_crosswalk` / `mart_nuts3_sociodata_harmonized` build
   on to reconcile 2003/2006/2010/2013/2016/2021/2024 NUTS-3 boundary
   changes, its LAU-version counterpart (`int_lau_spatial_crosswalk`, feeds
@@ -153,7 +155,11 @@ and `mart_nuts0_summary` are views):
     ('declared'/'spatial_estimate') tells consumers which one it is.
   - `mart_nuts_geometry_historized` / `mart_lau_geometry_historized` —
     versioned geometry, joined by NUTS/LAU id + boundary version rather
-    than a foreign key to a single "current" geometry table.
+    than a foreign key to a single "current" geometry table. The name
+    column comes from a period's newest vintage. The NUTS mart also starts a
+    new period when a code is missing from an intermediate vintage (gap),
+    so it never matches a vintage it is absent from; the LAU mart does not
+    (yet) - there a period spans such gaps.
   - `mart_dataset_source` — source values of all `meta.yaml`-based
     Kreis/Gemeinde datasets in one long format (read from `loaded_data`,
     unharmonized, uninterpolated; only region names mapped to geodata IDs

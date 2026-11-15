@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 // GetLAURegions returns all LAU regions
@@ -171,7 +171,7 @@ func (h *Handler) GetLAURegions(c *gin.Context) {
 // @Failure 500 {object} models.APIResponse
 // @Router /lau/{gisco_id} [get]
 func (h *Handler) GetLAURegionByID(c *gin.Context) {
-	giscoID := strings.TrimSpace(c.Param("gisco_id"))
+	giscoID := strings.ToUpper(strings.TrimSpace(c.Param("gisco_id")))
 	year, err := parseOptionalIntQuery(c, "year")
 	if err != nil {
 		respondBadRequest(c, err.Error())
@@ -210,7 +210,9 @@ func (h *Handler) GetLAURegionByID(c *gin.Context) {
 	// comment on models.LAURegion.NUTS3ID.
 	if includeDatasets && region.NUTS3ID.Valid {
 		datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), region.NUTS3ID.String, 3)
-		if dsErr == nil {
+		if dsErr != nil {
+			logDatasetsError(c, "lau", dsErr)
+		} else {
 			region.Datasets = datasets
 		}
 	}

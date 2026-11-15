@@ -59,11 +59,9 @@ jobs:
     runs-on: ubuntu-latest
     # Reviewer approval is enforced via the environment settings in GitHub
     environment: infra
+    # Secrets are set per step (only where Terraform needs them), not for the whole job:
+    # checkout/setup-terraform and the key check do not see the Hetzner token or the state key.
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_ACCESS_KEY }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_KEY }}
-      TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
-      TF_VAR_ssh_public_key: ${{ secrets.DEPLOY_SSH_PUBLIC_KEY }}
       TF_VAR_server_type: ${{ vars.HCLOUD_SERVER_TYPE || 'cpx12' }}
       TF_VAR_location: ${{ vars.HCLOUD_LOCATION || 'nbg1' }}
     defaults:
@@ -111,13 +109,33 @@ jobs:
           endpoints = { s3 = "https://${TF_STATE_REGION}.your-objectstorage.com" }
           EOF
 
-      - run: terraform init -input=false -backend-config=backend.hcl
+      - name: terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_KEY }}
+        run: terraform init -input=false -backend-config=backend.hcl
 
-      - run: terraform plan -input=false -out=tfplan
+      - name: terraform plan
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_KEY }}
+          TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          TF_VAR_ssh_public_key: ${{ secrets.DEPLOY_SSH_PUBLIC_KEY }}
+        run: terraform plan -input=false -out=tfplan
 
-      - run: terraform apply -input=false -auto-approve tfplan
+      - name: terraform apply
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_KEY }}
+          TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          TF_VAR_ssh_public_key: ${{ secrets.DEPLOY_SSH_PUBLIC_KEY }}
+        run: terraform apply -input=false -auto-approve tfplan
 
+      # terraform output reads the state from the bucket
       - name: Summary
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_KEY }}
         run: |
           {
             echo "### Server"

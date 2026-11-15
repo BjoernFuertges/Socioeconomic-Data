@@ -46,6 +46,18 @@ curl -H 'Accept: text/csv' '<host>/api/v1/bevoelkerung/timeseries?geodata_id_nut
 - JSON responses carry pagination info in `meta` (`meta.total` is the full
   row count, so a client can compute the number of chunks).
 
+### Caching
+
+Successful `GET` responses under `/api/v1` carry `Cache-Control: public,
+max-age=300, stale-while-revalidate=600` (the data only changes with a
+pipeline run); `/versions` and `/datasets*` use `max-age=3600,
+stale-while-revalidate=86400`. Error responses (status >= 400) and
+`/health` are `no-store`, `POST` requests are untouched. Responses vary by
+`Accept` (JSON/CSV), hence `Vary: Accept`. Implemented in
+[`internal/routes/routes.go`](https://github.com/BjoernFuertges/Socioeconomic-Data/blob/main/backend/internal/routes/routes.go)
+(`cacheControlMiddleware`); no CORS change needed (`Cache-Control` is a
+safelisted/allowed request header, nothing extra to expose).
+
 ### Errors
 
 Errors use the same envelope with `success: false` and a German `error`
@@ -201,10 +213,12 @@ never the raw PostGIS error; other database failures are `500`/`503`.
 
 Request body: `geometry` (GeoJSON), `datasets` (slugs, max. 30), optional
 `from_year`, `to_year`, `min_share`. Limits: 5 MiB body (`413` above),
-200,000 vertices.
+200,000 vertices. The whole request runs under a total time budget (90 s,
+`CUSTOM_REGION_TIMEOUT_SECONDS`; exceeded: `503`) and may expand to at most
+150 sub-queries (datasets x indicators x levels; more: `400`).
 
 The region is sent per request and never stored. The polygon is intersected
-with the source geometries (reference state 2024) and the values are
+with the source geometries (reference state: the newest NUTS/LAU version, see `GET /versions`) and the values are
 aggregated per dataset on the finest available level: LAU before NUTS-3;
 the monthly Agentur figures exist only per Agenturbezirk and are always
 aggregated on that level. Counts (`sum`) are distributed by area share,

@@ -6,7 +6,7 @@ Scope: this file covers `analysis/arbeitsagentur/` — a standalone,
 manually-run data-fetching directory, not wired into the dlt/dbt pipeline
 or backend. It fetches current unemployment figures for the three Berlin
 Arbeitsagentur districts plus their district boundary geodata. See the
-repository root [AGENTS.md](../AGENTS.md) for how the production pipeline
+repository root [AGENTS.md](../../AGENTS.md) for how the production pipeline
 (`pipeline/dlt/`, `pipeline/dbt/`) differs from this ad-hoc script.
 
 ## Commands

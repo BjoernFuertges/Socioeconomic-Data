@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
-	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
 const datasetCatalogColumns = `dataset_slug, dataset_uri, name, description, description_long, unit,

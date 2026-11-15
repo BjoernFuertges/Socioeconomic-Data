@@ -107,6 +107,32 @@ export async function apiPost<T>(path: string, body: unknown, opts: RequestOptio
   return parseResponse<T>(raw);
 }
 
+// POST that returns the raw response body (e.g. the CSV export) instead of the
+// JSON envelope. Same retry/429 handling as apiPost; only for idempotent query
+// endpoints (IDEMPOTENT_POST_PATHS), whose errors still arrive as a JSON envelope.
+export async function apiPostText(path: string, body: unknown, opts: RequestOptions = {}): Promise<string> {
+  const { signal } = opts;
+  const attempt = () =>
+    fetchRaw(API_BASE + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal,
+    });
+  const raw = IDEMPOTENT_POST_PATHS.has(path.split("?")[0]) ? await retryOnStatus(attempt, { signal }) : await attempt();
+  if (raw.status === 429) throw new ApiError(RATE_LIMIT_MESSAGE, 429);
+  if (raw.status < 200 || raw.status >= 300) {
+    let message = `HTTP ${raw.status}`;
+    try {
+      message = JSON.parse(raw.text)?.error || message;
+    } catch {
+      // not a JSON error body
+    }
+    throw new ApiError(message, raw.status);
+  }
+  return raw.text;
+}
+
 // The Go API serializes some nullable fields (LAU metadata) as
 // database/sql.Null* structs ({"Int64":1,"Valid":true}) instead of plain
 // scalars. Unwrap both forms so the UI doesn't depend on the shape.

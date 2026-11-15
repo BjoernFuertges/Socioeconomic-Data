@@ -22,7 +22,7 @@ Postgres.
 go run cmd/soziodata/main.go
 
 go build ./...
-go test ./...   # internal/handlers (negotiation/CSV, pagination limits, DB error responses, GeoJSON validation, metrics SQL), no DB needed
+go test ./...   # internal/{handlers,config,routes,models} + cmd/*: negotiation/CSV, pagination limits, DB error responses, GeoJSON validation, metrics SQL, Cache-Control, guard tests; no DB needed (TestDB* are skipped)
 # Opt-in DB tests (TestDB*: synthetic fixtures in a fresh, auto-dropped database;
 # the user needs CREATE DATABASE, e.g. a throwaway postgis/postgis container):
 SOZ_TEST_PG_DSN="host=127.0.0.1 port=5432 user=... password=... dbname=postgres sslmode=disable" go test ./internal/handlers/ -run DB
@@ -137,6 +137,11 @@ tables. Locally `DB_USER` may remain the owner.
   `mart_dataset_aggregation_meta`. If the polygon equals one unit of a level
   (area IoU ≥ 0.999, `customRegionExactMatchSQL`) only that unit counts and
   `matched_unit` is set on the rows. Goes through `respondList` (JSON/CSV).
+  The whole handler runs under one time budget (`customRegionBudget()`, 90 s,
+  env `CUSTOM_REGION_TIMEOUT_SECONDS`; exceeded: 503) and is capped at
+  `customRegionMaxQueries` sub-queries (400). `customRegionUnitsSQL` returns an
+  error for unknown levels (a test checks it covers every level of
+  `mart_dataset_aggregation_meta`).
   Body/vertex limits and the GeoJSON checks (`bindGeoJSONBody`,
   `validateGeoJSONGeometry`, `checkGeoJSONInDB`) live in `geojson_input.go`
   and are shared with `POST /geo/query` - reuse them for any new GeoJSON
@@ -158,7 +163,12 @@ tables. Locally `DB_USER` may remain the owner.
   `chunk_size`). The `limit=null` cap is sized at startup:
   `max(300000, 1.25 × largest stg_*/snap_results_* table)` from
   `pg_class.reltuples`.
-- `internal/routes/routes.go` wires the hand-written routes;
+- `internal/routes/routes.go` wires the hand-written routes and the
+  `/api/v1` middleware: successful GETs get `Cache-Control` (5 min default,
+  1 h for `/versions` and `/datasets*`; errors and `/health` `no-store`),
+  see `cacheControlMiddleware`. `internal/models/models_soziodata_guard_test.go`
+  keeps `AllSoziodataConfigs()`, the generated configs and
+  `harmonizedRouteSlugs` consistent with each other and with the dbt marts.
   `routes_soziodata_generated.go` wires the generated per-dataset routes.
   Both are mounted together in `cmd/soziodata/main.go`.
 - `configs/metrics_catalog.yaml` is hand-maintained metadata (formulas/

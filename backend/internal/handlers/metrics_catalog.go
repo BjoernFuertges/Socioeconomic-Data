@@ -2,11 +2,12 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 // GetDerivedMetricsCatalog returns all derived-metric definitions.
@@ -82,7 +83,8 @@ func (h *Handler) GetDerivedMetricsCatalogEntry(c *gin.Context) {
 	src, err := derivedMetricSource(entry, nutsVersion)
 	if err != nil {
 		// Catalog misconfiguration (configs/metrics_catalog.yaml), no DB involved.
-		respondInternalError(c, fmt.Sprintf("Fehler bei abgeleiteter Metrik %q: %v", slug, err))
+		log.Printf("Fehler bei abgeleiteter Metrik %q (Katalog): %v", slug, err)
+		respondInternalError(c, "Die abgeleitete Metrik ist falsch konfiguriert")
 		return
 	}
 

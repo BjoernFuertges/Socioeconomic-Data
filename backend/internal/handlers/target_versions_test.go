@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 // setTargetVersionsForTest replaces the target versions for one test.
@@ -51,7 +51,9 @@ func TestTargetVersionsDefaultIsNewest(t *testing.T) {
 		!strings.Contains(err.Error(), "[2016 2024 2027]") {
 		t.Errorf("error must list the configured versions: %v", err)
 	}
-	if !strings.Contains(customRegionUnitsSQL("nuts3"), "2027") || !strings.Contains(customRegionUnitsSQL("lau"), "2022") {
+	nutsSQL, _ := customRegionUnitsSQL("nuts3")
+	lauSQL, _ := customRegionUnitsSQL("lau")
+	if !strings.Contains(nutsSQL, "2027") || !strings.Contains(lauSQL, "2022") {
 		t.Error("custom region units must use the current defaults")
 	}
 }

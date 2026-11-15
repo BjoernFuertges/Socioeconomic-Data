@@ -27,17 +27,17 @@
 
   Purely the geometric basis; population weighting happens in
   mart_nuts_version_crosswalk.
+
+  Reads int_nuts3_de_geometry (materialized, GiST-indexed) instead of the
+  stg_nuts_geometry view, so the spatial self-join can use the index.
 */
 
 with nuts_de as (
     select
         nuts_id,
-        year            as version_year,
+        version_year,
         geometry_3035
-    from {{ ref('stg_nuts_geometry') }}
-    where levl_code        = 3
-      and country_code     = 'DE'
-      and has_valid_geometry
+    from {{ ref('int_nuts3_de_geometry') }}
 ),
 
 version_years as (

@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
-	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
 // DB integration tests against a real PostGIS. Opt-in: SOZ_TEST_PG_DSN is a

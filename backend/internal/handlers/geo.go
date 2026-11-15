@@ -9,8 +9,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 )
 
 func normalizeGeometryStrategy(raw string) (string, error) {
@@ -1061,14 +1062,37 @@ func (h *Handler) queryGeoRegionsLAU(c *gin.Context, filter models.GeoSpatialQue
 	}
 
 	if filter.IncludeDatasets {
+		// Batched: one query for gisco_id -> nuts3_id, one for all datasets.
+		ids := make([]string, 0, len(data))
 		for i := range data {
-			var nuts3Code string
-			if err := h.DB.GetContext(c.Request.Context(), &nuts3Code,
-				`SELECT nuts3_id FROM transformed_data.lau_integrated WHERE gisco_id = $1 AND nuts3_id IS NOT NULL AND lau_name IS NOT NULL LIMIT 1`,
-				data[i].GeoID,
-			); err == nil && nuts3Code != "" {
-				if datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), nuts3Code, 3); dsErr == nil {
-					data[i].Datasets = datasets
+			ids = append(ids, data[i].GeoID)
+		}
+		var links []struct {
+			GiscoID string `db:"gisco_id"`
+			Nuts3ID string `db:"nuts3_id"`
+		}
+		if err := h.DB.SelectContext(c.Request.Context(), &links,
+			`SELECT DISTINCT ON (gisco_id) gisco_id, nuts3_id FROM transformed_data.lau_integrated
+			 WHERE gisco_id = ANY($1) AND nuts3_id IS NOT NULL AND lau_name IS NOT NULL
+			 ORDER BY gisco_id, nuts3_id`, pq.Array(ids)); err != nil {
+			logDatasetsError(c, "geo/lau", err)
+		} else {
+			nutsByGisco := make(map[string]string, len(links))
+			nutsIDs := make([]string, 0, len(links))
+			for _, l := range links {
+				if l.Nuts3ID != "" {
+					nutsByGisco[l.GiscoID] = l.Nuts3ID
+					nutsIDs = append(nutsIDs, l.Nuts3ID)
+				}
+			}
+			byNuts, dsErr := h.regionNutsDatasetsBulk(c.Request.Context(), nutsIDs)
+			if dsErr != nil {
+				logDatasetsError(c, "geo/lau", dsErr)
+			} else {
+				for i := range data {
+					if n, ok := nutsByGisco[data[i].GeoID]; ok {
+						data[i].Datasets = byNuts[n]
+					}
 				}
 			}
 		}
@@ -1203,10 +1227,19 @@ func (h *Handler) queryGeoRegionsNUTS(c *gin.Context, filter models.GeoSpatialQu
 	}
 
 	if filter.IncludeDatasets {
+		ids := []string{}
 		for i := range data {
 			if data[i].NutsLevel != nil && *data[i].NutsLevel == 3 {
-				if datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), data[i].GeoID, 3); dsErr == nil {
-					data[i].Datasets = datasets
+				ids = append(ids, data[i].GeoID)
+			}
+		}
+		byNuts, dsErr := h.regionNutsDatasetsBulk(c.Request.Context(), ids)
+		if dsErr != nil {
+			logDatasetsError(c, "geo/nuts", dsErr)
+		} else {
+			for i := range data {
+				if ds, ok := byNuts[data[i].GeoID]; ok && data[i].NutsLevel != nil && *data[i].NutsLevel == 3 {
+					data[i].Datasets = ds
 				}
 			}
 		}

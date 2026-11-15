@@ -1,9 +1,38 @@
 services:
+  # Traefik and ofelia do not get the Docker socket itself (= root on the host) but a filtering
+  # proxy each, reachable only on its own internal network. Traefik's proxy is read-only
+  # (CONTAINERS=1, no POST); ofelia's additionally allows POST + EXEC for "job-exec" (that still
+  # permits creating containers, so it narrows but does not remove ofelia's privileges).
+  traefik-docker-proxy:
+    image: tecnativa/docker-socket-proxy:v0.5.0
+    container_name: traefik-docker-proxy
+    restart: always
+    environment:
+      CONTAINERS: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik-socket
+
+  scheduler-docker-proxy:
+    image: tecnativa/docker-socket-proxy:v0.5.0
+    container_name: scheduler-docker-proxy
+    restart: always
+    environment:
+      CONTAINERS: 1
+      EXEC: 1
+      POST: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - scheduler-socket
+
   traefik:
     image: traefik:v3.6.5
     restart: always
     command:
       - "--providers.docker=true"
+      - "--providers.docker.endpoint=tcp://traefik-docker-proxy:2375"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
@@ -33,10 +62,12 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./letsencrypt:/letsencrypt
+    depends_on:
+      - traefik-docker-proxy
     networks:
       - backend-net
+      - traefik-socket
 
   # DB_PASSWORD comes from backend/deployments/.env (template: .env.example, do not commit).
   postgis:
@@ -70,8 +101,10 @@ services:
     networks:
       - backend-net
 
+  # IMAGE_TAG (sha-<commit>) comes from .env (deploy job; rollback rewrites it). No ":-latest"
+  # fallback: a missing tag must fail loudly instead of silently running another version.
   backend:
-    image: ghcr.io/${GHCR_OWNER:?}/soziodata-backend:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:?}/soziodata-backend:${IMAGE_TAG:?}
     container_name: backend
     env_file: ".env.backend"
     environment:
@@ -108,7 +141,11 @@ services:
       - "traefik.http.routers.backend.tls=true"
       - "traefik.http.routers.backend.tls.certresolver=le_http"
       - "traefik.http.routers.backend.priority=100"
-      - "traefik.http.routers.backend.middlewares=api-ratelimit@docker,api-inflight@docker"
+      - "traefik.http.routers.backend.middlewares=hsts@docker,api-ratelimit@docker,api-inflight@docker"
+      # HSTS (1 year, only this host: no includeSubDomains/preload). Defined identically here and on
+      # the frontend so each router keeps working if the other container is down; Traefik accepts
+      # identical definitions from several containers. Cache-Control is set by the backend itself.
+      - "traefik.http.middlewares.hsts.headers.stsSeconds=31536000"
       - "traefik.http.services.backend.loadbalancer.server.port=8080"
       # --- Abuse protection: the API is public on 1 vCPU / 2 GB with a 25-connection
       # DB pool. Limits are per client IP (429 when exceeded) unless noted.
@@ -150,7 +187,7 @@ services:
       - "traefik.http.routers.backend-heavy.tls.certresolver=le_http"
       - "traefik.http.routers.backend-heavy.priority=110"
       - "traefik.http.routers.backend-heavy.service=backend"
-      - "traefik.http.routers.backend-heavy.middlewares=heavy-ratelimit@docker,heavy-inflight@docker,heavy-global@docker"
+      - "traefik.http.routers.backend-heavy.middlewares=hsts@docker,heavy-ratelimit@docker,heavy-inflight@docker,heavy-global@docker"
       # POST (/geo/query, /custom-regions/dataset-aggregate): heavy spatial SQL.
       - "traefik.http.routers.backend-post.rule=Host(`${APP_HOST:?}`) && PathPrefix(`/api/`) && Method(`POST`)"
       - "traefik.http.routers.backend-post.entrypoints=websecure"
@@ -158,10 +195,11 @@ services:
       - "traefik.http.routers.backend-post.tls.certresolver=le_http"
       - "traefik.http.routers.backend-post.priority=120"
       - "traefik.http.routers.backend-post.service=backend"
-      - "traefik.http.routers.backend-post.middlewares=heavy-ratelimit@docker,heavy-inflight@docker,post-global@docker,api-post-body@docker"
+      - "traefik.http.routers.backend-post.middlewares=hsts@docker,heavy-ratelimit@docker,heavy-inflight@docker,post-global@docker,api-post-body@docker"
 
   pipeline:
-    image: python:3.12-slim
+    # patch + Debian release pinned (Dependabot docker-compose proposes updates)
+    image: python:3.12.16-slim-trixie
     container_name: pipeline
     working_dir: /app
     restart: always
@@ -185,11 +223,15 @@ services:
       DESTINATION__POSTGRES__CREDENTIALS__USERNAME: pipeline_rw
       DESTINATION__POSTGRES__CREDENTIALS__PASSWORD: ${PIPELINE_DB_PASSWORD:?}
       DBT_PROFILES_DIR: /app/dbt/socioeconomic_data_pipeline
+    # dbt-core is pinned here because dbt-postgres==1.9.1 (requirements.txt) only requires
+    # dbt-core>=1.8 and would otherwise pull the newest dbt-core on every container start.
+    # 1.12.7 is what that resolved to when pinned (no change in behaviour); keep it in sync with
+    # compose.local.yml.
     # dlt reads GeoJSON files up to ~50 MB into pandas/shapely (several hundred MB
     # peak); dbt itself is light (the SQL runs in Postgres). With swap on top.
     mem_limit: 1g
     command: >
-      bash -c "python -m pip install -q -r /app/dlt/requirements.txt 'dlt[postgres]' dbt-postgres && python -c 'import dlt, pandas, shapely' && echo 'Pipeline image ready' && tail -f /dev/null"
+      bash -c "python -m pip install -q -r /app/dlt/requirements.txt 'dlt[postgres]' dbt-postgres 'dbt-core==1.12.7' && python -c 'import dlt, pandas, shapely' && echo 'Pipeline image ready' && tail -f /dev/null"
     healthcheck:
       test: ["CMD-SHELL", "python -c 'import dlt, pandas, shapely'"]
       interval: 30s
@@ -204,7 +246,9 @@ services:
       ofelia.enabled: "true"
       # dlt + dbt every hour on the hour
       ofelia.job-exec.pipeline.schedule: "0 0 * * * *"
-      ofelia.job-exec.pipeline.command: "bash /app/dlt/run_all_pipelines.sh"
+      # PIPELINE_LOCK_BUSY_EXIT=0: if a manual run or the initial load holds the flock of
+      # run_all_pipelines.sh, the hourly run is skipped and logged, but not reported as failed.
+      ofelia.job-exec.pipeline.command: "env PIPELINE_LOCK_BUSY_EXIT=0 bash /app/dlt/run_all_pipelines.sh"
       # A run can take longer than an hour (initial load, slow sources): never start
       # a second one in parallel - two concurrent dbt snapshots could corrupt the
       # snapshots schema, which is the only part the pipeline cannot rebuild.
@@ -215,19 +259,22 @@ services:
     container_name: scheduler
     restart: always
     command: daemon --docker
+    environment:
+      DOCKER_HOST: tcp://scheduler-docker-proxy:2375
     depends_on:
       pipeline:
         condition: service_healthy
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      scheduler-docker-proxy:
+        condition: service_started
+    # only needs the socket proxy (job-exec runs inside the pipeline container)
     networks:
-      - backend-net
+      - scheduler-socket
 
   # Not public: starts only on demand (`docker compose up -d adminer`, profile "tools")
   # and listens only on the server's 127.0.0.1. Access via SSH tunnel:
   #   ssh -L 8083:localhost:8083 deploy@<SSH_HOST>  ->  http://localhost:8083 (server: postgis)
   adminer:
-    image: adminer
+    image: adminer:6.3.0
     profiles: ["tools"]
     restart: unless-stopped
     command: php -S 0.0.0.0:8080 -t /var/www/html
@@ -241,7 +288,7 @@ services:
       - backend-net
 
   frontend:
-    image: ghcr.io/${GHCR_OWNER:?}/soziodata-frontend:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:?}/soziodata-frontend:${IMAGE_TAG:?}
     container_name: frontend
     restart: always
     depends_on:
@@ -255,7 +302,9 @@ services:
       - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.routers.frontend.tls.certresolver=le_http"
       - "traefik.http.routers.frontend.priority=1"
-      - "traefik.http.routers.frontend.middlewares=static-ratelimit@docker"
+      - "traefik.http.routers.frontend.middlewares=hsts@docker,static-ratelimit@docker"
+      # same HSTS definition as on the backend (see there)
+      - "traefik.http.middlewares.hsts.headers.stsSeconds=31536000"
       # Static files (SPA bundle, MkDocs pages + search index): cheap, so a generous
       # per-IP limit that only stops floods. Also used by the docs routers.
       - "traefik.http.middlewares.static-ratelimit.ratelimit.average=50"
@@ -263,7 +312,7 @@ services:
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
   docs:
-    image: ghcr.io/${GHCR_OWNER:?}/soziodata-docs:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GHCR_OWNER:?}/soziodata-docs:${IMAGE_TAG:?}
     container_name: docs
     restart: always
     depends_on:
@@ -277,14 +326,14 @@ services:
       - "traefik.http.routers.docs.tls=true"
       - "traefik.http.routers.docs.tls.certresolver=le_http"
       - "traefik.http.routers.docs.priority=90"
-      - "traefik.http.routers.docs.middlewares=static-ratelimit@docker,docs-strip-prefix@docker"
+      - "traefik.http.routers.docs.middlewares=hsts@docker,static-ratelimit@docker,docs-strip-prefix@docker"
       - "traefik.http.middlewares.docs-strip-prefix.stripprefix.prefixes=/docs"
       - "traefik.http.routers.docs-slash.rule=Host(`${APP_HOST:?}`) && Path(`/docs`)"
       - "traefik.http.routers.docs-slash.entrypoints=websecure"
       - "traefik.http.routers.docs-slash.tls=true"
       - "traefik.http.routers.docs-slash.tls.certresolver=le_http"
       - "traefik.http.routers.docs-slash.priority=91"
-      - "traefik.http.routers.docs-slash.middlewares=static-ratelimit@docker,docs-add-trailing-slash@docker"
+      - "traefik.http.routers.docs-slash.middlewares=hsts@docker,static-ratelimit@docker,docs-add-trailing-slash@docker"
       - "traefik.http.middlewares.docs-add-trailing-slash.redirectregex.regex=^https?://([^/]+)/docs$$"
       - "traefik.http.middlewares.docs-add-trailing-slash.redirectregex.replacement=https://$${1}/docs/"
       - "traefik.http.middlewares.docs-add-trailing-slash.redirectregex.permanent=true"
@@ -296,3 +345,8 @@ volumes:
 networks:
   backend-net:
     driver: bridge
+  # internal: no route outside, only Traefik/ofelia and their socket proxy are attached
+  traefik-socket:
+    internal: true
+  scheduler-socket:
+    internal: true

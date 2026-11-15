@@ -3,6 +3,7 @@ package routes
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 
@@ -28,6 +29,7 @@ func SetupRoutes(handler *handlers.Handler) *gin.Engine {
 	router.Use(loggingMiddleware())
 
 	v1 := router.Group("/api/v1")
+	v1.Use(cacheControlMiddleware())
 	{
 		// Health check
 		v1.GET("/health", handler.HealthCheck)
@@ -141,6 +143,86 @@ func corsMiddleware() gin.HandlerFunc {
 
 		c.Next()
 	})
+}
+
+const (
+	// cacheControlDefault: read-only data that only changes with a pipeline run.
+	cacheControlDefault = "public, max-age=300, stale-while-revalidate=600"
+	// cacheControlSlow: metadata that changes rarely (supported versions are read
+	// at startup, the dataset catalog is hand-maintained).
+	cacheControlSlow = "public, max-age=3600, stale-while-revalidate=86400"
+	cacheControlNone = "no-store"
+)
+
+// cacheControlFor picks the Cache-Control value for a successful GET on the
+// given route pattern (c.FullPath()).
+func cacheControlFor(fullPath string) string {
+	switch {
+	case fullPath == "/api/v1/health":
+		return cacheControlNone
+	case fullPath == "/api/v1/versions", strings.HasPrefix(fullPath, "/api/v1/datasets"):
+		return cacheControlSlow
+	}
+	return cacheControlDefault
+}
+
+// cacheWriter sets Cache-Control right before the status line/body is sent,
+// when the final status is known: successful GET responses get the route's
+// public value, error responses (>= 400) "no-store". A value the handler set
+// itself is kept.
+type cacheWriter struct {
+	gin.ResponseWriter
+	value string
+	done  bool
+}
+
+func (w *cacheWriter) apply() {
+	if w.done {
+		return
+	}
+	w.done = true
+	if w.Header().Get("Cache-Control") != "" {
+		return
+	}
+	if w.Status() >= http.StatusBadRequest {
+		w.Header().Set("Cache-Control", cacheControlNone)
+		return
+	}
+	w.Header().Set("Cache-Control", w.value)
+}
+
+func (w *cacheWriter) WriteHeader(code int) {
+	w.ResponseWriter.WriteHeader(code) // only records the code in gin's writer
+	w.apply()
+}
+
+func (w *cacheWriter) WriteHeaderNow() {
+	w.apply()
+	w.ResponseWriter.WriteHeaderNow()
+}
+
+func (w *cacheWriter) Write(b []byte) (int, error) {
+	w.apply()
+	return w.ResponseWriter.Write(b)
+}
+
+func (w *cacheWriter) WriteString(s string) (int, error) {
+	w.apply()
+	return w.ResponseWriter.WriteString(s)
+}
+
+// cacheControlMiddleware adds Cache-Control to GET responses of the API so
+// that browsers, Traefik and CDNs can absorb repeated reads (the data only
+// changes with a pipeline run). Error responses and /health are never cached;
+// other methods (POST for GeoJSON queries) are left untouched. Responses are
+// negotiated per Accept header (JSON/CSV); negotiate.go sets "Vary: Accept".
+func cacheControlMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request.Method == http.MethodGet {
+			c.Writer = &cacheWriter{ResponseWriter: c.Writer, value: cacheControlFor(c.FullPath())}
+		}
+		c.Next()
+	}
 }
 
 // loggingMiddleware logs one access line per request.

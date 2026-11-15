@@ -27,9 +27,16 @@ select
     'aggregation_lau_to_nuts3'::text as mapper,
     'population_weighted_and_median'::text as parameter,
     'NUTS_3'::text as geodata_level,
-    -- Follows meta.yaml (geodata_year 2024) of the underlying Gemeinden series;
-    -- keep in sync with the Gemeinden/LAU vintage.
-    2024::integer as geodata_year,
+    -- NUTS version of geodata_id_nuts: the codes come from nuts_3_code of the
+    -- newest Eurostat LAU vintage (stg_beschaeftigungsquote_gemeinden ->
+    -- latest_lau), which lists the NUTS version in force in that year, i.e.
+    -- the newest entry of var nuts_versions not after that vintage. Derived
+    -- instead of hard-coded so a new LAU/NUTS vintage moves it along.
+    (
+        select max(v)
+        from unnest(array[{{ var('nuts_versions') | join(', ') }}]::int[]) as v
+        where v <= (select max(year) from {{ ref('stg_lau_population') }})
+    ) as geodata_year,
     year,
     observation_date,
     case

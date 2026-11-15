@@ -46,6 +46,14 @@ updates:
     directory: /backend/deployments
     schedule:
       interval: weekly
+    ignore:
+      # Major PostgreSQL upgrades need a pg_upgrade/dump+restore of the data
+      # directory (a new image cannot start on an old PGDATA); do them by hand.
+      - dependency-name: "postgis/postgis"
+        update-types: ["version-update:semver-major"]
+      # Traefik majors change label/CLI syntax (v2 -> v3); migrate deliberately.
+      - dependency-name: "traefik"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: terraform
     directory: /infra/hetzner

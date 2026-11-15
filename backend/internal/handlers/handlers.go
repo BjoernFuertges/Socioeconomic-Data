@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"github.com/jmoiron/sqlx"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/jmoiron/sqlx"
 )
 
 // Handler holds all handlers for the API

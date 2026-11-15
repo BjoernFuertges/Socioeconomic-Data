@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 type nutsLevelDetails struct {
@@ -370,7 +370,9 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 		}
 
 		if includeDatasets {
-			if datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), levelDetails.NormalizedID, levelDetails.Number); dsErr == nil {
+			if datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), levelDetails.NormalizedID, levelDetails.Number); dsErr != nil {
+				logDatasetsError(c, "nuts", dsErr)
+			} else {
 				response.Datasets = datasets
 			}
 		}
@@ -429,7 +431,9 @@ func (h *Handler) GetNutsRegionData(c *gin.Context) {
 	}
 
 	if includeDatasets {
-		if datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), levelDetails.NormalizedID, levelDetails.Number); dsErr == nil {
+		if datasets, dsErr := h.regionNutsDatasets(c.Request.Context(), levelDetails.NormalizedID, levelDetails.Number); dsErr != nil {
+			logDatasetsError(c, "nuts", dsErr)
+		} else {
 			response.Datasets = datasets
 		}
 	}

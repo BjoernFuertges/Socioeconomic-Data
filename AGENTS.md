@@ -16,9 +16,9 @@ or Swagger; link to it instead. Skip doc updates for purely internal
 refactors that don't change behavior or structure visible to the docs.
 
 The same applies to the per-directory `AGENTS.md` files (`backend/`,
-`frontend/`, `pipeline/dbt/`, `pipeline/dlt/`, `analysis/data-analysis/`, `analysis/arbeitsagentur/`):
+`frontend/`, `pipeline/dbt/`, `pipeline/dlt/`, `infra/`, `data-exchange/`, `analysis/data-analysis/`, `analysis/arbeitsagentur/`):
 if a change alters commands, generated-file boundaries, model/mart
-layering, or another fact one of them states, update that `AGENTS.md` in
+layering, secrets rules, directory layout, or another fact one of them states, update that `AGENTS.md` in
 the same change rather than letting it drift out of date.
 
 ## Project overview

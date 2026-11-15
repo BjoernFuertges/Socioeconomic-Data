@@ -31,8 +31,11 @@
     area_share = ST_Area(gemeinde ∩ region) / ST_Area(gemeinde) of the
                  chosen region (informational).
 
-  Only computed for the LAU population years present in
-  int_lau_population_geo, to keep the spatial join small.
+  Only computed for the LAU population years that
+  int_lau_nuts3_population_weight actually resolves (closest available year
+  to GREATEST(source_version, target_version) - 1 per version pair, see
+  pop_years below), to keep the spatial join small. Keep that rule in sync
+  with the resolved CTE of int_lau_nuts3_population_weight.
 
   NUTS-3 geometries come from mart_nuts_geometry_historized, not
   stg_nuts_geometry: the staging view re-parses geometry_3035 via
@@ -63,9 +66,29 @@ nuts_de as (
         and (g.valid_to is null or g.valid_to >= vy.version_year)
 ),
 
+available_years as (
+    select distinct year from {{ ref('int_lau_population_geo') }}
+),
+
+-- Reference year of a version pair = GREATEST(source, target) - 1, so every
+-- version except the oldest is the GREATEST of some pair; each maps to the
+-- closest available population year (same tie-break as
+-- int_lau_nuts3_population_weight). Other population years are never read.
+pop_years as (
+    select distinct (
+        select ay.year
+        from available_years ay
+        order by abs(ay.year - (vy.version_year - 1)), ay.year
+        limit 1
+    ) as year
+    from version_years vy
+    where vy.version_year > (select min(version_year) from version_years)
+),
+
 lau_years as (
-    select distinct gisco_id, year, geometry_3035
-    from {{ ref('int_lau_population_geo') }}
+    select distinct p.gisco_id, p.year, p.geometry_3035
+    from {{ ref('int_lau_population_geo') }} p
+    join pop_years py on py.year = p.year
 ),
 
 pieces as (

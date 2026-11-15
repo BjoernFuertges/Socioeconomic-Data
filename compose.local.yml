@@ -34,7 +34,8 @@ services:
       POSTGRES_USER: sozio_data_compose_user
       POSTGRES_PASSWORD: local_dev_password
     ports:
-      - "5432:5432"
+      # all ports only on the loopback interface: dev passwords, never reachable from the LAN
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata_local:/var/lib/postgresql/data
     healthcheck:
@@ -44,7 +45,7 @@ services:
       retries: 20
 
   pipeline:
-    image: python:3.12-slim
+    image: python:3.12.16-slim-trixie
     working_dir: /app
     volumes:
       - ./pipeline/dlt:/app/dlt
@@ -77,7 +78,7 @@ services:
       DESTINATION__POSTGRES__CREDENTIALS__PASSWORD: local_dev_password
       DBT_PROFILES_DIR: /app/dbt/socioeconomic_data_pipeline
     command: >
-      bash -c "pip install -q -r /app/dlt/requirements.txt 'dlt[postgres]' dbt-postgres && ([ -f /app/dbt/socioeconomic_data_pipeline/profiles.yml ] || cp /app/dbt/socioeconomic_data_pipeline/profiles.example.yml /app/dbt/socioeconomic_data_pipeline/profiles.yml) && echo 'Pipeline-Container bereit. Ausfuehren mit: docker compose -f compose.local.yml exec pipeline bash /app/dlt/run_all_pipelines.sh' && tail -f /dev/null"
+      bash -c "pip install -q -r /app/dlt/requirements.txt 'dlt[postgres]' dbt-postgres 'dbt-core==1.12.7' &&([ -f /app/dbt/socioeconomic_data_pipeline/profiles.yml ] || cp /app/dbt/socioeconomic_data_pipeline/profiles.example.yml /app/dbt/socioeconomic_data_pipeline/profiles.yml) && echo 'Pipeline-Container bereit. Ausfuehren mit: docker compose -f compose.local.yml exec pipeline bash /app/dlt/run_all_pipelines.sh' && tail -f /dev/null"
     healthcheck:
       test: ["CMD-SHELL", "python -c 'import dlt, pandas, shapely'"]
       interval: 30s
@@ -93,7 +94,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     environment:
       API_HOST: 0.0.0.0
       PORT: "8081"
@@ -115,18 +116,18 @@ services:
     environment:
       VITE_API_BASE_URL: http://localhost:8081/api/v1
     ports:
-      - "5174:5173"
+      - "127.0.0.1:5174:5173"
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     depends_on:
       - backend
 
   adminer:
-    image: adminer
+    image: adminer:6.3.0
     restart: unless-stopped
     environment:
       ADMINER_DEFAULT_SERVER: postgis
     ports:
-      - "8082:8080"
+      - "127.0.0.1:8082:8080"
     depends_on:
       - postgis
 

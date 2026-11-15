@@ -146,3 +146,21 @@ needs that schema added to `backend/scripts/ensure_pipeline_role.sql` first
   data. Any macro relying on `adapter.get_columns_in_relation` (e.g. the
   snapshot query macro) requires this ordering — dbt must never run before
   the corresponding dlt load in a given pipeline invocation.
+
+## Tests
+
+`pipeline/dlt/tests/` holds small pytest regression tests (no DB or dlt
+credentials needed, only the packages from `requirements.txt` plus
+`pytest`): `cd pipeline/dlt && python -m pytest tests/`. Currently covers
+`_parse_german_number` in `load_soziodata_generic.py`. Year columns of
+`mapped_pairs.csv` are read as text (`dtype=str`) and the parser treats
+`46450.0` as dot-decimal (not as `464500`), while `1.234,5` and `1.234`
+stay German format.
+
+## Geometry conversion failures
+
+`load_geodata_to_postgis.py` does not abort on a geometry that cannot be
+converted: the feature is loaded with a NULL geometry, a warning is logged
+and counted, and `main()` prints the counts per source in its summary.
+Whole-file errors still re-raise (with `"replace"` a partial extract would
+wipe the good table).

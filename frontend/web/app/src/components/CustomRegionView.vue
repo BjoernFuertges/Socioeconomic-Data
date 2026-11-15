@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { API_BASE, apiGet } from "../api/client";
+import { API_BASE, apiGet, apiPostText } from "../api/client";
 import { MAX_GEOJSON_BYTES, parseRegionGeoJSON, type RegionGeometry } from "../customRegion";
 import type { CustomRegionDataset, DatasetCatalogEntry, GeoRegionSummary } from "../types/api";
 import CombineRegionsPicker from "./CombineRegionsPicker.vue";
@@ -174,13 +174,12 @@ async function downloadCsv() {
   if (!queryGeometry.value) return;
   requestError.value = null;
   try {
-    const res = await fetch(`${API_BASE}/custom-regions/dataset-aggregate?format=csv&download=1`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ geometry: queryGeometry.value, datasets: selectedBaseSlugs.value }),
+    // Via the API client: retry with backoff on 429/503 and the shared rate-limit message.
+    const csv = await apiPostText("/custom-regions/dataset-aggregate?format=csv&download=1", {
+      geometry: queryGeometry.value,
+      datasets: selectedBaseSlugs.value,
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const url = URL.createObjectURL(await res.blob());
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const a = document.createElement("a");
     a.href = url;
     a.download = "eigene-region.csv";

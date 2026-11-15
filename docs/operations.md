@@ -65,6 +65,13 @@ applies to newly created servers only):
 The `deploy` user is in the `docker` group, which is effectively root on the
 server: treat the `SSH_PRIVATE_KEY` secret accordingly.
 
+Traefik and the ofelia scheduler do not mount the Docker socket. Each talks to its own
+`tecnativa/docker-socket-proxy` on an internal network (`traefik-socket`, `scheduler-socket`):
+Traefik's proxy only allows reading containers (`CONTAINERS=1`, no `POST`), ofelia's additionally
+`POST` + `EXEC` for its `job-exec` (that still allows creating containers, so it narrows rather
+than removes ofelia's privileges). Traefik sends HSTS (`Strict-Transport-Security: max-age=31536000`,
+no `includeSubDomains`/`preload`) on all routers via the `hsts` middleware.
+
 **Adminer is not publicly reachable.** It is a Compose profile (`tools`) that
 only listens on `127.0.0.1:8083` of the server and is started on demand:
 
@@ -102,15 +109,19 @@ and before the other containers start (idempotent SQL files in `backend/scripts/
   is a no-op), hands every existing relation in those schemas to `pipeline_rw`, and sets
   `ALTER DEFAULT PRIVILEGES FOR ROLE pipeline_rw ... GRANT SELECT ON TABLES TO api_ro`.
   **A new pipeline schema must be added to `ensure_pipeline_role.sql`** (`pipeline_rw` cannot
-  create schemas). Before running it, `deploy_remote.sh` stops the scheduler and waits for a
+  create schemas). Right after installing the configuration, before the Nextcloud sync,
+  `compose pull` and starting `postgis`, `deploy_remote.sh apply` stops the scheduler and waits for a
   running `run_all_pipelines.sh` (max. `PIPELINE_WAIT_TIMEOUT`, default 60 min, then the deploy
-  aborts - e.g. during a long initial load; deploy again later).
+  aborts - e.g. during a long initial load; deploy again later). If the deploy fails after that
+  point, the scheduler is started again; `deploy_remote.sh rollback` waits the same way. While an
+  initial load is active, neither starts the scheduler (the load's wrapper does when it ends).
 
 dbt takes its credentials from `profiles.yml` next to `dbt_project.yml`
 (`pipeline/dbt/socioeconomic_data_pipeline/profiles.yml`, gitignored, bind-mounted into the
 container via `DBT_PROFILES_DIR`). It only uses `pipeline_rw` if it reads
 `user`/`password` from `DB_USER`/`DB_PASSWORD` like `profiles.example.yml`; check this on the
-server before the first deploy with the role (`deploy_remote.sh apply` warns otherwise). dlt
+server before the first deploy with the role (`deploy_remote.sh apply` warns otherwise; with the
+repo variable `STRICT_DBT_PROFILE=1` it aborts before touching the stack instead). dlt
 reads the `DESTINATION__POSTGRES__CREDENTIALS__*` env vars, which take precedence over
 `.dlt/secrets.toml`.
 
@@ -186,7 +197,12 @@ there):
   runaway container, plus swap). An OOM-killed container is restarted
   (`docker inspect <name> --format '{{.State.OOMKilled}}'`).
 - The hourly ofelia pipeline job has `no-overlap`, so a run that takes longer
-  than an hour is not started twice.
+  than an hour is not started twice. In addition `run_all_pipelines.sh` takes a
+  `flock` (`PIPELINE_LOCK_FILE`, default `/tmp/soziodata_run_all_pipelines.lock`
+  in the container), so the hourly job, the initial load and manual
+  `docker exec` runs never overlap: a second run exits immediately with code 75
+  (`PIPELINE_LOCK_BUSY_EXIT`; the ofelia job sets it to 0, so a skipped hourly
+  run is logged but not counted as failed).
 
 To adjust or roll back, edit the labels/limits in the Compose file and run
 `docker compose up -d` in `backend/deployments` (Traefik picks up label
@@ -202,7 +218,7 @@ recomputed from the sources by `run_all_pipelines.sh`.
   `deploy` user's crontab, set up by the deploy job. It dumps both parts with
   `pg_dump`, verifies the archive, uploads it to the Hetzner Object Storage
   bucket (`soziodata_<UTC timestamp>.dump`) and deletes dumps older than
-  30 days (`BACKUP_RETENTION_DAYS`; skipped if the new dump has no `snapshots` tables). It exits non-zero if the database is unreachable and pings `HEALTHCHECK_URL` on success, if set. Log: `~/backup.log`. It needs the
+  30 days (`BACKUP_RETENTION_DAYS`; skipped if the new dump has no `snapshots` tables). It exits non-zero if the database is unreachable and pings `HEALTHCHECK_URL` on success, if set (GitHub secret or variable `BACKUP_HEALTHCHECK_URL`; the deploy rewrites `~/.config/soziodata-backup.env`, so do not add it there by hand). Log: `~/backup.log`, rotated weekly by a user-level `logrotate` cron entry (8 generations). It needs the
   variables/secrets `BACKUP_S3_BUCKET`, `BACKUP_S3_REGION`,
   `BACKUP_S3_ACCESS_KEY`, `BACKUP_S3_SECRET_KEY`; without them no backup is
   configured.
@@ -213,18 +229,21 @@ recomputed from the sources by `run_all_pipelines.sh`.
 **Restore (fresh database only, e.g. new server).** Restore *before* the
 first pipeline run, otherwise dbt creates empty snapshot tables and the
 history is lost; the script refuses to run if `snapshots` already contains
-tables.
+tables. It stops the `scheduler` container itself and starts it again at the
+end if it was running (after a failed restore it stays stopped, so the hourly
+dbt snapshot does not build on half-restored tables); it aborts while a
+`run_all_pipelines.sh` is running.
 
 ```bash
-cd /opt/soziooekonomische-daten/backend/deployments
-docker compose stop scheduler          # keep the hourly pipeline from running first
-cd ../..
+cd /opt/soziooekonomische-daten
 bash backend/scripts/restore_db.sh                 # latest backup, snapshots only
 # bash backend/scripts/restore_db.sh soziodata_<timestamp>.dump   # a specific backup
 # RESTORE_METADATA=1 bash backend/scripts/restore_db.sh           # also dataset_metadata
 docker exec pipeline bash /app/dlt/run_all_pipelines.sh           # dbt continues the history
-cd backend/deployments && docker compose start scheduler
 ```
+
+If the hourly job happens to start first, the manual run exits with code 75
+(lock held); just wait for the hourly run instead.
 
 On a fresh server, deploy first *without* `initial_load`, restore, then run
 the pipeline as shown (or re-run the workflow with `initial_load`). The
@@ -287,4 +306,6 @@ ssh -L 5432:localhost:5432 deploy@<SSH_HOST>
 ```
 
 Manual rollback to the last state that passed E2E:
-`bash backend/scripts/deploy_remote.sh rollback` on the server.
+`bash backend/scripts/deploy_remote.sh rollback` on the server (waits for a
+running pipeline run first, see [DB roles](#db-roles)). The workflow does this
+automatically when `e2e-production` fails, times out or is cancelled.

@@ -32,6 +32,8 @@ Optional variables, commented out in `.env.example` and not required at startup:
 
 | Variable | Default | Purpose |
 |---|---|---|
+| `DB_SSLMODE` | `disable` | Postgres `sslmode`; the DB is normally only reachable on the private compose network, set `require`/`verify-full` for a remote database |
+| `CUSTOM_REGION_TIMEOUT_SECONDS` | `90` | Total time budget of `POST /custom-regions/dataset-aggregate` (all sub-queries together; exceeded: `503`) |
 | `UNLIMITED_ROWS_CAP` | 1.25 × largest table, at least 300000 | Row cap for `limit=null` (see [API](api.md)) |
 | `TRUSTED_PROXIES` | loopback, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` | Comma-separated IPs/CIDRs whose `X-Forwarded-For` header is trusted for the client IP (Traefik reaches the backend over the private compose network); an invalid value stops the server at startup |
 

@@ -47,7 +47,8 @@ across multiple years, there is a multi-stage harmonization pipeline in
 
 ```mermaid
 flowchart TB
-    stg_nuts["stg_nuts_geometry"] --> spatial["int_nuts_spatial_crosswalk\n(area shares per version pair)"]
+    stg_nuts["stg_nuts_geometry"] --> nuts3_geom["int_nuts3_de_geometry\n(NUTS-3 per vintage, GiST-indexed)"]
+    nuts3_geom --> spatial["int_nuts_spatial_crosswalk\n(area shares per version pair)"]
     stg_lau_geo["stg_lau_geometry"] --> lau_geo["int_lau_population_geo\n(municipality population + geometry)"]
     stg_lau_pop["stg_lau_population"] --> lau_geo
     stg_nuts --> membership["int_lau_nuts3_membership\n(municipality → NUTS3 per version)"]
@@ -64,14 +65,18 @@ flowchart TB
 
 - **`int_nuts_spatial_crosswalk`** – pure area intersections between NUTS-3
   regions of two versions (`ST_Intersection`/`ST_Area`), including forward
-  and backward version pairs.
+  and backward version pairs. It self-joins `int_nuts3_de_geometry`, a
+  GiST-indexed table copy of the German NUTS-3 rows of `stg_nuts_geometry`
+  (the staging view re-parses WKT on every access and cannot be indexed).
 - **`int_lau_population_geo`** / **`int_lau_nuts3_membership`** /
   **`int_lau_nuts3_population_weight`** – determine the **real** population
   weight per (source, target) region pair based on municipality (LAU)
   population. Weighting by the total population of the NUTS-3 source region
   itself would always cancel out during normalization (see the comment in
   `mart_nuts_version_crosswalk.sql`) – only the finer LAU level makes the
-  population weighting actually effective. Each municipality is assigned wholly to the NUTS-3
+  population weighting actually effective (`int_lau_nuts3_membership` is
+  only computed for the LAU population years the weight model actually
+  resolves). Each municipality is assigned wholly to the NUTS-3
   region holding the largest share of its area (per version); its population
   goes to the resulting (source, target) pair. This majority assignment was
   evaluated against 648 Kreis versions with known truth and is clearly more

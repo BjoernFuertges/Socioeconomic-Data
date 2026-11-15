@@ -113,6 +113,11 @@ otherwise falls back to uncompressed files in local `geo-mapper/` or
 external tools, not directories of this repository. Geodata and population data run
 as separate dlt pipelines to avoid stale state between runs.
 
+A feature whose geometry cannot be converted is still loaded, with a NULL
+geometry (one bad feature does not block the table). Each one is logged as a
+warning and counted; the pipeline summary at the end lists the counts per
+source file, so silent holes in the geometry tables show up in the run log.
+
 ## write_disposition
 
 All dataset-content resources load with `write_disposition="replace"` –

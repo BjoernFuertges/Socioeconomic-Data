@@ -24,8 +24,13 @@ docker compose -f compose.local.yml exec pipeline \
   bash /app/dlt/run_all_pipelines.sh
 ```
 
-Geodaten laden dabei über lokale Fallback-Pfade (`geo-mapper/`,
-`geo-importer/`) ohne weiteres Zutun. Die übrigen Kreis-Datensätze
+Die Geodaten (NUTS/LAU) liest `load_geodata_to_postgis.py` bevorzugt aus
+`data-exchange/1_friedrich-bjoern/Geodaten`; nur falls dort nichts liegt, greift
+es auf Fallback-Pfade in den externen Geschwister-Checkouts `geo-mapper/` bzw.
+`geo-importer/` zurück (nicht Teil dieses Repos, siehe
+[docs/pipeline/dlt.md](docs/pipeline/dlt.md)). Die Arbeitsagentur-Daten
+(`load_arbeitslosenzahlen_afa.py`) und die LAU-Bevölkerung
+(`fetch_lau_population.py`) holt die Pipeline selbst aus dem Netz. Die übrigen Kreis-Datensätze
 (`arbeitslose`, `bevoelkerung`, `schuldnerquote`, ...) lesen aus
 `data-exchange/1_friedrich-bjoern`, das im Repo-Checkout standardmäßig leer
 ist (produktiv per Nextcloud-Sync befüllt, siehe
@@ -78,7 +83,7 @@ docker compose up -d --pull always --no-deps backend
 Da `pipeline/dlt/` und `pipeline/dbt/` als Volumes in den `pipeline`-Container eingebunden sind, reicht nach einem `git pull` auf dem Server ein Neustart des Containers, damit Änderungen wirksam werden.
 
 ```bash
-cd /root/soziooekonomische-daten
+cd /opt/soziooekonomische-daten
 
 # Aktuellen Branch/Stand ziehen
 git pull --ff-only
@@ -168,88 +173,11 @@ docker system prune -a --volumes
 
 ## Architektur
 
-### Komponentenübersicht
-```mermaid
-architecture-beta
-    group api(cloud)[API]
+Komponenten und Datenfluss (Quelldaten → dlt → `loaded_data` → dbt → `transformed_data` → Go-API → Frontend)
+sind in der Dokumentation beschrieben, inklusive Diagrammen:
+[docs/architecture.md](docs/architecture.md) (lokal: `mkdocs serve`). Die Verzeichnis-Übersicht
+mit Konventionen steht in [AGENTS.md](AGENTS.md).
 
-    service db(database)[Database] in api
-    service disk1(disk)[Storage] in api
-    service disk2(disk)[Storage] in api
-    service server(server)[Server] in api
-
-    db:L -- R:server
-    disk1:T -- B:server
-    disk2:T -- B:db
-```
-
-### Data Flow
-```mermaid
-flowchart LR
-    subgraph sources["Quelldaten (data-exchange/1_friedrich-bjoern/)"]
-        direction TB
-        src_arb[/"arbeitslosenzahlen/\nmapped_pairs.csv\nmeta.json"/]
-        src_geo[/"geodata/lau/\nLAU_RG_*.geojson.gz"/]
-        src_pop[/"statistics/\nlau_population_*.csv"/]
-        src_bev[/"bevoelkerung/results_*/\nmapped_pairs.csv + meta.yaml"/]
-        src_sq[/"schuldnerquote/results_*/\nmapped_pairs.csv + meta.yaml"/]
-    end
-
-    subgraph dlt["dlt Pipelines"]
-        direction TB
-        dlt_arb["load_arbeitslosenzahlen_afa.py"]
-        dlt_geo["load_geodata_to_postgis.py"]
-        dlt_gen["load_soziodata_generic.py"]
-    end
-
-    subgraph pg_loaded["PostgreSQL: Schema: loaded_data"]
-        direction TB
-        t_arb[("arbeitslosenzahlen_\nagentur_arbeit")]
-        t_meta[("arbeitslosenzahlen_\nmetadata")]
-        t_geo[("lau_geometry")]
-        t_pop[("lau_population")]
-        t_bev[("results_bevoelkerung_\nkreise")]
-        t_sq[("results_schuldnerquote_\nkreise")]
-    end
-
-    subgraph pg_transformed["PostgreSQL: Schema: transformed_data"]
-        direction TB
-        subgraph stg["Staging (Views)"]
-            stg_arb["stg_arbeitslosenzahlen"]
-            stg_geo["stg_lau_geometry"]
-            stg_pop["stg_lau_population"]
-            stg_bev["stg_bevoelkerung_kreise"]
-            stg_sq["stg_schuldnerquote_kreise"]
-        end
-        subgraph marts["Marts (Tables)"]
-            mart_arb["mart_arbeitslosenzahlen"]
-            mart_lau["lau_integrated"]
-            mart_dq["lau_data_quality"]
-        end
-    end
-
-    api["Go Backend API"]
-
-    src_arb --> dlt_arb
-    src_geo & src_pop --> dlt_geo
-    src_bev & src_sq --> dlt_gen
-
-    dlt_arb --> t_arb & t_meta
-    dlt_geo --> t_geo & t_pop
-    dlt_gen --> t_bev & t_sq
-
-    t_arb --> stg_arb
-    t_geo --> stg_geo
-    t_pop --> stg_pop
-    t_bev --> stg_bev
-    t_sq --> stg_sq
-
-    stg_arb & t_meta --> mart_arb
-    stg_geo & stg_pop --> mart_lau
-    mart_lau --> mart_dq
-
-    mart_arb & mart_lau & mart_dq --> api
-```
 ## Lizenz
 
 Der Quellcode steht unter der [Apache License 2.0](LICENSE) (siehe auch [NOTICE](NOTICE)).

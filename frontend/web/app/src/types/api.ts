@@ -204,6 +204,10 @@ export interface TimeseriesPoint {
   year: number;
   value: number;
   is_interpolated: boolean;
+  // Backend flag for estimated values (fill-gaps/harmonized marts); present on
+  // NUTS-3 time-series rows, omitted elsewhere. Not shown in the UI yet
+  // (open product decision, like has_valid_value).
+  is_estimated?: boolean;
   // true = value is an aggregation over several regions (see
   // NutsDatasetAggregatePoint), not a single observation read from one source -
   // TimeseriesChart.vue/DataTable.vue show the third status "berechnet" for it

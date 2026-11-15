@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents and contributors working in this
 
 Scope: this file covers the `analysis/data-analysis/` directory — ad-hoc/exploratory
 analysis scripts, not part of the production pipeline (backend/dbt/dlt).
-See the repository root [AGENTS.md](../AGENTS.md) for the overall
+See the repository root [AGENTS.md](../../AGENTS.md) for the overall
 architecture these scripts read data from.
 
 ## Commands

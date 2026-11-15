@@ -5,8 +5,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 	"github.com/gin-gonic/gin"
@@ -21,7 +24,26 @@ const (
 	// one existing unit. Not 1.0, because reprojection (4326 -> 3035) and
 	// coordinate rounding in the GeoJSON introduce tiny deviations.
 	customRegionExactMatchIoU = 0.999
+	// Upper bound for the sub-queries of one request (datasets x indicators x
+	// levels of the fallback chain, each with an exact-match and an aggregation
+	// query in the worst case). The largest realistic request (all datasets) is
+	// far below this; it only guards against pathological inputs.
+	customRegionMaxQueries = 150
+	// Total time budget of the whole handler (all sub-queries together); the
+	// per-statement limit (statement_timeout) alone would allow 60 s per query.
+	// Override with CUSTOM_REGION_TIMEOUT_SECONDS.
+	customRegionDefaultBudget = 90 * time.Second
 )
+
+// customRegionBudget returns the total time budget of a custom-region request.
+func customRegionBudget() time.Duration {
+	if v := strings.TrimSpace(os.Getenv("CUSTOM_REGION_TIMEOUT_SECONDS")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return time.Duration(n) * time.Second
+		}
+	}
+	return customRegionDefaultBudget
+}
 
 // CustomRegionAggregateRequest describes a dataset query for a freely defined
 // region (GeoJSON). The region is never stored.
@@ -70,6 +92,18 @@ type customRegionMeta struct {
 }
 
 // customRegionAggRow is an intermediate SQL row (per year/month) from which
+// customRegionPlannedQueries counts the aggregation candidates (datasets x
+// indicators x levels of the fallback chain) a request would run at most.
+func customRegionPlannedQueries(datasets []string, bySlug map[string][]customRegionMeta) int {
+	planned := 0
+	for _, slug := range datasets {
+		for _, requested := range bySlug[slug] {
+			planned += len(customRegionLevelChain(requested, bySlug))
+		}
+	}
+	return planned
+}
+
 // computeCustomRegionValue derives the final value.
 type customRegionAggRow struct {
 	Year              int             `db:"year"`
@@ -93,25 +127,26 @@ type customRegionAggRow struct {
 // reference vintage = defaultNutsVersion() / defaultLauVersion(), as in
 // mart_agentur_nuts3_crosswalk). Built per request because the default
 // versions are read from the DB at startup. Fixed fragments only (the versions
-// are ints, the level is checked by the caller), never user input.
-func customRegionUnitsSQL(level string) string {
+// are ints), never user input. An unknown level is an error (never an empty
+// fragment, which would produce invalid SQL).
+func customRegionUnitsSQL(level string) (string, error) {
 	switch level {
 	case "nuts3":
 		return fmt.Sprintf(`SELECT nuts_id AS unit_id, geometry_3035 AS g
 		FROM transformed_data.mart_nuts_geometry_historized
 		WHERE levl_code = 3 AND country_code = 'DE' AND has_valid_geometry
-		  AND valid_from <= %[1]d AND (valid_to IS NULL OR valid_to >= %[1]d)`, defaultNutsVersion())
+		  AND valid_from <= %[1]d AND (valid_to IS NULL OR valid_to >= %[1]d)`, defaultNutsVersion()), nil
 	case "lau":
 		return fmt.Sprintf(`SELECT gisco_id AS unit_id, geometry_3035 AS g
 		FROM transformed_data.mart_lau_geometry_historized
 		WHERE has_valid_geometry AND country_code = 'DE'
-		  AND valid_from <= %[1]d AND max_vintage_year >= %[1]d`, defaultLauVersion())
+		  AND valid_from <= %[1]d AND max_vintage_year >= %[1]d`, defaultLauVersion()), nil
 	case "agentur":
 		return `SELECT ba_schl AS unit_id, ST_Transform(geometry_wgs84, 3035) AS g
 		FROM transformed_data.stg_agenturbezirk_geometry
-		WHERE has_valid_geometry`
+		WHERE has_valid_geometry`, nil
 	}
-	return ""
+	return "", fmt.Errorf("unbekannte Custom-Region-Ebene %q", level)
 }
 
 // customRegionPolyCTE prepares the polygon ($1) like every GeoJSON input
@@ -328,7 +363,7 @@ func (h *Handler) loadCustomRegionMetas(ctx context.Context) ([]customRegionMeta
 
 // QueryCustomRegionDatasetAggregate aggregates datasets over a freely defined region
 // @Summary Datensätze für eine Custom-Region (GeoJSON)
-// @Description Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt, Werte je Erwerbstätigen (weighted_avg_employees) erwerbstätigengewichtet. Näherungswerte (z. B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet. Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: Version 2024.
+// @Description Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt, Werte je Erwerbstätigen (weighted_avg_employees) erwerbstätigengewichtet. Näherungswerte (z. B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet. Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: jeweils neueste verfügbare Version (siehe GET /versions). Gesamtlaufzeit und Anzahl der Teilabfragen sind begrenzt (400 bei zu vielen Teilabfragen, 503 bei Zeitüberschreitung).
 // @Tags Geo
 // @Accept json
 // @Produce json
@@ -345,6 +380,10 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 		return
 	}
 
+	// One total budget for the whole handler (see customRegionDefaultBudget).
+	ctx, cancel := context.WithTimeout(c.Request.Context(), customRegionBudget())
+	defer cancel()
+
 	geometryJSON, datasets, minShare, err := normalizeCustomRegionRequest(&req)
 	if err != nil {
 		respondBadRequest(c, err.Error())
@@ -354,7 +393,7 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 	// Check the polygon once (parse errors, non-empty after repair, vertex
 	// limit) with the same preparation as the aggregation queries
 	// (geoJSONGeometrySQL). Self-intersections are repaired, not rejected.
-	_, inputErr, dbErr := h.checkGeoJSONInDB(c.Request.Context(), "MultiPolygon", 1, "", []interface{}{geometryJSON})
+	_, inputErr, dbErr := h.checkGeoJSONInDB(ctx, "MultiPolygon", 1, "", []interface{}{geometryJSON})
 	if dbErr != nil {
 		respondDBError(c, "Geometrieprüfung", dbErr)
 		return
@@ -364,7 +403,7 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 		return
 	}
 
-	metas, err := h.loadCustomRegionMetas(c.Request.Context())
+	metas, err := h.loadCustomRegionMetas(ctx)
 	if err != nil {
 		respondDBError(c, "Datenbankfehler", err)
 		return
@@ -380,6 +419,12 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 		}
 	}
 
+	// Bound the number of sub-queries before running any of them.
+	if customRegionPlannedQueries(datasets, bySlug) > customRegionMaxQueries {
+		respondBadRequest(c, "Die Anfrage umfasst zu viele Teilabfragen; bitte weniger Datensätze auswählen")
+		return
+	}
+
 	// If the polygon exactly matches a unit of a level (e.g. a whole Kreis), only
 	// that unit's values count, not edge slivers of its neighbours. Determined at
 	// most once per level.
@@ -388,8 +433,12 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 		if m, ok := matches[level]; ok {
 			return m, nil
 		}
+		units, err := customRegionUnitsSQL(level)
+		if err != nil {
+			return nil, err
+		}
 		var ids []string
-		err := h.DB.SelectContext(c.Request.Context(), &ids, fmt.Sprintf(customRegionExactMatchSQL, customRegionUnitsSQL(level)),
+		err = h.DB.SelectContext(ctx, &ids, fmt.Sprintf(customRegionExactMatchSQL, units),
 			geometryJSON, customRegionExactMatchIoU)
 		if err != nil {
 			return nil, err
@@ -406,14 +455,23 @@ func (h *Handler) QueryCustomRegionDatasetAggregate(c *gin.Context) {
 	for _, slug := range datasets {
 		for _, requested := range bySlug[slug] {
 			for _, candidate := range customRegionLevelChain(requested, bySlug) {
+				if err := ctx.Err(); err != nil { // total budget used up (-> 503)
+					respondDBError(c, "Zeitbudget Custom-Region", err)
+					return
+				}
 				matched, err := matchFor(candidate.Level)
 				if err != nil {
 					respondDBError(c, "Datenbankfehler", err)
 					return
 				}
+				units, err := customRegionUnitsSQL(candidate.Level)
+				if err != nil {
+					respondDBError(c, "Datenbankfehler", err)
+					return
+				}
 				var agg []customRegionAggRow
-				query := fmt.Sprintf(customRegionAggregateSQL, customRegionUnitsSQL(candidate.Level))
-				err = h.DB.SelectContext(c.Request.Context(), &agg, query, geometryJSON, minShare, candidate.Level,
+				query := fmt.Sprintf(customRegionAggregateSQL, units)
+				err = h.DB.SelectContext(ctx, &agg, query, geometryJSON, minShare, candidate.Level,
 					candidate.DatasetSlug, candidate.Indicator, req.FromYear, req.ToYear, matched)
 				if err != nil {
 					respondDBError(c, "Datenbankfehler", err)

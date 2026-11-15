@@ -2751,7 +2751,7 @@ const docTemplate = `{
         },
         "/custom-regions/dataset-aggregate": {
             "post": {
-                "description": "Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt, Werte je Erwerbstätigen (weighted_avg_employees) erwerbstätigengewichtet. Näherungswerte (z. B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet. Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: Version 2024.",
+                "description": "Verschneidet das übergebene Polygon mit den Geometrien der Quelldaten und aggregiert die Werte. Je Datensatz wird die feinste verfügbare Ebene genutzt (LAU vor NUTS-3; Agenturbezirks-Daten liegen nur auf Agenturbezirks-Ebene vor). Zählgrößen (sum) werden flächenanteilig verteilt, Quoten/Durchschnitte (weighted_avg) bevorzugt bevölkerungsgewichtet gemittelt, Werte je Erwerbstätigen (weighted_avg_employees) erwerbstätigengewichtet. Näherungswerte (z. B. Mediane, Quoten) sind über value_kind und aggregation_method gekennzeichnet. Die Region wird nicht gespeichert. NUTS-3/LAU-Bezug: jeweils neueste verfügbare Version (siehe GET /versions). Gesamtlaufzeit und Anzahl der Teilabfragen sind begrenzt (400 bei zu vielen Teilabfragen, 503 bei Zeitüberschreitung).",
                 "consumes": [
                     "application/json"
                 ],

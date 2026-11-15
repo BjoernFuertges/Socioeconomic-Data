@@ -3,6 +3,12 @@ version: 2
 models:
   - name: stg_lau_population
     description: "LAU (municipality) population per year, with the population count parsed to an integer."
+    # Grain: one row per (gisco_id, year): int_lau_population_geo joins population and geometry on it, a duplicate would double-count population in the crosswalk weights.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - gisco_id
+            - year
     columns:
       - name: gisco_id
         description: "Unique LAU identifier from GISCO"

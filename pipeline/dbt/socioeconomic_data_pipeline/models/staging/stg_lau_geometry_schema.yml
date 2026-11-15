@@ -3,6 +3,12 @@ version: 2
 models:
   - name: stg_lau_geometry
     description: "LAU (municipality) boundaries per year, with EPSG:3035 and WGS84 geometries."
+    # Grain: one row per (gisco_id, year): mart_lau_geometry_historized assumes one vintage row per gisco_id and year.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - gisco_id
+            - year
     columns:
       - name: gisco_id
         description: "Unique LAU identifier from GISCO"

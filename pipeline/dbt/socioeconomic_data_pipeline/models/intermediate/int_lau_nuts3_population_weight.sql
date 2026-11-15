@@ -61,7 +61,9 @@ version_pairs as (
     where a.version_year != b.version_year
 ),
 
--- Closest actually available LAU population year per reference year
+-- Closest actually available LAU population year per reference year.
+-- int_lau_nuts3_membership only computes these years (pop_years CTE there):
+-- change both together.
 resolved as (
     select
         vp.source_version,

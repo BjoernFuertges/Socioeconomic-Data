@@ -18,6 +18,8 @@ on:
 env:
   GO_VERSION: "1.26"
   PYTHON_VERSION: "3.12"
+  # Checkout of the repo on the Hetzner server (cloud-init); used by deploy, mark-good and rollback
+  REMOTE_REPO: /opt/soziooekonomische-daten
 
 permissions:
   contents: read
@@ -177,6 +179,7 @@ jobs:
           API_DB_PASSWORD: dummy
           PIPELINE_DB_PASSWORD: dummy
           LE_EMAIL: admin@example.org
+          IMAGE_TAG: sha-0000000
         run: |
           cp .env.backend.example .env.backend
           docker compose -f docker-compose.yml config --quiet
@@ -201,7 +204,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: ">=22.22.2"
+          # same Node major as the frontend (.nvmrc: 22); resolves to the newest 22.x
+          node-version-file: frontend/web/app/.nvmrc
 
       - name: Semantic Release (dry run)
         id: semantic
@@ -318,7 +322,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: ">=22.22.2"
+          # same Node major as the frontend (.nvmrc: 22); resolves to the newest 22.x
+          node-version-file: frontend/web/app/.nvmrc
 
       - name: Semantic Release
         id: semantic
@@ -348,8 +353,6 @@ jobs:
     concurrency:
       group: deploy-hetzner
       cancel-in-progress: false
-    env:
-      REMOTE_REPO: /opt/soziooekonomische-daten
     steps:
       # Only for the local composite-action path; checks out the commit that was tested and built.
       - uses: actions/checkout@v7
@@ -391,6 +394,8 @@ jobs:
           BACKUP_S3_REGION: ${{ vars.BACKUP_S3_REGION }}
           BACKUP_S3_ACCESS_KEY: ${{ secrets.BACKUP_S3_ACCESS_KEY }}
           BACKUP_S3_SECRET_KEY: ${{ secrets.BACKUP_S3_SECRET_KEY }}
+          # optional dead-man's switch for backup_db.sh (e.g. healthchecks.io ping URL); secret or variable
+          BACKUP_HEALTHCHECK_URL: ${{ secrets.BACKUP_HEALTHCHECK_URL || vars.BACKUP_HEALTHCHECK_URL }}
         run: |
           set -euo pipefail
           : "${LE_EMAIL:?Secret LE_EMAIL fehlt}"
@@ -424,7 +429,15 @@ jobs:
               echo "BACKUP_S3_REGION=${BACKUP_S3_REGION}"
               echo "BACKUP_S3_ACCESS_KEY=${BACKUP_S3_ACCESS_KEY}"
               echo "BACKUP_S3_SECRET_KEY=${BACKUP_S3_SECRET_KEY}"
+              # the deploy rewrites ~/.config/soziodata-backup.env from this file, so the ping URL must come
+              # from here (a value added by hand on the server would be lost); %q keeps "source" safe
+              if [[ -n "${BACKUP_HEALTHCHECK_URL:-}" ]]; then
+                printf 'HEALTHCHECK_URL=%q\n' "${BACKUP_HEALTHCHECK_URL}"
+              fi
             } > "$RUNNER_TEMP/incoming/.env.backup"
+            if [[ -z "${BACKUP_HEALTHCHECK_URL:-}" ]]; then
+              echo "::notice::BACKUP_HEALTHCHECK_URL nicht gesetzt - ein ausbleibendes Backup löst keinen Alarm aus."
+            fi
           else
             echo "::warning::BACKUP_S3_* nicht vollständig gesetzt - nächtliches DB-Backup wird nicht eingerichtet."
           fi
@@ -441,8 +454,13 @@ jobs:
 
       - name: Roll out stack
         id: rollout
+        env:
+          # optional repo variable: "1" aborts the rollout if profiles.yml on the server does not use DB_USER/DB_PASSWORD
+          STRICT_DBT_PROFILE: ${{ vars.STRICT_DBT_PROFILE }}
         run: |
-          ssh hetzner "bash '$REMOTE_REPO/backend/scripts/deploy_remote.sh' apply '${GITHUB_SHA}' '${{ inputs.initial_load == true }}'"
+          strict=0
+          [[ "${STRICT_DBT_PROFILE:-}" == "1" ]] && strict=1
+          ssh hetzner "STRICT_DBT_PROFILE=${strict} bash '$REMOTE_REPO/backend/scripts/deploy_remote.sh' apply '${GITHUB_SHA}' '${{ inputs.initial_load == true }}'"
 
       - name: Note on initial load
         if: inputs.initial_load == true
@@ -525,13 +543,18 @@ jobs:
           private-key: ${{ secrets.SSH_PRIVATE_KEY }}
           known-hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
 
-      - run: ssh hetzner "bash /opt/soziooekonomische-daten/backend/scripts/deploy_remote.sh mark-good '${GITHUB_SHA}'"
+      - run: ssh hetzner "bash '$REMOTE_REPO/backend/scripts/deploy_remote.sh' mark-good '${GITHUB_SHA}'"
 
   rollback:
     name: Roll back to last good state
     needs: [deploy-hetzner, e2e-production]
-    if: always() && needs.deploy-hetzner.result == 'success' && needs.e2e-production.result == 'failure'
+    # After a successful deploy, roll back unless the E2E passed: failure, a job timeout (20 min) and
+    # a manual cancel all leave an unverified state (always() keeps this job alive on a cancelled run).
+    # "skipped" cannot happen after a successful deploy and is deliberately not included.
+    if: always() && needs.deploy-hetzner.result == 'success' && contains(fromJSON('["failure","cancelled"]'), needs.e2e-production.result)
     runs-on: ubuntu-latest
+    # deploy_remote.sh rollback first waits for a running pipeline run (PIPELINE_WAIT_TIMEOUT, 60 min)
+    timeout-minutes: 90
     # Not `production`: its required reviewers would make the automatic rollback wait for manual approval.
     environment: production-ops
     steps:
@@ -545,9 +568,9 @@ jobs:
           known-hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
 
       - name: Roll back
-        run: ssh hetzner "bash /opt/soziooekonomische-daten/backend/scripts/deploy_remote.sh rollback"
+        run: ssh hetzner "bash '$REMOTE_REPO/backend/scripts/deploy_remote.sh' rollback"
 
       - name: Fail the run
         run: |
-          echo "::error::E2E gegen Produktion fehlgeschlagen - auf den letzten guten Stand zurückgesetzt."
+          echo "::error::E2E gegen Produktion fehlgeschlagen oder abgebrochen (${{ needs.e2e-production.result }}) - auf den letzten guten Stand zurückgesetzt."
           exit 1

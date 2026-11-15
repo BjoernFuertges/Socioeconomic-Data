@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
-	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
 // Slugs of the raw Agentur values (mart_agenturbezirk_sociodata) and of the

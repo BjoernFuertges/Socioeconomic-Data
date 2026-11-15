@@ -72,11 +72,18 @@ periods as (
 period_bounds as (
     -- One row per LAU and period: the first vintage (valid_from). The
     -- geometry is identical within the period, so it is taken along directly.
+    -- lau_name comes from the period's newest vintage (a rename without a
+    -- boundary change keeps the period but shows the current name); lau_id
+    -- and nuts_3 stay those of the first vintage.
     select distinct on (gisco_id, period_id)
         gisco_id,
         country_code,
         lau_id,
-        lau_name,
+        last_value(lau_name) over (
+            partition by gisco_id, period_id
+            order by year
+            rows between unbounded preceding and unbounded following
+        ) as lau_name,
         nuts_3,
         year as valid_from,
         max(year) over (partition by gisco_id, period_id) as max_vintage_year,

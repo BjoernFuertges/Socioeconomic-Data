@@ -34,6 +34,7 @@ future non-BBSR dataset.
 """
 
 import sys
+import re
 import dlt
 import pandas as pd
 import yaml
@@ -83,20 +84,39 @@ def _normalize_id(raw: Any, geodata_level: str) -> str | None:
     return s
 
 
+_GERMAN_THOUSANDS_RE = re.compile(r"^-?\d{1,3}(\.\d{3})+$")
+
+
 def _parse_german_number(raw: Any) -> float | None:
     """
-    Parse a German-formatted number string to float.
+    Parse a German-formatted number (or an already numeric value) to float.
 
     Examples:
-        "357.948,00"  →  357948.0   (thousands separator = '.', decimal = ',')
-        "13,15"       →  13.15
-        "87.276,00"   →  87276.0
+        "357.948,00"  ->  357948.0   (thousands separator = '.', decimal = ',')
+        "13,15"       ->  13.15
+        "1.234"       ->  1234.0     (pure thousands grouping)
+        "46450.0"     ->  46450.0    (dot-decimal, e.g. a float stringified by pandas)
+        46450.0       ->  46450.0    (real float/int: used as is)
+
+    The CSV is read with ``dtype=str`` so cells normally arrive as text; the
+    numeric branch and the dot-decimal rule only guard against a column that
+    pandas turned into float (e.g. one with empty cells), where blindly
+    stripping the dot would multiply the value by ten.
     """
-    if pd.isna(raw) or str(raw).strip() == "":
+    if raw is None or (not isinstance(raw, str) and pd.isna(raw)):
         return None
+    if isinstance(raw, (int, float)) and not isinstance(raw, bool):
+        return float(raw)
     s = str(raw).strip()
-    # Remove thousands separator (dot), replace decimal separator (comma) with dot
-    s = s.replace(".", "").replace(",", ".")
+    if s == "":
+        return None
+    if "," in s:
+        # German format: '.' thousands separator, ',' decimal separator
+        s = s.replace(".", "").replace(",", ".")
+    elif "." in s and not _GERMAN_THOUSANDS_RE.match(s):
+        pass  # dot is the decimal separator ("46450.0", "13.5")
+    else:
+        s = s.replace(".", "")
     try:
         return float(s)
     except ValueError:
@@ -226,7 +246,11 @@ def make_resource(dataset_dir: Path, dataset_name: str, meta: Dict[str, Any]):
 
         logger.info(f"Loading CSV: {csv_path}")
         # Read the key as text: as float it loses the leading zero of states 01-09.
-        df = pd.read_csv(csv_path, dtype={"original_id_1": str})
+        # Year columns are read as text as well, so '46450' is not turned into
+        # the float 46450.0 (which a dot-stripping parser would multiply by ten).
+        header = pd.read_csv(csv_path, nrows=0)
+        str_cols = {"original_id_1": str, **{c: str for c in _year_columns(header)}}
+        df = pd.read_csv(csv_path, dtype=str_cols)
         df["original_id_1"] = df["original_id_1"].map(
             lambda v: _normalize_id(v, geodata_level)
         )

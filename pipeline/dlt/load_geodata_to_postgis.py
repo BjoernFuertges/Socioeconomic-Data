@@ -91,12 +91,27 @@ _WGS84_TO_3035 = Transformer.from_crs(4326, 3035, always_xy=True).transform
 _NUTS_FILE_RE = re.compile(r"nuts_(\d{4})_level_(\d)\.geojson$")
 
 
-def _to_wkt_3035(geom: Any) -> str | None:
+# Features whose geometry could not be converted end up with a NULL geometry.
+# Do not abort the load (one bad feature should not block the table), but make
+# them visible: warn per feature and print a summary at the end of main().
+_geometry_failures: Dict[str, int] = {}
+
+
+def _record_geometry_failure(source: str, feature_id: Any, err: Exception) -> None:
+    _geometry_failures[source] = _geometry_failures.get(source, 0) + 1
+    logger.warning(
+        f"{source}: geometry of feature {feature_id!r} could not be converted "
+        f"({type(err).__name__}: {err}) - loading it with NULL geometry"
+    )
+
+
+def _to_wkt_3035(geom: Any, source: str = "geodata", feature_id: Any = None) -> str | None:
     if geom is None:
         return None
     try:
         return shapely_transform(_WGS84_TO_3035, shape(geom)).wkt
-    except Exception:
+    except Exception as e:
+        _record_geometry_failure(source, feature_id, e)
         return None
 
 
@@ -109,7 +124,7 @@ def _lau_record(props: Dict[str, Any], geom: Any, year: int) -> Dict[str, Any]:
         "lau_id": ags or None,
         "lau_name": props.get("name"),
         "year": year,
-        "geometry": _to_wkt_3035(geom),
+        "geometry": _to_wkt_3035(geom, f"lau_geometry {year}", ags),
     }
 
 
@@ -124,7 +139,7 @@ def _nuts_record(props: Dict[str, Any], geom: Any, year: int, level: int) -> Dic
         "name_latn": name,
         "id_ars": props.get("id_ars"),
         "year": year,
-        "geometry": _to_wkt_3035(geom),
+        "geometry": _to_wkt_3035(geom, f"nuts_geometry {year} level {level}", nuts_id),
     }
 
 
@@ -193,7 +208,8 @@ def load_geodata() -> Iterator[Dict[str, Any]]:
                     if geom is not None:
                         try:
                             record['geometry'] = shape(geom).wkt
-                        except Exception:
+                        except Exception as e:
+                            _record_geometry_failure(file_path.name, record.get('id') or record.get('gisco_id'), e)
                             record['geometry'] = None
                     else:
                         record['geometry'] = None
@@ -310,7 +326,8 @@ def load_nuts_geodata() -> Iterator[Dict[str, Any]]:
                     if geom is not None:
                         try:
                             record["geometry"] = shape(geom).wkt
-                        except Exception:
+                        except Exception as e:
+                            _record_geometry_failure(file_path.name, record.get("nuts_id") or record.get("id"), e)
                             record["geometry"] = None
                     else:
                         record["geometry"] = None
@@ -403,6 +420,12 @@ def main():
         print(f"Geodata: {geodata_info}")
         print(f"NUTS Geodata: {nuts_geodata_info}")
         print(f"Population: {population_info}")
+        if _geometry_failures:
+            print(f"WARNING: {sum(_geometry_failures.values())} feature(s) loaded with NULL geometry:")
+            for src, n in sorted(_geometry_failures.items()):
+                print(f"  {src}: {n}")
+        else:
+            print("Geometry conversion failures: 0")
         print("="*50)
 
     except Exception as e:

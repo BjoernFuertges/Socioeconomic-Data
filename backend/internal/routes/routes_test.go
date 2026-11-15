@@ -59,3 +59,39 @@ func TestTrustedProxies(t *testing.T) {
 		t.Errorf("TRUSTED_PROXIES override ignored, ClientIP = %q", got)
 	}
 }
+
+func TestCacheControlMiddleware(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	v1 := r.Group("/api/v1")
+	v1.Use(cacheControlMiddleware())
+	v1.GET("/nuts", func(c *gin.Context) { c.JSON(200, gin.H{"ok": true}) })
+	v1.GET("/health", func(c *gin.Context) { c.JSON(200, gin.H{"ok": true}) })
+	v1.GET("/versions", func(c *gin.Context) { c.JSON(200, gin.H{"ok": true}) })
+	v1.GET("/datasets/:slug", func(c *gin.Context) { c.JSON(200, gin.H{"ok": true}) })
+	v1.GET("/missing", func(c *gin.Context) { c.JSON(404, gin.H{"ok": false}) })
+	v1.GET("/boom", func(c *gin.Context) { c.Status(503) })
+	v1.GET("/own", func(c *gin.Context) { c.Header("Cache-Control", "private"); c.String(200, "x") })
+	v1.POST("/geo/query", func(c *gin.Context) { c.JSON(200, gin.H{"ok": true}) })
+
+	tests := []struct {
+		method, path string
+		want         string
+	}{
+		{"GET", "/api/v1/nuts", "public, max-age=300, stale-while-revalidate=600"},
+		{"GET", "/api/v1/health", "no-store"},
+		{"GET", "/api/v1/versions", cacheControlSlow},
+		{"GET", "/api/v1/datasets/foo", cacheControlSlow},
+		{"GET", "/api/v1/missing", "no-store"},
+		{"GET", "/api/v1/boom", "no-store"},
+		{"GET", "/api/v1/own", "private"},
+		{"POST", "/api/v1/geo/query", ""},
+	}
+	for _, tt := range tests {
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(tt.method, tt.path, nil))
+		if got := w.Header().Get("Cache-Control"); got != tt.want {
+			t.Errorf("%s %s: Cache-Control = %q, want %q", tt.method, tt.path, got, tt.want)
+		}
+	}
+}

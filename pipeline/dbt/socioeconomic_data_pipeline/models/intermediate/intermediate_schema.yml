@@ -172,6 +172,30 @@ models:
             - target_gisco_id
             - target_version
 
+  - name: int_nuts3_de_geometry
+    description: "German NUTS-3 geometries per vintage year (levl_code 3, valid geometry), materialized with a GiST index as the indexed input for spatial self-joins (int_nuts_spatial_crosswalk)."
+    columns:
+      - name: nuts_id
+        description: "NUTS-3 code"
+        data_type: text
+        tests:
+          - not_null
+
+      - name: version_year
+        description: "NUTS vintage year (stg_nuts_geometry.year)"
+        data_type: bigint
+        tests:
+          - not_null
+
+      - name: geometry_3035
+        description: "Geometry in EPSG:3035"
+        data_type: geometry
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - nuts_id
+            - version_year
+
   - name: int_nuts_spatial_crosswalk
     description: "Spatial overlap between German NUTS-3 regions of different boundary versions, with the share of the source area that overlaps the target area."
     columns:

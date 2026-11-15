@@ -24,18 +24,41 @@ compose() {
   (cd "${deploy_dir}" && docker compose "$@")
 }
 
-# Nightly backup (02:17 server time) via the deploy user's cron; idempotent via the marker.
+# Nightly backup (02:17 server time) via the deploy user's cron; idempotent via the markers.
+# ~/backup.log is rotated by a user-level logrotate run (the deploy user cannot write
+# /etc/logrotate.d): weekly, 8 compressed generations, own state file.
 install_backup_cron() {
-  local marker="# soziodata-backup"
+  local marker="# soziodata-backup" lr_marker="# soziodata-logrotate"
+  local lr_conf="${HOME}/.config/soziodata-logrotate.conf" lr_state="${HOME}/.local/state/soziodata-logrotate.status"
+  local lr_bin lr_line=""
   if ! command -v crontab > /dev/null 2>&1; then
     echo "Warnung: crontab nicht installiert - Backup-Cron nicht eingerichtet." >&2
     return 0
   fi
+  # cron's PATH usually lacks /usr/sbin, so resolve the absolute path now
+  lr_bin="$(PATH="${PATH}:/usr/sbin:/sbin" command -v logrotate || true)"
+  if [[ -n "${lr_bin}" ]]; then
+    install -m 700 -d "${HOME}/.config" "$(dirname "${lr_state}")"
+    printf '%s\n' \
+      "${HOME}/backup.log {" \
+      "  weekly" \
+      "  rotate 8" \
+      "  compress" \
+      "  delaycompress" \
+      "  missingok" \
+      "  notifempty" \
+      "  copytruncate" \
+      "}" > "${lr_conf}"
+    lr_line="5 3 * * * '${lr_bin}' -s '${lr_state}' '${lr_conf}' ${lr_marker}"
+  else
+    echo "Warnung: logrotate nicht installiert - ~/backup.log wird nicht rotiert." >&2
+  fi
   {
-    crontab -l 2> /dev/null | grep -vF "${marker}" || true
+    crontab -l 2> /dev/null | grep -vF -e "${marker}" -e "${lr_marker}" || true
     echo "17 2 * * * bash '${repo_root}/backend/scripts/backup_db.sh' >> \"\$HOME/backup.log\" 2>&1 ${marker}"
+    if [[ -n "${lr_line}" ]]; then echo "${lr_line}"; fi
   } | crontab -
-  echo "Backup-Cron eingerichtet (täglich 02:17, Log: ~/backup.log)"
+  echo "Backup-Cron eingerichtet (täglich 02:17, Log: ~/backup.log${lr_bin:+, wöchentlich rotiert})"
 }
 
 install_config() {
@@ -84,10 +107,21 @@ ensure_api_role() {
     < "${repo_root}/backend/scripts/ensure_api_role.sql"
 }
 
+# True while the background initial load (start_initial_load) is active: the status file says
+# "running" and a host process of its wrapper (bash -c '... docker exec pipeline bash
+# /app/dlt/run_all_pipelines.sh ...') or of that docker exec still exists. Without pgrep only the
+# status file counts. A stale "running" (wrapper killed, e.g. by a reboot) thus does not keep the
+# scheduler stopped forever.
+initial_load_active() {
+  [[ "$(cat "${state_dir}/initial_load.status" 2> /dev/null)" == running* ]] || return 1
+  command -v pgrep > /dev/null 2>&1 || return 0
+  pgrep -f 'docker exec pipeline bash /app/dlt/run_all_pipelines\.sh' > /dev/null
+}
+
 # Stops the scheduler and waits for a running run_all_pipelines.sh (hourly ofelia job, initial
-# load or a manual docker exec) to finish, so ensure_pipeline_role does not change owners/the
-# password under a running dlt/dbt. No-op without a running pipeline container (fresh server).
-# The following "compose up" starts the scheduler again.
+# load or a manual docker exec) to finish, so the Nextcloud sync, a postgis recreate or
+# ensure_pipeline_role (owners/password) do not happen under a running dlt/dbt. No-op without a
+# running pipeline container (fresh server). compose_up_stack starts the scheduler again.
 quiesce_pipeline() {
   local timeout="${PIPELINE_WAIT_TIMEOUT:-3600}" waited=0 running
   compose stop scheduler || true
@@ -100,7 +134,7 @@ quiesce_pipeline() {
       echo "Abbruch: run_all_pipelines.sh läuft seit über ${timeout}s weiter (initialer Load?)." >&2
       echo "Später erneut deployen oder den Lauf prüfen: docker top pipeline / deploy_remote.sh initial-load-status" >&2
       # Leave the stack as it was: restart the scheduler unless the initial-load wrapper restarts it itself
-      if [[ "$(cat "${state_dir}/initial_load.status" 2> /dev/null)" != running* ]]; then
+      if ! initial_load_active; then
         compose start scheduler || true
       fi
       return 1
@@ -128,12 +162,47 @@ ensure_pipeline_role() {
 
 # dbt reads its connection from the gitignored profiles.yml next to dbt_project.yml (bind mount,
 # DBT_PROFILES_DIR). Only a profile that takes user/password from DB_USER/DB_PASSWORD uses pipeline_rw.
+# Default: warn only (the deploy goes on, dbt keeps whatever credentials the profile has).
+# STRICT_DBT_PROFILE=1 (repo variable, passed through by main.yml) turns the warning into an
+# abort; cmd_apply runs this check before anything on the stack is touched.
 check_dbt_profile() {
-  local profile="${repo_root}/pipeline/dbt/socioeconomic_data_pipeline/profiles.yml"
+  local profile="${repo_root}/pipeline/dbt/socioeconomic_data_pipeline/profiles.yml" problem=""
   if [[ ! -f "${profile}" ]]; then
-    echo "Warnung: ${profile} fehlt - dbt im pipeline-Container schlägt fehl (Vorlage: profiles.example.yml)." >&2
+    problem="${profile} fehlt - dbt im pipeline-Container schlägt fehl (Vorlage: profiles.example.yml)."
   elif ! grep -q "env_var('DB_USER')" "${profile}" || ! grep -q "env_var('DB_PASSWORD')" "${profile}"; then
-    echo "Warnung: ${profile} liest user/password nicht aus DB_USER/DB_PASSWORD - dbt läuft dann NICHT als pipeline_rw (siehe profiles.example.yml)." >&2
+    problem="${profile} liest user/password nicht aus DB_USER/DB_PASSWORD - dbt läuft dann NICHT als pipeline_rw (siehe profiles.example.yml)."
+  fi
+  [[ -n "${problem}" ]] || return 0
+  if [[ "${STRICT_DBT_PROFILE:-0}" == "1" ]]; then
+    echo "Abbruch (STRICT_DBT_PROFILE=1): ${problem}" >&2
+    return 1
+  fi
+  echo "Warnung: ${problem}" >&2
+}
+
+# EXIT trap of apply/rollback after quiesce_pipeline: if the command fails later on, do not leave the
+# hourly job stopped (unless the initial load is active; its wrapper restarts the scheduler).
+restart_scheduler_on_failure() {
+  local rc=$?
+  if (( rc != 0 )) && ! initial_load_active; then
+    echo "Abgebrochen (exit ${rc}) - starte scheduler wieder." >&2
+    compose start scheduler || true
+  fi
+}
+
+# Brings the whole stack up (--wait: healthchecks; fails if a container does not become healthy).
+# While the initial load is active its wrapper restarts the scheduler at the end, so it is left out
+# here instead of running the hourly job in parallel (normally quiesce_pipeline has already waited
+# for the load; this covers the moment between its end and the wrapper's restart).
+compose_up_stack() {
+  if initial_load_active; then
+    local services
+    services="$(compose config --services | grep -vx scheduler | tr '\n' ' ')"
+    echo "Initialer Load aktiv - scheduler wird nicht gestartet (das übernimmt der Load-Wrapper)."
+    # shellcheck disable=SC2086 # word splitting of the service list is intended
+    compose up -d --remove-orphans --wait --wait-timeout "${WAIT_TIMEOUT:-600}" ${services}
+  else
+    compose up -d --remove-orphans --wait --wait-timeout "${WAIT_TIMEOUT:-600}"
   fi
 }
 
@@ -191,8 +260,18 @@ cmd_apply() {
   [[ -f "${state_dir}/current_sha" ]] && prev_sha="$(cat "${state_dir}/current_sha")"
 
   install_config
+  check_dbt_profile
 
-  # Pull images first: if the registry fails, the deploy aborts before anything on the running stack was changed.
+  # No pipeline run may be active from here on: the Nextcloud sync rewrites data-exchange/ (read by
+  # dlt), "compose up postgis" may recreate the database container, and ensure_pipeline_role takes
+  # over table ownership. Stops the scheduler, waits for a running run (PIPELINE_WAIT_TIMEOUT) and
+  # aborts the deploy on timeout (scheduler restarted unless the initial load is active).
+  quiesce_pipeline
+  # If the deploy aborts from here on, do not leave the hourly job stopped (covers e.g. a failing
+  # registry or sync with an otherwise unchanged stack; the rollback step would also start it).
+  trap restart_scheduler_on_failure EXIT
+
+  # Pull images before touching containers: if the registry fails, the deploy aborts with the running stack unchanged.
   compose pull
 
   if [[ -f "${deploy_dir}/.env.nextcloud-sync" ]]; then
@@ -203,15 +282,12 @@ cmd_apply() {
 
   # The backend logs in as api_ro, the pipeline as pipeline_rw; both must exist before the
   # containers start: bring up postgis first, then create/update the roles (idempotent).
-  # The pipeline role takes over table ownership, so no pipeline run may be active meanwhile.
   compose up -d --wait --wait-timeout "${WAIT_TIMEOUT:-600}" postgis
   ensure_api_role
-  quiesce_pipeline
   ensure_pipeline_role
-  check_dbt_profile
 
-  # --wait: waits for the healthchecks (backend, postgis, pipeline) and fails if a container does not become healthy
-  compose up -d --remove-orphans --wait --wait-timeout "${WAIT_TIMEOUT:-600}"
+  # Starts the scheduler again; waits for the healthchecks (backend, postgis, pipeline)
+  compose_up_stack
 
   # The pipeline container installs its Python packages on start; code changes
   # are visible immediately via the bind mount, only new requirements need a restart.
@@ -227,6 +303,7 @@ cmd_apply() {
   fi
 
   echo "${sha}" > "${state_dir}/current_sha"
+  trap - EXIT
   compose ps
 }
 
@@ -242,12 +319,19 @@ cmd_rollback() {
   tag="sha-${sha:0:7}"
   echo "Rollback auf ${sha} (Image-Tag ${tag})"
 
+  # Do not swap code/bind mounts under a running dlt/dbt (e.g. the initial load): stop the scheduler
+  # and wait; on timeout the rollback aborts (scheduler restarted unless the initial load is active).
+  quiesce_pipeline
+  trap restart_scheduler_on_failure EXIT
+
   GIT_LFS_SKIP_SMUDGE=1 git -C "${repo_root}" checkout --quiet --detach "${sha}"
   sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=${tag}/" "${deploy_dir}/.env"
 
   compose pull
-  compose up -d --remove-orphans --wait --wait-timeout "${WAIT_TIMEOUT:-600}"
+  # Leaves the scheduler stopped while the initial load is active (its wrapper restarts it)
+  compose_up_stack
   echo "${sha}" > "${state_dir}/current_sha"
+  trap - EXIT
   compose ps
 }
 

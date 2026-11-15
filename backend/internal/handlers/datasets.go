@@ -4,12 +4,21 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
+	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 )
+
+type datasetYearRow struct {
+	DatasetSlug string `db:"dataset_slug"`
+	Year        int    `db:"year"`
+}
+
+func (r datasetYearRow) slugYear() (string, int) { return r.DatasetSlug, r.Year }
 
 // regionNutsDatasets returns the available Soziodata datasets for a NUTS ID.
 // For Kreise (level 3) from mart_region_datasets (Kreis grain, a single
@@ -19,28 +28,35 @@ import (
 // the model comment there). Both return the same (dataset_slug, year) row
 // shape, so the grouping below applies to both.
 func (h *Handler) regionNutsDatasets(ctx context.Context, nutsID string, level int) ([]models.RegionDataset, error) {
-	type row struct {
-		DatasetSlug string `db:"dataset_slug"`
-		Year        int    `db:"year"`
-	}
 	query := `SELECT dataset_slug, year FROM transformed_data.mart_region_datasets
 		 WHERE geodata_id_nuts = $1 ORDER BY dataset_slug, year`
 	if level != 3 {
 		query = `SELECT dataset_slug, year FROM transformed_data.mart_nuts012_dataset_aggregate
 		 WHERE nuts_id = $1 ORDER BY dataset_slug, year`
 	}
-	var rows []row
+	var rows []datasetYearRow
 	if err := h.DB.SelectContext(ctx, &rows, query, nutsID); err != nil {
 		return nil, err
 	}
 
-	// Group years per slug
-	yearsBySlug := make(map[string][]int, len(rows))
-	for _, r := range rows {
-		yearsBySlug[r.DatasetSlug] = append(yearsBySlug[r.DatasetSlug], r.Year)
-	}
+	return buildRegionDatasets(rows2years(rows)), nil
+}
 
-	// Build the result in the order of AllSoziodataConfigs (RouteSlug -> table name)
+// regionDatasetYears maps dataset_slug -> years.
+type regionDatasetYears map[string][]int
+
+func rows2years[T interface{ slugYear() (string, int) }](rows []T) regionDatasetYears {
+	out := regionDatasetYears{}
+	for _, r := range rows {
+		slug, year := r.slugYear()
+		out[slug] = append(out[slug], year)
+	}
+	return out
+}
+
+// buildRegionDatasets builds the result in the order of AllSoziodataConfigs
+// (RouteSlug -> table name).
+func buildRegionDatasets(yearsBySlug regionDatasetYears) []models.RegionDataset {
 	result := make([]models.RegionDataset, 0, len(yearsBySlug))
 	for _, cfg := range models.AllSoziodataConfigs() {
 		years, ok := yearsBySlug[cfg.RouteSlug]
@@ -53,7 +69,44 @@ func (h *Handler) regionNutsDatasets(ctx context.Context, nutsID string, level i
 			AvailableYears: years,
 		})
 	}
-	return result, nil
+	return result
+}
+
+// regionNutsDatasetsBulk is the batched variant of regionNutsDatasets for
+// Kreise (level 3): one query for all IDs instead of one per region (include_datasets
+// on list endpoints). IDs without datasets are missing from the map.
+func (h *Handler) regionNutsDatasetsBulk(ctx context.Context, nutsIDs []string) (map[string][]models.RegionDataset, error) {
+	out := map[string][]models.RegionDataset{}
+	if len(nutsIDs) == 0 {
+		return out, nil
+	}
+	var rows []struct {
+		NutsID      string `db:"geodata_id_nuts"`
+		DatasetSlug string `db:"dataset_slug"`
+		Year        int    `db:"year"`
+	}
+	if err := h.DB.SelectContext(ctx, &rows,
+		`SELECT geodata_id_nuts, dataset_slug, year FROM transformed_data.mart_region_datasets
+		 WHERE geodata_id_nuts = ANY($1) ORDER BY geodata_id_nuts, dataset_slug, year`, pq.Array(nutsIDs)); err != nil {
+		return nil, err
+	}
+	byID := map[string]regionDatasetYears{}
+	for _, r := range rows {
+		if byID[r.NutsID] == nil {
+			byID[r.NutsID] = regionDatasetYears{}
+		}
+		byID[r.NutsID][r.DatasetSlug] = append(byID[r.NutsID][r.DatasetSlug], r.Year)
+	}
+	for id, years := range byID {
+		out[id] = buildRegionDatasets(years)
+	}
+	return out, nil
+}
+
+// logDatasetsError records a failed (optional) include_datasets lookup; the
+// main response is still served, just without the embedded datasets.
+func logDatasetsError(c *gin.Context, op string, err error) {
+	log.Printf("include_datasets (%s) fehlgeschlagen (%s): %v", op, c.Request.URL.Path, err)
 }
 
 // GetNutsDatasets returns the available Soziodata datasets for a NUTS region.

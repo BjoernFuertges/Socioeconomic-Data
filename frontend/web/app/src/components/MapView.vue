@@ -449,7 +449,11 @@ function buildBoundaryLayer() {
   boundaryLayer.bringToFront();
 }
 
+// Drops responses of superseded geometry requests (fast level/version/type switches).
+let geometriesSeq = 0;
+
 async function loadGeometries() {
+  const seq = ++geometriesSeq;
   geoError.value = null;
   try {
     if (selectedGeoType.value === "agentur") {
@@ -457,6 +461,7 @@ async function loadGeometries() {
       // months have loaded (see loadAgenturPeriods) - so wait here before querying
       // the chosen (or default: latest) point in time.
       await loadAgenturPeriods();
+      if (seq !== geometriesSeq) return;
       if (selectedAgenturYear.value === null || selectedAgenturMonth.value === null) {
         agenturLatestRaw.value = [];
         regions.value = [];
@@ -468,6 +473,7 @@ async function loadGeometries() {
         year: selectedAgenturYear.value,
         month: selectedAgenturMonth.value,
       });
+      if (seq !== geometriesSeq) return;
       agenturLatestRaw.value = (body.data ?? []).filter((a) => a.geometry_wgs84);
       regions.value = agenturLatestRaw.value.map((a) => ({
         geo_id: a.ba_schl,
@@ -489,6 +495,7 @@ async function loadGeometries() {
         geometry_year: selectedLauVersion.value,
         limit: "null",
       });
+      if (seq !== geometriesSeq) return;
       regions.value = (body.data ?? []).filter((r) => r.geometry_wgs84);
       return;
     }
@@ -508,8 +515,10 @@ async function loadGeometries() {
       geometry_year: selectedNutsVersion.value,
       limit: "null",
     });
+    if (seq !== geometriesSeq) return;
     regions.value = (body.data ?? []).filter((r) => r.geometry_wgs84);
   } catch (err) {
+    if (seq !== geometriesSeq) return;
     geoError.value = err instanceof Error ? err.message : String(err);
   }
 }
@@ -620,10 +629,17 @@ function ensureAgenturAggSelection() {
   }
 }
 
+// Drops responses of superseded value requests (fast year/dataset changes).
+// Shared by loadValues, loadNuts012Values and loadAgenturAggValues: every new
+// request (or reset) invalidates all older ones.
+let valuesSeq = 0;
+
 async function loadAgenturAggValues() {
+  const seq = ++valuesSeq;
   const slug = selectedAgenturDataset.value;
   const year = selectedAgenturAggYear.value;
   if (!slug || year === null) {
+    valuesLoading.value = false;
     valuesByRegion.value = new Map();
     restyleLayer();
     return;
@@ -633,13 +649,13 @@ async function loadAgenturAggValues() {
   try {
     const body = await apiGet<AgenturDatasetAggregatePoint[]>(`/agenturbezirke/dataset-aggregate/${slug}`, { year });
     // Response may have been superseded by quick selection changes.
-    if (slug !== selectedAgenturDataset.value || year !== selectedAgenturAggYear.value) return;
+    if (seq !== valuesSeq) return;
     valuesByRegion.value = new Map((body.data ?? []).map((p) => [p.ba_schl, p]));
     restyleLayer();
   } catch (err) {
-    valuesError.value = err instanceof Error ? err.message : String(err);
+    if (seq === valuesSeq) valuesError.value = err instanceof Error ? err.message : String(err);
   } finally {
-    valuesLoading.value = false;
+    if (seq === valuesSeq) valuesLoading.value = false;
   }
 }
 
@@ -650,8 +666,10 @@ async function loadAgenturAggValues() {
 // switch simply re-queries anyway rather than caching the raw data separately -
 // negligible at this region count.
 async function loadNuts012Values() {
+  const seq = ++valuesSeq;
   const slug = selectedDataset.value;
   if (!slug) {
+    valuesLoading.value = false;
     valuesError.value = null;
     if (valuesByRegion.value.size > 0) {
       valuesByRegion.value = new Map();
@@ -669,7 +687,7 @@ async function loadNuts012Values() {
       }),
     );
     // Response may have been superseded by a quick dataset/level switch.
-    if (slug !== selectedDataset.value) return;
+    if (seq !== valuesSeq) return;
     const year = selectedYear.value;
     valuesByRegion.value = new Map(
       results.flatMap(([geoId, points]) => {
@@ -679,19 +697,20 @@ async function loadNuts012Values() {
     );
     restyleLayer();
   } catch (err) {
-    valuesError.value = err instanceof Error ? err.message : String(err);
+    if (seq === valuesSeq) valuesError.value = err instanceof Error ? err.message : String(err);
   } finally {
-    valuesLoading.value = false;
+    if (seq === valuesSeq) valuesLoading.value = false;
   }
 }
-
-// Drops responses of superseded requests (fast year/dataset changes).
-let valuesSeq = 0;
 
 async function loadValues() {
   if (selectedGeoType.value === "agentur") {
     if (selectedAgenturDataset.value) await loadAgenturAggValues();
-    else applyAgenturValues();
+    else {
+      valuesSeq++; // invalidate in-flight value requests
+      valuesLoading.value = false;
+      applyAgenturValues();
+    }
     return;
   }
   if (usesNutsAggregate.value) {
@@ -701,6 +720,8 @@ async function loadValues() {
   if (!selectedDataset.value || selectedYear.value === null) {
     // No dataset selected -> map stays uncolored; discard any values left over
     // from the previously selected dataset.
+    valuesSeq++; // invalidate in-flight value requests
+    valuesLoading.value = false;
     valuesError.value = null;
     if (valuesByRegion.value.size > 0) {
       valuesByRegion.value = new Map();

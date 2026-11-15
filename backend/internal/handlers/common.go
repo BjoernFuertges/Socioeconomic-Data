@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
-	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
 const (

@@ -1,5 +1,4 @@
 {% macro render_nuts3_fill_gaps_view(stage_model, dataset_slug, value_column) %}
-{% set target_versions = var('nuts_versions') %}
 
 with timeseries as (
     select
@@ -61,6 +60,12 @@ select
     coalesce(src.mapper, 'harmonized_fill_gaps') as mapper,
     coalesce(src.parameter, 'geodata_id_nuts') as parameter,
     coalesce(src.geodata_level, 'NUTS_3') as geodata_level,
+    -- Source metadata (original_id_1/name, mapper, parameter, geodata_year)
+    -- is joined on (nuts3_id, year) only, not on target_version: where the
+    -- same nuts3_id exists in the source vintage, the row carries the
+    -- SOURCE's geodata_year (e.g. 2024) even for an older nuts_version;
+    -- only rows without a source row fall back to target_version. Use
+    -- nuts_version, not geodata_year, for the boundary version of the row.
     coalesce(src.geodata_year, ts.target_version) as geodata_year,
     -- NUTS target version of this row - keeps the view consistent with the
     -- nuts_version parameter of /{slug}/timeseries (both read the same

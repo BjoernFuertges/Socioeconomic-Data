@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 	"github.com/jszwec/csvutil"
-	"github.com/BjoernFuertges/Socioeconomic-Data/backend/internal/models"
 )
 
 const mimeCSV = "text/csv"

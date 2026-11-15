@@ -5,28 +5,28 @@ package models
 // SozioBaseData holds the common fields of all Kreis datasets.
 // They correspond to the base columns in the dbt staging models.
 type SozioBaseData struct {
-	OriginalID1     string   `json:"original_id_1" db:"original_id_1" example:"01001"`
-	OriginalName    string   `json:"original_name" db:"original_name" example:"Flensburg, Stadt"`
-	GeodataName     string   `json:"geodata_name" db:"geodata_name" example:"Flensburg"`
-	GeodataIDNUTS   string   `json:"geodata_id_nuts" db:"geodata_id_nuts" example:"DEF01"`
-	GeodataIDLAU    string   `json:"geodata_id_lau" db:"geodata_id_lau" example:"01001000"`
-	GeodataIDARS    string   `json:"geodata_id_ars" db:"geodata_id_ars" example:"01001"`
-	Mapper          string   `json:"mapper" db:"mapper" example:"exact_id"`
-	Parameter       string   `json:"parameter" db:"parameter" example:"id_ars"`
-	GeodataLevel    string   `json:"geodata_level" db:"geodata_level" example:"NUTS_3"`
-	GeodataYear     int      `json:"geodata_year" db:"geodata_year" example:"2024"`
-	Year            int      `json:"year" db:"year" example:"2020"`
-	ObservationDate string   `json:"observation_date" db:"observation_date" example:"2020-01-01"`
-	HasValidValue   bool     `json:"has_valid_value" db:"has_valid_value" example:"true"`
-	IsInterpolated  *bool    `json:"is_interpolated,omitempty" db:"is_interpolated" example:"true"`
+	OriginalID1     string `json:"original_id_1" db:"original_id_1" example:"01001"`
+	OriginalName    string `json:"original_name" db:"original_name" example:"Flensburg, Stadt"`
+	GeodataName     string `json:"geodata_name" db:"geodata_name" example:"Flensburg"`
+	GeodataIDNUTS   string `json:"geodata_id_nuts" db:"geodata_id_nuts" example:"DEF01"`
+	GeodataIDLAU    string `json:"geodata_id_lau" db:"geodata_id_lau" example:"01001000"`
+	GeodataIDARS    string `json:"geodata_id_ars" db:"geodata_id_ars" example:"01001"`
+	Mapper          string `json:"mapper" db:"mapper" example:"exact_id"`
+	Parameter       string `json:"parameter" db:"parameter" example:"id_ars"`
+	GeodataLevel    string `json:"geodata_level" db:"geodata_level" example:"NUTS_3"`
+	GeodataYear     int    `json:"geodata_year" db:"geodata_year" example:"2024"`
+	Year            int    `json:"year" db:"year" example:"2020"`
+	ObservationDate string `json:"observation_date" db:"observation_date" example:"2020-01-01"`
+	HasValidValue   bool   `json:"has_valid_value" db:"has_valid_value" example:"true"`
+	IsInterpolated  *bool  `json:"is_interpolated,omitempty" db:"is_interpolated" example:"true"`
 	// IsEstimated: the value was converted across NUTS versions via a crosswalk
 	// pair that rests on an estimate (Gemeinden straddling region boundaries
 	// assigned wholly by majority, e.g. Potsdam 2003, Sachsen-Anhalt 2007).
 	// Populated only with fill_gaps=true on NUTS datasets.
-	IsEstimated     *bool    `json:"is_estimated,omitempty" db:"is_estimated" example:"false"`
-	ValueLinear     *float64 `json:"value_linear,omitempty" db:"value_linear" example:"8.78"`
-	ValuePeerTrend  *float64 `json:"value_peer_trend,omitempty" db:"value_peer_trend" example:"8.50"`
-	NPeerRegions    *int     `json:"n_peer_regions,omitempty" db:"n_peer_regions" example:"11"`
+	IsEstimated    *bool    `json:"is_estimated,omitempty" db:"is_estimated" example:"false"`
+	ValueLinear    *float64 `json:"value_linear,omitempty" db:"value_linear" example:"8.78"`
+	ValuePeerTrend *float64 `json:"value_peer_trend,omitempty" db:"value_peer_trend" example:"8.50"`
+	NPeerRegions   *int     `json:"n_peer_regions,omitempty" db:"n_peer_regions" example:"11"`
 	// NutsVersion is the NUTS-3 target version of this row. Populated only with
 	// fill_gaps=true (see api_*_fill_gaps views), so fill_gaps=true and
 	// /timeseries?nuts_version= consistently return the same target version for
