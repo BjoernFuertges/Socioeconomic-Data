@@ -1,7 +1,7 @@
 # =============================================================================
 # Stage 1: Builder
 # =============================================================================
-FROM golang:1.26.0-alpine AS builder
+FROM golang:1.27.3-alpine AS builder
 
 # Release metadata injected via -ldflags (set by CI)
 ARG VERSION
