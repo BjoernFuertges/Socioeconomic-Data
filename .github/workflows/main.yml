@@ -118,7 +118,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version-file: frontend/web/app/.nvmrc
           cache: npm
@@ -137,7 +137,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -155,7 +155,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -205,14 +205,14 @@ jobs:
           token: ${{ secrets.PAT_SEMANTIC_RELEASE }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           # same Node major as the frontend (.nvmrc: 22); resolves to the newest 22.x
           node-version-file: frontend/web/app/.nvmrc
 
       - name: Semantic Release (dry run)
         id: semantic
-        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6 (Branch v6 == v6.0.0)
+        uses: cycjimmy/semantic-release-action@ad51787758d9654d5a75150a89a6fa9b3ccef95e # v6 (Branch v6 == v6.0.0)
         with:
           extra_plugins: |
             @semantic-release/changelog@7.0.0
@@ -323,14 +323,14 @@ jobs:
           token: ${{ secrets.PAT_SEMANTIC_RELEASE }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           # same Node major as the frontend (.nvmrc: 22); resolves to the newest 22.x
           node-version-file: frontend/web/app/.nvmrc
 
       - name: Semantic Release
         id: semantic
-        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6 (Branch v6 == v6.0.0)
+        uses: cycjimmy/semantic-release-action@ad51787758d9654d5a75150a89a6fa9b3ccef95e # v6 (Branch v6 == v6.0.0)
         with:
           extra_plugins: |
             @semantic-release/changelog@7.0.0
@@ -504,7 +504,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: frontend/web/app/.nvmrc
           cache: npm
