@@ -57,7 +57,9 @@ test("Deep-Link-Reload bleibt auf der Route (SPA-Fallback)", async ({ page }) =>
 
 test("Region mit Datensatz zeigt Chart, auch nach Reload des Deep-Links", async ({ page }) => {
   test.skip(!expectData, "E2E_EXPECT_DATA=false");
-  await page.goto("/regionen");
+  // Only NUTS regions: the combined list otherwise starts with an Agenturbezirk, whose deep
+  // link uses ?metrics= instead of ?dataset=, and the order of the first entry is not stable.
+  await page.goto("/regionen?types=nuts");
   await page.locator(".region-item").first().click({ timeout: 30_000 });
   await expect(page).toHaveURL(/\/regionen\/[^/?]+/);
 

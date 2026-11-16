@@ -805,12 +805,26 @@ const currentRegionId = computed<string | undefined>(() => {
   if (regionType.value === "agentur") return selectedAgentur.value?.ba_schl;
   return undefined;
 });
+// True while the region named in the route belongs to a list that has not loaded yet.
+function routeRegionPendingList(): boolean {
+  const id = route.params.regionId as string | undefined;
+  if (!id) return false;
+  const type = (route.query.type as RegionType | undefined) ?? inferRegionType(id);
+  if (type === "nuts") return !nutsRegions.value.length;
+  if (type === "agentur") return !agenturbezirke.value.length;
+  return false;
+}
 watch([currentQuery, currentRegionId], async () => {
   await pendingRegionPush;
   // For the route.name check see the comment in applyRouteSelection() - because of
   // <KeepAlive> this watcher keeps running outside the "regionen" route too, but
   // must not navigate back there then.
   if (route.name !== "regionen") return;
+  // Deep link/reload: the route already names a region, but its list (NUTS/Agentur) is
+  // still loading, so applyRouteSelection() could not select it yet and currentRegionId
+  // is undefined. Replacing now would overwrite the deep link with a bare /regionen;
+  // applyRouteSelection() runs again once the list has loaded.
+  if (!currentRegionId.value && routeRegionPendingList()) return;
   router.replace({ name: "regionen", params: { regionId: currentRegionId.value }, query: currentQuery.value });
 });
 
