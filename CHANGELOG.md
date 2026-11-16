@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/BjoernFuertges/Socioeconomic-Data/compare/v1.0.2...v1.0.3) (2026-11-16)
+
+
+### Bug Fixes
+
+* **frontend:** link to docs, repo & licence ([26793d7](https://github.com/BjoernFuertges/Socioeconomic-Data/commit/26793d705f563c33a0e68fca870a5b6c8ea4f0d3))
+
 ## [1.0.2](https://github.com/BjoernFuertges/Socioeconomic-Data/compare/v1.0.1...v1.0.2) (2026-11-15)
 
 
