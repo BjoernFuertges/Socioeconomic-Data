@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/BjoernFuertges/Socioeconomic-Data/compare/v1.0.3...v1.0.4) (2026-11-16)
+
+
+### Bug Fixes
+
+* **dbt:** mart_lau_geometry_historized quadratic scan ([9b0e70e](https://github.com/BjoernFuertges/Socioeconomic-Data/commit/9b0e70e60a412717f1ddc6cce297ec81dfc3bfe3))
+
 ## [1.0.3](https://github.com/BjoernFuertges/Socioeconomic-Data/compare/v1.0.2...v1.0.3) (2026-11-16)
 
 
