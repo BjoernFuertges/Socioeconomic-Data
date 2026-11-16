@@ -38,17 +38,22 @@
   Available vintage years: 2011-2024
 */
 
-with vintages as (
+with vintages as materialized (
     -- All vintage years present in the source (reference for gap_years).
-    -- Selected separately (year only) so source_geoms stays a single-use,
-    -- inlinable CTE instead of being materialized with all geometries.
+    -- MATERIALIZED is essential: the lateral gap_years subquery at the end
+    -- reads this CTE once per output row. Inlined (the default for a CTE
+    -- referenced once), every row re-scanned stg_lau_geometry for a
+    -- "select distinct year" - quadratic, hours on the full data set (hit the
+    -- pipeline role's statement_timeout). Materialized it is a 14-row table.
     select distinct year
     from {{ ref('stg_lau_geometry') }}
 ),
 
 source_geoms as (
     -- Encode the geometry as a compact hash so the cross-vintage comparison
-    -- is cheap (window functions buffer only the hash, not the full WKT).
+    -- is cheap. Deliberately NO geometry columns here: all window functions
+    -- below sort/buffer these rows, so they stay narrow. The geometries are
+    -- joined back from stg_lau_geometry at the end, once per period.
     select
         gisco_id,
         country_code,
@@ -56,9 +61,6 @@ source_geoms as (
         lau_name,
         nuts_3,
         year,
-        geometry_3035,
-        geometry_wgs84,
-        has_valid_geometry,
         md5(ST_AsText(geometry_3035)) as geom_hash
     from {{ ref('stg_lau_geometry') }}
 ),
@@ -94,7 +96,8 @@ periods as (
 
 period_bounds as (
     -- One row per LAU and period: the first vintage (valid_from). The
-    -- geometry is identical within the period, so it is taken along directly.
+    -- geometry is identical within the period; it is joined back from the
+    -- first vintage's row in the final select.
     -- lau_name comes from the period's newest vintage (a rename without a
     -- boundary change keeps the period but shows the current name); lau_id
     -- and nuts_3 stay those of the first vintage.
@@ -114,10 +117,7 @@ period_bounds as (
         array_agg(year) over (partition by gisco_id, period_id) as present_years,
         -- Last vintage year across all LAUs - reference to tell "still
         -- current" from "discontinued" (see valid_to below).
-        max(year) over () as global_max_vintage_year,
-        geometry_3035,
-        geometry_wgs84,
-        has_valid_geometry
+        max(year) over () as global_max_vintage_year
     from periods
     order by gisco_id, period_id, year
 ),
@@ -141,9 +141,6 @@ historized as (
             case when max_vintage_year < global_max_vintage_year then max_vintage_year end
         ) as valid_to,
         max_vintage_year,
-        geometry_3035,
-        ST_AsGeoJSON(geometry_wgs84)::json as geometry_wgs84,
-        has_valid_geometry,
         present_years
     from period_bounds
 )
@@ -157,12 +154,15 @@ select
     h.valid_from,
     h.valid_to,
     h.max_vintage_year,
-    h.geometry_3035,
-    h.geometry_wgs84,
-    h.has_valid_geometry,
+    geom.geometry_3035,
+    ST_AsGeoJSON(geom.geometry_wgs84)::json as geometry_wgs84,
+    geom.has_valid_geometry,
     cardinality(g.gap_years) > 0 as has_gap,
     g.gap_years
 from historized h
+join {{ ref('stg_lau_geometry') }} geom
+    on geom.gisco_id = h.gisco_id
+    and geom.year = h.valid_from
 cross join lateral (
     -- Vintage years inside the period's validity range for which the source
     -- has no row of this gisco_id (see header comment).
