@@ -1020,3 +1020,12 @@ table.data-table tr.is-computed td {
   border-radius: 4px;
   font-size: 0.8rem;
 }
+
+.app-footer p {
+  margin: 0 0 0.35rem;
+}
+
+.app-footer a {
+  color: inherit;
+  text-decoration: underline;
+}

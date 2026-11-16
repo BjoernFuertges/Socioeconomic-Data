@@ -3,7 +3,9 @@ import { onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { apiGet, API_BASE } from "./api/client";
 
-const docsUrl = import.meta.env.VITE_DOCS_URL ?? "";
+// In Produktion liegt die Doku unter /docs/ auf demselben Host (Traefik), lokal gibt es sie nicht.
+const docsUrl = import.meta.env.VITE_DOCS_URL ?? (import.meta.env.PROD ? "/docs/" : "");
+const repoUrl = "https://github.com/BjoernFuertges/Socioeconomic-Data";
 
 const route = useRoute();
 
@@ -82,7 +84,13 @@ onMounted(async () => {
   <footer class="app-footer">
     <p>
       Datenquelle: Go-API über <code>{{ API_BASE }}</code>. Weitere Endpunkte und Hintergrund zur Datenpipeline
-      stehen in der Projektdokumentation (Link oben rechts, sofern konfiguriert).
+      stehen in der
+      <a v-if="docsUrl" :href="docsUrl" target="_blank" rel="noopener">Projektdokumentation</a>
+      <template v-else>Projektdokumentation</template>.
+    </p>
+    <p>
+      Quellcode auf <a :href="repoUrl" target="_blank" rel="noopener">GitHub</a>, veröffentlicht unter der
+      <a :href="`${repoUrl}/blob/main/LICENSE`" target="_blank" rel="noopener">Apache License 2.0</a>.
     </p>
   </footer>
 </template>
