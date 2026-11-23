@@ -255,7 +255,7 @@ services:
       ofelia.job-exec.pipeline.no-overlap: "true"
 
   scheduler:
-    image: mcuadros/ofelia:0.3.21
+    image: mcuadros/ofelia:0.3.23
     container_name: scheduler
     restart: always
     command: daemon --docker
